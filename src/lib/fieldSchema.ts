@@ -26,6 +26,8 @@ export function isHttpUrl(s: string): boolean {
   }
 }
 
+const MAX_TEXT = 5000;
+
 export type FieldsResult =
   | { ok: true; value: Record<string, unknown> }
   | { ok: false; errors: Record<string, string> };
@@ -34,10 +36,12 @@ export function validateFields(schema: FieldSchema, fields: Record<string, unkno
   const errors: Record<string, string> = {};
   const value: Record<string, unknown> = {};
   const known = new Set(schema.map((f) => f.key));
-  for (const k of Object.keys(fields)) if (!known.has(k)) errors[k] = "Unknown field";
+  for (const k of Object.keys(fields))
+    // defineProperty so an own "__proto__" key is recorded as data instead of hitting the prototype setter.
+    if (!known.has(k)) Object.defineProperty(errors, k, { value: "Unknown field", enumerable: true, configurable: true, writable: true });
 
   for (const f of schema) {
-    const v = fields[f.key];
+    const v = Object.hasOwn(fields, f.key) ? fields[f.key] : undefined;
     const blank = v === undefined || v === null || (typeof v === "string" && v.trim() === "");
     if (f.type === "checkbox") {
       if (v === undefined) {
@@ -55,7 +59,8 @@ export function validateFields(schema: FieldSchema, fields: Record<string, unkno
       continue;
     }
     const s = v.trim();
-    if (f.type === "select" && !(f.options ?? []).includes(s)) errors[f.key] = `${f.label} must be one of: ${(f.options ?? []).join(", ")}`;
+    if (s.length > MAX_TEXT) errors[f.key] = `${f.label} must be at most ${MAX_TEXT} characters`;
+    else if (f.type === "select" && !(f.options ?? []).includes(s)) errors[f.key] = `${f.label} must be one of: ${(f.options ?? []).join(", ")}`;
     else if (f.type === "url" && !isHttpUrl(s)) errors[f.key] = `${f.label} must be an http(s) link`;
     else value[f.key] = s;
   }

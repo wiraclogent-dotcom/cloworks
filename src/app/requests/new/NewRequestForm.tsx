@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
-import { submitRequest, type SubmitState } from "../actions";
+import { useActionState, useEffect, useRef, useState } from "react";
+import { submitRequest } from "../actions";
+import type { SubmitState } from "@/lib/submitRequest";
 import type { FieldSchema } from "@/lib/fieldSchema";
 
 type Opt = { id: string; name: string };
@@ -29,8 +30,11 @@ function Field({ id, label, error, required, children }: { id: string; label: st
 
 export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; divisions: Opt[]; types: TypeOpt[] }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequest, null);
-  const [typeId, setTypeId] = useState("");
+  const [chosenType, setTypeId] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
+  const v = state?.values;
+  const typeId = chosenType ?? v?.typeId ?? "";
   const schema = types.find((t) => t.id === typeId)?.fieldSchema ?? [];
   const props = (k: string) => ({
     id: k,
@@ -39,32 +43,44 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
-  const generic = state && !state.ok && !Object.keys(errs).length ? state.message : null;
+  // Errors with no rendered field (e.g. "form", unknown detail keys) go in the banner.
+  const rendered = new Set(["title", "briefUrl", "notes", "brandId", "divisionId", "typeId", "deadline", ...schema.map((f) => `fields.${f.key}`)]);
+  const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
+  const generic = state && !state.ok ? (Object.keys(errs).length ? orphan.join(" ") : state.message) : "";
+
+  // React 19 resets uncontrolled fields after the action; the key remounts them with defaults from the echoed values.
+  const nonce = state?.nonce ?? "initial";
+  useEffect(() => {
+    if (state?.nonce) {
+      const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+      first?.focus();
+    }
+  }, [state?.nonce]);
 
   return (
-    <form action={action} className="space-y-5" noValidate>
+    <form ref={formRef} key={nonce} action={action} className="space-y-5" noValidate>
       {generic && (
         <p role="alert" className="rounded-md border border-border bg-muted p-3 text-sm">
           {generic}
         </p>
       )}
       <Field id="title" label="Title" required error={errs.title}>
-        <input {...props("title")} type="text" required maxLength={200} />
+        <input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
       </Field>
       <Field id="briefUrl" label="Brief link" error={errs.briefUrl}>
-        <input {...props("briefUrl")} type="url" placeholder="https://" />
+        <input {...props("briefUrl")} type="url" placeholder="https://" defaultValue={v?.briefUrl} />
       </Field>
       <Field id="notes" label="Notes" error={errs.notes}>
-        <textarea {...props("notes")} rows={4} />
+        <textarea {...props("notes")} rows={4} defaultValue={v?.notes} />
       </Field>
       <Field id="brandId" label="Brand" required error={errs.brandId}>
-        <select {...props("brandId")} defaultValue="" required>
+        <select {...props("brandId")} defaultValue={v?.brandId ?? ""} required>
           <option value="" disabled>Select a brand</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </Field>
       <Field id="divisionId" label="Division" required error={errs.divisionId}>
-        <select {...props("divisionId")} defaultValue="" required>
+        <select {...props("divisionId")} defaultValue={v?.divisionId ?? ""} required>
           <option value="" disabled>Select a division</option>
           {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
@@ -76,7 +92,7 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
         </select>
       </Field>
       <Field id="deadline" label="Deadline" error={errs.deadline}>
-        <input {...props("deadline")} type="date" />
+        <input {...props("deadline")} type="date" defaultValue={v?.deadline} />
       </Field>
 
       {schema.length > 0 && (
@@ -90,7 +106,7 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
               return (
                 <div key={f.key} className="space-y-1">
                   <label className="flex items-center gap-2 text-sm font-medium">
-                    <input id={id} name={id} type="checkbox" className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" aria-describedby={p["aria-describedby"]} />
+                    <input id={id} name={id} type="checkbox" defaultChecked={v?.fields[f.key] === true} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" aria-describedby={p["aria-describedby"]} />
                     {f.label}
                   </label>
                   {err && <p id={`${id}-error`} className="text-sm font-medium underline decoration-wavy">{err}</p>}
@@ -99,12 +115,12 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
             return (
               <Field key={f.key} id={id} label={f.label} required={f.required} error={err}>
                 {f.type === "select" ? (
-                  <select {...p} defaultValue="">
+                  <select {...p} defaultValue={typeof v?.fields[f.key] === "string" ? (v.fields[f.key] as string) : ""}>
                     <option value="" disabled>Select…</option>
                     {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
                   </select>
                 ) : (
-                  <input {...p} type={f.type === "url" ? "url" : "text"} />
+                  <input {...p} type={f.type === "url" ? "url" : "text"} defaultValue={typeof v?.fields[f.key] === "string" ? (v.fields[f.key] as string) : undefined} />
                 )}
               </Field>
             );

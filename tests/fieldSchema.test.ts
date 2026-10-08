@@ -42,3 +42,28 @@ describe("validateFields", () => {
     expect(validateFields([], { a: 1 }).ok).toBe(false);
   });
 });
+
+describe("validateFields hardening", () => {
+  it("rejects __proto__ / constructor keys as unknown", () => {
+    const withProto = JSON.parse('{"platform":"TikTok","__proto__":{"x":1}}');
+    const r1 = validateFields(schema, withProto);
+    expect(r1.ok).toBe(false);
+    if (!r1.ok) expect(Object.keys(r1.errors)).toContain("__proto__");
+    const r2 = validateFields(schema, { platform: "TikTok", constructor: "x" });
+    expect(r2.ok).toBe(false);
+  });
+  it("does not read inherited props for a schema key named constructor", () => {
+    const r = validateFields([{ key: "constructor", label: "C", type: "text", required: true }], {});
+    expect(r.ok).toBe(false);
+  });
+  it("select options are case-sensitive", () => {
+    const r = validateFields(schema, { platform: "tiktok" });
+    expect(r.ok).toBe(false);
+  });
+  it("rejects non-string for text and over-long text/url", () => {
+    expect(validateFields(schema, { platform: "TikTok", note: 5 }).ok).toBe(false);
+    expect(validateFields(schema, { platform: "TikTok", note: "x".repeat(5001) }).ok).toBe(false);
+    expect(validateFields(schema, { platform: "TikTok", publishedUrl: "https://a.co/" + "x".repeat(5000) }).ok).toBe(false);
+    expect(validateFields(schema, { platform: "TikTok", note: "x".repeat(5000) }).ok).toBe(true);
+  });
+});

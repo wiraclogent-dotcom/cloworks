@@ -119,4 +119,29 @@ describe("createRequestWith", () => {
     await expect(createRequestWith(failing, user, base, now)).rejects.toThrow("boom");
     expect(await db.prisma.request.count()).toBe(before);
   });
+
+  it("FORBIDDEN: a role without request.create is rejected (invalid role injected; every real role has the grant)", async () => {
+    const before = await db.prisma.request.count();
+    const bad = { id: user.id, appRole: "NOBODY" as never };
+    const err = await createRequestWith(db.prisma, bad, base, now).catch((e) => e);
+    expect(err).toBeInstanceOf(CreateRequestError);
+    expect(err.code).toBe("FORBIDDEN");
+    expect(await db.prisma.request.count()).toBe(before);
+  });
+  it("leap day: 2028-02-29 accepted, 2027-02-29 rejected", async () => {
+    const early = new Date("2027-01-01T00:00:00Z");
+    await expect(createRequestWith(db.prisma, user, { ...base, deadline: "2028-02-29" }, early)).resolves.toBeTruthy();
+    await expect(createRequestWith(db.prisma, user, { ...base, deadline: "2027-02-29" }, early)).rejects.toBeInstanceOf(CreateRequestError);
+  });
+  it("rejects __proto__ / constructor in fields", async () => {
+    await rejects({ ...base, fields: JSON.parse('{"__proto__":{"a":1}}') });
+    await rejects({ ...base, fields: { constructor: "x" } });
+  });
+  it("ignores a client-supplied requesterId", async () => {
+    const other = await db.prisma.user.findFirstOrThrow({ where: { name: "Rahmat" } });
+    const { id } = await createRequestWith(db.prisma, user, { ...base, requesterId: other.id, status: "DONE" } as CreateRequestInput, now);
+    const r = await db.prisma.request.findUniqueOrThrow({ where: { id } });
+    expect(r.requesterId).toBe(user.id);
+    expect(r.status).toBe("REQUESTED");
+  });
 });

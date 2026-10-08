@@ -99,7 +99,7 @@ export async function createRequestWith(
 
   let fields: Record<string, unknown> = {};
   if (type && type.active) {
-    const fr = validateFields(parseFieldSchema(type.fieldSchema), v.fields);
+    const fr = validateFields(parseFieldSchema(type.fieldSchema), input.fields) // raw input: zod drops "__proto__" keys silently;
     if (fr.ok) fields = fr.value;
     else for (const [k, m] of Object.entries(fr.errors)) errs[`fields.${k}`] = m;
   }
