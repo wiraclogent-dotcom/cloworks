@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import type { PrismaClient } from "@prisma/client";
-import type { CliArgs } from "./cliArgs";
+import { isWorkbookArgs, type CliArgs } from "./cliArgs";
+import { readMasterWorkbook, type MasterWorkbook } from "./readWorkbook";
+import { parseMaster } from "./parseMaster";
 import { readCsv } from "./csv";
 import { applyImport } from "./applyImport";
 import { DONE_CAVEAT, parseRequestRows, type ImportRecord, type ParseReport } from "./parseRequests";
@@ -38,10 +40,17 @@ export type RunDeps = {
   apply?: typeof applyImport;
   readFile?: (p: string) => string;
   exists?: (p: string) => boolean;
+  readWorkbook?: (p: string) => Promise<MasterWorkbook>;
   log?: (line: string) => void;
 };
 
-/** Parses everything first (any header/format problem throws here, before any write), prints the report, then applies only with --apply. */
+/** Request types the workbook import writes to; all must exist (run `npm run db:seed` to create "Motion Support"). */
+export const WORKBOOK_TYPES = ["General Design", "Social Media", "Motion Support"];
+
+/**
+ * Parses everything first (any header/format problem throws here, before any write), prints the report,
+ * then applies only with --apply. Workbook mode reads the three tabs of the master .xlsx; CSV mode is the legacy path.
+ */
 export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps = {}) {
   const apply = deps.apply ?? applyImport;
   const readFile = deps.readFile ?? ((p: string) => fs.readFileSync(p, "utf8"));
@@ -50,17 +59,27 @@ export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps =
 
   const [users, brands, divisions] = await Promise.all([db.user.findMany(), db.brand.findMany(), db.division.findMany()]);
   const ctx = { users, brands, divisions };
-  const inputs: ["requests" | "socmed", string][] = [["requests", args.requestsPath]];
-  if (args.socmedPath) inputs.push(["socmed", args.socmedPath]);
 
   const reports: ParseReport[] = [];
   const records: ImportRecord[] = [];
-  for (const [source, file] of inputs) {
-    if (!exists(file)) throw new Error(`File not found: ${file}`);
-    const { headers, rows, lines } = readCsv(readFile(file));
-    const parsed = parseRequestRows(source, rows, ctx, headers, lines);
-    reports.push(parsed.report);
+  if (isWorkbookArgs(args)) {
+    if (!exists(args.workbookPath)) throw new Error(`File not found: ${args.workbookPath}`);
+    const found = await db.requestType.findMany({ where: { name: { in: WORKBOOK_TYPES } }, select: { name: true } });
+    const missing = WORKBOOK_TYPES.filter((n) => !found.some((t) => t.name === n));
+    if (missing.length) throw new Error(`Request type(s) missing in DB: ${missing.join(", ")}. Run "npm run db:seed" (idempotent) first. Nothing was written.`);
+    const parsed = parseMaster(await (deps.readWorkbook ?? readMasterWorkbook)(args.workbookPath), ctx);
+    reports.push(...parsed.reports);
     records.push(...parsed.records);
+  } else {
+    const inputs: ["requests" | "socmed", string][] = [["requests", args.requestsPath]];
+    if (args.socmedPath) inputs.push(["socmed", args.socmedPath]);
+    for (const [source, file] of inputs) {
+      if (!exists(file)) throw new Error(`File not found: ${file}`);
+      const { headers, rows, lines } = readCsv(readFile(file));
+      const parsed = parseRequestRows(source, rows, ctx, headers, lines);
+      reports.push(parsed.report);
+      records.push(...parsed.records);
+    }
   }
 
   log(args.apply ? "MODE: APPLY (writing to DB after this report)" : "MODE: DRY-RUN (nothing is written; pass --apply to import)");

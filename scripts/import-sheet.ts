@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { parseArgs } from "../src/lib/import/cliArgs";
 import { runImport } from "../src/lib/import/run";
 
-// Dry-run by default; --apply writes. Never fetches URLs; reads local CSV exports only.
+// Dry-run by default; --apply writes. Never fetches URLs; reads a local .xlsx workbook (or legacy CSV exports) only.
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const db = new PrismaClient();

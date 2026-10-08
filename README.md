@@ -102,21 +102,45 @@ the output count and a design folder link.
 
 ## Importing the Google Sheets
 
-1. In Google Sheets export each tab as CSV (File > Download > CSV): the **Request List** tab and the
-   **SocMed Tracker** tab.
-2. Dry-run first (reads only, writes nothing, prints counts, skips, warnings, unmapped names and months):
+The owner's master sheet is imported from its **Excel export**, which keeps the real link targets behind the
+"Brief Link" / "Design Folder" / "Link Upload" chips and the real dates (no day/month guessing).
+
+1. In Google Sheets choose **File > Download > Microsoft Excel (.xlsx)**. The workbook must contain the tabs
+   `Request List All Clogent`, `SocMed Tracker` and `Dimas Tracker` (matched by name; other tabs are ignored).
+2. Make sure the database knows the request type "Motion Support" and the roster. Both come from the idempotent seed,
+   so for an existing database just re-run it (it never overwrites admin edits):
    ```bash
-   npm run import:sheet -- path/to/requests.csv path/to/socmed.csv
+   npm run db:seed
    ```
-   The requests file is required and must come first; the socmed file is optional. Header checks reject swapped
-   files or missing required columns before anything is written.
-3. When the report looks right, run the same command with `--apply`:
+3. Dry-run first (reads only, writes nothing):
    ```bash
-   npm run import:sheet -- path/to/requests.csv path/to/socmed.csv --apply
+   npm run import:sheet -- path/to/master.xlsx
    ```
-Re-running is idempotent: already imported rows are detected by an import key and skipped. Caveat: correcting a
-requester name in the sheet after import and re-running creates a duplicate of that row. Run `npm run db:seed` first
-so names and aliases (for example Irshyad to Irsyad) resolve.
+   Check the report per source: rows read / importable / skipped (with reasons), warnings, links found, unmapped names
+   (with counts), months distribution, and the first 3 parsed rows with `raw -> ISO` dates.
+4. When the report looks right, run the same command with `--apply`:
+   ```bash
+   npm run import:sheet -- path/to/master.xlsx --apply
+   ```
+
+What to know:
+
+- **Links are preserved.** Chip targets become the request's brief link, design folder and (SocMed) published link.
+  The visible chip label is kept in the notes (`Brief: ...`, `Folder: ...`). Only http(s) targets are kept.
+- **Dimas Tracker** is a log of video-edit files. Each row becomes its **own** task of type "Motion Support" assigned to
+  Dimas Pandu (status Done, division Social Media), never merged into another request, even when other designers or
+  social-media staff worked on the same content. The requester is guessed from the first word of the file name
+  (FAFA, SYAHDA, RIO); any other file name falls back to Wira. The log has no brand, so the brand is inferred as the
+  requester's most common brand in the other tabs (ties or none: Clogent) and noted on the task. The side table in
+  columns H..N of that tab is ignored.
+- **Requester nicknames are kept in notes.** A requester that is not in the roster (for example Yoel, Iyok, Ibnu) is not
+  guessed: the request is imported under Wira and the notes say `Requester (as typed): <name>`. They are also listed
+  in the report under "unmapped names".
+- **Re-running is safe.** Already imported rows are detected by an import key and skipped; Dimas rows with the same file
+  name and date get a counter. Caveat: correcting a requester name in the sheet after import and re-running creates a
+  duplicate of that row. Run `npm run db:seed` first so names and aliases (for example Irshyad to Irsyad) resolve.
+- **Legacy CSV mode** still exists (`npm run import:sheet -- requests.csv [socmed.csv] [--apply]`, requests file first),
+  but a CSV only carries the label text of chips, so link targets are lost and there is no Dimas Tracker. Prefer the .xlsx.
 
 ## Running tests
 
