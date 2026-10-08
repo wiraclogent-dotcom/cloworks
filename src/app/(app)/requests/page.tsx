@@ -19,7 +19,7 @@ import { BoardSkeleton, CalendarSkeleton, TableSkeleton } from "@/components/Req
 import { CalendarDays, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
-import { hrefWith, parseParams, toFilter } from "./params";
+import { hrefWith, parseParams, parseView, toFilter } from "./params";
 
 /** Tab title: "Requests · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Requests" };
@@ -79,15 +79,10 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
             hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />} />
       ) : calendarRows ? (
-        calendarRows.length === 0 && filtered ? (
-          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
-            description="Try another search or clear the filters."
-            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
-        ) : (
-          <RequestCalendar rows={calendarRows} month={p.month} today={today} canMove={can(user.appRole, "request.transition")}
-            prevHref={hrefWith(p, { month: shiftMonth(p.month, -1) })} nextHref={hrefWith(p, { month: shiftMonth(p.month, 1) })}
-            todayHref={hrefWith(p, { month: today.slice(0, 7) })} />
-        )
+        <RequestCalendar rows={calendarRows} month={p.month} today={today} canMove={can(user.appRole, "request.transition")}
+          filtered={filtered} clearHref={clearHref}
+          prevHref={hrefWith(p, { month: shiftMonth(p.month, -1) })} nextHref={hrefWith(p, { month: shiftMonth(p.month, 1) })}
+          todayHref={hrefWith(p, { month: today.slice(0, 7) })} />
       ) : null}
     </>
   );
@@ -95,7 +90,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
 
 /** Fallback that matches the requested view: the board skeleton until the params resolve, then board, table or calendar. */
 async function ViewSkeleton({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
-  const view = parseParams(await searchParams).view;
+  const view = parseView((await searchParams).view);
   return view === "table" ? <TableSkeleton /> : view === "calendar" ? <CalendarSkeleton /> : <BoardSkeleton />;
 }
 

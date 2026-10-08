@@ -19,7 +19,7 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
   const dragging = activeMin !== null;
   const { shown, more } = splitVisible(cards);
   return (
-    <section ref={setNodeRef} aria-label={dayLabel(day.day)} aria-current={day.isToday ? "date" : undefined} data-day={day.day}
+    <div role="group" ref={setNodeRef} aria-label={dayLabel(day.day)} aria-current={day.isToday ? "date" : undefined} data-day={day.day}
       data-drop={dragging ? (disabled ? "invalid" : isOver ? "over" : "valid") : undefined}
       className={cn(
         "flex min-h-28 min-w-0 flex-col rounded-lg border p-1 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
@@ -48,6 +48,6 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
           {`+${more} more`}
         </button>
       )}
-    </section>
+    </div>
   );
 }

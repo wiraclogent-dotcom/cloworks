@@ -30,11 +30,17 @@ const id = (v: string | string[] | undefined) => {
   return s && s.length <= MAX_ID ? s : undefined;
 };
 
+/** The view alone: needs no clock, so the Suspense fallback can resolve it while prerendering. */
+export function parseView(v: string | string[] | undefined): ViewParams["view"] {
+  const s = one(v);
+  return s === "table" ? "table" : s === "calendar" ? "calendar" : "board";
+}
+
 export function parseParams(raw: RawParams, now: Date = new Date()): ViewParams {
   const status = one(raw.status);
   const sort = one(raw.sort);
   return {
-    view: one(raw.view) === "table" ? "table" : one(raw.view) === "calendar" ? "calendar" : "board",
+    view: parseView(raw.view),
     month: parseMonth(one(raw.month), now),
     status: STATUSES.find((s) => s === status),
     assigneeId: id(raw.assignee), brandId: id(raw.brand), divisionId: id(raw.division), q: one(raw.q)?.trim().slice(0, MAX_Q).trim() || undefined,

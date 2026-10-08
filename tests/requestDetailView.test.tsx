@@ -184,12 +184,12 @@ describe("Activity and Change deadline", () => {
   });
   it("shows the deadline control only for movers on open requests", () => {
     view(base(), CREATIVE);
-    expect(screen.getByLabelText("Deadline", { selector: "input" })).toBeTruthy();
+    expect(screen.getByLabelText("Change deadline", { selector: "input" })).toBeTruthy();
     cleanup();
     view(base({ status: "DONE" }), CREATIVE);
-    expect(screen.queryByLabelText("Deadline", { selector: "input" })).toBeNull();
+    expect(screen.queryByLabelText("Change deadline", { selector: "input" })).toBeNull();
     cleanup();
     view(base(), REQUESTER);
-    expect(screen.queryByLabelText("Deadline", { selector: "input" })).toBeNull();
+    expect(screen.queryByLabelText("Change deadline", { selector: "input" })).toBeNull();
   });
 });

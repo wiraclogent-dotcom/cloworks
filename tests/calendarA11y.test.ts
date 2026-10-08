@@ -14,6 +14,11 @@ describe("calendar announcements", () => {
     expect(a.onDragEnd({ active: { id: "r1" }, over: null })).toBe("“X” was dropped outside the calendar. Nothing changed.");
     expect(a.onDragCancel({ active: { id: "r1" } })).toBe("Move cancelled. “X” stays where it was.");
   });
+  it("says nothing changed when dropped on the card's own day", () => {
+    const b = buildCalendarAnnouncements(() => "X", () => "2026-10-14");
+    expect(b.onDragEnd({ active: { id: "r1" }, over: { id: "2026-10-14" } })).toBe("“X” stays on Wednesday 14 October. Nothing changed.");
+    expect(b.onDragEnd({ active: { id: "r1" }, over: { id: "2026-10-15" } })).toBe("“X” moved to Thursday 15 October.");
+  });
   it("falls back to Request", () => {
     expect(a.onDragStart({ active: { id: "zz" } })).toContain("“Request”");
   });

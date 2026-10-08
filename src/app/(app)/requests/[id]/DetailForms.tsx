@@ -205,7 +205,7 @@ export function DeadlineControl({ requestId, current, minDay }: { requestId: str
   }
   return (
     <form onSubmit={save} noValidate>
-      <label htmlFor={`${uid}-d`} className={labelClass}>Deadline</label>
+      <label htmlFor={`${uid}-d`} className={labelClass}>Change deadline</label>
       <div className="flex items-center gap-2">
         <input id={`${uid}-d`} type="date" value={value} min={minDay} disabled={pending} onChange={(e) => setValue(e.target.value)}
           aria-describedby={error ? `${uid}-e` : undefined} className={fieldClass({ invalid: !!error })} />

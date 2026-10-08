@@ -111,7 +111,7 @@ describe("DeadlineControl", () => {
   beforeEach(() => rescheduleRequest.mockReset());
   it("renders a date input with min and the current value", () => {
     render(<DeadlineControl requestId="r1" current="2026-10-14" minDay="2026-10-01" />);
-    const i = screen.getByLabelText("Deadline") as HTMLInputElement;
+    const i = screen.getByLabelText("Change deadline") as HTMLInputElement;
     expect(i.type).toBe("date");
     expect(i.min).toBe("2026-10-01");
     expect(i.value).toBe("2026-10-14");
@@ -119,7 +119,7 @@ describe("DeadlineControl", () => {
   it("saves the picked day and refreshes", async () => {
     rescheduleRequest.mockResolvedValue({ ok: true });
     render(<DeadlineControl requestId="r1" current={null} minDay="2026-10-01" />);
-    fireEvent.change(screen.getByLabelText("Deadline"), { target: { value: "2026-10-20" } });
+    fireEvent.change(screen.getByLabelText("Change deadline"), { target: { value: "2026-10-20" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(rescheduleRequest).toHaveBeenCalledWith("r1", "2026-10-20");
@@ -127,7 +127,7 @@ describe("DeadlineControl", () => {
   it("shows the server message in an alert on failure", async () => {
     rescheduleRequest.mockResolvedValue({ ok: false, code: "CLOSED", message: "This request is already done." });
     render(<DeadlineControl requestId="r1" current="2026-10-14" minDay="2026-10-01" />);
-    fireEvent.change(screen.getByLabelText("Deadline"), { target: { value: "2026-10-20" } });
+    fireEvent.change(screen.getByLabelText("Change deadline"), { target: { value: "2026-10-20" } });
     fireEvent.click(screen.getByRole("button", { name: /save/i }));
     expect((await screen.findByRole("alert")).textContent).toMatch(/already done/);
     expect(refresh).not.toHaveBeenCalled();

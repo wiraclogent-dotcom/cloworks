@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
-import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CalendarDays, SearchX, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { rescheduleRequest } from "@/app/(app)/requests/actions";
 import type { CalendarRow } from "@/lib/requests";
 import { bucketByDay, buildMonthGrid } from "@/lib/calendar";
@@ -35,15 +35,21 @@ const useNarrow = () => useSyncExternalStore(subscribeNarrow, narrowNow, () => f
 const monthName = (month: string, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "UTC" }).format(new Date(`${month}-01T12:00:00Z`));
 
-export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHref, todayHref }: {
+export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHref, todayHref, filtered = false, clearHref = "/requests?view=calendar" }: {
   rows: CalendarRow[]; month: string; today: string; canMove: boolean; prevHref: string; nextHref: string; todayHref: string;
+  /** Any filter is active: the empty month then says no request matches, with a way out. */
+  filtered?: boolean; clearHref?: string;
 }) {
   const router = useRouter();
   const [seen, setSeen] = useState(rows);
   const [cards, setCards] = useState(rows);
   if (seen !== rows) { setSeen(rows); setCards(rows); }
   const [message, setMessage] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [moving, setMoving] = useState<string | null>(null);
+  // Cards stay locked until the refresh has landed (isPending), so a late refresh never resets state mid-drag.
+  const [refreshing, startRefresh] = useTransition();
+  const busyId = moving ?? (refreshing ? "" : null);
+  const setBusyId = setMoving;
   const [activeId, setActiveId] = useState<string | null>(null);
   const [openDay, setOpenDay] = useState<string | null>(null);
   const narrow = useNarrow();
@@ -60,7 +66,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
     useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: drag.coordinateGetter }),
   );
-  const announcements = useMemo(() => buildCalendarAnnouncements((id) => cards.find((c) => c.id === id)?.title), [cards]);
+  const announcements = useMemo(() => buildCalendarAnnouncements((id) => cards.find((c) => c.id === id)?.title, (id) => cards.find((c) => c.id === id)?.deadlineDay ?? undefined), [cards]);
 
   // A moved card remounts in its new cell, so focus would fall to <body>: put it back on the card's handle (or link).
   const focusCardId = useRef<string | null>(null);
@@ -88,7 +94,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
     });
     try {
       const res = await rescheduleRequest(card.id, to);
-      if (res.ok) router.refresh();
+      if (res.ok) startRefresh(() => router.refresh());
       else { undo(); setMessage(res.message); }
     } catch {
       undo();
@@ -135,9 +141,15 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
         </Alert>
       )}
       {rows.length === 0 ? (
-        <EmptyState icon={<CalendarDays />} title={`Nothing due in ${monthName(month, { month: "long" })}`}
-          description="Open requests with a deadline this month show up here."
-          action={<Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>} />
+        filtered ? (
+          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title={`No requests match these filters in ${monthName(month, { month: "long" })}`}
+            description="Try another search, another month, or clear the filters."
+            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
+        ) : (
+          <EmptyState icon={<CalendarDays />} title={`Nothing due in ${monthName(month, { month: "long" })}`}
+            description="Open requests with a deadline this month show up here."
+            action={<Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>} />
+        )
       ) : narrow ? (
         <CalendarAgenda byDay={byDay} today={today} />
       ) : (

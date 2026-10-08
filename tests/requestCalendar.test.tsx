@@ -23,7 +23,7 @@ const HREFS = { prevHref: "/requests?view=calendar&month=2026-09", nextHref: "/r
 const view = (rows: CalendarRow[], canMove = true) =>
   render(<RequestCalendar rows={rows} month="2026-10" today={TODAY} canMove={canMove} {...HREFS} />);
 
-const cell = (label: string) => screen.getByRole("region", { name: label });
+const cell = (label: string) => screen.getByRole("group", { name: label });
 
 /** jsdom has no layout: give every day cell a 100x100 slot in a 7-column grid and every card a box inside its cell. */
 function mockLayout() {
@@ -203,6 +203,15 @@ describe("RequestCalendar", () => {
     expect(document.querySelector("[data-day]")).toBeNull();
   });
 
+  it("filtered empty month keeps the month nav and offers Clear filters", () => {
+    render(<RequestCalendar rows={[]} month="2026-10" today={TODAY} canMove {...HREFS} filtered clearHref="/requests?view=calendar&month=2026-10" />);
+    expect(screen.getByRole("heading", { name: "October 2026" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Next month" })).toBeTruthy();
+    expect(screen.getByText("No requests match these filters in October")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Clear filters" }).getAttribute("href")).toBe("/requests?view=calendar&month=2026-10");
+    expect(screen.queryByText("Nothing due in October")).toBeNull();
+  });
+
   it("narrow screens get an agenda list of the days that have cards, without dragging", () => {
     mockNarrow(true);
     view([row("1", "Banner"), row("2", "Poster"), row("3", "Loose", { deadlineDay: null, deadline: null, daysLeft: null })]);
@@ -221,5 +230,14 @@ describe("CalendarSkeleton", () => {
     render(<CalendarSkeleton />);
     expect(screen.getByRole("status").getAttribute("aria-busy")).toBe("true");
     expect(document.querySelectorAll("[data-skeleton-day]")).toHaveLength(35);
+  });
+});
+
+describe("parseView", () => {
+  it("resolves the view without a clock (Suspense fallback must not read the time)", async () => {
+    const { parseView } = await import("@/app/(app)/requests/params");
+    expect(parseView("calendar")).toBe("calendar");
+    expect(parseView(["table"])).toBe("table");
+    expect(parseView(undefined)).toBe("board");
   });
 });
