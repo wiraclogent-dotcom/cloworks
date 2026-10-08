@@ -1,6 +1,8 @@
 import { timelineLayout, type TimelineProject } from "@/lib/timeline";
 import { formatJakartaDate } from "@/lib/projects";
 
+const LABEL_REM = 12;
+
 type Item = TimelineProject & { title: string; startDate: Date | null; dueDate: Date | null };
 
 /**
@@ -18,12 +20,12 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
       <p className="mb-2 text-sm text-muted-foreground">
         Weeks start on Monday. The same details are in the tables above.
         {layout.truncated && " Showing the first 26 weeks only; later parts of longer projects are cut off."}
-        {layout.omitted.length > 0 && ` ${layout.omitted.length} project${layout.omitted.length === 1 ? " starts" : "s start"} after this range and ${layout.omitted.length === 1 ? "is" : "are"} not drawn.`}
+        {layout.omitted.length > 0 && ` Not drawn because they start after this range: ${layout.omitted.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
       </p>
       <div className="overflow-x-auto rounded-lg border border-border">
-        <div style={{ minWidth: `${Math.max(40, cols * 4.5 + 12)}rem` }} className="relative">
+        <div style={{ minWidth: `${Math.max(40, cols * 4.5 + LABEL_REM)}rem`, "--label-w": `${LABEL_REM}rem` } as React.CSSProperties} className="relative">
           <div className="flex border-b border-border bg-muted text-xs font-semibold">
-            <div className="w-48 shrink-0 px-3 py-2">Project</div>
+            <div className="w-(--label-w) shrink-0 px-3 py-2">Project</div>
             <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
               {layout.weeks.map((w) => <div key={w.startDay} className="border-l border-border px-1 py-2 whitespace-nowrap">{w.label}</div>)}
             </div>
@@ -34,7 +36,7 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
               const range = `${formatJakartaDate(p.startDate!)} to ${formatJakartaDate(p.dueDate!)}${b.clipped ? " (continues past the range shown)" : ""}`;
               return (
                 <li key={b.id} className="flex items-center border-t border-border text-sm first:border-t-0">
-                  <div className="w-48 shrink-0 truncate px-3 py-2" title={p.title}>
+                  <div className="w-(--label-w) shrink-0 truncate px-3 py-2" title={p.title}>
                     {p.title}
                     <span className="sr-only">, {range}</span>
                   </div>
@@ -52,7 +54,7 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
             })}
           </ol>
           {layout.todayPct !== null && (
-            <div aria-hidden="true" className="pointer-events-none absolute top-0 bottom-0 w-0.5 bg-foreground" style={{ left: `calc(12rem + (100% - 12rem) * ${layout.todayPct / 100})` }}>
+            <div aria-hidden="true" className="pointer-events-none absolute top-0 bottom-0 w-0.5 bg-foreground" style={{ left: `calc(var(--label-w) + (100% - var(--label-w)) * ${layout.todayPct / 100})` }}>
               <span className="absolute -top-0 left-1 rounded bg-foreground px-1 text-[10px] text-background">Today</span>
             </div>
           )}

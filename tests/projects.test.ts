@@ -101,6 +101,19 @@ describe("projects cores", () => {
       expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { fileUrl: "javascript:1" }))).toBe("VALIDATION");
       expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { title: "" }))).toBe("VALIDATION");
     });
+    it("keeps an unchanged inactive owner editable; checks owner only when changed", async () => {
+      const id = await mk();
+      await db.prisma.project.update({ where: { id }, data: { ownerId: goneId } });
+      const full = { title: "Launch", ownerId: goneId, status: "DONE" as const, startDate: "2026-10-06", dueDate: "2026-11-01" };
+      expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, full))).toBe("ok");
+      expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { status: "ON_HOLD" }))).toBe("ok");
+      expect((await get(id)).status).toBe("ON_HOLD");
+      expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { ownerId: "nope" }))).toBe("VALIDATION");
+      expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { ownerId }))).toBe("ok");
+      expect((await get(id)).ownerId).toBe(ownerId);
+      expect(await code(updateProjectWith(db.prisma, actor("LEAD"), id, { ownerId: goneId }))).toBe("VALIDATION");
+      expect((await get(id)).ownerId).toBe(ownerId);
+    });
     it("NOT_FOUND for unknown id (even with an empty patch), empty patch is a no-op", async () => {
       expect(await code(updateProjectWith(db.prisma, actor("LEAD"), "missing", {}))).toBe("NOT_FOUND");
       const id = await mk();

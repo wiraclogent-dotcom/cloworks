@@ -3,7 +3,7 @@ import { JAKARTA_OFFSET_MS } from "./kpi/workingDays";
 const DAY_MS = 86_400_000;
 export const MAX_TIMELINE_WEEKS = 26;
 const MIN_BAR_PCT = 1.5;
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+export const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export type TimelineProject = { id: string; startDate: Date | null; dueDate: Date | null };
 export type TimelineLayout = {

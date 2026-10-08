@@ -3,6 +3,7 @@ import type { AppRole, PrismaClient, ProjectStatus } from "@prisma/client";
 import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
 import { jakartaDate } from "./createRequest";
+import { MONTHS } from "./timeline";
 
 export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD"] as const satisfies readonly ProjectStatus[];
 export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
@@ -96,7 +97,8 @@ function assertManager(user: Actor) {
   if (!can(user.appRole, "project.manage")) throw new ProjectError("FORBIDDEN", "You are not allowed to manage projects.");
 }
 
-async function checkRefs(db: PrismaClient, c: Cleaned) {
+/** Owner must exist; must also be active unless `keepOwnerId` is the (unchanged) current owner. */
+async function checkRefs(db: PrismaClient, c: Cleaned, keepOwnerId?: string) {
   const errors: Record<string, string> = {};
   if (c.brandId) {
     if (!(await db.brand.findUnique({ where: { id: c.brandId }, select: { id: true } }))) errors.brandId = "That brand does not exist";
@@ -104,7 +106,7 @@ async function checkRefs(db: PrismaClient, c: Cleaned) {
   if (c.ownerId !== undefined) {
     const o = await db.user.findUnique({ where: { id: c.ownerId }, select: { active: true } });
     if (!o) errors.ownerId = "That owner does not exist";
-    else if (!o.active) errors.ownerId = "That owner is no longer active";
+    else if (!o.active && c.ownerId !== keepOwnerId) errors.ownerId = "That owner is no longer active";
   }
   if (Object.keys(errors).length) throwFields(errors);
 }
@@ -139,7 +141,7 @@ export async function updateProjectWith(db: PrismaClient, user: Actor, id: strin
   const existing = await db.project.findUnique({ where: { id } });
   if (!existing) throw new ProjectError("NOT_FOUND", "Project not found.");
   const c = parse(patch, true);
-  await checkRefs(db, c);
+  await checkRefs(db, c, existing.ownerId);
   const start = c.startDate !== undefined ? c.startDate : existing.startDate ? jakartaDate(existing.startDate) : null;
   const due = c.dueDate !== undefined ? c.dueDate : existing.dueDate ? jakartaDate(existing.dueDate) : null;
   checkOrder(start, due);
@@ -152,7 +154,6 @@ export async function updateProjectWith(db: PrismaClient, user: Actor, id: strin
 
 // ---- View helpers -------------------------------------------------------------------------------------------
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 /** "8 Oct 2026" in the Jakarta calendar. */
 export function formatJakartaDate(d: Date): string {
   const [y, m, day] = jakartaDate(d).split("-").map(Number);
