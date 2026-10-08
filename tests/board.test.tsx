@@ -22,7 +22,7 @@ import type { RequestRow } from "@/lib/requests";
 
 const row = (id: string, title: string, status: RequestRow["status"], extra: Partial<RequestRow> = {}): RequestRow => ({
   id, title, status, brandName: "BrandA", divisionName: "DivX", requesterName: "Rina", assigneeName: "Cami",
-  requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: null, ...extra,
+  requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: null, needsMotion: false, ...extra,
 });
 const rows = [row("1", "Banner", "FIRST_LOOK"), row("2", "Poster", "REQUESTED", { assigneeName: null })];
 

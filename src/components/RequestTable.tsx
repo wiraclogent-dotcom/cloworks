@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RequestRow, SortKey } from "@/lib/requests";
-import { StatusBadge, deadlineText } from "./status";
+import { NeedsMotionBadge, StatusBadge, deadlineText } from "./status";
 
 const COLUMNS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Request" },
@@ -46,7 +46,7 @@ export function RequestTable({ rows, sort, dir, hrefFor }: {
             const open = r.status !== "DONE" && r.status !== "CANCELLED";
             return (
               <tr key={r.id} className="border-t border-border">
-                <th scope="row" className="px-3 py-2 font-medium"><Link href={`/requests/${r.id}`} className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{r.title}</Link></th>
+                <th scope="row" className="px-3 py-2 font-medium"><Link href={`/requests/${r.id}`} className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{r.title}</Link>{r.needsMotion && <div className="mt-1"><NeedsMotionBadge /></div>}</th>
                 <td className="px-3 py-2">{r.brandName}</td>
                 <td className="px-3 py-2">{r.divisionName}</td>
                 <td className="px-3 py-2">{r.requesterName}</td>

@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { parseFieldSchema } from "@/lib/fieldSchema";
 import { NewRequestForm } from "./NewRequestForm";
 
 async function NewRequestContent() {
@@ -10,13 +9,11 @@ async function NewRequestContent() {
   if (!can(user.appRole, "request.create")) {
     return <p role="alert">You are not allowed to create requests.</p>;
   }
-  const [brands, divisions, types] = await Promise.all([
+  const [brands, divisions] = await Promise.all([
     prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.requestType.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
   ]);
-  const typeOptions = types.map((t) => ({ id: t.id, name: t.name, fieldSchema: parseFieldSchema(t.fieldSchema) }));
-  return <NewRequestForm brands={brands} divisions={divisions} types={typeOptions} />;
+  return <NewRequestForm brands={brands} divisions={divisions} />;
 }
 
 export default function NewRequestPage() {

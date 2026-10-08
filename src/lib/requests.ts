@@ -8,6 +8,8 @@ export type RequestFilter = {
   brandId?: string;
   divisionId?: string;
   q?: string;
+  /** true = only tasks that need motion, false = only those that do not, undefined = any. */
+  needsMotion?: boolean;
   mine?: { userId: string };
 };
 
@@ -22,12 +24,13 @@ export type RequestRow = {
   requestedAt: Date;
   deadline: Date | null;
   outputCount: number;
+  needsMotion: boolean;
   /** Jakarta-calendar days to the deadline (negative = overdue), null without a deadline. */
   daysLeft: number | null;
 };
 
 const ROW_SELECT = {
-  id: true, title: true, status: true, requestedAt: true, deadline: true, outputCount: true,
+  id: true, title: true, status: true, requestedAt: true, deadline: true, outputCount: true, needsMotion: true,
   brand: { select: { name: true } },
   division: { select: { name: true } },
   requester: { select: { name: true } },
@@ -40,7 +43,7 @@ function toRow(r: DbRow, now: Date): RequestRow {
   return {
     id: r.id, title: r.title, brandName: r.brand.name, divisionName: r.division.name,
     requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
-    status: r.status, requestedAt: r.requestedAt, deadline: r.deadline, outputCount: r.outputCount,
+    status: r.status, requestedAt: r.requestedAt, deadline: r.deadline, outputCount: r.outputCount, needsMotion: r.needsMotion,
     daysLeft: daysLeft(r.deadline, now),
   };
 }
@@ -51,6 +54,7 @@ function filterClauses(filter: RequestFilter): Prisma.RequestWhereInput[] {
   if (filter.assigneeId) and.push({ assigneeId: filter.assigneeId });
   if (filter.brandId) and.push({ brandId: filter.brandId });
   if (filter.divisionId) and.push({ divisionId: filter.divisionId });
+  if (filter.needsMotion !== undefined) and.push({ needsMotion: filter.needsMotion });
   const q = filter.q?.trim();
   if (q) and.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { notes: { contains: q, mode: "insensitive" } }] });
   if (filter.mine) and.push({ OR: [{ requesterId: filter.mine.userId }, { assigneeId: filter.mine.userId }] });

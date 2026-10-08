@@ -167,3 +167,12 @@ export async function setIncludeKpiWith(db: PrismaClient, user: Actor, requestId
   if (res.count === 0) return fail("NOT_FOUND", "Request not found.");
   return { ok: true };
 }
+
+/** Lead/admin: mark (or unmark) a request as also needing motion/video work. A flag only; no second card. */
+export async function setNeedsMotionWith(db: PrismaClient, user: Actor, requestId: string, value: boolean): Promise<{ ok: true } | CollabFail> {
+  if (!can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only leads and admins can change whether a task needs motion.");
+  if (typeof value !== "boolean") return fail("INVALID", "Choose yes or no.");
+  const res = await db.request.updateMany({ where: { id: requestId }, data: { needsMotion: value } });
+  if (res.count === 0) return fail("NOT_FOUND", "Request not found.");
+  return { ok: true };
+}

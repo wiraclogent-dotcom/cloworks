@@ -1,13 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { submitRequest } from "../actions";
 import type { SubmitState } from "@/lib/submitRequest";
-import type { FieldSchema } from "@/lib/fieldSchema";
 import { errorSummary } from "@/lib/formErrors";
 
 type Opt = { id: string; name: string };
-type TypeOpt = Opt & { fieldSchema: FieldSchema };
 
 const control =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[invalid=true]:border-2";
@@ -29,14 +27,11 @@ function Field({ id, label, error, required, children }: { id: string; label: st
   );
 }
 
-export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; divisions: Opt[]; types: TypeOpt[] }) {
+export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions: Opt[] }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequest, null);
-  const [chosenType, setTypeId] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
   const v = state?.values;
-  const typeId = chosenType ?? v?.typeId ?? "";
-  const schema = types.find((t) => t.id === typeId)?.fieldSchema ?? [];
   const props = (k: string) => ({
     id: k,
     name: k,
@@ -45,12 +40,12 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
   // Errors with no rendered field (e.g. "form", unknown detail keys) go in the banner.
-  const rendered = new Set(["title", "briefUrl", "notes", "brandId", "divisionId", "typeId", "deadline", ...schema.map((f) => `fields.${f.key}`)]);
+  const rendered = new Set(["title", "briefUrl", "notes", "brandId", "divisionId", "deadline"]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
   const hasFieldErrors = Object.keys(errs).length > 0;
   const generic = state && !state.ok ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
-  const LABELS: Record<string, string> = { title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", typeId: "Request type", deadline: "Deadline" };
-  const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? schema.find((f) => `fields.${f.key}` === k)?.label ?? "");
+  const LABELS: Record<string, string> = { title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", deadline: "Deadline" };
+  const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? "");
 
   // React 19 resets uncontrolled fields after the action; the key remounts them with defaults from the echoed values.
   const nonce = state?.nonce ?? "initial";
@@ -92,48 +87,26 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
           {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </Field>
-      <Field id="typeId" label="Request type" required error={errs.typeId}>
-        <select {...props("typeId")} value={typeId} onChange={(e) => setTypeId(e.target.value)} required>
-          <option value="" disabled>Select a type</option>
-          {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </Field>
       <Field id="deadline" label="Deadline" error={errs.deadline}>
         <input {...props("deadline")} type="date" defaultValue={v?.deadline} />
       </Field>
 
-      {schema.length > 0 && (
-        <fieldset className="space-y-5 rounded-md border border-border p-4">
-          <legend className="px-1 text-sm font-medium">Details</legend>
-          {schema.map((f) => {
-            const id = `f_${f.key}`;
-            const err = errs[`fields.${f.key}`];
-            const p = { ...props(id), "aria-invalid": err ? (true as const) : undefined, "aria-describedby": err ? `${id}-error` : undefined };
-            if (f.type === "checkbox")
-              return (
-                <div key={f.key} className="space-y-1">
-                  <label className="flex items-center gap-2 text-sm font-medium">
-                    <input id={id} name={id} type="checkbox" defaultChecked={v?.fields[f.key] === true} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" aria-describedby={p["aria-describedby"]} />
-                    {f.label}
-                  </label>
-                  {err && <p id={`${id}-error`} className="text-sm font-medium underline decoration-wavy">{err}</p>}
-                </div>
-              );
-            return (
-              <Field key={f.key} id={id} label={f.label} required={f.required} error={err}>
-                {f.type === "select" ? (
-                  <select {...p} defaultValue={typeof v?.fields[f.key] === "string" ? (v.fields[f.key] as string) : ""}>
-                    <option value="" disabled>Select…</option>
-                    {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : (
-                  <input {...p} type={f.type === "url" ? "url" : "text"} defaultValue={typeof v?.fields[f.key] === "string" ? (v.fields[f.key] as string) : undefined} />
-                )}
-              </Field>
-            );
-          })}
-        </fieldset>
-      )}
+      <fieldset className="space-y-2" aria-describedby="needsMotion-help">
+        <legend className="text-sm font-medium">Does this task need motion?</legend>
+        <div className="flex flex-wrap gap-x-6 gap-y-1">
+          <label className="flex items-center gap-2 text-sm">
+            <input type="radio" name="needsMotion" value="no" defaultChecked={!v?.needsMotion} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
+            No
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="radio" name="needsMotion" value="yes" defaultChecked={!!v?.needsMotion} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
+            Yes, needs motion
+          </label>
+        </div>
+        <p id="needsMotion-help" className="text-sm text-muted-foreground">
+          Motion work is done by the motion/video editor. Marking it lets us count both the design effort and the motion effort later.
+        </p>
+      </fieldset>
 
       <button
         type="submit"

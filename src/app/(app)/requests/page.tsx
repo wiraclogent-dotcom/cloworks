@@ -28,7 +28,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
       {label}
     </Link>
   );
-  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.mine);
+  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center gap-3">
@@ -38,7 +38,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
       <div className="mb-4">
         <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
           mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
-          clearHref={hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, mine: false }, {})} />
+          clearHref={hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {})} />
       </div>
       {board ? (
         board.every((c) => c.total === 0) && filtered ? (

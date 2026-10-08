@@ -4,10 +4,18 @@ Internal web app for the Clogent creative team. Requesters (for example social m
 video and social-content requests; a lead assigns them; designers move them through a fixed workflow; and the
 dashboard measures each person's completed tasks against a monthly target.
 
-Features: request intake with per-type custom fields, list and board views (drag and drop), request detail with
+Features: request intake, list and board views (drag and drop), request detail with
 comments, @mentions and link attachments, email notifications, projects with a timeline, a KPI dashboard
 (self and team), an admin area (people, access, brands, divisions, request types), and a CSV importer for the legacy
 Google Sheets.
+
+**New request.** The form asks for title, brief link, notes, brand, division and an optional deadline, plus the radio
+"Does this task need motion?" (No by default, or "Yes, needs motion"). There is no request-type field: new requests
+silently use the type "General Design" (it must exist and be active, otherwise the form says so). A request that needs
+motion is still ONE card, marked with a "Needs motion" badge (icon and text) on the board, in the table and on the
+detail page, which also shows "Needs motion: Yes/No". Leads and admins can correct the mark later with the "Needs
+motion" checkbox on the detail page. The Requests filter bar has a "Motion" select (Any, Needs motion, No motion; URL
+`?motion=yes|no`) to find them. Imported historical rows are not marked. Counting the motion effort in KPIs is not built yet.
 
 **Board and table.** On the board, grab a card anywhere and drop it on a column (press and hold on touch screens).
 Keyboard and screen-reader users use the small drag handle on each card (Space or Enter to lift, Left/Right arrows to

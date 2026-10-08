@@ -35,6 +35,14 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
       {select("brand", "Brand", p.brandId, brands)}
       {select("division", "Division", p.divisionId, divisions)}
       {select("assignee", "Assignee", p.assigneeId, assignees)}
+      <label className="flex flex-col gap-1 text-xs font-medium">
+        Motion
+        <select name="motion" defaultValue={p.motion ?? ""} className={field}>
+          <option value="">Any</option>
+          <option value="yes">Needs motion</option>
+          <option value="no">No motion</option>
+        </select>
+      </label>
       <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Apply</button>
       <Link href={mineHref} aria-current={p.mine ? "true" : undefined} className={`rounded-md border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring ${p.mine ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
         {p.mine ? "✓ " : ""}My requests

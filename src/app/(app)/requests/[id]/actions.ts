@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
-import { addAttachmentWith, addCommentWith, assignRequestWith, removeAttachmentWith, setIncludeKpiWith, type CollabFail } from "@/lib/collab";
+import { addAttachmentWith, addCommentWith, assignRequestWith, removeAttachmentWith, setIncludeKpiWith, setNeedsMotionWith, type CollabFail } from "@/lib/collab";
 import type { SessionUser } from "@/lib/session-core";
 
 /** Unauthenticated sessions come back as a result object (Next redacts thrown errors in production). */
@@ -41,6 +41,14 @@ export async function setIncludeKpi(requestId: string, value: boolean): Promise<
       revalidatePath("/dashboard");
       revalidatePath("/dashboard/team");
     }
+    return r;
+  });
+}
+
+export async function setNeedsMotion(requestId: string, value: boolean): Promise<{ ok: true } | CollabFail> {
+  return run(async (u) => {
+    const r = await setNeedsMotionWith(prisma, u, requestId, value);
+    if (r.ok) revalidatePath("/requests");
     return r;
   });
 }

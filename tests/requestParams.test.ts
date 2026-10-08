@@ -18,3 +18,23 @@ describe("parseParams limits", () => {
     expect(parseParams({ sort: "nope", dir: "desc", status: "DONE" })).toMatchObject({ sort: "deadline", dir: "desc", status: "DONE" });
   });
 });
+
+describe("parseParams motion", () => {
+  it("whitelists yes/no, ignores everything else, and maps to the filter", async () => {
+    const { toFilter } = await import("@/app/(app)/requests/params");
+    expect(parseParams({ motion: "yes" }).motion).toBe("yes");
+    expect(parseParams({ motion: "no" }).motion).toBe("no");
+    for (const bad of ["YES", "1", "true", "", "x".repeat(100)]) expect(parseParams({ motion: bad }).motion).toBeUndefined();
+    expect(parseParams({}).motion).toBeUndefined();
+    expect(toFilter(parseParams({ motion: "yes" }), "u").needsMotion).toBe(true);
+    expect(toFilter(parseParams({ motion: "no" }), "u").needsMotion).toBe(false);
+    expect(toFilter(parseParams({}), "u").needsMotion).toBeUndefined();
+  });
+  it("is preserved in links (view, sort, page, more) and can be overridden", async () => {
+    const { hrefWith } = await import("@/app/(app)/requests/params");
+    const p = parseParams({ motion: "yes", view: "table" });
+    expect(hrefWith(p, { page: "2" })).toBe("/requests?view=table&motion=yes&page=2");
+    expect(hrefWith(p, { sort: "title" })).toContain("motion=yes");
+    expect(hrefWith(p, { motion: undefined })).toBe("/requests?view=table");
+  });
+});

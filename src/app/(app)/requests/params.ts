@@ -8,6 +8,8 @@ export type RawParams = Record<string, string | string[] | undefined>;
 export type ViewParams = {
   view: "board" | "table";
   status?: RequestStatus; assigneeId?: string; brandId?: string; divisionId?: string; q?: string;
+  /** ?motion=yes|no (anything else = any). */
+  motion?: "yes" | "no";
   mine: boolean; sort: SortKey; dir: "asc" | "desc";
   /** Per-column board limits from ?more=STATUS:n (whitelisted, capped). */
   more: MoreLimits;
@@ -32,6 +34,7 @@ export function parseParams(raw: RawParams): ViewParams {
     view: one(raw.view) === "table" ? "table" : "board",
     status: STATUSES.find((s) => s === status),
     assigneeId: id(raw.assignee), brandId: id(raw.brand), divisionId: id(raw.division), q: one(raw.q)?.trim().slice(0, MAX_Q).trim() || undefined,
+    motion: one(raw.motion) === "yes" ? "yes" : one(raw.motion) === "no" ? "no" : undefined,
     mine: one(raw.mine) === "1",
     sort: SORT_KEYS.find((k) => k === sort) ?? "deadline",
     dir: one(raw.dir) === "desc" ? "desc" : "asc",
@@ -43,16 +46,17 @@ export function parseParams(raw: RawParams): ViewParams {
 export function toFilter(p: ViewParams, userId: string): RequestFilter {
   return {
     status: p.status, assigneeId: p.assigneeId, brandId: p.brandId, divisionId: p.divisionId, q: p.q,
+    needsMotion: p.motion === "yes" ? true : p.motion === "no" ? false : undefined,
     mine: p.mine ? { userId } : undefined,
   };
 }
 
 /** Builds a /requests URL from the current params with overrides (undefined removes a key). `page` and `more` are never carried over: they only appear when passed explicitly, so changing a filter, sort or view resets them. */
-export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "status" | "assignee" | "brand" | "division" | "q" | "mine" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
+export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "status" | "assignee" | "brand" | "division" | "q" | "motion" | "mine" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
   const cur: Record<string, string | undefined> = {
     view: p.view === "table" ? "table" : undefined, status: p.status, assignee: p.assigneeId, brand: p.brandId, division: p.divisionId,
     q: p.q, mine: p.mine ? "1" : undefined, sort: p.view === "table" && p.sort !== "deadline" ? p.sort : undefined,
-    dir: p.dir === "desc" ? "desc" : undefined,
+    dir: p.dir === "desc" ? "desc" : undefined, motion: p.motion,
   };
   const merged = { ...cur, ...over };
   const sp = new URLSearchParams();

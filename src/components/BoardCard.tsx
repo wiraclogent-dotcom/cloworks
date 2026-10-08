@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import type { RequestRow } from "@/lib/requests";
 import Link from "next/link";
-import { deadlineText } from "./status";
+import { NeedsMotionBadge, deadlineText } from "./status";
 
 /** The card's visible content. `interactive=false` is the drag overlay copy (no links, hidden from assistive tech). */
 export function CardFace({ card, interactive = true, handle }: { card: RequestRow; interactive?: boolean; handle?: React.ReactNode }) {
@@ -19,6 +19,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
           ) : card.title}
         </p>
       </div>
+      {card.needsMotion && <p className="mt-1"><NeedsMotionBadge /></p>}
       <p className="mt-1 text-xs text-muted-foreground">{card.brandName} · {card.divisionName}</p>
       <p className="mt-1 text-xs">Requester: {card.requesterName}</p>
       <p className="text-xs">{card.assigneeName ? `Assignee: ${card.assigneeName}` : "Unassigned"}</p>

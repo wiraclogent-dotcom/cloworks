@@ -105,7 +105,7 @@ import type { RequestRow } from "@/lib/requests";
 describe("sortRows", () => {
   const row = (title: string, deadline: string | null): RequestRow => ({
     id: title, title, brandName: "b", divisionName: "d", requesterName: "r", assigneeName: null, status: "REQUESTED",
-    requestedAt: new Date("2026-10-01"), deadline: deadline ? new Date(deadline) : null, outputCount: 1, daysLeft: null,
+    requestedAt: new Date("2026-10-01"), deadline: deadline ? new Date(deadline) : null, outputCount: 1, daysLeft: null, needsMotion: false,
   });
   const rows = [row("b", "2026-10-12"), row("none", null), row("a", "2026-10-10")];
   it("sorts by deadline with nulls last in both directions", () => {

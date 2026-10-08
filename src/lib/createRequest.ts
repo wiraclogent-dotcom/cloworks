@@ -9,11 +9,16 @@ export type CreateRequestInput = {
   notes?: string;
   brandId: string;
   divisionId: string;
-  typeId: string;
+  /** Optional: omitted means the default type "General Design" (the new-request form no longer asks). */
+  typeId?: string;
   /** Date-only `YYYY-MM-DD` (Jakarta calendar date) or null. */
   deadline: string | null;
-  fields: Record<string, unknown>;
+  fields?: Record<string, unknown>;
+  /** The task also needs motion/video work. Default false. */
+  needsMotion?: boolean;
 };
+
+export const DEFAULT_TYPE_NAME = "General Design";
 
 export class CreateRequestError extends Error {
   constructor(
@@ -58,9 +63,10 @@ const inputSchema = z.object({
     .transform((v) => (v ? v : undefined)),
   brandId: z.string().min(1, "Brand is required"),
   divisionId: z.string().min(1, "Division is required"),
-  typeId: z.string().min(1, "Request type is required"),
+  typeId: z.string().min(1, "Request type is required").optional(),
   deadline: z.string().nullable().refine((v) => v === null || isRealDate(v), "Deadline must be a real date (YYYY-MM-DD)"),
-  fields: z.record(z.string(), z.unknown()),
+  fields: z.record(z.string(), z.unknown()).default({}),
+  needsMotion: z.boolean({ error: "Needs motion must be yes or no" }).default(false),
 });
 
 function fail(fieldErrors: Record<string, string>): never {
@@ -86,22 +92,25 @@ export async function createRequestWith(
 
   const idOf = (k: "brandId" | "divisionId" | "typeId") => (typeof input[k] === "string" && input[k] ? input[k] : null);
   const [brandId, divisionId, typeId] = [idOf("brandId"), idOf("divisionId"), idOf("typeId")];
+  const useDefault = input.typeId === undefined;
   const [brand, division, type] = await Promise.all([
     brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
     divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
-    typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
+    useDefault ? db.requestType.findUnique({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
   ]);
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
-  if (typeId && (!type || !type.active)) errs.typeId ??= "Unknown or inactive request type";
+  if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;
+  else if (!useDefault && typeId && (!type || !type.active)) errs.typeId ??= "Unknown or inactive request type";
 
   let fields: Record<string, unknown> = {};
-  if (type && type.active && typeof input.fields === "object" && input.fields !== null) {
-    const fr = validateFields(parseFieldSchema(type.fieldSchema), input.fields) // raw input: zod drops "__proto__" keys silently;
+  const rawFields = input.fields ?? {};
+  if (type && type.active && typeof rawFields === "object" && rawFields !== null) {
+    const fr = validateFields(parseFieldSchema(type.fieldSchema), rawFields) // raw input: zod drops "__proto__" keys silently;
     if (fr.ok) fields = fr.value;
     else for (const [k, m] of Object.entries(fr.errors)) errs[`fields.${k}`] ??= m;
   }
-  if (Object.keys(errs).length || !raw) return fail(errs);
+  if (Object.keys(errs).length || !raw || !type) return fail(errs);
   const v = raw;
 
   return db.$transaction(async (tx) => {
@@ -112,7 +121,7 @@ export async function createRequestWith(
         notes: v.notes,
         brandId: v.brandId,
         divisionId: v.divisionId,
-        typeId: v.typeId,
+        typeId: type.id,
         requesterId: user.id,
         assigneeId: null,
         requestedAt: now,
@@ -120,6 +129,7 @@ export async function createRequestWith(
         status: "REQUESTED",
         outputCount: 1,
         includeKpi: true,
+        needsMotion: v.needsMotion,
         fields: fields as object,
       },
       select: { id: true },

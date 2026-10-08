@@ -3,7 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
-import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi } from "./actions";
+import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
 import { moveRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
@@ -197,6 +197,40 @@ export function IncludeKpiToggle({ requestId, initial }: { requestId: string; in
         <input id={`${uid}-k`} type="checkbox" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
           aria-describedby={error ? `${uid}-e` : undefined} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
         Counts toward KPI
+      </label>
+      <ErrorLine id={`${uid}-e`} message={error} />
+    </div>
+  );
+}
+
+/** Lead/admin switch: does this task also need motion work? Renders nothing for everyone else (they see the read-only row). */
+export function NeedsMotionToggle({ requestId, initial, canEdit }: { requestId: string; initial: boolean; canEdit: boolean }) {
+  const uid = useId();
+  const router = useRouter();
+  const [checked, setChecked] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  if (!canEdit) return null;
+  function change(next: boolean) {
+    const prev = checked;
+    setChecked(next);
+    setError(null);
+    start(async () => {
+      try {
+        const r = await setNeedsMotion(requestId, next);
+        if (r.ok) router.refresh(); else { setChecked(prev); setError(r.message); }
+      } catch {
+        setChecked(prev);
+        setError("Could not change this. Check your connection and try again.");
+      }
+    });
+  }
+  return (
+    <div className="space-y-1">
+      <label htmlFor={`${uid}-m`} className="flex items-center gap-2 text-sm font-medium">
+        <input id={`${uid}-m`} type="checkbox" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+          aria-describedby={error ? `${uid}-e` : undefined} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
+        Needs motion
       </label>
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>

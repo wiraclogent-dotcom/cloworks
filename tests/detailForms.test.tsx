@@ -4,15 +4,16 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 
 const addComment = vi.fn();
 const setIncludeKpi = vi.fn();
+const setNeedsMotion = vi.fn();
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: (...a: unknown[]) => addComment(...a),
-  addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a),
+  addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a), setNeedsMotion: (...a: unknown[]) => setNeedsMotion(...a),
 }));
 vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn() }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-import { CommentForm, AssigneePicker, MoveControl, IncludeKpiToggle } from "@/app/(app)/requests/[id]/DetailForms";
+import { CommentForm, AssigneePicker, MoveControl, IncludeKpiToggle, NeedsMotionToggle } from "@/app/(app)/requests/[id]/DetailForms";
 import { splitMentions } from "@/lib/collab";
 
 beforeEach(() => { addComment.mockReset(); refresh.mockReset(); });
@@ -79,5 +80,28 @@ describe("IncludeKpiToggle", () => {
     fireEvent.click(screen.getByLabelText("Counts toward KPI"));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
     expect((screen.getByLabelText("Counts toward KPI") as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("NeedsMotionToggle", () => {
+  it("renders nothing for people without request.assign", () => {
+    render(<NeedsMotionToggle requestId="r1" initial={false} canEdit={false} />);
+    expect(screen.queryByLabelText("Needs motion")).toBeNull();
+  });
+  it("is a labelled checkbox for editors that saves the new value and refreshes", async () => {
+    setNeedsMotion.mockResolvedValue({ ok: true });
+    render(<NeedsMotionToggle requestId="r1" initial={false} canEdit />);
+    const box = screen.getByLabelText("Needs motion") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    fireEvent.click(box);
+    await waitFor(() => expect(setNeedsMotion).toHaveBeenCalledWith("r1", true));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+  it("reverts and shows the server message on failure", async () => {
+    setNeedsMotion.mockResolvedValue({ ok: false, code: "FORBIDDEN", message: "Only leads and admins can change whether a task needs motion." });
+    render(<NeedsMotionToggle requestId="r1" initial={true} canEdit />);
+    fireEvent.click(screen.getByLabelText("Needs motion"));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
+    expect((screen.getByLabelText("Needs motion") as HTMLInputElement).checked).toBe(true);
   });
 });
