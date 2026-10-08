@@ -113,7 +113,44 @@ describe("notifications", () => {
     });
   });
 
+  describe("notifyWith deadline and parallelism", () => {
+    const never = () => new Promise<void>(() => {});
+    it("returns near the deadline when the mailer hangs; rows kept, emailedAt null", async () => {
+      const t0 = Date.now();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      await notifyWith(db.prisma, { send: never }, input(), { baseUrl: undefined, deadlineMs: 50 });
+      expect(Date.now() - t0).toBeLessThan(500);
+      const r = await rows();
+      expect(r).toHaveLength(1);
+      expect(r[0].emailedAt).toBeNull();
+      vi.restoreAllMocks();
+    });
+    it("a hanging recipient does not block a fast one", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const mailer: Mailer = { send: (m) => (m.to.startsWith("dimas") ? never() : Promise.resolve()) };
+      await notifyWith(db.prisma, mailer, input({ userIds: [ids.dimas, ids.irsyad] }), { baseUrl: undefined, deadlineMs: 300 });
+      const r = await rows();
+      expect(r.find((x) => x.userId === ids.irsyad)!.emailedAt).not.toBeNull();
+      expect(r.find((x) => x.userId === ids.dimas)!.emailedAt).toBeNull();
+      vi.restoreAllMocks();
+    });
+    it("sends to recipients in parallel", async () => {
+      const mailer: Mailer = { send: () => new Promise((r) => setTimeout(r, 100)) };
+      const t0 = Date.now();
+      await notifyWith(db.prisma, mailer, input({ userIds: [ids.dimas, ids.irsyad, ids.rina] }), { baseUrl: undefined });
+      expect(Date.now() - t0).toBeLessThan(280);
+      expect(await rows()).toHaveLength(3);
+    });
+  });
+
   describe("createMailerFromEnv", () => {
+    it("rejects when the fetch hangs past the timeout", async () => {
+      const f = (_u: string, init: RequestInit) =>
+        new Promise<{ ok: boolean; status: number }>((_, rej) => init.signal!.addEventListener("abort", () => rej(new Error("aborted"))));
+      await expect(
+        createMailerFromEnv({ RESEND_API_KEY: "k", EMAIL_FROM: "f" }, f, 30).send({ to: "a@b.c", subject: "s", text: "t" }),
+      ).rejects.toThrow();
+    });
     it("is a no-op without keys", async () => {
       const f = vi.fn();
       vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -175,6 +212,33 @@ describe("notifications", () => {
       await addCommentWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, "hello", new Date(), notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0].userIds).toEqual([ids.irsyad]);
+    });
+    it("comment: mention and comment notifications run concurrently", async () => {
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.lia } });
+      const started: string[] = [];
+      let release!: () => void;
+      const gate = new Promise<void>((r) => (release = r));
+      const slow = async (i: NotifyInput) => { started.push(i.type); await gate; };
+      const p = addCommentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "cc @Irsyad", new Date(), slow);
+      await new Promise((r) => setTimeout(r, 100));
+      expect(started.sort()).toEqual(["COMMENT", "MENTION"]);
+      release();
+      await p;
+    });
+    it("comment: requester also mentioned gets MENTION only", async () => {
+      await addCommentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "hi @Rina", new Date(), notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "MENTION", userIds: [ids.rina] });
+    });
+    it("comment: requester == assignee gets exactly one COMMENT", async () => {
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.rina } });
+      await addCommentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "hello", new Date(), notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].userIds).toEqual([ids.rina]);
+    });
+    it("comment: author == requester is not notified", async () => {
+      await addCommentWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, "note", new Date(), notifier);
+      expect(calls.flatMap((c) => c.userIds)).not.toContain(ids.rina);
     });
     it("transition notifies requester and distinct assignee; failing notifier does not fail it", async () => {
       await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.irsyad } });

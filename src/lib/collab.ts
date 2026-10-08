@@ -87,11 +87,13 @@ export async function addCommentWith(
   await bestEffort(async () => {
     const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
     const name = actor?.name ?? "Someone";
+    const calls: Promise<void>[] = [];
     if (mentionedUserIds.length)
-      await notifier({ actorId: user.id, userIds: mentionedUserIds, requestId, type: "MENTION", message: buildMessage("MENTION", name, req.title) });
+      calls.push(notifier({ actorId: user.id, userIds: mentionedUserIds, requestId, type: "MENTION", message: buildMessage("MENTION", name, req.title) }));
     const others = [req.requesterId, req.assigneeId].filter((id): id is string => !!id && id !== user.id && !mentionedUserIds.includes(id));
     if (others.length)
-      await notifier({ actorId: user.id, userIds: others, requestId, type: "COMMENT", message: buildMessage("COMMENT", name, req.title) });
+      calls.push(notifier({ actorId: user.id, userIds: [...new Set(others)], requestId, type: "COMMENT", message: buildMessage("COMMENT", name, req.title) }));
+    await Promise.allSettled(calls);
   });
   return { ok: true, commentId: c.id, mentionedUserIds };
 }

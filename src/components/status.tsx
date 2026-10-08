@@ -1,13 +1,7 @@
 import type { RequestStatus } from "@prisma/client";
+import { STATUS_LABEL } from "@/lib/statusLabels";
 
-export const STATUS_LABEL: Record<RequestStatus, string> = {
-  REQUESTED: "Requested",
-  ON_PROGRESS: "On progress",
-  FIRST_LOOK: "First look",
-  DONE: "Done",
-  CANCELLED: "Cancelled",
-};
-
+export { STATUS_LABEL };
 /** Board column order. CANCELLED is a terminal side state and only gets a column when explicitly filtered. */
 export const BOARD_STATUSES: readonly RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE"];
 

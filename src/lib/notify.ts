@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
 
 export type { Mailer } from "./mailer";
@@ -6,13 +7,9 @@ export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS";
 export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string };
 export type Notifier = (input: NotifyInput) => Promise<void>;
 
-const STATUS_LABELS: Record<string, string> = {
-  REQUESTED: "Requested",
-  ON_PROGRESS: "On progress",
-  FIRST_LOOK: "First look",
-  DONE: "Done",
-  CANCELLED: "Cancelled",
-};
+
+/** Overall cap on one notifyWith call so a hung mail provider cannot freeze the user action. */
+export const NOTIFY_DEADLINE_MS = 5000;
 
 const SUBJECTS: Record<NotificationType, string> = {
   ASSIGNED: "Assigned to you",
@@ -40,7 +37,7 @@ export function buildMessage(
     case "ASSIGNED": return `${a} assigned you to “${t}”`;
     case "COMMENT": return `${a} commented on “${t}”`;
     case "MENTION": return `${a} mentioned you in “${t}”`;
-    case "STATUS": return `${a} moved “${t}” from ${STATUS_LABELS[change?.from ?? ""] ?? change?.from} to ${STATUS_LABELS[change?.to ?? ""] ?? change?.to}`;
+    case "STATUS": return `${a} moved “${t}” from ${(STATUS_LABEL as Record<string, string>)[change?.from ?? ""] ?? change?.from} to ${(STATUS_LABEL as Record<string, string>)[change?.to ?? ""] ?? change?.to}`;
   }
 }
 
@@ -60,8 +57,9 @@ export async function notifyWith(
   db: PrismaClient,
   mailer: Mailer,
   input: NotifyInput,
-  opts: { baseUrl?: string | undefined } = { baseUrl: process.env.APP_BASE_URL },
+  opts: { baseUrl?: string | undefined; deadlineMs?: number } = {},
 ): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const ids = [...new Set(input.userIds)].filter((id) => id !== input.actorId);
     if (ids.length === 0) return;
@@ -69,22 +67,30 @@ export async function notifyWith(
       db.user.findMany({ where: { id: { in: ids }, active: true }, select: { id: true, email: true } }),
       db.request.findUnique({ where: { id: input.requestId }, select: { title: true } }),
     ]);
-    const base = safeBaseUrl(opts.baseUrl);
+    const base = safeBaseUrl("baseUrl" in opts ? opts.baseUrl : process.env.APP_BASE_URL);
     const subject = `${SUBJECTS[input.type]}: ${cleanLine(req?.title ?? "", 120)}`.replace(/: $/, "");
     const message = cleanLine(input.message, 500);
     const text = base ? `${message}\n\n${base}/requests/${encodeURIComponent(input.requestId)}\n` : `${message}\n`;
-    for (const u of users) {
-      try {
-        const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
-        if (!u.email) continue;
-        await mailer.send({ to: u.email, subject, text });
-        await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
-      } catch (e) {
-        console.error("[notify] failed for a recipient:", e instanceof Error ? e.message : "unknown error");
-      }
-    }
+    const work = Promise.allSettled(
+      users.map(async (u) => {
+        try {
+          const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
+          if (!u.email) return;
+          await mailer.send({ to: u.email, subject, text });
+          await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
+        } catch (e) {
+          console.error("[notify] failed for a recipient:", e instanceof Error ? e.message : "unknown error");
+        }
+      }),
+    );
+    const deadline = new Promise<"timeout">((resolve) => {
+      timer = setTimeout(() => resolve("timeout"), opts.deadlineMs ?? NOTIFY_DEADLINE_MS);
+    });
+    if ((await Promise.race([work, deadline])) === "timeout") console.error("[notify] deadline reached; abandoning unfinished sends");
   } catch (e) {
     console.error("[notify] failed:", e instanceof Error ? e.message : "unknown error");
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
