@@ -13,51 +13,65 @@ export function isAllowedEmail(email: string, domain: string, allowList: string[
 
 export type SignInResult =
   | { ok: true; user: User; created: boolean }
-  | { ok: false; reason: "no-email" | "not-allowed" | "inactive" };
+  | { ok: false; reason: "no-email" | "not-allowed" | "inactive" | "untrusted" };
 
 type Db = Pick<PrismaClient, "user" | "allowedEmail">;
+type Env = Record<string, string | undefined>;
+
+/** Pure: is the identity provider's email claim trustworthy? Fails closed. */
+export function isTrustedIdentity(
+  provider: string | undefined,
+  profile: { email_verified?: unknown; tid?: unknown },
+  env: Env,
+): boolean {
+  if (provider === "google") return profile.email_verified === true;
+  if (provider === "microsoft-entra-id") {
+    const tenant = env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID?.trim();
+    return !!tenant && profile.tid === tenant;
+  }
+  return false;
+}
+
+/** Full sign-in decision: trusted identity, then permitted email, then link-by-email or create. */
+export async function decideSignIn(
+  db: Db,
+  provider: string | undefined,
+  profile: { email?: string | null; name?: string | null; email_verified?: unknown; tid?: unknown },
+  env: Env,
+): Promise<SignInResult> {
+  if (!isTrustedIdentity(provider, profile, env)) return { ok: false, reason: "untrusted" };
+  return resolveSignIn(db, profile, env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN, {
+    viaAllowList: provider !== "microsoft-entra-id",
+  });
+}
 
 /**
- * Sign-in decision: permitted email (domain or allow-list), active user,
- * link to an existing User (email, else unclaimed alias match on the email
- * local-part), else create a REQUESTER.
+ * Permitted email (domain, or allow-list when viaAllowList), active user.
+ * First-login linking is by exact normalized User.email only; otherwise create a REQUESTER.
+ * No alias/name matching (privilege-escalation risk).
  */
 export async function resolveSignIn(
   db: Db,
   profile: { email?: string | null; name?: string | null },
   domain: string = DEFAULT_ALLOWED_DOMAIN,
+  opts: { viaAllowList?: boolean } = {},
 ): Promise<SignInResult> {
   const email = profile.email?.trim().toLowerCase();
   if (!email) return { ok: false, reason: "no-email" };
 
-  const allowList = (await db.allowedEmail.findMany({ select: { email: true } })).map((a) => a.email);
+  const allowList =
+    opts.viaAllowList === false
+      ? []
+      : (await db.allowedEmail.findMany({ select: { email: true } })).map((a) => a.email);
   if (!isAllowedEmail(email, domain, allowList)) return { ok: false, reason: "not-allowed" };
 
-  let user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
+  const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   if (user) {
     return user.active ? { ok: true, user, created: false } : { ok: false, reason: "inactive" };
   }
 
-  // Safe alias link: only an unclaimed row (no email yet), active, exactly one match
-  // on the email local-part against aliases or short name. Ambiguity => no link.
   const local = email.split("@")[0];
-  const candidates = await db.user.findMany({
-    where: {
-      email: null,
-      OR: [{ aliases: { has: local } }, { name: { equals: local, mode: "insensitive" } }],
-    },
-  });
-  const lower = candidates.filter(
-    (c) => c.name.toLowerCase() === local || c.aliases.some((a) => a.toLowerCase() === local),
-  );
-  if (lower.length === 1) {
-    const [match] = lower;
-    if (!match.active) return { ok: false, reason: "inactive" };
-    user = await db.user.update({ where: { id: match.id }, data: { email } });
-    return { ok: true, user, created: false };
-  }
-
   const display = profile.name?.trim() || local;
-  user = await db.user.create({ data: { email, name: display, fullName: display, appRole: "REQUESTER" } });
-  return { ok: true, user, created: true };
+  const created = await db.user.create({ data: { email, name: display, fullName: display, appRole: "REQUESTER" } });
+  return { ok: true, user: created, created: true };
 }

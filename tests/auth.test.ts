@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { isAllowedEmail, resolveSignIn } from "@/lib/signin";
+import { isAllowedEmail, resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
+import { refreshJwt, loadActiveUser, requireUserWith } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 const D = "clogent.co.id";
@@ -70,19 +71,24 @@ describe("resolveSignIn", () => {
     const r = await resolveSignIn(db.prisma, { email: "Fadli@gmail.com" }, D);
     expect(r.ok && r.user.appRole).toBe("CREATIVE");
   });
-  it("links an unclaimed user by alias on email local-part and stores email", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "rina.p@clogent.co.id" }, D);
-    expect(r.ok && r.user.name).toBe("Rina");
-    const row = await db.prisma.user.findFirst({ where: { name: "Rina" } });
-    expect(row?.email).toBe("rina.p@clogent.co.id");
+  it("does not let another-domain address claim a roster row by alias or name", async () => {
+    await db.prisma.allowedEmail.create({ data: { email: "mallory@gmail.com" } });
+    await db.prisma.allowedEmail.create({ data: { email: "rina@gmail.com" } });
+    const r1 = await resolveSignIn(db.prisma, { email: "rina.p@gmail.com" , name: "Rina"}, D);
+    expect(r1.ok).toBe(false);
+    const r2 = await resolveSignIn(db.prisma, { email: "rina@gmail.com", name: "Rina" }, D);
+    expect(r2.ok && r2.created && r2.user.appRole).toBe("REQUESTER");
+    const row = await db.prisma.user.findFirst({ where: { name: "Rina", fullName: "Rina Putri" } });
+    expect(row?.email).toBeNull();
+    expect(row?.appRole).toBe("CREATIVE");
   });
-  it("does not alias-link when ambiguous; creates REQUESTER instead", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "dup@clogent.co.id", name: "Dup" }, D);
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.created).toBe(true);
-      expect(r.user.appRole).toBe("REQUESTER");
-    }
+  it("same-domain local-part equal to alias does not link either", async () => {
+    const r = await resolveSignIn(db.prisma, { email: "rina.p@clogent.co.id" }, D);
+    expect(r.ok && r.created && r.user.appRole).toBe("REQUESTER");
+  });
+  it("viaAllowList=false ignores the allow list", async () => {
+    const r = await resolveSignIn(db.prisma, { email: "fadli@gmail.com" }, D, { viaAllowList: false });
+    expect(r).toEqual({ ok: false, reason: "not-allowed" });
   });
   it("creates a REQUESTER for a new permitted email, once", async () => {
     const a = await resolveSignIn(db.prisma, { email: "New.Person@clogent.co.id", name: "New Person" }, D);
@@ -90,5 +96,77 @@ describe("resolveSignIn", () => {
     expect(a.ok && a.created && a.user.appRole).toBe("REQUESTER");
     expect(b.ok && !b.created && b.user.id).toBe(a.ok ? a.user.id : "");
     expect(await db.prisma.user.count({ where: { email: "new.person@clogent.co.id" } })).toBe(1);
+  });
+});
+
+describe("isTrustedIdentity", () => {
+  const env = { AUTH_MICROSOFT_ENTRA_ID_TENANT_ID: "tenant-1" };
+  it("google requires email_verified === true", () => {
+    expect(isTrustedIdentity("google", { email_verified: true }, env)).toBe(true);
+    expect(isTrustedIdentity("google", { email_verified: false }, env)).toBe(false);
+    expect(isTrustedIdentity("google", {}, env)).toBe(false);
+    expect(isTrustedIdentity("google", { email_verified: "true" }, env)).toBe(false);
+  });
+  it("entra requires tid to equal configured tenant", () => {
+    expect(isTrustedIdentity("microsoft-entra-id", { tid: "tenant-1" }, env)).toBe(true);
+    expect(isTrustedIdentity("microsoft-entra-id", { tid: "other" }, env)).toBe(false);
+    expect(isTrustedIdentity("microsoft-entra-id", {}, env)).toBe(false);
+  });
+  it("entra fails closed when tenant env missing/empty", () => {
+    expect(isTrustedIdentity("microsoft-entra-id", { tid: "tenant-1" }, {})).toBe(false);
+    expect(isTrustedIdentity("microsoft-entra-id", { tid: "" }, { AUTH_MICROSOFT_ENTRA_ID_TENANT_ID: "" })).toBe(false);
+  });
+  it("unknown provider denied", () => {
+    expect(isTrustedIdentity("github", { email_verified: true }, env)).toBe(false);
+  });
+});
+
+describe("decideSignIn + session", () => {
+  let db: TestDb;
+  const env = { ALLOWED_EMAIL_DOMAIN: D, AUTH_MICROSOFT_ENTRA_ID_TENANT_ID: "t1" };
+  beforeAll(async () => {
+    db = await createTestDb();
+    await db.prisma.allowedEmail.create({ data: { email: "g@gmail.com" } });
+  });
+  afterAll(async () => {
+    await db?.stop();
+  });
+
+  it("unverified google email rejected; verified accepted", async () => {
+    const bad = await decideSignIn(db.prisma, "google", { email: "a@clogent.co.id", email_verified: false }, env);
+    expect(bad.ok).toBe(false);
+    const good = await decideSignIn(db.prisma, "google", { email: "a@clogent.co.id", email_verified: true }, env);
+    expect(good.ok).toBe(true);
+  });
+  it("entra: wrong tid, missing env, allow-listed gmail rejected; company + right tid accepted", async () => {
+    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "x" }, env)).ok).toBe(false);
+    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, { ALLOWED_EMAIL_DOMAIN: D })).ok).toBe(false);
+    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "g@gmail.com", tid: "t1" }, env)).ok).toBe(false);
+    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, env)).ok).toBe(true);
+  });
+  it("google may use the allow list", async () => {
+    expect((await decideSignIn(db.prisma, "google", { email: "G@gmail.com", email_verified: true }, env)).ok).toBe(true);
+  });
+
+  it("jwt refresh: deactivated -> null; demotion reflected; missing -> null", async () => {
+    const u = await db.prisma.user.create({ data: { email: "lead@clogent.co.id", name: "L", fullName: "L", appRole: "LEAD" } });
+    const tok = { uid: u.id, appRole: "LEAD" as const, jobRole: "OTHER" as const };
+    expect((await refreshJwt(db.prisma, { ...tok }))?.appRole).toBe("LEAD");
+    await db.prisma.user.update({ where: { id: u.id }, data: { appRole: "REQUESTER" } });
+    expect((await refreshJwt(db.prisma, { ...tok }))?.appRole).toBe("REQUESTER");
+    await db.prisma.user.update({ where: { id: u.id }, data: { active: false } });
+    expect(await refreshJwt(db.prisma, { ...tok })).toBeNull();
+    expect(await refreshJwt(db.prisma, { ...tok, uid: "nope" })).toBeNull();
+  });
+  it("requireUser uses DB state and throws for no session / inactive / missing", async () => {
+    const u = await db.prisma.user.create({ data: { email: "c@clogent.co.id", name: "C", fullName: "C", appRole: "CREATIVE" } });
+    const sess = (id: string) => async () => ({ user: { id, appRole: "ADMIN" } });
+    const ok = await requireUserWith(sess(u.id), db.prisma);
+    expect(ok).toEqual({ id: u.id, appRole: "CREATIVE", jobRole: "OTHER" });
+    await expect(requireUserWith(async () => null, db.prisma)).rejects.toThrow();
+    await expect(requireUserWith(sess("nope"), db.prisma)).rejects.toThrow();
+    await db.prisma.user.update({ where: { id: u.id }, data: { active: false } });
+    await expect(requireUserWith(sess(u.id), db.prisma)).rejects.toThrow();
+    expect(await loadActiveUser(db.prisma, u.id)).toBeNull();
   });
 });

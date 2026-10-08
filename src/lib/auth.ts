@@ -2,7 +2,8 @@ import NextAuth from "next-auth";
 import type { AppRole, JobRole } from "@prisma/client";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
-import { DEFAULT_ALLOWED_DOMAIN, resolveSignIn } from "./signin";
+import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
+import { refreshJwt } from "./session-core";
 
 export { isAllowedEmail } from "./signin";
 
@@ -19,27 +20,34 @@ declare module "@auth/core/jwt" {
   }
 }
 
-const domain = () => process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN;
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user }) {
-      const r = await resolveSignIn(prisma, { email: user.email, name: user.name }, domain());
+    async signIn({ user, account, profile }) {
+      const r = await decideSignIn(
+        prisma,
+        account?.provider,
+        { email: user.email, name: user.name, email_verified: profile?.email_verified, tid: (profile as { tid?: unknown } | undefined)?.tid },
+        process.env,
+      );
       return r.ok;
     },
     async jwt({ token, user }) {
-      // `user` is only present on sign-in; re-resolve the DB user then so role/active are fresh.
       if (user?.email) {
-        const r = await resolveSignIn(prisma, { email: user.email, name: user.name }, domain());
-        if (r.ok) {
-          token.uid = r.user.id;
-          token.appRole = r.user.appRole;
-          token.jobRole = r.user.jobRole;
-        }
+        // Fresh sign-in (signIn callback already vetted it): bind token to the DB user.
+        const r = await resolveSignIn(prisma, { email: user.email, name: user.name }, process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN, {
+          viaAllowList: true,
+        });
+        if (!r.ok) return null;
+        token.uid = r.user.id;
+        token.appRole = r.user.appRole;
+        token.jobRole = r.user.jobRole;
+        return token;
       }
-      return token;
+      // Every later call: re-read DB; deleted/inactive invalidates the session.
+      return refreshJwt(prisma, token);
     },
     async session({ session, token }) {
       if (token.uid && token.appRole && token.jobRole) {

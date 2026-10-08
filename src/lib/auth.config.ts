@@ -9,8 +9,8 @@ export const authConfig = {
   session: { strategy: "jwt" },
   callbacks: {
     authorized({ auth, request }) {
-      if (request.nextUrl.pathname.startsWith("/signin")) return true;
-      return !!auth?.user;
+      if (request.nextUrl.pathname === "/signin") return true;
+      return !!auth?.user?.appRole;
     },
   },
 } satisfies NextAuthConfig;
