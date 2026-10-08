@@ -14,12 +14,14 @@ import { sidebarRowClass } from "./shell/classes";
 
 const ROLE_LABEL: Record<AppRole, string> = { REQUESTER: "Requester", CREATIVE: "Creative", LEAD: "Lead", ADMIN: "Admin" };
 
-/** A titled group of sidebar links. The title stays the list's accessible name when the rail hides it. */
-function NavGroup({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
+/**
+ * A titled group of sidebar links. The title stays the list's accessible name when the rail hides it.
+ * `divided` puts a hairline above the group (every group except the first), in the expanded sidebar and the rail alike.
+ */
+function NavGroup({ id, label, divided = false, children }: { id: string; label: string; divided?: boolean; children: React.ReactNode }) {
   return (
-    <div className="pt-3">
-      <p id={id} className="sb-label px-2.5 pb-1 text-[13px] font-medium text-sidebar-foreground-secondary">{label}</p>
-      <hr aria-hidden="true" className="sb-collapsed-only mx-2 mb-2 border-0 border-t border-sidebar-border" />
+    <div className={divided ? "mt-3 border-t border-sidebar-border pt-3" : undefined}>
+      <p id={id} className="sb-label px-2.5 pb-1.5 text-[13px] font-medium text-sidebar-foreground-secondary">{label}</p>
       <ul aria-labelledby={id} className="space-y-0.5">{children}</ul>
     </div>
   );
@@ -35,7 +37,7 @@ export async function TeamKpiItem() {
 export async function AdminGroup() {
   const { appRole } = await requireUserOrRedirect();
   return can(appRole, "admin.manage") ? (
-    <NavGroup id="nav-admin" label="Admin">
+    <NavGroup id="nav-admin" label="Admin" divided>
       <NavItem href="/admin/users" label="Admin" icon={<ShieldCheck aria-hidden="true" />} />
     </NavGroup>
   ) : null;
@@ -70,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavItem href="/requests" label="Requests" icon={<SquareKanban aria-hidden="true" />} />
             <NavItem href="/projects" label="Projects" icon={<FolderKanban aria-hidden="true" />} />
           </NavGroup>
-          <NavGroup id="nav-insights" label="Insights">
+          <NavGroup id="nav-insights" label="Insights" divided>
             <NavItem href="/dashboard" label="My KPI" icon={<ChartColumn aria-hidden="true" />} />
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
           </NavGroup>

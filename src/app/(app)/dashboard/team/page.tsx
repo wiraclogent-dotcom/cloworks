@@ -47,7 +47,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
   const summary = teamSummary(rows);
   return (
     <>
-      <PageHeader title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} action="/dashboard/team" />} />
+      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} action="/dashboard/team" />} />
       {rows.length === 0 ? (
         <EmptyState icon={<Users />} title="No team members to show" description="No designers or social media staff yet." />
       ) : (

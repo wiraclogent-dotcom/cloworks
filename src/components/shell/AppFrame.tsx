@@ -88,7 +88,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
         <aside id={SIDEBAR_ID} aria-label="Sidebar" data-open={open || undefined}
           onClick={(e) => { if (open && (e.target as HTMLElement).closest("a[href]")) close(false); }}
           className={cn(
-            "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-sidebar text-sidebar-foreground",
+            "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
             "transition-[transform,width,visibility] duration-200 ease-out",
             "md:visible md:sticky md:top-0 md:z-auto md:h-dvh md:max-w-none md:flex-none md:translate-x-0",
             open ? "visible translate-x-0 shadow-raised" : "invisible -translate-x-full",

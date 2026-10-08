@@ -22,7 +22,7 @@ export async function ListsContent() {
 
   return (
     <>
-      <PageHeader title="Brands, divisions and request types" switcher={<AdminTabs current="lists" />}
+      <PageHeader breadcrumb={[{ label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" />}
         description="Nothing here can be deleted; deactivate a request type to hide it from the new request form." />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

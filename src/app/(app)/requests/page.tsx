@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -17,7 +17,8 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton } from "@/components/RequestSkeletons";
-import { CalendarDays, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
+import { Bell, CalendarDays, Plus, SearchX, Settings, SquareKanban, Table2 } from "lucide-react";
+import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
 import { todayOverview } from "@/lib/todayOverview";
@@ -58,6 +59,12 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   return (
     <>
       <PageHeader title="Requests"
+        breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: VIEW_LABEL[p.view] }]}
+        topBarActions={<>
+          <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
+          <ComingSoon label="Notifications" icon={<Bell aria-hidden="true" />} />
+          <ComingSoon label="Settings" icon={<Settings aria-hidden="true" />} />
+        </>}
         actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
       {p.view === "board" ? (
         <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-surface-muted" />}><TodayLoader /></Suspense>
@@ -104,6 +111,18 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           todayHref={hrefWith(p, { month: today.slice(0, 7) })} />
       ) : null}
     </>
+  );
+}
+
+const VIEW_LABEL: Record<"board" | "table" | "calendar", string> = { board: "Board", table: "Table", calendar: "Calendar" };
+
+/** Top-bar icon button for a feature that does not exist yet: visible, labelled, and disabled (no fake action). */
+function ComingSoon({ label, icon }: { label: string; icon: ReactNode }) {
+  return (
+    <button type="button" disabled aria-label={`${label} (coming soon)`} title={`${label}: coming soon`}
+      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground-secondary disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:size-4">
+      {icon}
+    </button>
   );
 }
 

@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "New request" };
 export default function NewRequestPage() {
   return (
     <div className="mx-auto w-full max-w-5xl">
-      <PageHeader title="New request" description="Tell the creative team what you need. Fields marked * are required." />
+      <PageHeader breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: "New request" }]} title="New request" description="Tell the creative team what you need. Fields marked * are required." />
       <Suspense fallback={<FormSkeleton />}>
         <NewRequestContent />
       </Suspense>

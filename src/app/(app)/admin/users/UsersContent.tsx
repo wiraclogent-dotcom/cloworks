@@ -31,7 +31,7 @@ export async function UsersContent() {
 
   return (
     <>
-      <PageHeader title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
+      <PageHeader breadcrumb={[{ label: "Admin" }, { label: "Users" }]} title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
         description="Company-domain addresses can sign in once bound to a person. Anyone else needs the address on the allowed list (adding a login email below does this for you)." />
 
       <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>

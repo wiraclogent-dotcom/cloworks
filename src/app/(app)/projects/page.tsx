@@ -26,7 +26,7 @@ async function ProjectsContent() {
   const now = new Date();
   return (
     <>
-      <PageHeader title="Projects" count={rows.length} description="Brand projects grouped by brand, soonest due first."
+      <PageHeader breadcrumb={[{ label: "Work" }, { label: "Projects" }]} title="Projects" count={rows.length} description="Brand projects grouped by brand, soonest due first."
         actions={canManage && (
           <Link href="/projects/new" className={buttonClass({ variant: "primary" })}>
             <Plus aria-hidden="true" />New project
