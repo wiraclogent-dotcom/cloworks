@@ -1,54 +1,28 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { requireUserOrRedirect } from "@/lib/session";
-import { findVisible } from "@/lib/help/access";
-import { extractToc } from "@/lib/help/toc";
-import { ArticleBody } from "@/components/help/ArticleBody";
-import { ArticleToc } from "@/components/help/ArticleToc";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { getArticles } from "../help-data";
+import { Suspense } from "react";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { ArticleContent } from "./ArticleContent";
 
-type Params = Promise<{ slug: string }>;
+/**
+ * Generic tab title. A per-user read in generateMetadata would break the build under cacheComponents (see
+ * requests/[id]), so a guide's own title only appears in the page heading, never in metadata.
+ */
+export const metadata: Metadata = { title: "Help" };
 
-/** Same visibility check as the page, so a hidden guide's title never reaches the tab title. */
-export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
-  const { slug } = await params;
-  const user = await requireUserOrRedirect();
-  const found = findVisible(getArticles(), user.appRole, slug);
-  return { title: found ? found.article.title : "Help" };
+export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
+  return (
+    <Suspense fallback={<ArticleSkeleton />}>
+      <ArticleContent params={params} />
+    </Suspense>
+  );
 }
 
-export default async function ArticlePage({ params }: { params: Params }) {
-  const { slug } = await params;
-  const user = await requireUserOrRedirect();
-  const found = findVisible(getArticles(), user.appRole, slug);
-  if (!found) notFound();
-
-  const { article, prev, next } = found;
+function ArticleSkeleton() {
   return (
-    <>
-      <PageHeader title={article.title} description={article.section} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_200px]">
-        <article>
-          <ArticleBody body={article.body} />
-          <nav aria-label="Guide navigation" className="mt-8 flex justify-between gap-4 border-t border-border pt-4 text-sm">
-            {prev ? (
-              <Link href={`/help/${prev.slug}`} className="text-foreground hover:underline">
-                <span className="block text-xs text-foreground-secondary">Previous</span>
-                {prev.title}
-              </Link>
-            ) : <span />}
-            {next ? (
-              <Link href={`/help/${next.slug}`} className="ml-auto text-right text-foreground hover:underline">
-                <span className="block text-xs text-foreground-secondary">Next</span>
-                {next.title}
-              </Link>
-            ) : null}
-          </nav>
-        </article>
-        <ArticleToc entries={extractToc(article.body)} />
-      </div>
-    </>
+    <div role="status" aria-busy="true" className="space-y-4">
+      <span className="sr-only">Loading…</span>
+      <Skeleton className="h-8 w-64" />
+      <Skeleton className="h-64 w-full" rounded="xl" />
+    </div>
   );
 }

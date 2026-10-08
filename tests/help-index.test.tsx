@@ -21,13 +21,13 @@ vi.mock("@/app/(app)/help/help-data", async (importOriginal) => {
   return { ...real, getArticles: () => fixtures };
 });
 
-import HelpPage from "@/app/(app)/help/page";
+import { HelpContent } from "@/app/(app)/help/HelpContent";
 import { buildIndexSections } from "@/app/(app)/help/help-data";
 
 afterEach(cleanup);
 
 async function renderIndex() {
-  render(await HelpPage());
+  render(await HelpContent());
 }
 
 describe("help index page", () => {

@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import type { AppRole } from "@prisma/client";
 import type { Article } from "@/lib/help/content";
 
 let role: AppRole = "REQUESTER";
+const calls = vi.hoisted(() => ({ notFound: 0 }));
 
 vi.mock("@/lib/session", () => ({
   requireUserOrRedirect: async () => ({ id: "u1", appRole: role, jobRole: "CREATIVE" }),
@@ -12,7 +13,7 @@ vi.mock("@/lib/session", () => ({
 
 vi.mock("next/navigation", () => ({
   notFound: () => {
-    throw new Error("NOT_FOUND");
+    calls.notFound++;
   },
 }));
 
@@ -28,50 +29,55 @@ vi.mock("@/app/(app)/help/help-data", async (importOriginal) => {
   return { ...real, getArticles: () => fixtures };
 });
 
-import ArticlePage, { generateMetadata } from "@/app/(app)/help/[slug]/page";
+import { metadata } from "@/app/(app)/help/[slug]/page";
+import { ArticleContent } from "@/app/(app)/help/[slug]/ArticleContent";
 
+beforeEach(() => {
+  calls.notFound = 0;
+});
 afterEach(cleanup);
 
 const params = (slug: string) => Promise.resolve({ slug });
 
+async function renderArticle(slug: string) {
+  render(await ArticleContent({ params: params(slug) }));
+}
+
 describe("help article page", () => {
-  it("returns notFound for a guide the role may not read", async () => {
+  it("calls notFound for a guide the role may not read, and renders nothing", async () => {
     role = "REQUESTER";
-    await expect(ArticlePage({ params: params("admin") })).rejects.toThrow("NOT_FOUND");
+    await renderArticle("admin");
+    expect(calls.notFound).toBe(1);
+    expect(screen.queryByText("Managing users")).toBeNull();
+    expect(screen.queryByText("Secret admin steps.")).toBeNull();
   });
 
-  it("returns notFound for an unknown slug", async () => {
+  it("calls notFound for an unknown, wrong-case, or encoded slug", async () => {
     role = "REQUESTER";
-    await expect(ArticlePage({ params: params("nope") })).rejects.toThrow("NOT_FOUND");
-  });
-
-  it("returns notFound for a wrong-case or encoded slug", async () => {
-    role = "REQUESTER";
-    await expect(ArticlePage({ params: params("Open") })).rejects.toThrow("NOT_FOUND");
-    await expect(ArticlePage({ params: params("%2e%2e") })).rejects.toThrow("NOT_FOUND");
+    for (const slug of ["nope", "Open", "%2e%2e"]) {
+      calls.notFound = 0;
+      cleanup();
+      await renderArticle(slug);
+      expect(calls.notFound).toBe(1);
+    }
   });
 
   it("renders the title and body of a visible guide", async () => {
     role = "REQUESTER";
-    render(await ArticlePage({ params: params("open") }));
+    await renderArticle("open");
     expect(screen.getByRole("heading", { level: 1, name: "Getting started" })).toBeTruthy();
     expect(screen.getByText("Welcome aboard.")).toBeTruthy();
+    expect(calls.notFound).toBe(0);
   });
 
   it("links to the visible next guide and has no previous link on the first", async () => {
     role = "REQUESTER";
-    render(await ArticlePage({ params: params("req") }));
+    await renderArticle("req");
     expect(screen.getByRole("link", { name: /Request details/ }).getAttribute("href")).toBe("/help/req2");
     expect(screen.queryByRole("link", { name: /Previous/ })).toBeNull();
   });
 
-  it("generateMetadata uses the guide title when visible", async () => {
-    role = "REQUESTER";
-    await expect(generateMetadata({ params: params("open") })).resolves.toEqual({ title: "Getting started" });
-  });
-
-  it("generateMetadata never reveals a hidden guide's title", async () => {
-    role = "REQUESTER";
-    await expect(generateMetadata({ params: params("admin") })).resolves.toEqual({ title: "Help" });
+  it("uses a generic static title so no guide title is read per user", () => {
+    expect(metadata).toEqual({ title: "Help" });
   });
 });
