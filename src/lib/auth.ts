@@ -1,24 +1,10 @@
 import NextAuth from "next-auth";
-import type { AppRole, JobRole } from "@prisma/client";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
 import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
 import { refreshJwt } from "./session-core";
 
 export { isAllowedEmail } from "./signin";
-
-declare module "next-auth" {
-  interface Session {
-    user: { id: string; appRole: AppRole; jobRole: JobRole } & import("next-auth").DefaultSession["user"];
-  }
-}
-declare module "@auth/core/jwt" {
-  interface JWT {
-    uid?: string;
-    appRole?: AppRole;
-    jobRole?: JobRole;
-  }
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -48,14 +34,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       // Every later call: re-read DB; deleted/inactive invalidates the session.
       return refreshJwt(prisma, token);
-    },
-    async session({ session, token }) {
-      if (token.uid && token.appRole && token.jobRole) {
-        session.user.id = token.uid;
-        session.user.appRole = token.appRole;
-        session.user.jobRole = token.jobRole;
-      }
-      return session;
     },
   },
 });
