@@ -31,7 +31,6 @@ function assertAdmin(actor: Actor) {
 }
 
 const norm = (s: string) => s.trim().replace(/\s+/g, " ");
-const key = (s: string) => norm(s).toLowerCase();
 
 function companyDomain() {
   return (process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN).trim().toLowerCase();
@@ -46,13 +45,15 @@ export function normalizeEmail(raw: string): string {
   return e;
 }
 
-function cleanAliases(raw: string[]): string[] {
+/** Trims and dedupes aliases; silently drops any that normalise to one of `own` (the person's own name/fullName). */
+function cleanAliases(raw: string[], own: string[] = []): string[] {
+  const ownKeys = new Set(own.map(normalizeName));
   const seen = new Set<string>();
   const out: string[] = [];
   for (const a of raw) {
     const v = norm(a);
     if (v.length < 1 || v.length > MAX_ALIAS_LEN) throw new AdminError("VALIDATION", `Each alias must be 1 to ${MAX_ALIAS_LEN} characters`);
-    if (seen.has(v.toLowerCase())) continue;
+    if (ownKeys.has(normalizeName(v)) || seen.has(v.toLowerCase())) continue;
     seen.add(v.toLowerCase());
     out.push(v);
   }
@@ -152,8 +153,7 @@ export async function updateUser(db: Db, actor: Actor, userId: string, patch: Us
   if (patch.appRole !== undefined) data.appRole = patch.appRole;
   if (patch.jobRole !== undefined) data.jobRole = patch.jobRole;
   if (patch.active !== undefined) data.active = patch.active;
-  const aliases = patch.aliases !== undefined ? cleanAliases(patch.aliases) : undefined;
-  if (aliases) data.aliases = aliases;
+  const rawAliases = patch.aliases !== undefined ? cleanAliases(patch.aliases) : undefined;
   const fullName = patch.fullName !== undefined ? cleanName(patch.fullName, "Full name") : undefined;
   if (fullName !== undefined) data.fullName = fullName;
   if (patch.title !== undefined) data.title = patch.title === null ? null : norm(patch.title) || null;
@@ -169,10 +169,18 @@ export async function updateUser(db: Db, actor: Actor, userId: string, patch: Us
       if ((await countSignInCapableAdmins(tx, target.id)) === 0)
         throw new AdminError("LAST_ADMIN", "There must always be at least one active admin who can sign in");
     }
-    if (aliases || fullName !== undefined) {
-      assertOwnDistinct(target.name, fullName ?? target.fullName, aliases ?? target.aliases);
-      await assertNoCollision(tx, [...(aliases ?? []), ...(fullName !== undefined ? [fullName] : [])], target.id);
+    // The edit form always posts fullName and aliases, so only values that actually CHANGED are collision-checked;
+    // a pre-existing collision must not block an unrelated edit (e.g. a role change).
+    const effectiveFullName = fullName ?? target.fullName;
+    const aliases = rawAliases ? cleanAliases(rawAliases, [target.name, effectiveFullName]) : undefined;
+    const storedAliasKeys = new Set(target.aliases.map(normalizeName));
+    const changedAliases = aliases ? aliases.filter((a) => !storedAliasKeys.has(normalizeName(a))) : [];
+    const fullNameChanged = fullName !== undefined && normalizeName(fullName) !== normalizeName(target.fullName);
+    if (changedAliases.length || fullNameChanged) {
+      assertOwnDistinct(target.name, effectiveFullName, aliases ?? target.aliases);
+      await assertNoCollision(tx, [...changedAliases, ...(fullNameChanged ? [fullName!] : [])], target.id);
     }
+    if (aliases) data.aliases = aliases;
     return tx.user.update({ where: { id: userId }, data });
   });
 }
@@ -193,7 +201,7 @@ export async function createUser(db: Db, actor: Actor, input: NewUserInput) {
   assertRoles(input.appRole ?? null, input.jobRole ?? null);
   const name = cleanName(input.name, "Name");
   const fullName = input.fullName?.trim() ? cleanName(input.fullName, "Full name") : name;
-  const aliases = cleanAliases(input.aliases ?? []);
+  const aliases = cleanAliases(input.aliases ?? [], [name, fullName]);
   const title = input.title?.trim() ? norm(input.title) : null;
   const department = input.department?.trim() ? norm(input.department) : null;
   return db.$transaction(async (tx) => {

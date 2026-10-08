@@ -14,7 +14,7 @@ type RosterEntry = {
 
 const ROSTER: RosterEntry[] = [
   { name: "Wira", fullName: "Wira Budi Prasetyo", title: "Creative Director", jobRole: "DESIGNER", appRole: "ADMIN", email: "wira.budi@clogent.co.id" },
-  { name: "Irsyad", fullName: "Irsyad Ahnaf Fauzian", title: "Senior Graphic Design Staff", jobRole: "DESIGNER", appRole: "CREATIVE", aliases: ["Irshyad", "irsyad"] },
+  { name: "Irsyad", fullName: "Irsyad Ahnaf Fauzian", title: "Senior Graphic Design Staff", jobRole: "DESIGNER", appRole: "CREATIVE", aliases: ["Irshyad"] },
   { name: "Fadli", fullName: "Muhamad Fadli", title: "Junior Graphic Design Staff", jobRole: "DESIGNER", appRole: "CREATIVE" },
   { name: "Emilia", fullName: "Emilia Putri Salsa", title: "Packaging Designer Staff", jobRole: "DESIGNER", appRole: "CREATIVE" },
   { name: "Dimas Pandu", fullName: "Dimas Pandu Wicaksono", title: "Video Editor Staff", jobRole: "DESIGNER", appRole: "CREATIVE" },

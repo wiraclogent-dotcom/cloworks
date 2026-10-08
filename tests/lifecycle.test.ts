@@ -104,7 +104,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   });
 
   it("records the full StatusEvent chain with actors", async () => {
-    const ev = await db.prisma.statusEvent.findMany({ where: { requestId: reqId }, orderBy: { at: "asc" } });
+    const ev = await db.prisma.statusEvent.findMany({ where: { requestId: reqId }, orderBy: [{ at: "asc" }, { id: "asc" }] });
     expect(ev.map((e) => [e.from, e.to, e.actorId])).toEqual([
       [null, "REQUESTED", u.Fafa.id],
       ["REQUESTED", "ON_PROGRESS", u.Fadli.id],
@@ -116,7 +116,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   });
 
   it("writes notifications: assigned -> Fadli, status changes -> Fafa (never the actor)", async () => {
-    const n = await db.prisma.notification.findMany({ where: { requestId: reqId }, orderBy: { createdAt: "asc" } });
+    const n = await db.prisma.notification.findMany({ where: { requestId: reqId }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] });
     const toFadli = n.filter((x) => x.userId === u.Fadli.id);
     const toFafa = n.filter((x) => x.userId === u.Fafa.id);
     expect(toFadli.map((x) => x.type)).toEqual(["ASSIGNED"]);

@@ -129,7 +129,7 @@ async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["
                   <li key={a.id} className="flex flex-wrap items-baseline gap-x-3 text-sm">
                     <ExtLink href={a.url}>{a.name}</ExtLink>
                     <span className="text-xs text-muted-foreground">added by {a.uploader.name}, {day.format(a.createdAt)}</span>
-                    {(a.uploaderId === user.id || canAssign) && <RemoveAttachmentButton attachmentId={a.id} name={a.name} />}
+                    {(a.uploaderId === user.id || canAssign) && <RemoveAttachmentButton requestId={req.id} attachmentId={a.id} name={a.name} />}
                   </li>
                 ))}
               </ul>

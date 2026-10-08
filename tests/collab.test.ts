@@ -101,6 +101,35 @@ describe("collaboration cores", () => {
     });
   });
 
+  describe("assignRequestWith atomicity", () => {
+    it("does not reassign a request that gets cancelled between the checks and the update", async () => {
+      const p = db.prisma;
+      const base = await p.request.findUniqueOrThrow({ where: { id: reqId } });
+      const racing = await p.request.create({ data: { title: "race", brandId: base.brandId, divisionId: base.divisionId, typeId: base.typeId, requesterId: base.requesterId } });
+      // Wrap the client so the request is cancelled right after assignRequestWith reads it.
+      const racy = new Proxy(p, {
+        get(t, prop, recv) {
+          if (prop !== "request") return Reflect.get(t, prop, recv);
+          return new Proxy(t.request, {
+            get(rt, rp) {
+              const v = Reflect.get(rt, rp) as (...a: unknown[]) => unknown;
+              if (rp !== "findUnique") return typeof v === "function" ? v.bind(rt) : v;
+              let cancelled = false;
+              return async (...a: unknown[]) => {
+                const out = await v.apply(rt, a);
+                if (!cancelled) { cancelled = true; await t.request.update({ where: { id: racing.id }, data: { status: "CANCELLED" } }); }
+                return out;
+              };
+            },
+          });
+        },
+      });
+      const r = await assignRequestWith(racy, actor("lead", "LEAD"), racing.id, ids.dimas);
+      expect(r).toMatchObject({ ok: false, code: "INVALID" });
+      expect((await p.request.findUniqueOrThrow({ where: { id: racing.id } })).assigneeId).toBeNull();
+    });
+  });
+
   describe("addAttachmentWith", () => {
     const add = (name: string, url: string, id = reqId) => addAttachmentWith(db.prisma, actor("author", "REQUESTER"), id, { name, url });
     it("accepts http(s), trims name, leaves mime/size null", async () => {
@@ -122,9 +151,20 @@ describe("collaboration cores", () => {
     it("only uploader or lead may remove", async () => {
       const r = await add("rm", "https://a.com");
       if (!r.ok) throw new Error("setup");
-      expect(await removeAttachmentWith(db.prisma, actor("dimas", "CREATIVE"), r.id)).toMatchObject({ ok: false, code: "FORBIDDEN" });
-      expect(await removeAttachmentWith(db.prisma, actor("lead", "LEAD"), r.id)).toEqual({ ok: true });
-      expect(await removeAttachmentWith(db.prisma, actor("lead", "LEAD"), r.id)).toMatchObject({ code: "NOT_FOUND" });
+      expect(await removeAttachmentWith(db.prisma, actor("dimas", "CREATIVE"), reqId, r.id)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+      expect(await removeAttachmentWith(db.prisma, actor("lead", "LEAD"), reqId, r.id)).toEqual({ ok: true });
+      expect(await removeAttachmentWith(db.prisma, actor("lead", "LEAD"), reqId, r.id)).toMatchObject({ code: "NOT_FOUND" });
+    });
+    it("is bound to the request: an attachment of another request is NOT_FOUND and survives", async () => {
+      const r = await add("bound", "https://a.com");
+      if (!r.ok) throw new Error("setup");
+      expect(await removeAttachmentWith(db.prisma, actor("lead", "LEAD"), cancelledId, r.id)).toMatchObject({ ok: false, code: "NOT_FOUND" });
+      expect(await db.prisma.attachment.findUnique({ where: { id: r.id } })).not.toBeNull();
+    });
+    it("caps the url at 2048 characters", async () => {
+      const url = (n: number) => "https://a.com/" + "x".repeat(n - 14);
+      expect(await add("long", url(2049))).toMatchObject({ ok: false, code: "INVALID" });
+      expect(await add("ok", url(2048))).toMatchObject({ ok: true });
     });
   });
 });

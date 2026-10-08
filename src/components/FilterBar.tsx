@@ -24,16 +24,19 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
     <form method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-end gap-3">
       {p.view === "table" && <input type="hidden" name="view" value="table" />}
       {p.mine && <input type="hidden" name="mine" value="1" />}
+      {/* Keep the table sort when filtering (same rules as hrefWith). */}
+      {p.view === "table" && p.sort !== "deadline" && <input type="hidden" name="sort" value={p.sort} />}
+      {p.dir === "desc" && <input type="hidden" name="dir" value="desc" />}
       <label className="flex flex-col gap-1 text-xs font-medium">
         Search
-        <input type="search" name="q" defaultValue={p.q ?? ""} placeholder="Title or notes" className={`${field} w-48`} />
+        <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={`${field} w-48`} />
       </label>
       {select("status", "Status", p.status, statuses.map((s) => ({ id: s, name: STATUS_LABEL[s] })))}
       {select("brand", "Brand", p.brandId, brands)}
       {select("division", "Division", p.divisionId, divisions)}
       {select("assignee", "Assignee", p.assigneeId, assignees)}
       <button className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Apply</button>
-      <Link href={mineHref} aria-pressed={p.mine} className={`rounded-md border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring ${p.mine ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
+      <Link href={mineHref} aria-current={p.mine ? "true" : undefined} className={`rounded-md border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring ${p.mine ? "border-primary bg-primary text-primary-foreground" : "border-border"}`}>
         {p.mine ? "✓ " : ""}My requests
       </Link>
       <Link href={clearHref} className="py-1.5 text-sm underline focus-visible:outline-2 focus-visible:outline-ring">Clear filters</Link>

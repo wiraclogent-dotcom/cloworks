@@ -34,6 +34,6 @@ export async function addAttachment(requestId: string, input: { name: string; ur
   });
 }
 
-export async function removeAttachment(attachmentId: string): Promise<{ ok: true } | CollabFail> {
-  return run((u) => removeAttachmentWith(prisma, u, attachmentId));
+export async function removeAttachment(requestId: string, attachmentId: string): Promise<{ ok: true } | CollabFail> {
+  return run((u) => removeAttachmentWith(prisma, u, requestId, attachmentId));
 }

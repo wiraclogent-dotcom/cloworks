@@ -377,11 +377,31 @@ describe("collisions mirror the import resolver", () => {
     expect(await code(updateUser(db.prisma, admin, b.id, { aliases: ["RinaPq"] }))).toBe("CONFLICT");
     expect(await code(updateUser(db.prisma, admin, b.id, { fullName: "rina pq" }))).toBe("CONFLICT");
   });
-  it("own fields: alias equal to own name is rejected, name == fullName is fine, unrelated passes", async () => {
+  it("own fields: alias equal to own name is silently dropped, name == fullName is fine, unrelated passes", async () => {
     const b = await mk();
-    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: [b.name.toLowerCase()] }))).toBe("VALIDATION");
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: [b.name.toLowerCase()] }))).toBe("OK");
+    expect((await db.prisma.user.findUniqueOrThrow({ where: { id: b.id } })).aliases).toEqual([]);
     expect(await code(updateUser(db.prisma, admin, b.id, { aliases: ["totally-unique-alias-xyz"] }))).toBe("OK");
     expect(await code(createUser(db.prisma, admin, { name: uniq("Fresh"), jobRole: "OTHER", appRole: "REQUESTER", aliases: ["fresh-one"] }))).toBe("OK");
+  });
+});
+
+describe("edit form posts every field: only CHANGED names are collision-checked", () => {
+  it("editing a role with a posted alias list containing the person's own name succeeds (seeded Irsyad shape)", async () => {
+    const p = await mk({ name: "Irsyad" + uniq("x"), fullName: "Irsyad Ahnaf " + uniq("F"), appRole: "CREATIVE", aliases: ["Irshyad" + n] });
+    const posted = [p.name.toLowerCase(), ...p.aliases];
+    expect(await code(updateUser(db.prisma, admin, p.id, { appRole: "LEAD", fullName: p.fullName, aliases: posted }))).toBe("OK");
+    const after = await db.prisma.user.findUniqueOrThrow({ where: { id: p.id } });
+    expect(after.appRole).toBe("LEAD");
+    expect(after.aliases).toEqual(p.aliases);
+  });
+  it("a pre-existing collision does not block an unrelated edit, but a changed colliding alias still fails", async () => {
+    const other = await mk({ aliases: ["Shared Pre" + uniq("a")] });
+    const b = await mk({ aliases: [...other.aliases] }); // legacy data: already collides
+    expect(await code(updateUser(db.prisma, admin, b.id, { appRole: "CREATIVE", fullName: b.fullName, aliases: b.aliases }))).toBe("OK");
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: [...b.aliases, ...other.aliases.map((a) => a + " ")] }))).toBe("OK"); // same normalised value: not changed
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: [...b.aliases, other.name] }))).toBe("CONFLICT");
+    expect(await code(updateUser(db.prisma, admin, b.id, { fullName: other.fullName }))).toBe("CONFLICT");
   });
 });
 

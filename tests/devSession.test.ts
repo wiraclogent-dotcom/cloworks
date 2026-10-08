@@ -4,6 +4,8 @@ import { seed } from "../prisma/seedCore";
 import { refreshJwt, requireUserWith } from "@/lib/session-core";
 import {
   assertDevSessionAllowed,
+  assertLocalDatabase,
+  isLocalDatabaseUrl,
   buildSessionClaims,
   isLocalHostUrl,
   mintSessionToken,
@@ -44,8 +46,30 @@ describe("devSession pure helpers", () => {
       expect(() => assertDevSessionAllowed({ ...GOOD, AUTH_SECRET: "change-me-generate-with-openssl-rand-base64-32" })).toThrow(/AUTH_SECRET/);
       expect(() => assertDevSessionAllowed({ NODE_ENV: "development", AUTH_SECRET: GOOD.AUTH_SECRET })).toThrow(/AUTH_URL/);
     });
+    it("refuses a secret shorter than 16 characters", () => {
+      expect(() => assertDevSessionAllowed({ ...GOOD, AUTH_SECRET: "short-secret" })).toThrow(/AUTH_SECRET/);
+      expect(assertDevSessionAllowed({ ...GOOD, AUTH_SECRET: "x".repeat(16) }).secret).toBe("x".repeat(16));
+    });
     it("never leaks the secret in error messages", () => {
       try { assertDevSessionAllowed({ ...GOOD, AUTH_URL: "https://tracker.example.com" }); } catch (e) { expect(String(e)).not.toContain(GOOD.AUTH_SECRET); }
+    });
+  });
+
+  describe("database host guard", () => {
+    it("accepts only local hosts", () => {
+      for (const u of ["postgresql://postgres:postgres@localhost:54329/creative_tracker", "postgres://u:p@127.0.0.1:5432/db", "postgresql://u:p@[::1]:5432/db"])
+        expect(isLocalDatabaseUrl(u)).toBe(true);
+      for (const u of ["postgresql://u:p@db.example.com:5432/x", "postgresql://u:p@localhost.evil.com/x", "postgresql://u:p@10.0.0.5/x", "postgresql://u:p@localhost/x?host=db.example.com", "http://localhost/x", "", undefined, "not a url"])
+        expect(isLocalDatabaseUrl(u)).toBe(false);
+    });
+    it("assertLocalDatabase refuses without echoing the URL", () => {
+      const url = "postgresql://admin:hunter2@prod-db.example.com:5432/app";
+      let msg = "";
+      try { assertLocalDatabase({ DATABASE_URL: url }); } catch (e) { msg = String(e); }
+      expect(msg).toMatch(/DATABASE_URL/);
+      expect(msg).not.toMatch(/hunter2|prod-db/);
+      expect(() => assertLocalDatabase({})).toThrow(/DATABASE_URL/);
+      expect(() => assertLocalDatabase({ DATABASE_URL: "postgresql://u:p@localhost:54329/x" })).not.toThrow();
     });
   });
 

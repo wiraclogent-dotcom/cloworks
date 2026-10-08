@@ -31,7 +31,7 @@ describe("seed", () => {
     const wira = withEmail[1];
     expect(wira).toMatchObject({ email: "wira.budi@clogent.co.id", appRole: "ADMIN", jobRole: "DESIGNER", fullName: "Wira Budi Prasetyo" });
     expect((await db.prisma.user.findFirstOrThrow({ where: { name: "Daus" } })).active).toBe(false);
-    expect((await db.prisma.user.findFirstOrThrow({ where: { name: "Irsyad" } })).aliases).toEqual(["Irshyad", "irsyad"]);
+    expect((await db.prisma.user.findFirstOrThrow({ where: { name: "Irsyad" } })).aliases).toEqual(["Irshyad"]);
     const social = await db.prisma.requestType.findFirstOrThrow({ where: { name: "Social Media" } });
     expect((social.fieldSchema as unknown[]).length).toBe(6);
   });

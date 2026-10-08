@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import { PrismaClient } from "@prisma/client";
-import { assertDevSessionAllowed, mintSessionToken, normalizeEmail, sessionCookieName } from "../src/lib/devSession";
+import { assertDevSessionAllowed, assertLocalDatabase, mintSessionToken, normalizeEmail, sessionCookieName } from "../src/lib/devSession";
 
 // LOCAL manual/browser QA only: mints a session cookie for an existing user. Refuses anything but a localhost setup.
 async function main() {
@@ -8,6 +8,7 @@ async function main() {
   const raw = process.argv.slice(2).filter((a) => a !== "--");
   if (raw.length !== 1) throw new Error("Usage: npm run dev:session -- <email>");
   const { secret, baseUrl } = assertDevSessionAllowed(process.env);
+  assertLocalDatabase(process.env);
   const email = normalizeEmail(raw[0]);
 
   const db = new PrismaClient();

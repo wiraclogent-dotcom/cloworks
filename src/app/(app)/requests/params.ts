@@ -12,13 +12,21 @@ export type ViewParams = {
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
 
+export const MAX_Q = 200;
+export const MAX_ID = 64;
+/** Ids are short cuids; anything longer is garbage and is ignored rather than sent to the database. */
+const id = (v: string | string[] | undefined) => {
+  const s = one(v);
+  return s && s.length <= MAX_ID ? s : undefined;
+};
+
 export function parseParams(raw: RawParams): ViewParams {
   const status = one(raw.status);
   const sort = one(raw.sort);
   return {
     view: one(raw.view) === "table" ? "table" : "board",
     status: STATUSES.find((s) => s === status),
-    assigneeId: one(raw.assignee), brandId: one(raw.brand), divisionId: one(raw.division), q: one(raw.q)?.trim() || undefined,
+    assigneeId: id(raw.assignee), brandId: id(raw.brand), divisionId: id(raw.division), q: one(raw.q)?.trim().slice(0, MAX_Q).trim() || undefined,
     mine: one(raw.mine) === "1",
     sort: SORT_KEYS.find((k) => k === sort) ?? "deadline",
     dir: one(raw.dir) === "desc" ? "desc" : "asc",

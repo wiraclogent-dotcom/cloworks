@@ -5,7 +5,7 @@ video and social-content requests; a lead assigns them; designers move them thro
 dashboard measures each person's completed tasks against a monthly target.
 
 Features: request intake with per-type custom fields, list and board views (drag and drop), request detail with
-comments, @mentions and link attachments, in-app and email notifications, projects with a timeline, a KPI dashboard
+comments, @mentions and link attachments, email notifications, projects with a timeline, a KPI dashboard
 (self and team), an admin area (people, access, brands, divisions, request types), and a CSV importer for the legacy
 Google Sheets.
 
@@ -16,7 +16,7 @@ Microsoft Entra ID), Prisma 6 with PostgreSQL, Zod, Recharts, dnd-kit, Vitest wi
 
 ## Prerequisites
 
-- Node.js 24 (developed on 24.21)
+- Node.js 22+ (developed on 24.21.0)
 - npm
 - No Docker or system Postgres needed for local work: `npm run db:dev` starts an embedded Postgres.
 
@@ -48,7 +48,7 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 | `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Microsoft Entra app registration. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | `https://login.microsoftonline.com/<tenant-id>/v2.0`. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Your tenant id. Entra sign-in is denied unless the token's `tid` equals it. | Yes, to use Microsoft sign-in |
-| `RESEND_API_KEY` | Resend API key for notification emails. Empty means email is skipped (in-app notifications still work). | No |
+| `RESEND_API_KEY` | Resend API key for notification emails. Empty means no email is sent (notification rows are still stored). | No |
 | `EMAIL_FROM` | Sender, e.g. `Creative Tracker <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | No |
 | `APP_BASE_URL` | Base URL used for links in emails. | No (recommended when email is on) |
 
@@ -143,7 +143,7 @@ after seeding). In the browser open `http://localhost:3000`, DevTools > Applicat
 Path `/`, and reload. The cookie lasts 24 hours.
 
 Safety: the script refuses to run unless `AUTH_URL` (or `APP_BASE_URL`) is localhost, 127.0.0.1 or `[::1]`,
-`NODE_ENV` is not `production`, and `AUTH_SECRET` is set and not the `.env.example` placeholder. It never prints
+`NODE_ENV` is not `production`, `AUTH_SECRET` is set (at least 16 characters, not the `.env.example` placeholder), and `DATABASE_URL` points at localhost, 127.0.0.1 or `[::1]`. It never prints
 `AUTH_SECRET` or `DATABASE_URL`. Treat the printed value as a password.
 
 ## Deployment notes
@@ -154,13 +154,14 @@ Safety: the script refuses to run unless `AUTH_URL` (or `APP_BASE_URL`) is local
 - Seed once (`npm run db:seed`) so Wira can sign in; add everyone else through Admin > Users.
 - Register the OAuth redirect URIs for your public URL (`/api/auth/callback/google` and
   `/api/auth/callback/microsoft-entra-id`).
-- Resend is optional: without `RESEND_API_KEY` and `EMAIL_FROM` notifications stay in-app only.
+- Resend is optional: without `RESEND_API_KEY` and `EMAIL_FROM` no emails are sent. Notification rows are always stored in the database for a future inbox.
 - Do not run `dev:session` against a deployed environment (it refuses non-localhost anyway).
 
 ## Known limitations
 
 - Attachments and design folders are **links**, not file uploads.
-- Notifications are in-app and email only (no chat integrations).
+- Notifications are **email only** in V1: there is no in-app inbox or bell yet. Notification rows are stored so an inbox
+  can be added later, and emails are sent only when `RESEND_API_KEY` and `EMAIL_FROM` are configured. No chat integrations.
 - There is no automated browser end-to-end suite; the lifecycle is covered by a database-backed integration test and
   UI parts by component tests. Browser flows (sign-in, drag and drop persistence) are checked manually.
 - Imported history has synthetic completion dates (see KPI caveat).

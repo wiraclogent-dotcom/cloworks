@@ -75,7 +75,7 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
       </div>
       <div>
         <label htmlFor={`${uid}-u`} className="block text-sm font-medium">Link address</label>
-        <input id={`${uid}-u`} type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={control} aria-describedby={error ? `${uid}-e` : undefined} />
+        <input id={`${uid}-u`} type="url" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={control} aria-describedby={error ? `${uid}-e` : undefined} />
       </div>
       <ErrorLine id={`${uid}-e`} message={error} />
       <button type="submit" disabled={pending} className={button}>{pending ? "Adding…" : "Add link"}</button>
@@ -83,7 +83,7 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
   );
 }
 
-export function RemoveAttachmentButton({ attachmentId, name }: { attachmentId: string; name: string }) {
+export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requestId: string; attachmentId: string; name: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -93,7 +93,7 @@ export function RemoveAttachmentButton({ attachmentId, name }: { attachmentId: s
         onClick={() => start(async () => {
           setError(null);
           try {
-            const r = await removeAttachment(attachmentId);
+            const r = await removeAttachment(requestId, attachmentId);
             if (r.ok) router.refresh(); else setError(r.message);
           } catch { setError("Could not remove the link."); }
         })}

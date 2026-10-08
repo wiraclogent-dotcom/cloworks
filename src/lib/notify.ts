@@ -51,7 +51,7 @@ function safeBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-/** Best-effort: never throws. Writes in-app rows for every recipient, emails those with an address. */
+/** Best-effort: never throws. Stores a notification row for every recipient (for a future inbox) and emails those with an address when email is configured. */
 export async function notifyWith(
   db: PrismaClient,
   mailer: Mailer,

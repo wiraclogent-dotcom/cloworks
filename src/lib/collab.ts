@@ -11,6 +11,7 @@ const fail = (code: CollabCode, message: string): CollabFail => ({ ok: false, co
 
 export const MAX_COMMENT = 5000;
 export const MAX_ATTACHMENT_NAME = 200;
+export const MAX_ATTACHMENT_URL = 2048;
 
 /**
  * Mention rule: a token is `@` (not preceded by a letter/digit/underscore) followed by letters, digits, `_`, `-` or `.`;
@@ -115,7 +116,12 @@ export async function assignRequestWith(
     if (!a.active) return fail("INVALID", "That person is no longer active.");
     if (a.appRole === "REQUESTER") return fail("INVALID", "Requesters cannot be assignees. Pick a creative, lead or admin.");
   }
-  await db.request.update({ where: { id: requestId }, data: { assigneeId } });
+  // Atomic guard: a request cancelled after the reads above matches 0 rows instead of being reassigned.
+  const res = await db.request.updateMany({ where: { id: requestId, status: { not: "CANCELLED" } }, data: { assigneeId } });
+  if (res.count === 0) {
+    const now = await db.request.findUnique({ where: { id: requestId }, select: { status: true } });
+    return now ? fail("INVALID", "A cancelled request cannot be reassigned.") : fail("NOT_FOUND", "Request not found.");
+  }
   if (assigneeId !== null && assigneeId !== req.assigneeId) {
     await bestEffort(async () => {
       const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
@@ -135,6 +141,7 @@ export async function addAttachmentWith(
   const url = typeof input?.url === "string" ? input.url.trim() : "";
   if (!name) return fail("INVALID", "Give the link a name.");
   if (name.length > MAX_ATTACHMENT_NAME) return fail("INVALID", `Link names can be at most ${MAX_ATTACHMENT_NAME} characters.`);
+  if (url.length > MAX_ATTACHMENT_URL) return fail("INVALID", `Links can be at most ${MAX_ATTACHMENT_URL} characters.`);
   if (!isHttpUrl(url)) return fail("INVALID", "Enter a full http(s) link, for example https://drive.google.com/…");
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
   const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true } });
@@ -143,10 +150,10 @@ export async function addAttachmentWith(
   return { ok: true, id: a.id };
 }
 
-/** Only the uploader or a lead/admin may remove a link. */
-export async function removeAttachmentWith(db: PrismaClient, user: Actor, attachmentId: string): Promise<{ ok: true } | CollabFail> {
-  const a = await db.attachment.findUnique({ where: { id: attachmentId }, select: { uploaderId: true } });
-  if (!a) return fail("NOT_FOUND", "Link not found.");
+/** Only the uploader or a lead/admin may remove a link. The link must belong to `requestId`. */
+export async function removeAttachmentWith(db: PrismaClient, user: Actor, requestId: string, attachmentId: string): Promise<{ ok: true } | CollabFail> {
+  const a = await db.attachment.findUnique({ where: { id: attachmentId }, select: { uploaderId: true, requestId: true } });
+  if (!a || a.requestId !== requestId) return fail("NOT_FOUND", "Link not found.");
   if (a.uploaderId !== user.id && !can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only the person who added a link, or a lead, can remove it.");
   await db.attachment.delete({ where: { id: attachmentId } });
   return { ok: true };
