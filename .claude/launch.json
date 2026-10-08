@@ -5,7 +5,8 @@
       "name": "db",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "db:dev"],
-      "port": 54329
+      "port": 54329,
+      "autoPort": false
     },
     {
       "name": "app",
