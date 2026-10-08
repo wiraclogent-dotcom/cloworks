@@ -45,7 +45,8 @@ Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle);
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |
 | `Avatar`, `UnassignedAvatar`, `AvatarStack` | Avatar.tsx | `name`, `size` sm/md/lg, `ring`, `decorative`; `names`, `max`, `label` | People. Set `decorative` when the name is printed next to it. |
 | `fieldClass()`, `labelClass`, `hintClass`, `FieldError` | Field.tsx | `kind` input/select/textarea, `invalid`, `size`; `FieldError id` | Forms: 36px fields, error = `invalid` + `aria-invalid` + `aria-describedby` → `FieldError`. |
-| `RadioCards` | RadioCards.tsx | `name`, `legend`, `options {value,title,description?,icon?}`, `value`/`defaultValue`, `onChange`, `invalid`, `describedBy` | Few, important choices ("Does this task need motion?"). Real radios, works in plain forms. |
+| `RadioCards` | RadioCards.tsx | `name`, `legend`, `options {value,title,description?,icon?}`, `value`/`defaultValue`, `onChange`, `invalid`, `describedBy`, `hint`/`hintId` | Few, important choices ("Does this task need motion?"). Real radios, works in plain forms; each radio is named by its card title and described by its description. |
+| `Switch` | Switch.tsx | `id`, `label`, `description`, `checked`, `disabled`, `onChange`, `describedBy` | On/off settings (real checkbox, `role="switch"`, whole row is the label). |
 | `ProgressBar` | ProgressBar.tsx | `value`, `max`, `label`, `hideLabel`, `valueText` | Targets. ≥ 100% shows a check; bar clamps, text does not. |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
 | `EmptyState` | EmptyState.tsx | `icon`, `title`, `description`, `action` | Empty lists / no results. |

@@ -8,13 +8,19 @@ import { moveRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
 import { canTransition } from "@/lib/workflow";
-
-const control = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
-const button = "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60";
+import { CircleAlert, Link2, MessageSquarePlus, Trash2 } from "lucide-react";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { Switch } from "@/components/ui/Switch";
 
 function ErrorLine({ id, message }: { id: string; message: string | null }) {
   if (!message) return null;
-  return <p id={id} role="alert" className="text-sm font-medium"><span aria-hidden="true">⚠ </span>{message}</p>;
+  return (
+    <p id={id} role="alert" className="mt-1.5 flex items-start gap-1.5 text-[13px] font-medium text-danger">
+      <CircleAlert aria-hidden="true" strokeWidth={1.75} className="mt-0.5 size-3.5 shrink-0" />
+      <span>{message}</span>
+    </p>
+  );
 }
 
 /** Controlled so a failed post keeps what the user typed; cleared only on success. */
@@ -37,13 +43,15 @@ export function CommentForm({ requestId }: { requestId: string }) {
     });
   }
   return (
-    <form onSubmit={submit} className="space-y-2" noValidate>
-      <label htmlFor={`${uid}-b`} className="block text-sm font-medium">Add a comment</label>
+    <form onSubmit={submit} noValidate>
+      <label htmlFor={`${uid}-b`} className={labelClass}>Add a comment</label>
       <textarea id={`${uid}-b`} value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={5000}
-        aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-e` : `${uid}-h`} className={control} />
-      <p id={`${uid}-h`} className="text-xs text-muted-foreground">Type @ and a name to mention a teammate.</p>
+        aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-e` : `${uid}-h`} className={fieldClass({ kind: "textarea", invalid: !!error })} />
       <ErrorLine id={`${uid}-e`} message={error} />
-      <button type="submit" disabled={pending} className={button}>{pending ? "Posting…" : "Post comment"}</button>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+        <p id={`${uid}-h`} className="text-xs text-foreground-secondary">Type @ and a name to mention a teammate.</p>
+        <Button type="submit" variant="primary" size="sm" loading={pending} icon={<MessageSquarePlus aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Posting…" : "Post comment"}</Button>
+      </div>
     </form>
   );
 }
@@ -68,17 +76,19 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
     });
   }
   return (
-    <form onSubmit={submit} className="space-y-2" noValidate>
-      <div>
-        <label htmlFor={`${uid}-n`} className="block text-sm font-medium">Link name</label>
-        <input id={`${uid}-n`} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} className={control} />
-      </div>
-      <div>
-        <label htmlFor={`${uid}-u`} className="block text-sm font-medium">Link address</label>
-        <input id={`${uid}-u`} type="url" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={control} aria-describedby={error ? `${uid}-e` : undefined} />
+    <form onSubmit={submit} noValidate>
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] sm:items-end">
+        <div>
+          <label htmlFor={`${uid}-n`} className={labelClass}>Link name</label>
+          <input id={`${uid}-n`} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} className={fieldClass()} />
+        </div>
+        <div>
+          <label htmlFor={`${uid}-u`} className={labelClass}>Link address</label>
+          <input id={`${uid}-u`} type="url" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={fieldClass({ invalid: !!error })} aria-describedby={error ? `${uid}-e` : undefined} />
+        </div>
+        <Button type="submit" variant="secondary" loading={pending} icon={<Link2 aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Adding…" : "Add link"}</Button>
       </div>
       <ErrorLine id={`${uid}-e`} message={error} />
-      <button type="submit" disabled={pending} className={button}>{pending ? "Adding…" : "Add link"}</button>
     </form>
   );
 }
@@ -97,8 +107,10 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
             if (r.ok) router.refresh(); else setError(r.message);
           } catch { setError("Could not remove the link."); }
         })}
-        className="text-sm underline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60">Remove</button>
-      {error && <span role="alert" className="ml-2 text-sm">{error}</span>}
+        className={buttonClass({ variant: "ghost", size: "sm" })}>
+        <Trash2 aria-hidden="true" strokeWidth={1.75} />Remove
+      </button>
+      {error && <span role="alert" className="ml-2 text-[13px] text-danger">{error}</span>}
     </span>
   );
 }
@@ -124,9 +136,9 @@ export function AssigneePicker({ requestId, current, options }: { requestId: str
     });
   }
   return (
-    <div className="space-y-1">
-      <label htmlFor={`${uid}-a`} className="block text-sm font-medium">Assignee</label>
-      <select id={`${uid}-a`} value={value} disabled={pending} onChange={(e) => change(e.target.value)} className={control}>
+    <div>
+      <label htmlFor={`${uid}-a`} className={labelClass}>Assignee</label>
+      <select id={`${uid}-a`} value={value} disabled={pending} onChange={(e) => change(e.target.value)} className={fieldClass({ kind: "select" })}>
         <option value="">Unassigned</option>
         {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>
@@ -156,14 +168,15 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
     });
   }
   return (
-    <div className="space-y-1">
-      <label htmlFor={`${uid}-m`} className="block text-sm font-medium">Move to…</label>
-      <select id={`${uid}-m`} value="" disabled={pending}
+    <div>
+      <label htmlFor={`${uid}-m`} className={labelClass}>Move to…</label>
+      <select id={`${uid}-m`} value="" disabled={pending} aria-describedby={`${uid}-mh`}
         onChange={(e) => { const to = e.target.value as RequestStatus; if (!to) return; if (to === "DONE") setPendingDone(true); else move(to); }}
-        className={control}>
+        className={fieldClass({ kind: "select" })}>
         <option value="">Choose a status</option>
         {legal.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
       </select>
+      <p id={`${uid}-mh`} className={hintClass}>{legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</p>
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}
     </div>
@@ -192,18 +205,15 @@ export function IncludeKpiToggle({ requestId, initial }: { requestId: string; in
     });
   }
   return (
-    <div className="space-y-1">
-      <label htmlFor={`${uid}-k`} className="flex items-center gap-2 text-sm font-medium">
-        <input id={`${uid}-k`} type="checkbox" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
-          aria-describedby={error ? `${uid}-e` : undefined} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
-        Counts toward KPI
-      </label>
+    <div>
+      <Switch id={`${uid}-k`} label="Counts toward KPI" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+        describedBy={error ? `${uid}-e` : undefined} />
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>
   );
 }
 
-/** Lead/admin switch: does this task also need motion work? Renders nothing for everyone else (they see the read-only row). */
+/** Lead/admin switch: does this task also need motion work? Renders nothing for everyone else (they see the Needs motion chip in the page header). */
 export function NeedsMotionToggle({ requestId, initial, canEdit }: { requestId: string; initial: boolean; canEdit: boolean }) {
   const uid = useId();
   const router = useRouter();
@@ -226,12 +236,9 @@ export function NeedsMotionToggle({ requestId, initial, canEdit }: { requestId: 
     });
   }
   return (
-    <div className="space-y-1">
-      <label htmlFor={`${uid}-m`} className="flex items-center gap-2 text-sm font-medium">
-        <input id={`${uid}-m`} type="checkbox" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
-          aria-describedby={error ? `${uid}-e` : undefined} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
-        Needs motion
-      </label>
+    <div>
+      <Switch id={`${uid}-m`} label="Needs motion" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+        describedBy={error ? `${uid}-e` : undefined} />
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>
   );
