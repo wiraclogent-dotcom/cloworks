@@ -1,0 +1,41 @@
+import { describe, it, expect } from "vitest";
+import { can, type Action } from "@/lib/permissions";
+
+const ACTIONS: Action[] = [
+  "request.create",
+  "request.assign",
+  "request.transition",
+  "dashboard.team",
+  "dashboard.self",
+  "project.manage",
+  "admin.manage",
+];
+
+const EXPECTED = {
+  REQUESTER: ["request.create"],
+  CREATIVE: ["request.create", "request.transition", "dashboard.self", "project.manage"],
+  LEAD: [
+    "request.create",
+    "request.transition",
+    "dashboard.self",
+    "project.manage",
+    "request.assign",
+    "dashboard.team",
+  ],
+  ADMIN: ACTIONS,
+} as const;
+
+describe("can(role, action)", () => {
+  for (const [role, allowed] of Object.entries(EXPECTED)) {
+    for (const action of ACTIONS) {
+      const want = (allowed as readonly string[]).includes(action);
+      it(`${role} ${want ? "can" : "cannot"} ${action}`, () => {
+        expect(can(role as keyof typeof EXPECTED, action)).toBe(want);
+      });
+    }
+  }
+
+  it("REQUESTER cannot see team dashboard", () => {
+    expect(can("REQUESTER", "dashboard.team")).toBe(false);
+  });
+});
