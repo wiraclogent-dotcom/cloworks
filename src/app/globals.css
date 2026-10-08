@@ -31,7 +31,10 @@
   --border-strong: #d0d7e2;
   --foreground: #1b2a3a;
   --foreground-secondary: #5b6b7f;
+  /* Non-text only (decorative icons, dividers): 3.26:1 on white is below AA for text. */
   --foreground-muted: #8190a3;
+  /* Field placeholders are text: AA (4.5:1) on the field and on a disabled (muted) field. */
+  --placeholder: var(--foreground-secondary);
   --heading: var(--brand-deep-blue);
   --link: var(--brand-aqua-strong);
   /* Field outline: 3:1 against white (WCAG 1.4.11), slightly darker than --border-strong. */
@@ -42,7 +45,8 @@
   /* Sidebar */
   --sidebar: #09426d;
   --sidebar-foreground: #e6eef6;
-  --sidebar-foreground-secondary: #9db7cf;
+  /* Lightened from spec #9DB7CF so it stays ≥ 4.5:1 on the hover (5.29) and active (4.76) pills, not only on the bar. */
+  --sidebar-foreground-secondary: #bcd0e2;
   --sidebar-hover: rgba(255, 255, 255, 0.08);
   --sidebar-active: rgba(17, 170, 159, 0.24);
   /* Aqua icon/indicator on the active pill: lighter Aqua (brand Aqua is 2.6:1 there). */
@@ -53,13 +57,10 @@
   /* Semantic tokens (shadcn-style), mapped onto the tokens above */
   --card: var(--surface);
   --card-foreground: var(--foreground);
-  --popover: var(--surface);
-  --popover-foreground: var(--foreground);
   --primary: var(--brand-deep-blue);
   --primary-foreground: #ffffff;
   --primary-hover: #0b3a60;
   --secondary: var(--surface-muted);
-  --secondary-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--foreground-secondary);
   --accent: #ddf4f1;
@@ -151,7 +152,7 @@
 
   --sidebar: #0a2f4e;
   --sidebar-foreground: #e6eef6;
-  --sidebar-foreground-secondary: #9db7cf;
+  --sidebar-foreground-secondary: #bcd0e2;
   --sidebar-hover: rgba(255, 255, 255, 0.07);
   --sidebar-active: rgba(17, 170, 159, 0.24);
   --sidebar-accent: #4fd1c5;
@@ -249,19 +250,17 @@
   --color-foreground: var(--foreground);
   --color-foreground-secondary: var(--foreground-secondary);
   --color-foreground-muted: var(--foreground-muted);
+  --color-placeholder: var(--placeholder);
   --color-heading: var(--heading);
   --color-link: var(--link);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);

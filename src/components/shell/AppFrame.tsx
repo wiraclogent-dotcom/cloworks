@@ -5,7 +5,6 @@ import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
 import { setSidebarCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";
-import { SidebarCollapsedContext } from "./SidebarContext";
 import { sidebarRowClass } from "./classes";
 
 const SIDEBAR_ID = "app-sidebar";
@@ -52,7 +51,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
   }, [open]);
 
   return (
-    <SidebarCollapsedContext.Provider value={collapsed}>
+    <>
       <a href="#main" className="skip-link">Skip to content</a>
       <div className="flex min-h-dvh flex-1 flex-col md:flex-row">
         {/* Mobile top bar */}
@@ -102,7 +101,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
           <div className="app-content mx-auto w-full max-w-[1440px]">{children}</div>
         </main>
       </div>
-    </SidebarCollapsedContext.Provider>
+    </>
   );
 }
 

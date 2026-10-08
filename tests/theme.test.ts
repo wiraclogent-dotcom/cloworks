@@ -107,6 +107,9 @@ describe.each(themes)("contrast (%s)", (theme) => {
     ["--foreground-secondary", "--accent"],
     ["--sidebar-foreground", "--sidebar"],
     ["--sidebar-foreground-secondary", "--sidebar"],
+    // Phase B2 review fix: placeholders are text, so AA on the field and on a disabled (muted) field.
+    ["--placeholder", "--surface"],
+    ["--placeholder", "--surface-muted"],
   ])("text %s on %s ≥ 4.5:1", (fg, bg) => {
     expect(ratio(t(fg), t(bg))).toBeGreaterThanOrEqual(AA);
   });
@@ -116,6 +119,10 @@ describe.each(themes)("contrast (%s)", (theme) => {
     const active = over(t("--sidebar-active"), t("--sidebar"));
     expect(ratio(t("--sidebar-foreground"), hover)).toBeGreaterThanOrEqual(AA);
     expect(ratio(t("--sidebar-foreground"), active)).toBeGreaterThanOrEqual(AA);
+    // Phase B2 review fix: secondary sidebar text (group titles, role line, inactive theme options) also sits on the
+    // hover pill (theme switch track) and the active pill.
+    expect(ratio(t("--sidebar-foreground-secondary"), hover)).toBeGreaterThanOrEqual(AA);
+    expect(ratio(t("--sidebar-foreground-secondary"), active)).toBeGreaterThanOrEqual(AA);
     expect(ratio(t("--sidebar-accent"), active)).toBeGreaterThanOrEqual(UI);
     expect(ratio(t("--sidebar-ring"), t("--sidebar"))).toBeGreaterThanOrEqual(UI);
   });
@@ -129,6 +136,7 @@ describe.each(themes)("contrast (%s)", (theme) => {
     // Phase B1: Switch track (off = --input, on = --primary) against the card and its --surface knob.
     ["--primary", "--surface"],
     ["--foreground-muted", "--surface"],
+    ["--foreground-muted", "--background"],
     ["--chart-done", "--card"],
     ["--chart-target", "--card"],
   ])("UI/graphic %s against %s ≥ 3:1", (fg, bg) => {

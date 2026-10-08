@@ -15,7 +15,7 @@ export function IconButton({ icon, size = "md", variant = "ghost", className, ty
     <button type={type} title={title ?? rest["aria-label"]} {...rest}
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-55 [&_svg]:size-[18px] [&_svg]:shrink-0",
-        size === "sm" ? "size-8" : "size-9",
+        size === "sm" ? "relative size-8 after:absolute after:-inset-0.5 after:content-['']" : "size-9",
         variant === "secondary"
           ? "border border-border-strong bg-surface text-foreground hover:bg-surface-muted"
           : "text-foreground-secondary hover:bg-surface-muted hover:text-foreground",

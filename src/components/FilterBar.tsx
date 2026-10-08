@@ -42,7 +42,7 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
         Search
         <span className="relative">
           <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-foreground-secondary" />
-          <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={cn(pill(), "w-52 pr-3 pl-8 placeholder:text-foreground-muted")} />
+          <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={cn(pill(), "w-52 pr-3 pl-8 placeholder:text-placeholder")} />
         </span>
       </label>
       {select("status", "Status", p.status, statuses.map((s) => ({ id: s, name: STATUS_LABEL[s] })))}

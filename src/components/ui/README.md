@@ -1,7 +1,8 @@
 # UI kit (Phase A foundation)
 
 Small, typed, server-safe components (only `ThemeSwitch` is a client component). Every component takes `className`
-(merged with `cn()` from `./cn`). Import each from its own file: `import { Button } from "@/components/ui/Button"`.
+(merged with `cn()` from `./cn`, which uses `tailwind-merge`: on a conflict the LAST class wins, so
+`<Button className="h-10">` really is 40px). Import each from its own file: `import { Button } from "@/components/ui/Button"`.
 Spec: `docs/superpowers/specs/2026-10-08-ui-redesign-design.md`.
 
 ## Tokens (globals.css)
@@ -9,7 +10,9 @@ Spec: `docs/superpowers/specs/2026-10-08-ui-redesign-design.md`.
 | Use | Class |
 |---|---|
 | Page canvas / card / hover fill | `bg-background` / `bg-card` (= `bg-surface`) / `bg-surface-muted` |
-| Text: body / secondary / hint only | `text-foreground` / `text-foreground-secondary` (= `text-muted-foreground`) / `text-foreground-muted` |
+| Text: body / secondary | `text-foreground` / `text-foreground-secondary` (= `text-muted-foreground`) |
+| Placeholders | `placeholder:text-placeholder` (AA; already in `fieldClass`) |
+| Non-text only (decorative icons) | `text-foreground-muted` (3:1, never for text) |
 | Page and card titles | `text-heading` (Deep Blue light, near-white dark; every `<h1>` gets it by default) |
 | Links | `text-link` (Aqua strong, AA on white) |
 | Hairline / button border / field outline | `border-border` / `border-border-strong` / `border-input` |
@@ -72,3 +75,10 @@ Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle);
 - No gradients, glass, heavy shadows or animation beyond 120–180 ms hover/focus transitions.
 - Do not render another `<main>`: the shell owns `<main id="main">`; pages render a `<div>`.
 - Do not add per-user data reads to the shell or layouts outside a `<Suspense>` boundary (cacheComponents).
+- Hydration: in a client component, never derive props or markup from `window`, `localStorage`, `matchMedia`,
+  `<html data-*>` or `Date.now()` during render through context/state that can differ from the server. Use
+  `useSyncExternalStore` with a server snapshot (React uses it while hydrating), or render unconditionally and let CSS
+  (`[data-sidebar]`, `[data-theme]`) decide. Late-hydrating Suspense boundaries see the client value otherwise
+  (tests/shellHydration.test.tsx).
+- Touch targets: `size="sm"` buttons are 32px visually with a 36px hit area (`::after`); keep at least 36px for
+  anything else you make clickable.

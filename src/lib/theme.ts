@@ -27,7 +27,19 @@ function prefersDark(): boolean {
   }
 }
 
+/**
+ * In-memory fallback for this page when storage is blocked (setItem throws: private mode, quota, policy). Without it the
+ * switch would read the old stored value back and aria-pressed would disagree with the applied theme.
+ */
+let memoryPref: ThemePref | null = null;
+
+/** Test helper: forget the in-memory fallback. */
+export function resetThemeMemory(): void {
+  memoryPref = null;
+}
+
 export function readThemePref(): ThemePref {
+  if (memoryPref !== null) return memoryPref;
   try {
     return parseThemePref(window.localStorage.getItem(THEME_KEY));
   } catch {
@@ -48,8 +60,10 @@ export function applyTheme(pref: ThemePref): ResolvedTheme {
 export function setThemePref(pref: ThemePref): void {
   try {
     window.localStorage.setItem(THEME_KEY, pref);
+    memoryPref = null;
   } catch {
-    /* storage blocked: the choice still applies to this page */
+    /* storage blocked: the choice still applies to this page (and is what the switch shows) */
+    memoryPref = pref;
   }
   applyTheme(pref);
 }

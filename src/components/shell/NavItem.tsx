@@ -5,14 +5,17 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { activeNavHref } from "@/lib/nav";
 import { cn } from "@/components/ui/cn";
-import { useSidebarCollapsed } from "./SidebarContext";
 
 type Props = { href: string; label: string; icon: ReactNode };
 
+/**
+ * `title` is always rendered (it is the rail's tooltip; CSS hides the label when collapsed). It must never depend on
+ * the collapsed state: these links hydrate inside Suspense boundaries after the frame has switched to the stored rail
+ * state, so a conditional prop differs from the server HTML (hydration mismatch; tests/shellHydration.test.tsx).
+ */
 function NavLinkView({ href, label, icon, active }: Props & { active: boolean }) {
-  const collapsed = useSidebarCollapsed();
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} title={collapsed ? label : undefined}
+    <Link href={href} aria-current={active ? "page" : undefined} title={label}
       className={cn(
         "sb-item flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors duration-150 ease-out",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring [&_svg]:size-[18px] [&_svg]:shrink-0",

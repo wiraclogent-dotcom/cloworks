@@ -21,8 +21,10 @@ type Common = {
 /** Round initials avatar. Same person (short name, case/space-insensitive) = same colour everywhere. */
 export function Avatar({ name, size = "md", ring, decorative, className }: Common & { name: string }) {
   const c = avatarColor(name);
+  // No name = nothing to announce: hidden like a decorative avatar (never role="img" with aria-label="").
+  const hidden = decorative || name.trim() === "";
   return (
-    <span {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={decorative ? undefined : name}
+    <span {...(hidden ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={hidden ? undefined : name}
       style={{ background: c.tint, color: c.text }}
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide uppercase select-none", SIZE[size], ring && "ring-2 ring-surface", className)}>
       {initials(name)}

@@ -54,7 +54,7 @@ export function ThemeSwitch({ tone = "surface", className }: { tone?: "surface" 
           return (
             <button key={value} type="button" aria-pressed={on} onClick={() => choose(value)}
               className={cn(
-                "inline-flex h-7 items-center justify-center gap-1 rounded-md text-xs font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1",
+                "inline-flex h-9 items-center justify-center gap-1 rounded-md text-xs font-medium transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-1",
                 sidebar
                   ? cn("focus-visible:outline-sidebar-ring", on ? "bg-sidebar-active text-sidebar-foreground" : "text-sidebar-foreground-secondary hover:text-sidebar-foreground")
                   : cn("focus-visible:outline-ring", on ? "bg-surface text-foreground shadow-card" : "text-foreground-secondary hover:text-foreground"),

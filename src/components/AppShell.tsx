@@ -5,11 +5,11 @@ import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { signOut } from "@/lib/auth";
 import { can } from "@/lib/permissions";
-import { Avatar } from "./ui/Avatar";
 import { Skeleton } from "./ui/Skeleton";
 import { ThemeSwitch } from "./ui/ThemeSwitch";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
+import { UserChipView } from "./shell/UserChipView";
 import { sidebarRowClass } from "./shell/classes";
 
 const ROLE_LABEL: Record<AppRole, string> = { REQUESTER: "Requester", CREATIVE: "Creative", LEAD: "Lead", ADMIN: "Admin" };
@@ -26,13 +26,13 @@ function NavGroup({ id, label, children }: { id: string; label: string; children
 }
 
 /** Team KPI is only offered to users who may open it (the page re-checks on the server). */
-async function TeamKpiItem() {
+export async function TeamKpiItem() {
   const { appRole } = await requireUserOrRedirect();
   return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/team" label="Team KPI" icon={<Users aria-hidden="true" />} /> : null;
 }
 
 /** Admin pages are only offered to users who may open them (the pages re-check on the server). */
-async function AdminGroup() {
+export async function AdminGroup() {
   const { appRole } = await requireUserOrRedirect();
   return can(appRole, "admin.manage") ? (
     <NavGroup id="nav-admin" label="Admin">
@@ -44,16 +44,7 @@ async function AdminGroup() {
 async function UserChip() {
   const { id, appRole } = await requireUserOrRedirect();
   const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
-  const name = me?.name ?? "";
-  return (
-    <div title={name} className="sb-item flex items-center gap-2.5 px-1.5 py-1">
-      <Avatar name={name} size="md" decorative />
-      <div className="sb-label min-w-0">
-        <p className="truncate text-sm font-medium text-sidebar-foreground">{name}</p>
-        <p className="truncate text-xs text-sidebar-foreground-secondary">{ROLE_LABEL[appRole]}</p>
-      </div>
-    </div>
-  );
+  return <UserChipView name={me?.name ?? ""} roleLabel={ROLE_LABEL[appRole]} />;
 }
 
 function UserChipFallback() {

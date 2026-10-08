@@ -11,7 +11,7 @@ export function fieldClass({ kind = "input", invalid = false, size = "md", class
   kind?: "input" | "select" | "textarea"; invalid?: boolean; size?: "sm" | "md"; className?: string;
 } = {}): string {
   return cn(
-    "block w-full rounded-lg border bg-surface text-sm text-foreground placeholder:text-foreground-muted",
+    "block w-full rounded-lg border bg-surface text-sm text-foreground placeholder:text-placeholder",
     "transition-colors duration-150 ease-out hover:border-foreground-secondary disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-70",
     invalid ? "border-danger" : "border-input",
     kind === "textarea" ? "min-h-24 px-3 py-2" : size === "sm" ? "h-8 px-2.5" : "h-9 px-3",

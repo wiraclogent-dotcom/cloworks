@@ -2,7 +2,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
-import { THEME_INIT_SCRIPT, parseThemePref, resolveTheme } from "@/lib/theme";
+import { THEME_INIT_SCRIPT, parseThemePref, resetThemeMemory, resolveTheme } from "@/lib/theme";
 
 function mockMatchMedia(dark: boolean) {
   window.matchMedia = vi.fn().mockImplementation((q: string) => ({
@@ -12,7 +12,7 @@ function mockMatchMedia(dark: boolean) {
 const html = () => document.documentElement;
 const runBootScript = () => new Function(THEME_INIT_SCRIPT)();
 
-beforeEach(() => { localStorage.clear(); html().removeAttribute("data-theme"); html().removeAttribute("data-sidebar"); mockMatchMedia(false); });
+beforeEach(() => { localStorage.clear(); resetThemeMemory(); html().removeAttribute("data-theme"); html().removeAttribute("data-sidebar"); mockMatchMedia(false); });
 afterEach(cleanup);
 
 describe("theme preference helpers", () => {

@@ -50,7 +50,8 @@ describe("AppFrame / sidebar shell", () => {
     shell();
     const btn = screen.getByRole("button", { name: "Collapse sidebar" });
     expect(btn.getAttribute("aria-expanded")).toBe("true");
-    expect(screen.getByRole("link", { name: "Projects" }).getAttribute("title")).toBeNull();
+    // The tooltip title is unconditional (never depends on the rail state: hydration safety).
+    expect(screen.getByRole("link", { name: "Projects" }).getAttribute("title")).toBe("Projects");
     await act(async () => { fireEvent.click(btn); });
     expect(html().getAttribute("data-sidebar")).toBe("collapsed");
     expect(localStorage.getItem("ct-sidebar")).toBe("collapsed");
