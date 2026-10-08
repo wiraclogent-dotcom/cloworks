@@ -36,7 +36,7 @@ const STEPS: { icon: React.ReactNode; title: string; text: string }[] = [
 /** Right-column help card (static). */
 function WhatHappensNext() {
   return (
-    <Card className="lg:sticky lg:top-6">
+    <Card className="@3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16">
       <CardTitle>What happens next</CardTitle>
       <ol className="mt-3 space-y-4">
         {STEPS.map((s, i) => (
@@ -86,7 +86,8 @@ export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions
     <>
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
     <p role="status" aria-live="polite" className="sr-only">{pending ? "" : summary}</p>
-    <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
+    <div className="@container">
+    <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_20rem]">
     <form ref={formRef} key={nonce} action={action} className="min-w-0 space-y-5" noValidate>
       {generic && <Alert tone="danger">{generic}</Alert>}
       <Card>
@@ -143,6 +144,7 @@ export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions
     <aside aria-label="What happens next" className="min-w-0">
       <WhatHappensNext />
     </aside>
+    </div>
     </div>
     </>
   );
