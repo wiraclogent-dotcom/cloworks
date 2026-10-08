@@ -6,7 +6,7 @@ describe("activeNavHref", () => {
     ["/requests", "/requests"],
     ["/requests/", "/requests"],
     ["/requests/abc123", "/requests"],
-    ["/requests/new", "/requests/new"],
+    ["/requests/new", "/requests"],
     ["/projects", "/projects"],
     ["/projects/p1/edit", "/projects"],
     ["/dashboard", "/dashboard"],

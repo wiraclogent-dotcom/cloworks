@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { ChartColumn, FolderKanban, LogOut, Plus, ShieldCheck, SquareKanban, Users } from "lucide-react";
+import { ChartColumn, FolderKanban, LogOut, ShieldCheck, SquareKanban, Users } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { signOut } from "@/lib/auth";
@@ -68,7 +68,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <nav aria-label="Main">
           <NavGroup id="nav-work" label="Work">
             <NavItem href="/requests" label="Requests" icon={<SquareKanban aria-hidden="true" />} />
-            <NavItem href="/requests/new" label="New request" icon={<Plus aria-hidden="true" />} />
             <NavItem href="/projects" label="Projects" icon={<FolderKanban aria-hidden="true" />} />
           </NavGroup>
           <NavGroup id="nav-insights" label="Insights">

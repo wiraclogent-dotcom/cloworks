@@ -14,8 +14,9 @@ function shell() {
     <AppFrame
       nav={<nav aria-label="Main"><ul>
         <NavItem href="/requests" label="Requests" icon={<svg aria-hidden="true" />} />
-        <NavItem href="/requests/new" label="New request" icon={<svg aria-hidden="true" />} />
         <NavItem href="/projects" label="Projects" icon={<svg aria-hidden="true" />} />
+        <NavItem href="/dashboard" label="My KPI" icon={<svg aria-hidden="true" />} />
+        <NavItem href="/dashboard/team" label="Team KPI" icon={<svg aria-hidden="true" />} />
       </ul></nav>}
       footer={<button type="button">Sign out</button>}>
       <h1>Page</h1>
@@ -38,12 +39,13 @@ describe("AppFrame / sidebar shell", () => {
 
   it("marks only the current route with aria-current=page (longest match)", () => {
     shell();
-    expect(screen.getByRole("link", { name: "New request" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: "Requests" }).getAttribute("aria-current")).toBeNull();
-    cleanup();
-    pathname = "/requests/abc";
-    shell();
     expect(screen.getByRole("link", { name: "Requests" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Projects" }).getAttribute("aria-current")).toBeNull();
+    cleanup();
+    pathname = "/dashboard/team";
+    shell();
+    expect(screen.getByRole("link", { name: "Team KPI" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "My KPI" }).getAttribute("aria-current")).toBeNull();
   });
 
   it("collapses to the icon rail: aria-expanded, remembered in ct-sidebar, tooltips on items", async () => {
