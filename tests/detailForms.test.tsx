@@ -3,15 +3,15 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
 const addComment = vi.fn();
-vi.mock("@/app/requests/[id]/actions", () => ({
+vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: (...a: unknown[]) => addComment(...a),
   addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(),
 }));
-vi.mock("@/app/requests/actions", () => ({ moveRequest: vi.fn() }));
+vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn() }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-import { CommentForm, AssigneePicker, MoveControl } from "@/app/requests/[id]/DetailForms";
+import { CommentForm, AssigneePicker, MoveControl } from "@/app/(app)/requests/[id]/DetailForms";
 import { splitMentions } from "@/lib/collab";
 
 beforeEach(() => { addComment.mockReset(); refresh.mockReset(); });

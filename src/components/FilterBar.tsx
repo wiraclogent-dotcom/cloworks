@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
-import type { ViewParams } from "@/app/requests/params";
+import type { ViewParams } from "@/app/(app)/requests/params";
 import { STATUS_LABEL } from "./status";
 
 type Opt = { id: string; name: string };

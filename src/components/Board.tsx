@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DndContext, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors, type DragEndEvent, type KeyboardCoordinateGetter } from "@dnd-kit/core";
 import type { RequestStatus } from "@prisma/client";
-import { moveRequest } from "@/app/requests/actions";
+import { moveRequest } from "@/app/(app)/requests/actions";
 import type { RequestRow } from "@/lib/requests";
 import { canTransition } from "@/lib/workflow";
 import { BoardCard } from "./BoardCard";

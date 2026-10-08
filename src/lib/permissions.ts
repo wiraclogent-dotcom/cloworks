@@ -9,8 +9,8 @@ export type Action =
   | "project.manage"
   | "admin.manage";
 
-const REQUESTER: readonly Action[] = ["request.create"];
-const CREATIVE: readonly Action[] = [...REQUESTER, "request.transition", "dashboard.self", "project.manage"];
+const REQUESTER: readonly Action[] = ["request.create", "dashboard.self"];
+const CREATIVE: readonly Action[] = [...REQUESTER, "request.transition", "project.manage"];
 const LEAD: readonly Action[] = [...CREATIVE, "request.assign", "dashboard.team"];
 const ADMIN: readonly Action[] = [...LEAD, "admin.manage"];
 

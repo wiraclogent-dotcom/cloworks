@@ -3,6 +3,15 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { signOut } from "@/lib/auth";
+import { can } from "@/lib/permissions";
+
+const LINK = "rounded-md px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring hover:underline";
+
+/** Team KPI is only offered to users who may open it (the page re-checks on the server). */
+async function TeamKpiLink() {
+  const { appRole } = await requireUser();
+  return can(appRole, "dashboard.team") ? <Link href="/dashboard/team" className={LINK}>Team KPI</Link> : null;
+}
 
 async function UserMenu() {
   const { id } = await requireUser();
@@ -19,7 +28,7 @@ async function UserMenu() {
 
 /** Header + nav for authenticated pages. The sign-in page does not use it. */
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const link = "rounded-md px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring hover:underline";
+  const link = LINK;
   return (
     <>
       <header className="border-b border-border bg-card text-card-foreground">
@@ -28,6 +37,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <nav aria-label="Main" className="flex gap-1">
             <Link href="/requests" className={link}>Requests</Link>
             <Link href="/requests/new" className={link}>New request</Link>
+            <Link href="/dashboard" className={link}>KPI</Link>
+            <Suspense fallback={null}><TeamKpiLink /></Suspense>
           </nav>
           <Suspense fallback={<span className="ml-auto" />}><UserMenu /></Suspense>
         </div>

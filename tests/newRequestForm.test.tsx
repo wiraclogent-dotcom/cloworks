@@ -4,10 +4,10 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 import { act } from "react";
 
 const submit = vi.fn();
-vi.mock("@/app/requests/actions", () => ({ submitRequest: (...a: unknown[]) => submit(...a) }));
+vi.mock("@/app/(app)/requests/actions", () => ({ submitRequest: (...a: unknown[]) => submit(...a) }));
 vi.mock("../actions", () => ({ submitRequest: (...a: unknown[]) => submit(...a) }));
 
-import { NewRequestForm } from "@/app/requests/new/NewRequestForm";
+import { NewRequestForm } from "@/app/(app)/requests/new/NewRequestForm";
 
 const brands = [{ id: "b1", name: "Clogent" }];
 const divisions = [{ id: "d1", name: "Creative" }];

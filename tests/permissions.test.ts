@@ -12,7 +12,7 @@ const ACTIONS: Action[] = [
 ];
 
 const EXPECTED = {
-  REQUESTER: ["request.create"],
+  REQUESTER: ["request.create", "dashboard.self"],
   CREATIVE: ["request.create", "request.transition", "dashboard.self", "project.manage"],
   LEAD: [
     "request.create",
@@ -34,6 +34,10 @@ describe("can(role, action)", () => {
       });
     }
   }
+
+  it("REQUESTER can see own dashboard (social media staff have targets)", () => {
+    expect(can("REQUESTER", "dashboard.self")).toBe(true);
+  });
 
   it("REQUESTER cannot see team dashboard", () => {
     expect(can("REQUESTER", "dashboard.team")).toBe(false);

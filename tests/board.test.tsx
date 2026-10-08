@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 
 const move = vi.fn();
-vi.mock("@/app/requests/actions", () => ({ moveRequest: (...a: unknown[]) => move(...a) }));
+vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: (...a: unknown[]) => move(...a) }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
