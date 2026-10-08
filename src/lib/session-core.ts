@@ -3,6 +3,15 @@ import type { AppRole, JobRole, PrismaClient } from "@prisma/client";
 import { DEFAULT_ALLOWED_DOMAIN, isAllowedEmail } from "./signin";
 
 type Db = Pick<PrismaClient, "user" | "allowedEmail">;
+/** Thrown when there is no valid, still-permitted session. Message kept as "Unauthenticated" for older callers. */
+export class UnauthenticatedError extends Error {
+  constructor() {
+    super("Unauthenticated");
+    this.name = "UnauthenticatedError";
+  }
+}
+export const isUnauthenticated = (e: unknown): boolean => e instanceof UnauthenticatedError || (e instanceof Error && e.message === "Unauthenticated");
+
 export type SessionUser = { id: string; appRole: AppRole; jobRole: JobRole };
 
 /**
@@ -48,9 +57,9 @@ export async function requireUserWith(
 ): Promise<SessionUser> {
   const su = (await getSession())?.user;
   const id = su?.id;
-  if (!id) throw new Error("Unauthenticated");
+  if (!id) throw new UnauthenticatedError();
   const u = await loadActiveUser(db, id, undefined, { loginEmail: su?.loginEmail });
-  if (!u) throw new Error("Unauthenticated");
+  if (!u) throw new UnauthenticatedError();
   return u;
 }
 

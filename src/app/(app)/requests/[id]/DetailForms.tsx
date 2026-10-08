@@ -3,7 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
-import { addAttachment, addComment, assignRequest, removeAttachment } from "./actions";
+import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi } from "./actions";
 import { moveRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
@@ -166,6 +166,39 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
       </select>
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}
+    </div>
+  );
+}
+
+/** Lead/admin switch: does this request count toward KPI? Optimistic, reverts with the server message on failure. */
+export function IncludeKpiToggle({ requestId, initial }: { requestId: string; initial: boolean }) {
+  const uid = useId();
+  const router = useRouter();
+  const [checked, setChecked] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  function change(next: boolean) {
+    const prev = checked;
+    setChecked(next);
+    setError(null);
+    start(async () => {
+      try {
+        const r = await setIncludeKpi(requestId, next);
+        if (r.ok) router.refresh(); else { setChecked(prev); setError(r.message); }
+      } catch {
+        setChecked(prev);
+        setError("Could not change this. Check your connection and try again.");
+      }
+    });
+  }
+  return (
+    <div className="space-y-1">
+      <label htmlFor={`${uid}-k`} className="flex items-center gap-2 text-sm font-medium">
+        <input id={`${uid}-k`} type="checkbox" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+          aria-describedby={error ? `${uid}-e` : undefined} className="size-4 accent-primary focus-visible:outline-2 focus-visible:outline-ring" />
+        Counts toward KPI
+      </label>
+      <ErrorLine id={`${uid}-e`} message={error} />
     </div>
   );
 }

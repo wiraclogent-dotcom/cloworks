@@ -1,11 +1,11 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ProjectForm } from "../ProjectForm";
 
 async function Content() {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   if (!can(user.appRole, "project.manage")) return <p role="alert">You are not allowed to create projects.</p>;
   const [brands, owners] = await Promise.all([
     prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),

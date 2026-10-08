@@ -3,7 +3,7 @@ import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 
-export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID";
+export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "UNAUTHENTICATED";
 export type CollabFail = { ok: false; code: CollabCode; message: string };
 type Actor = { id: string; appRole: AppRole };
 
@@ -156,5 +156,14 @@ export async function removeAttachmentWith(db: PrismaClient, user: Actor, reques
   if (!a || a.requestId !== requestId) return fail("NOT_FOUND", "Link not found.");
   if (a.uploaderId !== user.id && !can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only the person who added a link, or a lead, can remove it.");
   await db.attachment.delete({ where: { id: attachmentId } });
+  return { ok: true };
+}
+
+/** Lead/admin: include or exclude a request from KPI counting (the `includeKpi` flag the KPI rules already honour). */
+export async function setIncludeKpiWith(db: PrismaClient, user: Actor, requestId: string, value: boolean): Promise<{ ok: true } | CollabFail> {
+  if (!can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only leads and admins can change whether a request counts toward KPI.");
+  if (typeof value !== "boolean") return fail("INVALID", "Choose yes or no.");
+  const res = await db.request.updateMany({ where: { id: requestId }, data: { includeKpi: value } });
+  if (res.count === 0) return fail("NOT_FOUND", "Request not found.");
   return { ok: true };
 }

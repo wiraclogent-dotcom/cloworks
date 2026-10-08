@@ -3,15 +3,16 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
 const addComment = vi.fn();
+const setIncludeKpi = vi.fn();
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: (...a: unknown[]) => addComment(...a),
-  addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(),
+  addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a),
 }));
 vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn() }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-import { CommentForm, AssigneePicker, MoveControl } from "@/app/(app)/requests/[id]/DetailForms";
+import { CommentForm, AssigneePicker, MoveControl, IncludeKpiToggle } from "@/app/(app)/requests/[id]/DetailForms";
 import { splitMentions } from "@/lib/collab";
 
 beforeEach(() => { addComment.mockReset(); refresh.mockReset(); });
@@ -59,5 +60,24 @@ describe("pickers", () => {
 describe("mention text", () => {
   it("stays readable as text", () => {
     expect(splitMentions("ping @Irsyad now").map((s) => s.text).join("")).toBe("ping @Irsyad now");
+  });
+});
+
+describe("IncludeKpiToggle", () => {
+  it("is a labelled checkbox that saves the new value and refreshes", async () => {
+    setIncludeKpi.mockResolvedValue({ ok: true });
+    render(<IncludeKpiToggle requestId="r1" initial={true} />);
+    const box = screen.getByLabelText("Counts toward KPI") as HTMLInputElement;
+    expect(box.checked).toBe(true);
+    fireEvent.click(box);
+    await waitFor(() => expect(setIncludeKpi).toHaveBeenCalledWith("r1", false));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+  it("reverts and shows the server message on failure", async () => {
+    setIncludeKpi.mockResolvedValue({ ok: false, code: "FORBIDDEN", message: "Only leads and admins can change whether a request counts toward KPI." });
+    render(<IncludeKpiToggle requestId="r1" initial={true} />);
+    fireEvent.click(screen.getByLabelText("Counts toward KPI"));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
+    expect((screen.getByLabelText("Counts toward KPI") as HTMLInputElement).checked).toBe(true);
   });
 });

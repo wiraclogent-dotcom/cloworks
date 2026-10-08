@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
@@ -10,7 +10,7 @@ import { TeamTable, type TeamRow } from "@/components/kpi/TeamTable";
 import { parseMonthParam } from "../params";
 
 async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboard/team">["searchParams"] }) {
-  const viewer = await requireUser();
+  const viewer = await requireUserOrRedirect();
   if (!can(viewer.appRole, "dashboard.team")) {
     // Same pattern as the personal page: an inline message, never the data.
     return (

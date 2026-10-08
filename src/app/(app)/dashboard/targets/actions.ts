@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { JobRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
+import { withUser, unauthResult } from "@/lib/actionUser";
 import { setTargetWith, type SetTargetResult } from "@/lib/kpi/targets";
 
 /** Expected failures return as data (Next redacts thrown errors in production). */
@@ -14,11 +15,12 @@ export async function setTarget(
   targetTasks: number,
   note?: string,
 ): Promise<SetTargetResult> {
-  const user = await requireUser();
-  const r = await setTargetWith(prisma, user, { userId, month, role, targetTasks, note });
-  if (r.ok) {
-    revalidatePath("/dashboard");
-    revalidatePath("/dashboard/team");
-  }
-  return r;
+  return withUser<SetTargetResult, SetTargetResult>(requireUser, async (user) => {
+    const r = await setTargetWith(prisma, user, { userId, month, role, targetTasks, note });
+    if (r.ok) {
+      revalidatePath("/dashboard");
+      revalidatePath("/dashboard/team");
+    }
+    return r;
+  }, unauthResult);
 }

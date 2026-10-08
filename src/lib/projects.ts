@@ -181,7 +181,7 @@ export type ProjectFormValues = {
   title: string; subTitle: string; brandId: string; ownerId: string; status: string; startDate: string; dueDate: string; fileUrl: string;
 };
 export type ProjectFormState = {
-  ok: false; code: ProjectErrorCode; message: string; fieldErrors?: Record<string, string>; values: ProjectFormValues; nonce: string;
+  ok: false; code: ProjectErrorCode | "UNAUTHENTICATED"; message: string; fieldErrors?: Record<string, string>; values: ProjectFormValues; nonce: string;
 } | null;
 
 export function projectValuesFromForm(fd: FormData): ProjectFormValues {

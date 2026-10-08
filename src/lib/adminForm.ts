@@ -1,4 +1,5 @@
 import { AdminError } from "./admin";
+import { UNAUTH_MESSAGE } from "./actionUser";
 
 /** Result-object state shared by every admin form (Next redacts thrown errors, so failures are data). */
 export type AdminFormState = {
@@ -32,4 +33,9 @@ export async function adminResult(fd: FormData, work: () => Promise<string>): Pr
 /** "a, b ,c" -> ["a","b","c"] (empty entries dropped). */
 export function splitList(s: string): string[] {
   return s.split(",").map((x) => x.trim()).filter(Boolean);
+}
+
+/** Failure state for an ended session, echoing what was typed. */
+export function adminUnauth(fd: FormData): NonNullable<AdminFormState> {
+  return { ok: false, code: "UNAUTHENTICATED", message: UNAUTH_MESSAGE, values: formValues(fd), nonce: crypto.randomUUID() };
 }

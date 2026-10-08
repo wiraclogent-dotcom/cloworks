@@ -21,7 +21,7 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
 }));
 
 const requireUser = vi.fn();
-vi.mock("@/lib/session", () => ({ requireUser: () => requireUser() }));
+vi.mock("@/lib/session", () => ({ requireUser: () => requireUser(), requireUserOrRedirect: () => requireUser() }));
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },

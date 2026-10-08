@@ -1,19 +1,15 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
-import { addAttachmentWith, addCommentWith, assignRequestWith, removeAttachmentWith, type CollabFail } from "@/lib/collab";
+import { withUser, unauthResult } from "@/lib/actionUser";
+import { addAttachmentWith, addCommentWith, assignRequestWith, removeAttachmentWith, setIncludeKpiWith, type CollabFail } from "@/lib/collab";
+import type { SessionUser } from "@/lib/session-core";
 
-const UNAUTH: CollabFail = { ok: false, code: "FORBIDDEN", message: "Your session has expired. Sign in again." };
-
-async function run<T>(fn: (user: Awaited<ReturnType<typeof requireUser>>) => Promise<T | CollabFail>): Promise<T | CollabFail> {
-  let user;
-  try {
-    user = await requireUser();
-  } catch {
-    return UNAUTH;
-  }
-  return fn(user);
+/** Unauthenticated sessions come back as a result object (Next redacts thrown errors in production). */
+function run<T>(fn: (user: SessionUser) => Promise<T | CollabFail>): Promise<T | CollabFail> {
+  return withUser<T | CollabFail, CollabFail>(requireUser, fn, unauthResult);
 }
 
 export async function addComment(requestId: string, body: string): Promise<{ ok: true; mentionedUserIds: string[] } | CollabFail> {
@@ -36,4 +32,15 @@ export async function addAttachment(requestId: string, input: { name: string; ur
 
 export async function removeAttachment(requestId: string, attachmentId: string): Promise<{ ok: true } | CollabFail> {
   return run((u) => removeAttachmentWith(prisma, u, requestId, attachmentId));
+}
+
+export async function setIncludeKpi(requestId: string, value: boolean): Promise<{ ok: true } | CollabFail> {
+  return run(async (u) => {
+    const r = await setIncludeKpiWith(prisma, u, requestId, value);
+    if (r.ok) {
+      revalidatePath("/dashboard");
+      revalidatePath("/dashboard/team");
+    }
+    return r;
+  });
 }

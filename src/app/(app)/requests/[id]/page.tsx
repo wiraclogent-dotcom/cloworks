@@ -2,13 +2,13 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { daysLeft } from "@/lib/daysLeft";
 import { isHttpUrl, parseFieldSchema } from "@/lib/fieldSchema";
 import { splitMentions } from "@/lib/collab";
 import { STATUS_LABEL, StatusBadge, deadlineText } from "@/components/status";
-import { AssigneePicker, AttachmentForm, CommentForm, MoveControl, RemoveAttachmentButton } from "./DetailForms";
+import { AssigneePicker, AttachmentForm, CommentForm, IncludeKpiToggle, MoveControl, RemoveAttachmentButton } from "./DetailForms";
 
 const day = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
@@ -28,7 +28,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 }
 
 async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["params"] }) {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   const { id } = await params;
   const req = await prisma.request.findUnique({
     where: { id },
@@ -91,6 +91,7 @@ async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["
               })}
               {req.designFolderUrl && <Row label="Design folder"><ExtLink href={req.designFolderUrl}>{req.designFolderUrl}</ExtLink></Row>}
               {req.status === "DONE" && <Row label="Outputs">{req.outputCount}</Row>}
+              <Row label="Counts toward KPI">{req.includeKpi ? "Yes" : "No"}</Row>
             </dl>
             {req.notes && (
               <div className="mt-4">
@@ -143,6 +144,7 @@ async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["
             <section aria-labelledby="actions-h" className="space-y-4">
               <h2 id="actions-h" className="text-lg font-semibold">Manage</h2>
               {canAssign && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}
+              {canAssign && <IncludeKpiToggle key={String(req.includeKpi)} requestId={req.id} initial={req.includeKpi} />}
               {canMove && <MoveControl key={req.status} requestId={req.id} title={req.title} status={req.status} />}
             </section>
           )}

@@ -113,6 +113,53 @@ describe("transitionRequestWith", () => {
     expect(await events(r.id)).toHaveLength(0);
   });
 
+  it.each([1001, 99999999999999999999])("rejects outputCount above the cap (%s) with INVALID", async (n) => {
+    const r = await mk("FIRST_LOOK");
+    await expect(transitionRequestWith(db.prisma, creative, r.id, "DONE", { outputCount: n })).rejects.toMatchObject({ code: "INVALID", message: expect.stringContaining("1000") });
+    expect(await status(r.id)).toBe("FIRST_LOOK");
+  });
+  it("accepts the maximum outputCount", async () => {
+    const r = await mk("FIRST_LOOK");
+    await transitionRequestWith(db.prisma, creative, r.id, "DONE", { outputCount: 1000 });
+    expect(await status(r.id)).toBe("DONE");
+  });
+
+  it("a concurrent unassign between the read and the update cannot produce a DONE request without an assignee", async () => {
+    const r = await mk("FIRST_LOOK");
+    const base = db.prisma;
+    const racy = new Proxy(base, {
+      get(t, prop, recv) {
+        if (prop !== "$transaction") return Reflect.get(t, prop, recv);
+        return (fn: (tx: unknown) => unknown, ...rest: unknown[]) =>
+          (t.$transaction as (...a: unknown[]) => unknown)((tx: typeof base) => {
+            let done = false;
+            const wrapped = new Proxy(tx, {
+              get(tt, p2) {
+                if (p2 !== "request") return Reflect.get(tt, p2);
+                return new Proxy(tt.request, {
+                  get(rt, rp) {
+                    const v = Reflect.get(rt, rp) as (...a: unknown[]) => Promise<unknown>;
+                    if (rp !== "findUnique") return v.bind(rt);
+                    return async (...a: unknown[]) => {
+                      const out = await v.apply(rt, a);
+                      if (!done) { done = true; await base.request.update({ where: { id: r.id }, data: { assigneeId: null } }); }
+                      return out;
+                    };
+                  },
+                });
+              },
+            });
+            return fn(wrapped);
+          }, ...rest);
+      },
+    });
+    await expect(transitionRequestWith(racy, creative, r.id, "DONE", { outputCount: 1 })).rejects.toMatchObject({ code: "INVALID", message: expect.stringMatching(/needs an assignee/) });
+    const got = await base.request.findUniqueOrThrow({ where: { id: r.id } });
+    expect(got.status).toBe("FIRST_LOOK");
+    expect(got.assigneeId).toBeNull();
+    expect(await events(r.id)).toHaveLength(0);
+  });
+
   it.each(["ftp://x.com/a", "javascript:alert(1)", "not a url", ""])("rejects designFolderUrl %j", async (u) => {
     const r = await mk("FIRST_LOOK");
     await expect(transitionRequestWith(db.prisma, creative, r.id, "DONE", { designFolderUrl: u })).rejects.toThrow();

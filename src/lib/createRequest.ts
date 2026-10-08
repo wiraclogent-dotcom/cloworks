@@ -15,8 +15,6 @@ export type CreateRequestInput = {
   fields: Record<string, unknown>;
 };
 
-export type CreateRequestResult = { ok: true; id: string } | { ok: false; code: "FORBIDDEN" | "VALIDATION"; message: string; fieldErrors?: Record<string, string> };
-
 export class CreateRequestError extends Error {
   constructor(
     public code: "FORBIDDEN" | "VALIDATION",

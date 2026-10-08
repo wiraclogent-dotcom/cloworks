@@ -3,7 +3,7 @@ import { can } from "@/lib/permissions";
 import { isValidMonth } from "./months";
 
 export type SetTargetInput = { userId: string; month: string; role: JobRole; targetTasks: number; note?: string };
-export type TargetCode = "FORBIDDEN" | "INVALID" | "NOT_FOUND";
+export type TargetCode = "FORBIDDEN" | "INVALID" | "NOT_FOUND" | "UNAUTHENTICATED";
 export type SetTargetResult = { ok: true } | { ok: false; code: TargetCode; message: string };
 
 const fail = (code: TargetCode, message: string): SetTargetResult => ({ ok: false, code, message });

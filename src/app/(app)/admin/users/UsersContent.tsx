@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
@@ -7,7 +7,7 @@ import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailFo
 
 /** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
 export async function UsersContent() {
-  const viewer = await requireUser();
+  const viewer = await requireUserOrRedirect();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [users, allowed] = await Promise.all([

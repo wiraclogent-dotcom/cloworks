@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { JobRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
@@ -15,7 +15,7 @@ import { TrendChart, type TrendPoint } from "@/components/kpi/TrendChart";
 import { parseMonthParam, parseUserParam, resolveSubject } from "./params";
 
 async function DashboardContent({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
-  const viewer = await requireUser();
+  const viewer = await requireUserOrRedirect();
   const sp = await searchParams;
   if (!can(viewer.appRole, "dashboard.self")) {
     return <p role="alert">You do not have access to the KPI dashboard.</p>;

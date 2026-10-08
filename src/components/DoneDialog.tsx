@@ -2,6 +2,9 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 
+/** Mirrors MAX_OUTPUT_COUNT in src/lib/transition.ts (kept local: that module is server-side). */
+const MAX_OUTPUTS = 1000;
+
 export type DoneDetails = { outputCount: number; designFolderUrl?: string };
 
 const FOCUSABLE = 'input, button, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
@@ -47,7 +50,7 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
     e.preventDefault();
     const errs: { count?: string; url?: string } = {};
     const n = Number(count);
-    if (!/^\d+$/.test(count.trim()) || n < 1) errs.count = "Enter a whole number of 1 or more.";
+    if (!/^\d{1,4}$/.test(count.trim()) || n < 1 || n > MAX_OUTPUTS) errs.count = `Enter a whole number from 1 to ${MAX_OUTPUTS}.`;
     const u = url.trim();
     if (u && !isHttpUrl(u)) errs.url = "Enter a full http(s) link, for example https://drive.google.com/…";
     setErrors(errs);
@@ -65,7 +68,7 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
         <form onSubmit={submit} noValidate className="mt-4 space-y-4">
           <div>
             <label htmlFor={`${uid}-n`} className="text-sm font-medium">Number of outputs *</label>
-            <input id={`${uid}-n`} inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value)}
+            <input id={`${uid}-n`} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={count} onChange={(e) => setCount(e.target.value)}
               aria-invalid={!!errors.count} aria-describedby={errors.count ? `${uid}-ne` : undefined} className={input} />
             {errors.count && <p id={`${uid}-ne`} className="mt-1 text-sm">{errors.count}</p>}
           </div>

@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { parseFieldSchema } from "@/lib/fieldSchema";
 import { NewRequestForm } from "./NewRequestForm";
 
 async function NewRequestContent() {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   if (!can(user.appRole, "request.create")) {
     return <p role="alert">You are not allowed to create requests.</p>;
   }

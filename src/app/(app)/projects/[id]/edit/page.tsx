@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { jakartaDate } from "@/lib/createRequest";
 import { ProjectForm } from "../../ProjectForm";
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   if (!can(user.appRole, "project.manage")) return <p role="alert">You are not allowed to edit projects.</p>;
   const { id } = await params;
   const project = await prisma.project.findUnique({ where: { id } });

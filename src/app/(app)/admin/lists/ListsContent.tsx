@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { NameForm, TypeForm } from "./ListForms";
 
 export async function ListsContent() {
-  const viewer = await requireUser();
+  const viewer = await requireUserOrRedirect();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [brands, divisions, types] = await Promise.all([

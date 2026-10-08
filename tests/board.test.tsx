@@ -81,7 +81,7 @@ describe("Board", () => {
     fireEvent.change(within(dialog).getByLabelText(/Number of outputs/), { target: { value: "0" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /mark as done/i }));
     expect(move).not.toHaveBeenCalled();
-    expect(within(dialog).getByText(/whole number of 1 or more/i)).toBeTruthy();
+    expect(within(dialog).getByText(/whole number from 1 to 1000/i)).toBeTruthy();
     fireEvent.change(within(dialog).getByLabelText(/Number of outputs/), { target: { value: "2" } });
     fireEvent.change(within(dialog).getByLabelText(/Design folder link/), { target: { value: "ftp://x" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /mark as done/i }));
@@ -89,6 +89,21 @@ describe("Board", () => {
     expect(move).not.toHaveBeenCalled();
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("rejects an absurd or over-cap output count in the dialog without calling the server", () => {
+    render(<Board requests={rows} canMove={true} />);
+    fireEvent.change(screen.getByLabelText(/Move “Banner”/), { target: { value: "DONE" } });
+    const dialog = screen.getByRole("dialog");
+    for (const v of ["99999999999999999999", "1001", "12a", "-3", "1.5"]) {
+      fireEvent.change(within(dialog).getByLabelText(/Number of outputs/), { target: { value: v } });
+      fireEvent.click(within(dialog).getByRole("button", { name: /mark as done/i }));
+      expect(within(dialog).getByText(/whole number from 1 to 1000/i)).toBeTruthy();
+    }
+    expect(move).not.toHaveBeenCalled();
+    fireEvent.change(within(dialog).getByLabelText(/Number of outputs/), { target: { value: "1000" } });
+    fireEvent.click(within(dialog).getByRole("button", { name: /mark as done/i }));
+    expect(move).toHaveBeenCalledWith("1", "DONE", { outputCount: 1000 });
   });
 
   it("shows the server message and keeps the card in its column when the move fails", async () => {

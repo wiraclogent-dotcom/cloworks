@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ProjectTable } from "@/components/ProjectTable";
 import { ProjectTimeline } from "@/components/ProjectTimeline";
 
 async function ProjectsContent() {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   const canManage = can(user.appRole, "project.manage");
   const projects = await prisma.project.findMany({ include: { brand: { select: { name: true } }, owner: { select: { name: true } } } });
   const rows = projects.map((p) => ({

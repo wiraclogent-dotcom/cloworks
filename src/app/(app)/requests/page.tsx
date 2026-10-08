@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { listRequests, sortRows } from "@/lib/requests";
 import { Board } from "@/components/Board";
@@ -10,7 +10,7 @@ import { FilterBar } from "@/components/FilterBar";
 import { hrefWith, parseParams, toFilter } from "./params";
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
-  const user = await requireUser();
+  const user = await requireUserOrRedirect();
   const p = parseParams(await searchParams);
   const [rows, brands, divisions, assignees] = await Promise.all([
     listRequests(prisma, toFilter(p, user.id)),
