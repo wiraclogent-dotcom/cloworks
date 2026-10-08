@@ -12,7 +12,9 @@ import { FilterBar } from "@/components/FilterBar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { buttonClass } from "@/components/ui/Button";
-import { Plus, SquareKanban, Table2 } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { BoardSkeleton, TableSkeleton } from "@/components/RequestSkeletons";
+import { Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { hrefWith, parseParams, toFilter } from "./params";
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
@@ -26,6 +28,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.user.findMany({ where: { active: true, appRole: { not: "REQUESTER" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
+  const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {});
   const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);
   return (
     <>
@@ -38,11 +41,13 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
       <div className="mb-4">
         <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
           mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
-          clearHref={hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {})} />
+          clearHref={clearHref} />
       </div>
       {board ? (
         board.every((c) => c.total === 0) && filtered ? (
-          <p className="rounded-md border border-dashed border-border p-6 text-center text-muted-foreground">No requests match these filters.</p>
+          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
+            description="Try another search or clear the filters."
+            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
         ) : (
           <Board canMove={can(user.appRole, "request.transition")} columns={board.map((c): BoardColumnView => {
             const limit = p.more[c.status] ?? BOARD_PAGE_SIZE;
@@ -56,21 +61,24 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           })} />
         )
       ) : tablePage ? (
-        <>
-          <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
-            hrefFor={(key, dir) => hrefWith(p, { sort: key === "deadline" ? undefined : key, dir: dir === "desc" ? "desc" : undefined })} />
-          <Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
-            hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />
-        </>
+        <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
+          hrefFor={(key, dir) => hrefWith(p, { sort: key === "deadline" ? undefined : key, dir: dir === "desc" ? "desc" : undefined })}
+          footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
+            hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />} />
       ) : null}
     </>
   );
 }
 
+/** Fallback that matches the requested view: the board skeleton until the params resolve, then board or table. */
+async function ViewSkeleton({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
+  return parseParams(await searchParams).view === "table" ? <TableSkeleton /> : <BoardSkeleton />;
+}
+
 export default function RequestsPage({ searchParams }: PageProps<"/requests">) {
   return (
     <div>
-      <Suspense fallback={<p className="text-muted-foreground">Loading requests…</p>}>
+      <Suspense fallback={<Suspense fallback={<BoardSkeleton />}><ViewSkeleton searchParams={searchParams} /></Suspense>}>
         <RequestsContent searchParams={searchParams} />
       </Suspense>
     </div>
