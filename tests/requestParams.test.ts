@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseParams, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
+import { parseParams, hrefWith, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
 
 describe("parseParams limits", () => {
   it("caps q at 200 characters and trims", () => {
@@ -36,5 +36,21 @@ describe("parseParams motion", () => {
     expect(hrefWith(p, { page: "2" })).toBe("/requests?view=table&motion=yes&page=2");
     expect(hrefWith(p, { sort: "title" })).toContain("motion=yes");
     expect(hrefWith(p, { motion: undefined })).toBe("/requests?view=table");
+  });
+});
+
+describe("calendar params", () => {
+  const now = new Date("2026-10-08T05:00:00Z");
+  it("parses view=calendar and month", () => {
+    expect(parseParams({ view: "calendar", month: "2026-11" }, now)).toMatchObject({ view: "calendar", month: "2026-11" });
+    expect(parseParams({}, now).month).toBe("2026-10");
+    expect(parseParams({ view: "calendar", month: "bogus" }, now).month).toBe("2026-10");
+  });
+  it("hrefWith emits month only for the calendar view", () => {
+    const cal = parseParams({ view: "calendar", month: "2026-11" }, now);
+    expect(hrefWith(cal, { month: "2026-12" })).toBe("/requests?view=calendar&month=2026-12");
+    expect(hrefWith(cal, { view: undefined })).toBe("/requests");
+    expect(hrefWith(parseParams({ view: "table", month: "2026-11" }, now), {})).not.toContain("month");
+    expect(hrefWith(parseParams({}, now), { status: "DONE" })).not.toContain("month");
   });
 });

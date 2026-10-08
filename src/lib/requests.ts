@@ -1,5 +1,7 @@
 import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
 import { daysLeft } from "./daysLeft";
+import { jakartaDate } from "./createRequest";
+import { isOpenStatus } from "./reschedule";
 import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, TABLE_PAGE_SIZE, pageWindow, type PageWindow } from "./paging";
 
 export type RequestFilter = {
@@ -201,4 +203,43 @@ export async function listRequestsPage(
   const ids = sorted.slice(window.skip, window.skip + size).map((r) => r.id);
   const full = new Map((await db.request.findMany({ where: { id: { in: ids } }, select: ROW_SELECT })).map((r) => [r.id, r]));
   return { rows: ids.flatMap((id) => { const r = full.get(id); return r ? [toRow(r, now)] : []; }), total, window };
+}
+
+export type CalendarRow = RequestRow & { requestDay: string; deadlineDay: string | null };
+const OPEN_STATUSES: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"];
+
+/** Jakarta midnight of a YYYY-MM-DD day, optionally shifted by whole days (UTC+7 has no DST). */
+function jakartaStart(day: string, plusDays = 0): Date {
+  return new Date(new Date(`${day}T00:00:00+07:00`).getTime() + plusDays * 86_400_000);
+}
+
+/**
+ * Calendar data: open requests only, with a deadline in [from, to] (Jakarta days, inclusive), plus open
+ * no-deadline requests when `today` falls inside the range. Ordered deadline asc (nulls last), requestedAt asc, id.
+ */
+export async function listCalendarRequests(
+  db: Pick<PrismaClient, "request">,
+  filter: RequestFilter,
+  range: { from: string; to: string; today: string },
+  now: Date = new Date(),
+): Promise<CalendarRow[]> {
+  if (filter.status && !isOpenStatus(filter.status)) return [];
+  const inRange: Prisma.RequestWhereInput = { deadline: { gte: jakartaStart(range.from), lt: jakartaStart(range.to, 1) } };
+  const todayShown = range.from <= range.today && range.today <= range.to;
+  const rows = await db.request.findMany({
+    where: {
+      AND: [
+        { status: filter.status ?? { in: OPEN_STATUSES } },
+        todayShown ? { OR: [inRange, { deadline: null }] } : inRange,
+        ...filterClauses(filter),
+      ],
+    },
+    orderBy: [DEADLINE_ASC, { requestedAt: "asc" }, { id: "asc" }],
+    select: ROW_SELECT,
+  });
+  return rows.map((r) => ({
+    ...toRow(r, now),
+    requestDay: jakartaDate(r.requestedAt),
+    deadlineDay: r.deadline ? jakartaDate(r.deadline) : null,
+  }));
 }
