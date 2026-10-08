@@ -58,7 +58,7 @@ describe("NewRequestForm", () => {
     fireEvent.change(screen.getByLabelText("Deadline"), { target: { value: "2099-01-01" } });
     fireEvent.click(screen.getByLabelText("Yes, needs motion"));
 
-    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /submit/i }).closest("form")!); });
+    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
 
     await waitFor(() => expect(screen.getByText("Must be an http(s) link")).toBeTruthy());
     const sent = submit.mock.calls[0][1] as FormData;
@@ -81,14 +81,14 @@ describe("NewRequestForm", () => {
   it("a plain submit sends needsMotion=no", async () => {
     submit.mockResolvedValue({ ok: false, message: "m", nonce: "n3", fieldErrors: { form: "x" }, values: emptyValues });
     render(<NewRequestForm brands={brands} divisions={divisions} />);
-    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /submit/i }).closest("form")!); });
+    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
     expect((submit.mock.calls[0][1] as FormData).get("needsMotion")).toBe("no");
   });
 
   it("shows banner for errors with no rendered field (e.g. the missing default type)", async () => {
     submit.mockResolvedValue({ ok: false, message: "m", nonce: "n2", fieldErrors: { form: "The default request type 'General Design' is missing" }, values: emptyValues });
     render(<NewRequestForm brands={brands} divisions={divisions} />);
-    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /submit/i }).closest("form")!); });
+    await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
     await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("default request type"));
   });
 });
