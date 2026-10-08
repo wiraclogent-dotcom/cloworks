@@ -9,11 +9,12 @@ vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: (...a: unknown[]) => addComment(...a),
   addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a), setNeedsMotion: (...a: unknown[]) => setNeedsMotion(...a),
 }));
-vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn() }));
+const rescheduleRequest = vi.fn();
+vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn(), rescheduleRequest: (...a: unknown[]) => rescheduleRequest(...a) }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-import { CommentForm, AssigneePicker, MoveControl, IncludeKpiToggle, NeedsMotionToggle } from "@/app/(app)/requests/[id]/DetailForms";
+import { CommentForm, AssigneePicker, MoveControl, DeadlineControl, IncludeKpiToggle, NeedsMotionToggle } from "@/app/(app)/requests/[id]/DetailForms";
 import { splitMentions } from "@/lib/collab";
 
 beforeEach(() => { addComment.mockReset(); refresh.mockReset(); });
@@ -103,5 +104,32 @@ describe("NeedsMotionToggle", () => {
     fireEvent.click(screen.getByLabelText("Needs motion"));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
     expect((screen.getByLabelText("Needs motion") as HTMLInputElement).checked).toBe(true);
+  });
+});
+
+describe("DeadlineControl", () => {
+  beforeEach(() => rescheduleRequest.mockReset());
+  it("renders a date input with min and the current value", () => {
+    render(<DeadlineControl requestId="r1" current="2026-10-14" minDay="2026-10-01" />);
+    const i = screen.getByLabelText("Deadline") as HTMLInputElement;
+    expect(i.type).toBe("date");
+    expect(i.min).toBe("2026-10-01");
+    expect(i.value).toBe("2026-10-14");
+  });
+  it("saves the picked day and refreshes", async () => {
+    rescheduleRequest.mockResolvedValue({ ok: true });
+    render(<DeadlineControl requestId="r1" current={null} minDay="2026-10-01" />);
+    fireEvent.change(screen.getByLabelText("Deadline"), { target: { value: "2026-10-20" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(rescheduleRequest).toHaveBeenCalledWith("r1", "2026-10-20");
+  });
+  it("shows the server message in an alert on failure", async () => {
+    rescheduleRequest.mockResolvedValue({ ok: false, code: "CLOSED", message: "This request is already done." });
+    render(<DeadlineControl requestId="r1" current="2026-10-14" minDay="2026-10-01" />);
+    fireEvent.change(screen.getByLabelText("Deadline"), { target: { value: "2026-10-20" } });
+    fireEvent.click(screen.getByRole("button", { name: /save/i }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/already done/);
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

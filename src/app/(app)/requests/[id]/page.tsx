@@ -22,6 +22,7 @@ async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["
       type: { select: { name: true, fieldSchema: true } },
       requester: { select: { name: true } }, assignee: { select: { name: true } },
       statusEvents: { orderBy: { at: "asc" }, include: { actor: { select: { name: true } } } },
+      deadlineEvents: { orderBy: { at: "asc" }, include: { actor: { select: { name: true } } } },
       comments: { orderBy: { createdAt: "asc" }, include: { author: { select: { name: true } } } },
       attachments: { orderBy: { createdAt: "asc" }, include: { uploader: { select: { name: true } } } },
     },

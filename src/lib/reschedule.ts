@@ -23,8 +23,8 @@ class Fail extends Error {
 
 const closedMessage = (s: RequestStatus) => `This request is already ${s === "DONE" ? "done" : "cancelled"}.`;
 
-/** "2026-10-14" -> "14 Oct" (from a stored Date, in Jakarta time). */
-function shortLabel(d: Date | null): string {
+/** A stored Date -> "14 Oct" (Jakarta day). */
+export function shortLabel(d: Date | null): string {
   if (!d) return "";
   const day = jakartaDate(d);
   return `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1]}`;

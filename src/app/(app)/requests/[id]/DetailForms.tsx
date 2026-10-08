@@ -4,11 +4,12 @@ import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
 import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
-import { moveRequest } from "../actions";
+import { moveRequest, rescheduleRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
 import { canTransition } from "@/lib/workflow";
 import { CircleAlert, Link2, MessageSquarePlus, Trash2 } from "lucide-react";
+import { Alert } from "@/components/ui/Alert";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { Switch } from "@/components/ui/Switch";
@@ -180,6 +181,38 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}
     </div>
+  );
+}
+
+/** Pick a new deadline day (Jakarta, YYYY-MM-DD); records history server-side. */
+export function DeadlineControl({ requestId, current, minDay }: { requestId: string; current: string | null; minDay: string }) {
+  const uid = useId();
+  const router = useRouter();
+  const [value, setValue] = useState(current ?? "");
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  function save(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    start(async () => {
+      try {
+        const r = await rescheduleRequest(requestId, value);
+        if (r.ok) router.refresh(); else setError(r.message);
+      } catch {
+        setError("Could not change the deadline. Check your connection and try again.");
+      }
+    });
+  }
+  return (
+    <form onSubmit={save} noValidate>
+      <label htmlFor={`${uid}-d`} className={labelClass}>Deadline</label>
+      <div className="flex items-center gap-2">
+        <input id={`${uid}-d`} type="date" value={value} min={minDay} disabled={pending} onChange={(e) => setValue(e.target.value)}
+          aria-describedby={error ? `${uid}-e` : undefined} className={fieldClass({ invalid: !!error })} />
+        <Button type="submit" variant="secondary" size="sm" loading={pending} disabled={!value || value === current}>{pending ? "Saving…" : "Save"}</Button>
+      </div>
+      {error && <Alert tone="danger" id={`${uid}-e`} className="mt-2">{error}</Alert>}
+    </form>
   );
 }
 

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
 import { ChevronLeft, CircleSlash, ExternalLink, FileText, FolderOpen, Link2, Target } from "lucide-react";
+import { isOpenStatus, shortLabel } from "@/lib/reschedule";
+import { jakartaDate } from "@/lib/createRequest";
 import { isHttpUrl } from "@/lib/fieldSchema";
 import { splitMentions } from "@/lib/collab";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
@@ -14,7 +16,7 @@ import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { Avatar, UnassignedAvatar } from "@/components/ui/Avatar";
 import { buttonClass } from "@/components/ui/Button";
 import { cn, focusRing } from "@/components/ui/cn";
-import { AssigneePicker, AttachmentForm, CommentForm, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
+import { AssigneePicker, AttachmentForm, CommentForm, DeadlineControl, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
 
 const day = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
@@ -27,6 +29,7 @@ export type RequestDetail = {
   brand: { name: string }; division: { name: string }; type: { name: string };
   requester: { name: string }; assignee: { name: string } | null;
   statusEvents: { id: string; from: RequestStatus | null; to: RequestStatus; at: Date; actor: { name: string } }[];
+  deadlineEvents: { id: string; from: Date | null; to: Date; at: Date; actor: { name: string } }[];
   comments: { id: string; body: string; createdAt: Date; author: { name: string } }[];
   attachments: { id: string; name: string; url: string; createdAt: Date; uploaderId: string; uploader: { name: string } }[];
 };
@@ -62,6 +65,10 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
   canAssign: boolean; canMove: boolean; assignees: { id: string; name: string }[];
 }) {
   const open = req.status !== "DONE" && req.status !== "CANCELLED";
+  const activity = [
+    ...req.statusEvents.map((e) => ({ kind: "status" as const, at: e.at, e })),
+    ...req.deadlineEvents.map((e) => ({ kind: "deadline" as const, at: e.at, e })),
+  ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return (
     <article>
       <nav aria-label="Breadcrumb" className="mb-2">
@@ -160,15 +167,24 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
           <Card>
             <section aria-labelledby="history-h">
               <CardTitle id="history-h">Activity</CardTitle>
-              {req.statusEvents.length === 0 ? (
-                <p className="mt-3 text-sm text-foreground-secondary">No status changes yet.</p>
+              {activity.length === 0 ? (
+                <p className="mt-3 text-sm text-foreground-secondary">No activity yet.</p>
               ) : (
                 <ol className="relative mt-3 space-y-4 before:absolute before:top-1.5 before:bottom-1.5 before:left-[5px] before:w-px before:bg-border" data-timeline="">
-                  {req.statusEvents.map((e) => (
-                    <li key={e.id} className="relative pl-6 text-sm">
-                      <span aria-hidden="true" data-tone={REQUEST_STATUS_TONE[e.to]} className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-surface" />
-                      <p className="text-foreground">{e.from ? <>{STATUS_LABEL[e.from]} → <strong className="font-semibold">{STATUS_LABEL[e.to]}</strong></> : <>Created as <strong className="font-semibold">{STATUS_LABEL[e.to]}</strong></>}</p>
-                      <p className="text-xs text-foreground-secondary">{e.actor.name} · <time dateTime={e.at.toISOString()} className="tabular-nums">{stamp.format(e.at)} WIB</time></p>
+                  {activity.map((a) => (
+                    <li key={`${a.kind}-${a.e.id}`} className="relative pl-6 text-sm">
+                      {a.kind === "status" ? (
+                        <>
+                          <span aria-hidden="true" data-tone={REQUEST_STATUS_TONE[a.e.to]} className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-surface" />
+                          <p className="text-foreground">{a.e.from ? <>{STATUS_LABEL[a.e.from]} → <strong className="font-semibold">{STATUS_LABEL[a.e.to]}</strong></> : <>Created as <strong className="font-semibold">{STATUS_LABEL[a.e.to]}</strong></>}</p>
+                        </>
+                      ) : (
+                        <>
+                          <span aria-hidden="true" data-tone="due-soon" className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-surface" />
+                          <p className="text-foreground">{a.e.from ? <>Deadline moved from {shortLabel(a.e.from)} to <strong className="font-semibold">{shortLabel(a.e.to)}</strong></> : <>Deadline set to <strong className="font-semibold">{shortLabel(a.e.to)}</strong></>}</p>
+                        </>
+                      )}
+                      <p className="text-xs text-foreground-secondary">{a.e.actor.name} · <time dateTime={a.e.at.toISOString()} className="tabular-nums">{stamp.format(a.e.at)} WIB</time></p>
                     </li>
                   ))}
                 </ol>
@@ -211,6 +227,9 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                 <CardTitle id="actions-h">Manage</CardTitle>
                 {canAssign && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}
                 {canMove && <MoveControl key={req.status} requestId={req.id} title={req.title} status={req.status} />}
+                {canMove && isOpenStatus(req.status) && (
+                  <DeadlineControl key={req.deadline?.toISOString() ?? "none"} requestId={req.id} current={req.deadline ? jakartaDate(req.deadline) : null} minDay={jakartaDate(req.requestedAt)} />
+                )}
                 {canAssign && (
                   <div className="space-y-3 border-t border-border pt-4">
                     <IncludeKpiToggle key={String(req.includeKpi)} requestId={req.id} initial={req.includeKpi} />

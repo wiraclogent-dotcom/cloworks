@@ -5,7 +5,7 @@ import { render, screen, cleanup, within } from "@testing-library/react";
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: vi.fn(), addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: vi.fn(), setNeedsMotion: vi.fn(),
 }));
-vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn() }));
+vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn(), rescheduleRequest: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 
 import { RequestDetailView, type RequestDetail } from "@/app/(app)/requests/[id]/RequestDetailView";
@@ -19,6 +19,7 @@ const base = (extra: Partial<RequestDetail> = {}): RequestDetail => ({
   requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: new Date("2026-10-09T00:00:00Z"), assigneeId: "u2",
   brand: { name: "Clogent" }, division: { name: "Marketing" }, type: { name: "General Design" },
   requester: { name: "Rina Sari" }, assignee: { name: "Cami Putri" },
+  deadlineEvents: [],
   statusEvents: [
     { id: "e1", from: null, to: "REQUESTED", at: new Date("2026-10-01T03:00:00Z"), actor: { name: "Rina Sari" } },
     { id: "e2", from: "REQUESTED", to: "ON_PROGRESS", at: new Date("2026-10-02T04:30:00Z"), actor: { name: "Lead" } },
@@ -160,5 +161,35 @@ describe("Switch", () => {
     const track = document.querySelector("[data-switch-track]")!;
     expect(track.className).toMatch(/peer-focus-visible:outline-ring/);
     expect(track.className).toMatch(/peer-checked:bg-primary/);
+  });
+});
+
+describe("Activity and Change deadline", () => {
+  it("interleaves status and deadline events by time with short Jakarta dates", () => {
+    view(base({ deadlineEvents: [
+      { id: "d1", from: null, to: new Date("2026-10-13T17:00:00Z"), at: new Date("2026-10-01T03:30:00Z"), actor: { name: "Lead" } },
+      { id: "d2", from: new Date("2026-10-09T17:00:00Z"), to: new Date("2026-10-13T17:00:00Z"), at: new Date("2026-10-03T03:00:00Z"), actor: { name: "Cami Putri" } },
+    ] }));
+    const items = Array.from(document.querySelectorAll("[data-timeline] > li")).map((li) => li.textContent!);
+    expect(items).toHaveLength(4);
+    expect(items[0]).toMatch(/Created as/);
+    expect(items[1]).toMatch(/Deadline set to 14 Oct/);
+    expect(items[2]).toMatch(/Requested → On progress/);
+    expect(items[3]).toMatch(/Deadline moved from 10 Oct to 14 Oct/);
+    expect(items[3]).toMatch(/Cami Putri/);
+  });
+  it("shows No activity yet. when there are no events", () => {
+    view(base({ statusEvents: [], deadlineEvents: [] }));
+    expect(screen.getByText("No activity yet.")).toBeTruthy();
+  });
+  it("shows the deadline control only for movers on open requests", () => {
+    view(base(), CREATIVE);
+    expect(screen.getByLabelText("Deadline", { selector: "input" })).toBeTruthy();
+    cleanup();
+    view(base({ status: "DONE" }), CREATIVE);
+    expect(screen.queryByLabelText("Deadline", { selector: "input" })).toBeNull();
+    cleanup();
+    view(base(), REQUESTER);
+    expect(screen.queryByLabelText("Deadline", { selector: "input" })).toBeNull();
   });
 });
