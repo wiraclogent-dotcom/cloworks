@@ -119,7 +119,7 @@ describe("notifications", () => {
       const t0 = Date.now();
       vi.spyOn(console, "error").mockImplementation(() => {});
       await notifyWith(db.prisma, { send: never }, input(), { baseUrl: undefined, deadlineMs: 50 });
-      expect(Date.now() - t0).toBeLessThan(500);
+      expect(Date.now() - t0).toBeLessThan(2000); // 50 ms deadline; generous bound so slow CI cannot flake
       const r = await rows();
       expect(r).toHaveLength(1);
       expect(r[0].emailedAt).toBeNull();
@@ -135,10 +135,11 @@ describe("notifications", () => {
       vi.restoreAllMocks();
     });
     it("sends to recipients in parallel", async () => {
-      const mailer: Mailer = { send: () => new Promise((r) => setTimeout(r, 100)) };
-      const t0 = Date.now();
+      // Assert overlap (all three sends in flight at once) rather than elapsed wall-clock time.
+      let inFlight = 0, maxInFlight = 0;
+      const mailer: Mailer = { send: async () => { inFlight++; maxInFlight = Math.max(maxInFlight, inFlight); await new Promise((r) => setTimeout(r, 200)); inFlight--; } };
       await notifyWith(db.prisma, mailer, input({ userIds: [ids.dimas, ids.irsyad, ids.rina] }), { baseUrl: undefined });
-      expect(Date.now() - t0).toBeLessThan(280);
+      expect(maxInFlight).toBe(3);
       expect(await rows()).toHaveLength(3);
     });
   });

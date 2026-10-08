@@ -43,6 +43,10 @@ export type ParseReport = {
   warnings: { row: number; message: string }[];
   unmapped: { row: number; field: string; value: string }[];
   months: Record<string, number>;
+  /** First 3 parsed rows: raw date text next to the Jakarta ISO date it became (to eyeball d/m vs m/d). */
+  samples: { row: number; requestRaw: string; requestIso: string; deadlineRaw: string; deadlineIso: string | null }[];
+  /** Date order assumed for this source. */
+  dateFormat: "dmy" | "mdy";
 };
 
 type Canon =
@@ -122,6 +126,8 @@ function jakartaMonthOf(d: Date): string {
   const j = new Date(d.getTime() + 7 * 3600 * 1000);
   return `${j.getUTCFullYear()}-${String(j.getUTCMonth() + 1).padStart(2, "0")}`;
 }
+/** Jakarta calendar date (YYYY-MM-DD) of an instant. */
+const jakartaIso = (d: Date) => new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 const clip = (s: string, n: number) => s.slice(0, n);
 
 export function parseRequestRows(
@@ -135,7 +141,7 @@ export function parseRequestRows(
   const fmt = source === "requests" ? "dmy" : "mdy";
   const get = (r: Record<string, string>, c: Canon) => (hm[c] ? (r[hm[c]!] ?? "").trim() : "");
   const records: ImportRecord[] = [];
-  const report: ParseReport = { source, rowsRead: rows.length, importable: 0, template: 0, skipped: [], warnings: [], unmapped: [], months: {} };
+  const report: ParseReport = { source, rowsRead: rows.length, importable: 0, template: 0, skipped: [], warnings: [], unmapped: [], months: {}, samples: [], dateFormat: fmt };
   const seen = new Map<string, number>();
   const wira = ctx.users.find((u) => u.name.trim().toLowerCase() === "wira");
   const brandByName = new Map(ctx.brands.map((b) => [b.name.trim().toLowerCase(), b.id]));
@@ -237,6 +243,8 @@ export function parseRequestRows(
       typeName: source === "socmed" ? "Social Media" : "General Design",
       requesterId, assigneeId, requestedAt, deadline, status: finalStatus, outputCount, includeKpi, designFolderUrl, fields,
     });
+    if (report.samples.length < 3)
+      report.samples.push({ row, requestRaw: get(r, "requestDate"), requestIso: jakartaIso(requestedAt), deadlineRaw: dlText, deadlineIso: deadline ? jakartaIso(deadline) : null });
     const m = jakartaMonthOf(requestedAt);
     report.months[m] = (report.months[m] ?? 0) + 1;
   });

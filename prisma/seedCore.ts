@@ -28,7 +28,7 @@ const ROSTER: RosterEntry[] = [
   { name: "Rahmat", fullName: "Syavia Rahmat", title: "Ecommerce Manager", jobRole: "OTHER", appRole: "REQUESTER" },
 ];
 
-const SOCIAL_FIELDS: FieldSchema = [
+export const SOCIAL_FIELDS: FieldSchema = [
   { key: "platform", label: "Platform", type: "select", options: ["TikTok", "Instagram"], required: true },
   { key: "contentType", label: "Content type", type: "select", options: ["Campaign", "Daily", "Story", "Urgent"], required: true },
   { key: "shooting", label: "Shooting", type: "checkbox" },

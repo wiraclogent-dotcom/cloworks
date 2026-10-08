@@ -1,7 +1,10 @@
 import { z } from "zod";
 
+/** Field keys become form field names and JSON keys: letters, digits, underscore; starts with a letter; max 40. */
+export const FIELD_KEY_RE = /^[A-Za-z][A-Za-z0-9_]{0,39}$/;
+
 export const fieldDefSchema = z.object({
-  key: z.string().min(1),
+  key: z.string().regex(FIELD_KEY_RE, "Key must start with a letter and use only letters, digits and underscores (max 40 characters)"),
   label: z.string().min(1),
   type: z.enum(["text", "select", "checkbox", "url"]),
   options: z.array(z.string()).optional(),

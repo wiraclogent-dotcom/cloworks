@@ -1,4 +1,5 @@
 import type { PrismaClient, User } from "@prisma/client";
+import { normalizeName } from "./import/aliases";
 
 export const DEFAULT_ALLOWED_DOMAIN = "clogent.co.id";
 
@@ -72,6 +73,16 @@ export async function resolveSignIn(
 
   const local = email.split("@")[0];
   const display = profile.name?.trim() || local;
-  const created = await db.user.create({ data: { email, name: display, fullName: display, appRole: "REQUESTER" } });
+  // `name` is the short name used for @mentions, admin collision checks and import resolution. If the OAuth display name
+  // collides with anyone's name/fullName/alias, fall back to the email local part (numeric suffix if that collides too).
+  const roster = await db.user.findMany({ select: { name: true, fullName: true, aliases: true } });
+  const taken = new Set(roster.flatMap((u) => [u.name, u.fullName, ...u.aliases]).map(normalizeName));
+  let name = display;
+  if (!normalizeName(display) || taken.has(normalizeName(display))) {
+    const base = local.toLowerCase();
+    name = base;
+    for (let n = 2; !normalizeName(name) || taken.has(normalizeName(name)); n++) name = `${base}${n}`;
+  }
+  const created = await db.user.create({ data: { email, name, fullName: display, appRole: "REQUESTER" } });
   return { ok: true, user: created, created: true };
 }

@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { parseRequestRows, statusChain } from "@/lib/import/parseRequests";
+import { formatReport } from "@/lib/import/run";
 import { ctx, reqRow, socRow, REQ_HEADERS, SOC_HEADERS, row } from "./fixtures";
 
 const req = (rows: Record<string, string>[], headers = REQ_HEADERS) => parseRequestRows("requests", rows, ctx, headers);
@@ -185,5 +186,23 @@ describe("fix round 1", () => {
     const r = parseRequestRows("requests", [reqRow({ Requester: "Rio", Designer: "Rio" })], amb, REQ_HEADERS);
     expect(r.report.warnings.map((w) => w.message).join("|")).toMatch(/ambiguous/);
     expect(r.report.warnings.map((w) => w.message).join("|")).not.toMatch(/not found/);
+  });
+});
+
+describe("report date samples", () => {
+  it("keeps the first 3 parsed rows with raw text and Jakarta ISO date, and prints them", () => {
+    const rows = [1, 2, 3, 4].map((i) => reqRow({ Task: `T${i}` }));
+    const r = req(rows);
+    expect(r.report.samples).toHaveLength(3);
+    expect(r.report.dateFormat).toBe("dmy");
+    const text = formatReport(r.report).join("\n");
+    expect(text).toMatch(/first 3 parsed dates \(assumed day\/month\/year/);
+    expect(text).toContain("line 2: requested 22/05/2026 \u2192 2026-05-22; deadline 04/06/2026 \u2192 2026-06-04");
+    expect(text).not.toContain("line 5:");
+  });
+  it("shows the month/day interpretation for the socmed source", () => {
+    const text = formatReport(soc([socRow({})]).report).join("\n");
+    expect(text).toContain("month/day/year");
+    expect(text).toContain("requested 9/30/2026 \u2192 2026-09-30; deadline 10/1/2026 \u2192 2026-10-01");
   });
 });

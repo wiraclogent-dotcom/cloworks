@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { validateFields, type FieldSchema } from "@/lib/fieldSchema";
+import { validateFields, fieldSchemaSchema, FIELD_KEY_RE, type FieldSchema } from "@/lib/fieldSchema";
+import { fieldSchemaProblems } from "@/lib/admin";
+import { SOCIAL_FIELDS } from "../prisma/seedCore";
 
 const schema: FieldSchema = [
   { key: "platform", label: "Platform", type: "select", options: ["TikTok", "Instagram"], required: true },
@@ -65,5 +67,16 @@ describe("validateFields hardening", () => {
     expect(validateFields(schema, { platform: "TikTok", note: "x".repeat(5001) }).ok).toBe(false);
     expect(validateFields(schema, { platform: "TikTok", publishedUrl: "https://a.co/" + "x".repeat(5000) }).ok).toBe(false);
     expect(validateFields(schema, { platform: "TikTok", note: "x".repeat(5000) }).ok).toBe(true);
+  });
+});
+
+describe("field key rule", () => {
+  it.each(["platform", "a", "content_type", "A1", "x".repeat(40)])("accepts %s", (k) => expect(FIELD_KEY_RE.test(k)).toBe(true));
+  it.each(["", "1abc", "has space", "__proto__", "_x", "a-b", "x".repeat(41), "naïve"])("rejects %j", (k) => {
+    expect(fieldSchemaSchema.safeParse([{ key: k, label: "L", type: "text" }]).success).toBe(false);
+    expect(fieldSchemaProblems([{ key: k, label: "L", type: "text" }]).join(" ")).toMatch(/Key must start with a letter/);
+  });
+  it("seeded schemas all satisfy it", () => {
+    expect(fieldSchemaSchema.safeParse(SOCIAL_FIELDS).success).toBe(true);
   });
 });

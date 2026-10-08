@@ -21,6 +21,11 @@ export function formatReport(rep: ParseReport, already?: number): string[] {
   for (const u of rep.unmapped) un.set(`${u.field}: "${u.value}"`, (un.get(`${u.field}: "${u.value}"`) ?? 0) + 1);
   out.push(`unmapped names: ${un.size}`);
   for (const [k, n] of [...un].sort((a, b) => b[1] - a[1])) out.push(`  - ${k} x${n}`);
+  if (rep.samples.length) {
+    out.push(`first ${rep.samples.length} parsed dates (assumed ${rep.dateFormat === "dmy" ? "day/month/year" : "month/day/year"}; check they read correctly before --apply):`);
+    for (const x of rep.samples)
+      out.push(`  line ${x.row}: requested ${x.requestRaw} \u2192 ${x.requestIso}` + (x.deadlineRaw ? `; deadline ${x.deadlineRaw} \u2192 ${x.deadlineIso ?? "invalid, left empty"}` : "; no deadline"));
+  }
   out.push("months (by request date, Jakarta):");
   for (const m of Object.keys(rep.months).sort()) out.push(`  ${m}: ${rep.months[m]}`);
   if (already !== undefined) out.push(`already imported: ${already}`);

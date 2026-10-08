@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { act } from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
@@ -19,14 +20,14 @@ describe("signInErrorMessage", () => {
 });
 
 describe("SignInPage", () => {
-  const show = async (error?: string) => render(await SignInPage({ searchParams: Promise.resolve({ error }) }));
+  const show = async (error?: string) => { await act(async () => { render(<SignInPage searchParams={Promise.resolve({ error })} />); }); };
   it("renders an alert for a refused login", async () => {
     await show("AccessDenied");
-    expect(screen.getByRole("alert").textContent).toBe(DENIED_MESSAGE);
+    expect((await screen.findByRole("alert")).textContent).toBe(DENIED_MESSAGE);
   });
   it("renders the generic line for unknown codes and never echoes them", async () => {
     await show("weird<b>code");
-    expect(screen.getByRole("alert").textContent).toBe(FAILED_MESSAGE);
+    expect((await screen.findByRole("alert")).textContent).toBe(FAILED_MESSAGE);
     expect(document.body.textContent).not.toContain("weird");
   });
   it("renders no alert without an error", async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { decode } from "@auth/core/jwt";
+import { decode } from "next-auth/jwt";
 import { seed } from "../prisma/seedCore";
 import { refreshJwt, requireUserWith } from "@/lib/session-core";
 import {

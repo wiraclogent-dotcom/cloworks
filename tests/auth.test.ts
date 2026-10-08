@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { resolveUser } from "@/lib/import/aliases";
 import { isAllowedEmail, resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
 import { refreshJwt, loadActiveUser, requireUserWith, bindSignInToken } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
@@ -211,5 +212,23 @@ describe("decideSignIn + session", () => {
     expect(tok.loginEmail).toBe("bind@clogent.co.id");
     expect(tok.uid).toBe(u.id);
     expect(await refreshJwt(db.prisma, tok)).not.toBeNull();
+  });
+  it("an OAuth display name that collides with the roster gets the email local part as name and keeps the display name as fullName", async () => {
+    const wira = await db.prisma.user.create({ data: { email: "wira.x@clogent.co.id", name: "Wira", fullName: "Wira Budi Prasetyo", appRole: "ADMIN", aliases: ["Wiro"] } });
+    const a = await resolveSignIn(db.prisma, { email: "wira.second@clogent.co.id", name: "Wira Budi Prasetyo" }, D);
+    expect(a.ok && a.created).toBe(true);
+    if (!a.ok) throw new Error("setup");
+    expect(a.user.name).toBe("wira.second");
+    expect(a.user.fullName).toBe("Wira Budi Prasetyo");
+    const roster = await db.prisma.user.findMany({ select: { id: true, name: true, fullName: true, aliases: true, active: true } });
+    expect(resolveUser("Wira", roster)).toBe(wira.id);
+    expect(resolveUser("Wiro", roster)).toBe(wira.id);
+  });
+  it("numeric suffix when the local part collides as well, and a free display name is kept", async () => {
+    await db.prisma.user.create({ data: { email: "pat@clogent.co.id", name: "Pat Roster", fullName: "Pat Roster", appRole: "CREATIVE" } });
+    const a = await resolveSignIn(db.prisma, { email: "pat.roster@clogent.co.id", name: "Pat Roster" }, D); // local "pat.roster" collides with name
+    expect(a.ok && a.user.name).toBe("pat.roster2");
+    const b = await resolveSignIn(db.prisma, { email: "zed@clogent.co.id", name: "Zed Unique" }, D);
+    expect(b.ok && b.user.name).toBe("Zed Unique");
   });
 });

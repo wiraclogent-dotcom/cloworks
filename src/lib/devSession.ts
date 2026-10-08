@@ -1,4 +1,4 @@
-import { encode } from "@auth/core/jwt";
+import { encode } from "next-auth/jwt";
 import type { AppRole, JobRole } from "@prisma/client";
 
 /** Pure helpers for scripts/dev-session.ts (LOCAL manual QA only). */
