@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <>
           <ul className="space-y-0.5">
             <NavItem href="/help" label="Help center" icon={<CircleHelp aria-hidden="true" />} />
-            <DisabledNavItem label="Settings" icon={<Settings aria-hidden="true" />} />
+            <NavItem href="/settings" label="Settings" icon={<Settings aria-hidden="true" />} />
           </ul>
           <Suspense fallback={<UserChipFallback />}><UserChip /></Suspense>
           <ThemeSwitch tone="sidebar" />
