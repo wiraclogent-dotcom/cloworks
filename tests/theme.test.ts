@@ -102,6 +102,8 @@ describe.each(themes)("contrast (%s)", (theme) => {
     ["--destructive-foreground", "--destructive"],
     ["--destructive-foreground", "--destructive-hover"],
     ["--danger-text", "--surface"],
+    // Phase B2: the admin "Deactivate" / "Remove" ghost triggers are danger text on the muted hover fill.
+    ["--danger-text", "--surface-muted"],
     ["--accent-foreground", "--accent"],
     ["--foreground", "--accent"],
     ["--foreground-secondary", "--accent"],

@@ -1,11 +1,12 @@
 "use client";
 
-import { AdminForm, ConfirmAction, Labeled, control } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
+import { enumLabel } from "@/lib/adminChips";
 import { addAllowed, addPerson, removeAllowed, saveLoginEmail, saveUser, setUserActive } from "./actions";
 
 const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
 const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
-const label = (r: string) => r.charAt(0) + r.slice(1).toLowerCase().replace("_", " ");
+const label = enumLabel;
 
 export type UserRowData = {
   id: string; name: string; fullName: string; title: string | null; appRole: string; jobRole: string;
@@ -24,12 +25,12 @@ export function EditUserForm({ u }: { u: UserRowData }) {
             <input id={idFor("title")} name="title" className={control} defaultValue={v("title", u.title ?? "")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
-            <select id={idFor("appRole")} name="appRole" className={control} defaultValue={v("appRole", u.appRole)}>
+            <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", u.appRole)}>
               {APP_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
             </select>
           </Labeled>
           <Labeled id={idFor("jobRole")} label="Job role">
-            <select id={idFor("jobRole")} name="jobRole" className={control} defaultValue={v("jobRole", u.jobRole)}>
+            <select id={idFor("jobRole")} name="jobRole" className={selectControl} defaultValue={v("jobRole", u.jobRole)}>
               {JOB_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
             </select>
           </Labeled>
@@ -46,7 +47,7 @@ export function EditUserForm({ u }: { u: UserRowData }) {
 
 export function LoginEmailForm({ u }: { u: UserRowData }) {
   return (
-    <AdminForm action={saveLoginEmail} prefix={`email-${u.id}`} submitLabel="Save login email" submitAriaLabel={`Save login email for ${u.name}`} hidden={{ userId: u.id }}>
+    <AdminForm action={saveLoginEmail} prefix={`email-${u.id}`} submitLabel="Save login email" submitAriaLabel={`Save login email for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
       {({ v, idFor, aria }) => (
         <Labeled id={idFor("email")} label="Login email (leave empty to remove access)">
           <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email", u.email ?? "")} {...aria()} />
@@ -70,7 +71,7 @@ export function ActiveToggle({ u }: { u: UserRowData }) {
       />
     );
   return (
-    <AdminForm action={setUserActive} prefix={`active-${u.id}`} submitLabel="Reactivate" submitAriaLabel={`Reactivate ${u.name}`} hidden={{ userId: u.id, active: "true" }}>
+    <AdminForm action={setUserActive} prefix={`active-${u.id}`} submitLabel="Reactivate" submitAriaLabel={`Reactivate ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id, active: "true" }}>
       {() => null}
     </AdminForm>
   );
@@ -94,12 +95,12 @@ export function AddPersonForm() {
             <input id={idFor("department")} name="department" className={control} defaultValue={v("department")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
-            <select id={idFor("appRole")} name="appRole" className={control} defaultValue={v("appRole", "REQUESTER")}>
+            <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", "REQUESTER")}>
               {APP_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
             </select>
           </Labeled>
           <Labeled id={idFor("jobRole")} label="Job role">
-            <select id={idFor("jobRole")} name="jobRole" className={control} defaultValue={v("jobRole", "OTHER")}>
+            <select id={idFor("jobRole")} name="jobRole" className={selectControl} defaultValue={v("jobRole", "OTHER")}>
               {JOB_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
             </select>
           </Labeled>
@@ -116,16 +117,16 @@ export function AddPersonForm() {
 
 export function AddAllowedForm() {
   return (
-    <AdminForm action={addAllowed} prefix="add-allowed" submitLabel="Allow email" className="flex flex-wrap items-start gap-3">
+    <AdminForm action={addAllowed} prefix="add-allowed" submitLabel="Allow email">
       {({ v, idFor, aria }) => (
-        <>
+        <div className="grid gap-3 sm:grid-cols-2">
           <Labeled id={idFor("email")} label="Email address">
             <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
           </Labeled>
           <Labeled id={idFor("note")} label="Note (optional)">
             <input id={idFor("note")} name="note" className={control} defaultValue={v("note")} />
           </Labeled>
-        </>
+        </div>
       )}
     </AdminForm>
   );

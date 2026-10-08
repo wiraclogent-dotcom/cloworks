@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { LoaderCircle } from "lucide-react";
 import { cn, focusRing } from "./cn";
 
@@ -34,6 +34,8 @@ export function buttonClass({ variant = "secondary", size = "md", block = false,
 }
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  /** React 19: refs are plain props (focus management, e.g. confirm steps). */
+  ref?: Ref<HTMLButtonElement>;
   variant?: ButtonVariant;
   size?: ButtonSize;
   block?: boolean;

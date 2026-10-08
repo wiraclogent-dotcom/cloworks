@@ -36,7 +36,7 @@ Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle);
 
 | Component | File | Props (summary) | Use for |
 |---|---|---|---|
-| `Button`, `buttonClass()` | Button.tsx | `variant` primary/secondary/ghost/danger, `size` sm/md, `block`, `loading`, `icon`, `iconRight` | Actions. `buttonClass({variant,size})` styles `<Link>`/`<a>` the same way. One primary per view. |
+| `Button`, `buttonClass()` | Button.tsx | `variant` primary/secondary/ghost/danger, `size` sm/md, `block`, `loading`, `icon`, `iconRight`, `ref` | Actions. `buttonClass({variant,size})` styles `<Link>`/`<a>` the same way. One primary per view. |
 | `IconButton` | IconButton.tsx | `aria-label` (required), `icon`, `size`, `variant` ghost/secondary | Icon-only actions (title = label). |
 | `Card`, `CardHeader`, `CardTitle` | Card.tsx | `padded`; `actions`; `as` h2/h3/h4 | Every content block. |
 | `PageHeader` | PageHeader.tsx | `title`, `count`, `description`, `switcher`, `actions` | Top of every page (renders the `<h1>`). |
@@ -52,9 +52,9 @@ Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle);
 | `Switch` | Switch.tsx | `id`, `label`, `description`, `checked`, `disabled`, `onChange`, `describedBy` | On/off settings (real checkbox, `role="switch"`, whole row is the label). |
 | `ProgressBar` | ProgressBar.tsx | `value`, `max`, `label`, `hideLabel`, `valueText` | Targets. ≥ 100% shows a check; bar clamps, text does not. |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
-| `EmptyState` | EmptyState.tsx | `icon`, `title`, `description`, `action` | Empty lists / no results. |
-| `Alert` | Alert.tsx | `tone` info/success/warning/danger, `title`, `action`, `role` (null = silent) | Inline messages and form-level errors. |
-| `Skeleton` | Skeleton.tsx | `rounded` | Suspense fallbacks (pair with visible "Loading…" text or `aria-busy`). |
+| `EmptyState` | EmptyState.tsx | `icon`, `title`, `description`, `action`, `titleAs` (p/h1/h2/h3), `role` | Empty lists / no results; whole-page states (403 via `components/AccessDenied`, not found, error) use `titleAs="h1"`. |
+| `Alert` | Alert.tsx | `tone` info/success/warning/danger, `title`, `action`, `role` (null = silent), `id` (for aria-describedby) | Inline messages and form-level errors. |
+| `Skeleton` | Skeleton.tsx | `rounded` | Suspense fallbacks (pair with visible "Loading…" text or `aria-busy`). Page fallbacks: `components/PageSkeletons` (KPI, team, projects, admin, form) and `components/RequestSkeletons`. |
 | `tableClass()` | table.ts | `compact`, `minWidth` → `{wrapper, table, th, tr, td, rowHeader, numeric}` | Every table: sticky header, row hover, no zebra. |
 | `Divider` | Divider.tsx | `label` | Separators. |
 | `LogoMark` | LogoMark.tsx | `size` | Brand mark (decorative). |

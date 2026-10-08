@@ -1,9 +1,21 @@
+import { ChevronRight, Mail } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
+import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
+import { Chip } from "@/components/ui/Chip";
+import { tableClass } from "@/components/ui/table";
+import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailForm, RemoveAllowed } from "./UserForms";
+
+function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
+  return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
+}
 
 /** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
 export async function UsersContent() {
@@ -15,39 +27,49 @@ export async function UsersContent() {
     prisma.allowedEmail.findMany({ orderBy: { email: "asc" } }),
   ]);
   const owners = new Map(users.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u.name]));
+  const t = tableClass({ minWidth: "min-w-[60rem]" });
 
   return (
     <>
-      <AdminTabs current="users" />
-      <h1 className="mb-1 text-2xl font-semibold">People and access</h1>
-      <p className="mb-4 text-muted-foreground">
-        Company-domain addresses can sign in once bound to a person. Anyone else needs the address on the allowed list (adding a login email below does this for you).
-      </p>
+      <PageHeader title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
+        description="Company-domain addresses can sign in once bound to a person. Anyone else needs the address on the allowed list (adding a login email below does this for you)." />
 
-      <div className="overflow-x-auto rounded-md border border-border">
-        <table className="w-full text-left text-sm">
+      <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
+        <table className={t.table}>
           <caption className="sr-only">All people</caption>
-          <thead className="bg-muted">
+          <thead>
             <tr>
-              {["Name", "Full name", "Title", "Job role", "App role", "Login email", "Status", "Manage"].map((h) => (
-                <th key={h} scope="col" className="px-3 py-2 font-medium">{h}</th>
+              {["Name", "Job role", "App role", "Login email", "Status", "Manage"].map((h) => (
+                <th key={h} scope="col" className={t.th}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {users.map((u) => (
-              <tr key={u.id} className="border-t border-border align-top">
-                <th scope="row" className="px-3 py-2 font-medium">{u.name}</th>
-                <td className="px-3 py-2">{u.fullName}</td>
-                <td className="px-3 py-2">{u.title ?? "—"}</td>
-                <td className="px-3 py-2">{u.jobRole}</td>
-                <td className="px-3 py-2">{u.appRole}</td>
-                <td className="px-3 py-2">{u.email ?? "No login"}</td>
-                <td className="px-3 py-2">{u.active ? "Active" : "Inactive"}</td>
-                <td className="min-w-72 px-3 py-2">
-                  <details>
-                    <summary className="cursor-pointer focus-visible:outline-2 focus-visible:outline-ring">Edit {u.name}</summary>
-                    <div className="mt-3 space-y-4">
+              <tr key={u.id} className={cn(t.tr, "align-top")}>
+                <th scope="row" className={cn(t.rowHeader, "align-top")}>
+                  <div className="flex items-start gap-2.5">
+                    <Avatar name={u.name} size="md" decorative className={cn(!u.active && "opacity-60")} />
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{u.name}</p>
+                      <p className="text-xs font-normal text-foreground-secondary">
+                        <span className="sr-only">Full name: </span>{u.fullName}
+                        <span aria-hidden="true"> · </span>
+                        <span className="sr-only">Title: </span>{u.title ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                </th>
+                <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
+                <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
+                <td className={cn(t.td, "align-top break-all")}>{u.email ?? <span className="text-foreground-secondary italic">No login</span>}</td>
+                <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
+                <td className={cn(t.td, "min-w-72 align-top")}>
+                  <details className="group">
+                    <summary className="inline-flex cursor-pointer items-center gap-1 rounded-md font-medium text-link hover:underline">
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />Edit {u.name}
+                    </summary>
+                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-surface-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <ActiveToggle u={u} />
@@ -60,33 +82,45 @@ export async function UsersContent() {
         </table>
       </div>
 
-      <section aria-labelledby="add-person-h" className="mt-8 max-w-2xl">
-        <h2 id="add-person-h" className="mb-2 text-lg font-semibold">Add person</h2>
-        <AddPersonForm />
-      </section>
+      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
+        <Card>
+          <section aria-labelledby="add-person-h">
+            <CardHeader><CardTitle id="add-person-h">Add person</CardTitle></CardHeader>
+            <AddPersonForm />
+          </section>
+        </Card>
 
-      <section aria-labelledby="allowed-h" className="mt-8 max-w-2xl">
-        <h2 id="allowed-h" className="mb-2 text-lg font-semibold">Allowed emails</h2>
-        {allowed.length === 0 ? (
-          <p className="mb-3 text-muted-foreground">No outside addresses are allowed.</p>
-        ) : (
-          <ul className="mb-4 divide-y divide-border rounded-md border border-border">
-            {allowed.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 p-3">
-                <div>
-                  <p className="font-medium">{a.email}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {owners.has(a.email.toLowerCase()) ? `Used by ${owners.get(a.email.toLowerCase())}` : "Not linked to a person"}
-                    {a.note ? ` · ${a.note}` : ""}
-                  </p>
-                </div>
-                <RemoveAllowed email={a.email} />
-              </li>
-            ))}
-          </ul>
-        )}
-        <AddAllowedForm />
-      </section>
+        <Card>
+          <section aria-labelledby="allowed-h">
+            <CardHeader>
+              <CardTitle id="allowed-h">Allowed emails</CardTitle>
+              <p className="text-[13px] text-foreground-secondary">Outside addresses that may sign in.</p>
+            </CardHeader>
+            {allowed.length === 0 ? (
+              <p className="mb-4 text-sm text-foreground-secondary">No outside addresses are allowed.</p>
+            ) : (
+              <ul className="mb-4 divide-y divide-border rounded-lg border border-border">
+                {allowed.map((a) => (
+                  <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 p-3">
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <span aria-hidden="true" className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary"><Mail strokeWidth={1.75} className="size-3.5" /></span>
+                      <div className="min-w-0">
+                        <p className="font-medium break-all text-foreground">{a.email}</p>
+                        <p className="text-[13px] text-foreground-secondary">
+                          {owners.has(a.email.toLowerCase()) ? `Used by ${owners.get(a.email.toLowerCase())}` : "Not linked to a person"}
+                          {a.note ? ` · ${a.note}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <RemoveAllowed email={a.email} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <AddAllowedForm />
+          </section>
+        </Card>
+      </div>
     </>
   );
 }
