@@ -104,7 +104,7 @@ describe("D8 tap targets", () => {
 
 describe("D11 per-page titles", () => {
   it("root template + static page titles", () => {
-    expect(rootMeta.title).toEqual({ default: "Creative Tracker", template: "%s · Creative Tracker" });
+    expect(rootMeta.title).toEqual({ default: "Cloworks", template: "%s · Cloworks" });
     expect([requestsMeta, newRequestMeta, detailMeta, kpiMeta, teamMeta, projectsMeta, usersMeta, listsMeta, signinMeta].map((m) => m.title)).toEqual(
       ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Users", "Admin · Lists", "Sign in"]);
   });
@@ -116,7 +116,7 @@ describe("D10 sign-in brand band", () => {
     const band = document.querySelector("[data-brand-band]")!;
     expect(band.className).toContain("bg-sidebar");
     expect(band.className).toContain("border-brand-aqua");
-    expect(band.textContent).toContain("Creative Tracker");
+    expect(band.textContent).toContain("Cloworks");
     expect(screen.getByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();

@@ -1,4 +1,4 @@
-# Creative Request Tracker
+# Cloworks
 
 Internal web app for the Clogent creative team. Requesters (for example social media specialists) submit design,
 video and social-content requests; a lead assigns them; designers move them through a fixed workflow; and the
@@ -63,7 +63,7 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 | `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | `https://login.microsoftonline.com/<tenant-id>/v2.0`. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Your tenant id. Entra sign-in is denied unless the token's `tid` equals it. | Yes, to use Microsoft sign-in |
 | `RESEND_API_KEY` | Resend API key for notification emails. Empty means no email is sent (notification rows are still stored). | No |
-| `EMAIL_FROM` | Sender, e.g. `Creative Tracker <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | No |
+| `EMAIL_FROM` | Sender, e.g. `Cloworks <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | No |
 | `APP_BASE_URL` | Base URL used for links in emails. | No (recommended when email is on) |
 
 Never commit `.env`; `.gitignore` already excludes it.

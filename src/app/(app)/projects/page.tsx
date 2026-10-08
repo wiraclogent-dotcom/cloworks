@@ -12,7 +12,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { buttonClass } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
 
-/** Tab title: "Projects · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Projects · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Projects" };
 
 async function ProjectsContent() {

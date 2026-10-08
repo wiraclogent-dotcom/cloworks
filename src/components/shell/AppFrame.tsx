@@ -79,7 +79,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
             <Menu aria-hidden="true" className="size-5" />
           </button>
           <LogoMark size={24} />
-          <span className="text-[15px] font-semibold">Creative Tracker</span>
+          <span className="text-[15px] font-semibold">Cloworks</span>
         </header>
 
         {open ? <div aria-hidden="true" data-testid="sidebar-backdrop" onClick={() => close()} className="fixed inset-0 z-40 bg-[var(--backdrop)] md:hidden" /> : null}
@@ -95,7 +95,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
           )}>
           <div className="sb-item flex h-14 flex-none items-center gap-2.5 px-4">
             <LogoMark />
-            <span className="sb-label text-[15px] font-semibold tracking-tight">Creative Tracker</span>
+            <span className="sb-label text-[15px] font-semibold tracking-tight">Cloworks</span>
             <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
               className="ml-auto inline-flex size-9 items-center justify-center rounded-lg text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring md:hidden">
               <X aria-hidden="true" className="size-[18px]" />

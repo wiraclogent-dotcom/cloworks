@@ -21,7 +21,7 @@ import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
 import { hrefWith, parseParams, parseView, toFilter } from "./params";
 
-/** Tab title: "Requests · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Requests" };
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {

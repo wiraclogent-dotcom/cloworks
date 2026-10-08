@@ -6,7 +6,7 @@ import { Alert } from "@/components/ui/Alert";
 import { buttonClass } from "@/components/ui/Button";
 import { LogoMark } from "@/components/ui/LogoMark";
 
-/** Tab title: "Sign in · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Sign in · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Sign in" };
 
 type SP = Promise<{ error?: string | string[] }>;
@@ -25,7 +25,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
       <div data-brand-band="" className="border-b-4 border-brand-aqua bg-sidebar px-4 pt-12 pb-24 text-center text-sidebar-foreground sm:pt-16">
         <div className="mx-auto flex max-w-md flex-col items-center">
           <LogoMark size={44} />
-          <p className="mt-4 text-2xl font-semibold tracking-tight">Creative Tracker</p>
+          <p className="mt-4 text-2xl font-semibold tracking-tight">Cloworks</p>
           <p className="mt-1 text-sm text-sidebar-foreground-secondary">Request, track and measure creative work.</p>
         </div>
       </div>
@@ -33,7 +33,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
       <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 text-card-foreground shadow-raised">
         <div className="mb-5 text-center">
           <h1 className="text-[22px] leading-7 font-semibold">Sign in</h1>
-          <p className="mt-1 text-sm text-foreground-secondary">Creative Request Tracker</p>
+          <p className="mt-1 text-sm text-foreground-secondary">Creative request tracker</p>
         </div>
         <div className="space-y-3">
           <p className="text-center text-[13px] text-foreground-secondary">Sign in with your Clogent account.</p>

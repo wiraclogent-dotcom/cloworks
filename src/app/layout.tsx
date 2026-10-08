@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  // Pages set a short `title`; the template appends the app name ("Requests · Creative Tracker").
-  title: { default: "Creative Tracker", template: "%s · Creative Tracker" },
+  // Pages set a short `title`; the template appends the app name ("Requests · Cloworks").
+  title: { default: "Cloworks", template: "%s · Cloworks" },
   description: "Request, track and measure creative work.",
 };
 
