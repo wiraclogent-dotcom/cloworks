@@ -26,6 +26,9 @@
   --border: var(--brand-grey);
   --input: var(--brand-grey);
   --ring: var(--brand-aqua);
+  /* Chart series (graphics need 3:1 against the card) */
+  --chart-done: var(--brand-aqua-strong);
+  --chart-target: var(--brand-deep-blue);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -45,6 +48,8 @@
     --border: #3b6a8c;
     --input: #3b6a8c;
     --ring: var(--brand-aqua);
+    --chart-done: var(--brand-aqua);
+    --chart-target: var(--brand-white);
   }
 }
 
