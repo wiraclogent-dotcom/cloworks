@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { RequestStatus } from "@prisma/client";
 import { isHttpUrl } from "@/lib/fieldSchema";
-import { resolveUser, normalizeName, type ImportUser } from "./aliases";
+import { resolveUserDetailed, normalizeName, type ImportUser } from "./aliases";
 
 /*
  * IMPORTANT: the sheet has no completion dates. Synthetic DONE events are placed at the deadline
@@ -81,12 +81,19 @@ const LABEL: Record<Canon, string> = {
   output: "Jumlah Output", includeKpi: "Include_KPI",
 };
 
-function mapHeaders(headers: string[]): Partial<Record<Canon, string>> {
+function mapHeaders(source: ImportSource, headers: string[]): Partial<Record<Canon, string>> {
   const out: Partial<Record<Canon, string>> = {};
   for (const h of headers) {
     const n = normHeader(h);
     const hit = MATCHERS.find(([c, f]) => !out[c] && f(n));
     if (hit) out[hit[0]] = h;
+  }
+  // Each export has its own identifying headers; guards against swapped file arguments.
+  if (source === "socmed") {
+    const need = (["platform", "includeKpi"] as Canon[]).filter((c) => !out[c]);
+    if (need.length) throw new Error(`This does not look like the SocMed Tracker export (missing header(s): ${need.map((c) => LABEL[c]).join(", ")}). Pass the Request List first and the SocMed Tracker second.`);
+  } else if (out.platform || out.includeKpi) {
+    throw new Error("This looks like the SocMed export (it has a Platform/Include_KPI column); pass it as the second file.");
   }
   const missing = REQUIRED.filter((c) => !out[c]);
   if (missing.length) throw new Error(`Missing required header(s): ${missing.map((c) => LABEL[c]).sort().join(", ")}`);
@@ -95,7 +102,8 @@ function mapHeaders(headers: string[]): Partial<Record<Canon, string>> {
 
 /** Strict date parse with the source's explicit format; null when invalid/impossible. */
 export function parseSheetDate(s: string, format: "dmy" | "mdy"): Date | null {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s.trim());
+  // An optional trailing time part is tolerated and ignored; the date part stays strict.
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)?$/.exec(s.trim());
   if (!m) return null;
   const a = Number(m[1]), b = Number(m[2]), y = Number(m[3]);
   const [d, mo] = format === "dmy" ? [a, b] : [b, a];
@@ -121,8 +129,9 @@ export function parseRequestRows(
   rows: Record<string, string>[],
   ctx: ParseCtx,
   headers: string[] = Object.keys(rows[0] ?? {}),
+  lines?: number[],
 ): { records: ImportRecord[]; report: ParseReport } {
-  const hm = mapHeaders(headers);
+  const hm = mapHeaders(source, headers);
   const fmt = source === "requests" ? "dmy" : "mdy";
   const get = (r: Record<string, string>, c: Canon) => (hm[c] ? (r[hm[c]!] ?? "").trim() : "");
   const records: ImportRecord[] = [];
@@ -133,7 +142,7 @@ export function parseRequestRows(
   const divByName = new Map(ctx.divisions.map((d) => [d.name.trim().toLowerCase(), d.id]));
 
   rows.forEach((r, i) => {
-    const row = i + 2; // header is line 1
+    const row = lines?.[i] ?? i + 2; // real CSV line when known (header is line 1)
     const skip = (reason: string) => report.skipped.push({ row, reason });
     const warn = (message: string) => report.warnings.push({ row, message });
 
@@ -157,12 +166,13 @@ export function parseRequestRows(
     if (!divisionId) return skip(`Unknown division "${get(r, "division")}"`);
 
     const reqText = get(r, "requester");
-    let requesterId = resolveUser(reqText, ctx.users);
+    const reqRes = resolveUserDetailed(reqText, ctx.users);
+    let requesterId = reqRes.id;
     if (!requesterId) {
       if (!wira) return skip("Requester unresolved and no fallback user named Wira");
       requesterId = wira.id;
       if (reqText) report.unmapped.push({ row, field: "Requester", value: reqText });
-      warn(reqText ? `Requester "${reqText}" not found; used Wira` : "Blank requester; used Wira");
+      warn(reqText ? `Requester "${reqText}" ${reqRes.ambiguous ? "is ambiguous (matches several users)" : "not found"}; used Wira` : "Blank requester; used Wira");
     }
 
     const progText = get(r, "progress");
@@ -173,10 +183,11 @@ export function parseRequestRows(
     const desText = get(r, "designer");
     let assigneeId: string | null = null;
     if (desText) {
-      assigneeId = resolveUser(desText, ctx.users);
+      const desRes = resolveUserDetailed(desText, ctx.users);
+      assigneeId = desRes.id;
       if (!assigneeId) {
         report.unmapped.push({ row, field: "Designer", value: desText });
-        warn(`Designer "${desText}" not found; left unassigned`);
+        warn(`Designer "${desText}" ${desRes.ambiguous ? "is ambiguous (matches several users)" : "not found"}; left unassigned`);
       }
     } else if (finalStatus !== "REQUESTED") warn("Blank designer on a non-REQUESTED row; left unassigned");
 
@@ -187,6 +198,7 @@ export function parseRequestRows(
     const outRaw = get(r, "output");
     const out = /^\d+$/.test(outRaw) ? Number(outRaw) : 0;
     const outputCount = out >= 1 ? out : 1;
+    if (outRaw && out < 1) warn(`Invalid Jumlah Output "${outRaw}"; used 1`);
 
     const extra: string[] = [];
     const brief = get(r, "briefLink");
@@ -205,13 +217,14 @@ export function parseRequestRows(
       const plat = get(r, "platform").toLowerCase();
       if (plat === "tiktok") fields.platform = "TikTok";
       else if (plat === "instagram") fields.platform = "Instagram";
-      const up = notesText.toUpperCase();
+      else warn(plat ? `Platform "${get(r, "platform")}" unknown; platform omitted` : "Platform missing; platform omitted");
       let best: string | null = null, bestAt = Infinity;
       for (const ct of CONTENT_TYPES) {
-        const at = up.indexOf(ct.toUpperCase());
+        const at = notesText.search(new RegExp(`\\b${ct}\\b`, "i"));
         if (at >= 0 && at < bestAt) { best = ct; bestAt = at; }
       }
       if (best) fields.contentType = best;
+      else warn("contentType not derivable from Notes");
       fields.shooting = get(r, "shooting").toUpperCase() === "TRUE";
       fields.upload = get(r, "upload").toUpperCase() === "TRUE";
       fields.editing = get(r, "edited").toUpperCase() === "TRUE";

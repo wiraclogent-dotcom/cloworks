@@ -141,3 +141,49 @@ describe("parseRequestRows: socmed source", () => {
     expect(r.records).toHaveLength(1);
   });
 });
+
+describe("fix round 1", () => {
+  const SOC_CSV_HEADERS = SOC_HEADERS;
+  it("swapped sources are rejected with zero records", () => {
+    expect(() => req([socRow({})], SOC_CSV_HEADERS)).toThrow(/looks like the SocMed export.*second file/i);
+    expect(() => soc([reqRow({})], REQ_HEADERS)).toThrow(/does not look like the SocMed Tracker export/i);
+  });
+  it("timestamp suffix accepted (date part only, strict format)", () => {
+    const a = req([reqRow({ "Request Date": "04/06/2026 10:23", Deadline: "05/06/2026 9:05:01 PM" })]).records[0];
+    expect(a.requestedAt.toISOString()).toBe("2026-06-03T17:00:00.000Z");
+    expect(a.deadline!.toISOString()).toBe("2026-06-04T17:00:00.000Z");
+    const b = soc([socRow({ "Otomatis Request Date": "4/6/2026 10:23:45", Deadline: "4/7/2026 10:23" })]).records[0];
+    expect(b.requestedAt.toISOString()).toBe("2026-04-05T17:00:00.000Z");
+    expect(b.deadline!.toISOString()).toBe("2026-04-06T17:00:00.000Z");
+    expect(req([reqRow({ "Request Date": "04/06/2026 junk" })]).records).toHaveLength(0);
+  });
+  it("invalid non-blank Jumlah Output warns; blank is silent", () => {
+    for (const v of ["2.0", "1,5", "-1", "abc", "0"]) {
+      const r = req([reqRow({ "Jumlah Output": v })]);
+      expect(r.records[0].outputCount).toBe(1);
+      expect(r.report.warnings.some((w) => /Jumlah Output/.test(w.message))).toBe(true);
+    }
+    expect(req([reqRow({ "Jumlah Output": "" })]).report.warnings).toHaveLength(0);
+  });
+  it("report rows use real CSV line numbers (multi-line quoted cell)", async () => {
+    const { readCsv } = await import("@/lib/import/csv");
+    const csv = `${REQ_HEADERS.join(",")}\nRio,Clogent,Creative,A,,"line1\nline2",22/05/2026,,,,,Requested,,1\nRio,Clogent,Creative,B,,,99/99/2026,,,,,Requested,,1\n`;
+    const { headers, rows, lines } = readCsv(csv);
+    const r = parseRequestRows("requests", rows, ctx, headers, lines);
+    expect(r.report.skipped).toEqual([{ row: 4, reason: expect.stringMatching(/request date/i) }]);
+  });
+  it("socmed warns on unknown platform / no contentType; word boundary for contentType", () => {
+    const r = soc([socRow({ Platform: "", Notes: "brand HISTORY reel" })]);
+    expect(r.records[0].fields.contentType).toBeUndefined();
+    const msgs = r.report.warnings.map((w) => w.message).join("|");
+    expect(msgs).toMatch(/Platform/);
+    expect(msgs).toMatch(/contentType/);
+    expect(soc([socRow({ Notes: "daily-post" })]).records[0].fields.contentType).toBe("Daily");
+  });
+  it("ambiguous names reported as ambiguous", () => {
+    const amb = { ...ctx, users: [...ctx.users, { id: "u-x", name: "Rio", fullName: null, aliases: [], active: true }] };
+    const r = parseRequestRows("requests", [reqRow({ Requester: "Rio", Designer: "Rio" })], amb, REQ_HEADERS);
+    expect(r.report.warnings.map((w) => w.message).join("|")).toMatch(/ambiguous/);
+    expect(r.report.warnings.map((w) => w.message).join("|")).not.toMatch(/not found/);
+  });
+});

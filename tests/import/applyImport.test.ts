@@ -78,4 +78,14 @@ describe("applyImport", () => {
     expect(k.tasksDone).toBe(1);
     expect(k.totalOutputs).toBe(3);
   });
+
+  it("request-month rule: request 09-30, DONE with deadline 10-02 counts in 2026-09 not 2026-10", async () => {
+    const records = parseRequestRows("socmed", [socRow({ "Otomatis Request Date": "9/30/2026", Deadline: "10/2/2026" })], ctx, SOC_HEADERS).records;
+    await applyImport(db.prisma, records);
+    const fadli = await db.prisma.user.findFirstOrThrow({ where: { name: "Fadli" } });
+    const kreqs = await loadKpiRequests(db.prisma, ["2026-09", "2026-10"]);
+    const kpi = (m: string) => computeKpi(kreqs, { id: fadli.id, jobRole: fadli.jobRole }, m, { role: "DESIGNER", targetTasks: 50 });
+    expect(kpi("2026-09").tasksDone).toBe(1);
+    expect(kpi("2026-10").tasksDone).toBe(0);
+  });
 });
