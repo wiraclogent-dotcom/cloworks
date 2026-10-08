@@ -1,7 +1,6 @@
 "use client";
 
-import { Bar, CartesianGrid, ComposedChart, LabelList, Legend, Line, XAxis, YAxis } from "recharts";
-import { ResponsiveContainer } from "recharts";
+import { Bar, CartesianGrid, ComposedChart, LabelList, Legend, Line, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 export type TrendPoint = { month: string; label: string; tasksDone: number; target: number | null };
 

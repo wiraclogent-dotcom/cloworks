@@ -21,17 +21,18 @@ export async function setTargetWith(
   if (typeof t !== "number" || !Number.isInteger(t) || t < 0 || t > 10000) {
     return fail("INVALID", "Target must be a whole number between 0 and 10,000.");
   }
-  const note = typeof input.note === "string" ? input.note.trim() : "";
-  if (note.length > 200) return fail("INVALID", "Note must be 200 characters or fewer.");
+  // undefined = leave the stored note alone; "" / whitespace = clear it.
+  const note = typeof input.note === "string" ? input.note.trim() : undefined;
+  if (note !== undefined && note.length > 200) return fail("INVALID", "Note must be 200 characters or fewer.");
 
   const target = await db.user.findUnique({ where: { id: input.userId }, select: { id: true } });
   if (!target) return fail("NOT_FOUND", "Person not found.");
 
-  const data = { role: input.role, targetTasks: t, note: note || null };
+  const data = { role: input.role, targetTasks: t };
   await db.kpiTarget.upsert({
     where: { userId_month: { userId: input.userId, month: input.month } },
-    create: { userId: input.userId, month: input.month, ...data },
-    update: data,
+    create: { userId: input.userId, month: input.month, ...data, note: note || null },
+    update: note === undefined ? data : { ...data, note: note || null },
   });
   return { ok: true };
 }

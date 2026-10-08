@@ -65,6 +65,11 @@ describe("kpi queries + targets", () => {
 
       const both = await loadKpiRequests(db.prisma, ["2026-09", "2026-10"]);
       expect(both.map((r) => r.id)).toEqual(expect.arrayContaining([boundary, septLate]));
+      const bothIds = both.map((r) => r.id);
+      expect(new Set(bothIds).size).toBe(bothIds.length);
+      const openInMonth = await mkReq({ requestedAt: "2026-10-03T03:00:00Z", assignee: "creative", status: S.REQUESTED });
+      const again = (await loadKpiRequests(db.prisma, ["2026-10"])).map((r) => r.id);
+      expect(again.filter((i) => i === openInMonth)).toHaveLength(1);
       expect(await loadKpiRequests(db.prisma, [])).toEqual(expect.any(Array));
     });
   });
@@ -141,6 +146,22 @@ describe("kpi queries + targets", () => {
       expect(rows).toHaveLength(1);
       expect(rows[0].targetTasks).toBe(25);
       expect(rows[0].role).toBe("OTHER");
+    });
+    it("note: omitted keeps, empty clears, new replaces, >200 rejected", async () => {
+      const get = async () => (await db.prisma.kpiTarget.findUnique({ where: { userId_month: { userId: ids.creative, month: "2027-03" } } }))!;
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-03", note: "Ramadan month, reduced load" }));
+      expect((await get()).note).toBe("Ramadan month, reduced load");
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-03", targetTasks: 45 }));
+      expect(await get()).toMatchObject({ targetTasks: 45, note: "Ramadan month, reduced load" });
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-03", note: "  new note " }));
+      expect((await get()).note).toBe("new note");
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-03", note: "   " }));
+      expect((await get()).note).toBeNull();
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-03", note: "keep" }));
+      expect(await setTargetWith(db.prisma, lead(), input({ month: "2027-03", note: "x".repeat(201) }))).toMatchObject({ ok: false, code: "INVALID" });
+      expect((await get()).note).toBe("keep");
+      await setTargetWith(db.prisma, lead(), input({ month: "2027-04" }));
+      expect((await db.prisma.kpiTarget.findUnique({ where: { userId_month: { userId: ids.creative, month: "2027-04" } } }))?.note).toBeNull();
     });
     it("unknown user is NOT_FOUND", async () => {
       expect(await setTargetWith(db.prisma, lead(), input({ userId: "nope" }))).toMatchObject({ ok: false, code: "NOT_FOUND" });

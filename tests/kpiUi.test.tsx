@@ -29,6 +29,12 @@ describe("ProgressBar", () => {
     expect(bar.getAttribute("aria-valuenow")).toBe("100");
     expect(bar.getAttribute("aria-valuetext")).toBe("60 of 50 tasks (120%)");
   });
+  it("target 0 shows no NaN or Infinity", () => {
+    const { container } = render(<ProgressBar done={0} target={0} progress={null} label="Tasks" />);
+    expect(screen.getByText("0 of 0 tasks")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/NaN|Infinity/);
+    expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("0");
+  });
   it("without a target shows plain text, no bar", () => {
     render(<ProgressBar done={2} target={null} progress={null} label="Tasks" />);
     expect(screen.queryByRole("progressbar")).toBeNull();
@@ -60,6 +66,15 @@ describe("TeamTable editor", () => {
     fireEvent.change(screen.getByLabelText("Target tasks for Fadli"), { target: { value: "40" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Saved.")).toBeTruthy();
+  });
+  it("clears a stale Saved message when the value is edited again", async () => {
+    setTarget.mockResolvedValue({ ok: true });
+    render(<TeamTable rows={rows} month="2026-10" canEdit />);
+    fireEvent.change(screen.getByLabelText("Target tasks for Fadli"), { target: { value: "40" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await screen.findByText("Saved.");
+    fireEvent.change(screen.getByLabelText("Target tasks for Fadli"), { target: { value: "41" } });
+    expect(screen.queryByText("Saved.")).toBeNull();
   });
   it("rejects non-integers client-side without calling the server", async () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit />);
