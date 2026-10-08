@@ -4,15 +4,14 @@ import { useDraggable } from "@dnd-kit/core";
 import type { RequestStatus } from "@prisma/client";
 import type { RequestRow } from "@/lib/requests";
 import { canTransition } from "@/lib/workflow";
-import { BOARD_STATUSES, STATUS_LABEL, deadlineText } from "./status";
-
-const TARGETS: RequestStatus[] = [...BOARD_STATUSES, "CANCELLED"];
+import Link from "next/link";
+import { MOVE_TARGETS, STATUS_LABEL, deadlineText } from "./status";
 
 export function BoardCard({ card, canMove, busy, onMove }: {
   card: RequestRow; canMove: boolean; busy: boolean; onMove: (card: RequestRow, to: RequestStatus) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: card.id, disabled: !canMove || busy });
-  const legal = TARGETS.filter((s) => canTransition(card.status, s));
+  const legal = MOVE_TARGETS.filter((s) => canTransition(card.status, s));
   const open = card.status !== "DONE" && card.status !== "CANCELLED";
   const overdue = open && card.daysLeft !== null && card.daysLeft < 0;
   return (
@@ -26,7 +25,7 @@ export function BoardCard({ card, canMove, busy, onMove }: {
             <span aria-hidden="true">⋮⋮</span>
           </button>
         )}
-        <p className="font-medium break-words">{card.title}</p>
+        <p className="font-medium break-words"><Link href={`/requests/${card.id}`} className="underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-ring">{card.title}</Link></p>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{card.brandName} · {card.divisionName}</p>
       <p className="mt-1 text-xs">Requester: {card.requesterName}</p>

@@ -45,3 +45,6 @@ export function deadlineText(days: number | null): string {
   if (days > 1) return `${days} days left`;
   return days === -1 ? "Overdue by 1 day" : `Overdue by ${-days} days`;
 }
+
+/** Statuses a card/detail "Move to…" menu may offer; callers filter by canTransition. */
+export const MOVE_TARGETS: readonly RequestStatus[] = [...BOARD_STATUSES, "CANCELLED"];
