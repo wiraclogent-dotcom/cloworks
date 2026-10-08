@@ -156,6 +156,11 @@ describe.each(themes)("contrast (%s)", (theme) => {
     expect(ratio(t(`--status-${tone}-text`), t(`--status-${tone}-tint`))).toBeGreaterThanOrEqual(AA);
   });
 
+  // Phase B2: project timeline bars are filled with the status tone's text colour (graphics on the card).
+  it.each(["requested", "in-progress", "first-look", "done", "due-soon"])("timeline bar --status-%s-text against --surface ≥ 3:1", (tone) => {
+    expect(ratio(t(`--status-${tone}-text`), t("--surface"))).toBeGreaterThanOrEqual(UI);
+  });
+
   it.each(AVATAR_PAIRS.map((_, i) => i + 1))("avatar %i initials on tint ≥ 4.5:1", (i) => {
     expect(ratio(t(`--avatar-${i}-text`), t(`--avatar-${i}-tint`))).toBeGreaterThanOrEqual(AA);
   });

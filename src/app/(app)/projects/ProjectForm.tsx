@@ -4,18 +4,20 @@ import { useActionState, useEffect, useRef } from "react";
 import { submitProject } from "./actions";
 import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
+import Link from "next/link";
+import { Alert } from "@/components/ui/Alert";
+import { Button, buttonClass } from "@/components/ui/Button";
+import { Card, CardTitle } from "@/components/ui/Card";
+import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 
 type Opt = { id: string; name: string };
 
-const control =
-  "w-full rounded-md border border-input bg-background px-3 py-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring aria-[invalid=true]:border-2";
-
 function Field({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
-    <div className="space-y-1">
-      <label htmlFor={id} className="block text-sm font-medium">{label}{required && <span aria-hidden="true"> *</span>}</label>
+    <div>
+      <label htmlFor={id} className={labelClass}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
       {children}
-      {error && <p id={`${id}-error`} className="text-sm font-medium text-foreground underline decoration-wavy">{error}</p>}
+      <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
   );
 }
@@ -26,8 +28,8 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && state.fieldErrors) || {};
   const v = state?.values ?? initial;
-  const props = (k: string) => ({
-    id: k, name: k, className: control,
+  const props = (k: string, kind: "input" | "select" = "input") => ({
+    id: k, name: k, className: fieldClass({ kind, invalid: !!errs[k] }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -47,32 +49,39 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
     <>
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
     <p role="status" aria-live="polite" className="sr-only">{summary}</p>
-    <form ref={formRef} key={nonce} action={action} className="space-y-5" noValidate>
-      {generic && <p role="alert" className="rounded-md border border-border bg-muted p-3 text-sm">{generic}</p>}
+    <form ref={formRef} key={nonce} action={action} className="space-y-4" noValidate>
+      {generic && <Alert tone="danger">{generic}</Alert>}
+      <Card className="space-y-4">
+      <CardTitle>Project</CardTitle>
       <Field id="title" label="Title" required error={errs.title}>
         <input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
       </Field>
       <Field id="subTitle" label="Sub title" error={errs.subTitle}>
         <input {...props("subTitle")} type="text" maxLength={200} defaultValue={v?.subTitle} />
       </Field>
+      <div className="grid gap-4 sm:grid-cols-2">
       <Field id="brandId" label="Brand" error={errs.brandId}>
-        <select {...props("brandId")} defaultValue={v?.brandId ?? ""}>
+        <select {...props("brandId", "select")} defaultValue={v?.brandId ?? ""}>
           <option value="">No brand</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </Field>
       <Field id="ownerId" label="Owner" required error={errs.ownerId}>
-        <select {...props("ownerId")} defaultValue={v?.ownerId ?? ""} required>
+        <select {...props("ownerId", "select")} defaultValue={v?.ownerId ?? ""} required>
           <option value="" disabled>Select an owner</option>
           {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
         </select>
       </Field>
+      </div>
       <Field id="status" label="Status" required error={errs.status}>
-        <select {...props("status")} defaultValue={v?.status || "NOT_STARTED"} required>
+        <select {...props("status", "select")} defaultValue={v?.status || "NOT_STARTED"} required>
           {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{PROJECT_STATUS_LABEL[s]}</option>)}
         </select>
       </Field>
-      <div className="grid gap-5 sm:grid-cols-2">
+      </Card>
+      <Card className="space-y-4">
+      <CardTitle>Schedule and file</CardTitle>
+      <div className="grid gap-4 sm:grid-cols-2">
         <Field id="startDate" label="Start date" error={errs.startDate}>
           <input {...props("startDate")} type="date" defaultValue={v?.startDate} />
         </Field>
@@ -83,9 +92,13 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
       <Field id="fileUrl" label="File link" error={errs.fileUrl}>
         <input {...props("fileUrl")} type="url" placeholder="https://" maxLength={2048} defaultValue={v?.fileUrl} />
       </Field>
-      <button type="submit" disabled={pending} className="rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60">
-        {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
-      </button>
+      </Card>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="submit" variant="primary" loading={pending}>
+          {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
+        </Button>
+        <Link href="/projects" className={buttonClass({ variant: "ghost" })}>Cancel</Link>
+      </div>
     </form>
     </>
   );

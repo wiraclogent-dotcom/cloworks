@@ -94,10 +94,10 @@ export function AdminSkeleton({ label = "Loading admin…" }: { label?: string }
 }
 
 /** Form pages (new / edit project): header + one card of fields. */
-export function FormSkeleton({ label = "Loading…" }: { label?: string }) {
+export function FormSkeleton({ label = "Loading…", header = true }: { label?: string; header?: boolean }) {
   return (
     <Busy label={label}>
-      <HeaderSkeleton actions={0} />
+      {header ? <HeaderSkeleton actions={0} /> : null}
       <CardSkeleton className="max-w-3xl space-y-4">
         {[0, 1, 2, 3].map((i) => <div key={i} className="space-y-2"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-9 w-full" /></div>)}
       </CardSkeleton>

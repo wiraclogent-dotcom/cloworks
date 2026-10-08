@@ -3,12 +3,15 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Alert } from "@/components/ui/Alert";
+import { FormSkeleton } from "@/components/PageSkeletons";
 import { jakartaDate } from "@/lib/createRequest";
 import { ProjectForm } from "../../ProjectForm";
 
 async function Content({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUserOrRedirect();
-  if (!can(user.appRole, "project.manage")) return <p role="alert">You are not allowed to edit projects.</p>;
+  if (!can(user.appRole, "project.manage")) return <Alert tone="danger">You are not allowed to edit projects.</Alert>;
   const { id } = await params;
   const project = await prisma.project.findUnique({ where: { id } });
   if (!project) notFound();
@@ -30,9 +33,9 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <div className="mx-auto w-full max-w-xl">
-      <h1 className="mb-6 text-2xl font-semibold">Edit project</h1>
-      <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}><Content params={params} /></Suspense>
+    <div className="mx-auto w-full max-w-3xl">
+      <PageHeader title="Edit project" description="Change the project details, dates or file link." />
+      <Suspense fallback={<FormSkeleton label="Loading…" header={false} />}><Content params={params} /></Suspense>
     </div>
   );
 }

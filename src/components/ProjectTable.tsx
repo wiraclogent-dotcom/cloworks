@@ -1,90 +1,105 @@
 import Link from "next/link";
+import { ExternalLink, FolderKanban, Pencil } from "lucide-react";
 import type { ProjectStatus } from "@prisma/client";
-import { StatusIcon, deadlineText } from "./status";
 import { daysLeft } from "@/lib/daysLeft";
-import { PROJECT_STATUS_LABEL, formatJakartaDate, groupProjects } from "@/lib/projects";
+import { formatJakartaDate, groupProjects } from "@/lib/projects";
 import { isHttpUrl } from "@/lib/fieldSchema";
+import { brandTone } from "@/lib/palette";
+import { Avatar } from "./ui/Avatar";
+import { CountPill } from "./ui/Chip";
+import { DeadlineChip } from "./ui/DeadlineChip";
+import { EmptyState } from "./ui/EmptyState";
+import { StatusChip } from "./ui/StatusChip";
+import { Card } from "./ui/Card";
+import { buttonClass } from "./ui/Button";
+import { tableClass } from "./ui/table";
+import { cn } from "./ui/cn";
 
 export type ProjectRow = {
   id: string; title: string; subTitle: string | null; brandName: string | null; ownerName: string;
   status: ProjectStatus; startDate: Date | null; dueDate: Date | null; fileUrl: string | null;
 };
 
-/** Shape per status (never colour alone). On hold gets a pause icon; the others reuse the request status shapes. */
+/** Project status as the shared chip (palette tone + shape icon + label). Old name kept for callers. */
 export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
-  const icon =
-    status === "ON_HOLD" ? (
-      <svg width={14} height={14} viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth={1.6} aria-hidden="true" focusable={false}>
-        <circle cx="7" cy="7" r="5.5" /><path d="M5.6 4.8v4.4M8.4 4.8v4.4" />
-      </svg>
-    ) : (
-      <StatusIcon status={status === "NOT_STARTED" ? "REQUESTED" : status === "IN_PROGRESS" ? "ON_PROGRESS" : status === "IN_REVIEW" ? "FIRST_LOOK" : "DONE"} />
-    );
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium whitespace-nowrap">
-      {icon}{PROJECT_STATUS_LABEL[status]}
-    </span>
-  );
+  return <StatusChip status={status} />;
 }
 
-const TH = "px-3 py-2 font-semibold whitespace-nowrap";
-
-/** Server component. Projects grouped by brand ("No brand" last), due date ascending inside each group. */
+/**
+ * Server component. One card; projects grouped by brand ("No brand" last), due date ascending inside each group. Each
+ * group is a section with a header strip (brand accent bar, brand name as h2, count) and its own table; the column
+ * widths are fixed so the groups line up like one table.
+ */
 export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; canManage: boolean; now: Date }) {
   if (rows.length === 0)
     return (
-      <p className="rounded-md border border-dashed border-border p-6 text-center text-muted-foreground">
-        No projects yet.{canManage ? " Use “New project” to add the first one." : ""}
-      </p>
+      <EmptyState icon={<FolderKanban />} title="No projects yet."
+        description={canManage ? "Use “New project” to add the first one." : undefined} />
     );
+  const t = tableClass();
   return (
-    <div className="space-y-6">
-      {groupProjects(rows).map((g) => {
+    <Card padded={false} className="overflow-hidden">
+      {groupProjects(rows).map((g, gi) => {
         const hid = `brand-${g.brand ?? "none"}`.replace(/\s+/g, "-");
         return (
-          <section key={g.brand ?? "__none"} aria-labelledby={hid}>
-            <h2 id={hid} className="mb-2 text-lg font-semibold">{g.brand ?? "No brand"}</h2>
-            <div className="overflow-x-auto rounded-lg border border-border">
-              <table className="w-full min-w-[52rem] border-collapse text-left text-sm">
-                <thead className="bg-muted">
+          <section key={g.brand ?? "__none"} aria-labelledby={hid} className={cn(gi > 0 && "border-t border-border")}>
+            <div data-tone={g.brand ? brandTone(g.brand) : "tag-neutral"} data-group-header=""
+              className="flex items-center gap-2 border-l-4 border-tone-accent bg-surface-muted px-4 py-2.5">
+              <h2 id={hid} className="text-[15px] font-semibold text-foreground">{g.brand ?? "No brand"}</h2>
+              <CountPill value={g.projects.length} aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-surface" />
+            </div>
+            <div className="overflow-x-auto">
+              <table className={cn(t.table, "min-w-[56rem] table-fixed")}>
+                <colgroup>
+                  <col className="w-[30%]" /><col className="w-[15%]" /><col className="w-[13%]" /><col className="w-[10%]" />
+                  <col className="w-[17%]" /><col className="w-[8%]" />{canManage && <col className="w-[7%]" />}
+                </colgroup>
+                <thead>
                   <tr>
-                    <th scope="col" className={TH}>Project</th>
-                    <th scope="col" className={TH}>Owner</th>
-                    <th scope="col" className={TH}>Status</th>
-                    <th scope="col" className={TH}>Start</th>
-                    <th scope="col" className={TH}>Due</th>
-                    <th scope="col" className={TH}>Days left</th>
-                    <th scope="col" className={TH}>File</th>
-                    {canManage && <th scope="col" className={TH}><span className="sr-only">Actions</span></th>}
+                    <th scope="col" className={cn(t.th, "static")}>Project</th>
+                    <th scope="col" className={cn(t.th, "static")}>Owner</th>
+                    <th scope="col" className={cn(t.th, "static")}>Status</th>
+                    <th scope="col" className={cn(t.th, "static")}>Start</th>
+                    <th scope="col" className={cn(t.th, "static")}>Due</th>
+                    <th scope="col" className={cn(t.th, "static")}>File</th>
+                    {canManage && <th scope="col" className={cn(t.th, "static")}><span className="sr-only">Actions</span></th>}
                   </tr>
                 </thead>
                 <tbody>
                   {g.projects.map((p) => {
                     const left = p.status !== "DONE" && p.dueDate ? daysLeft(p.dueDate, now) : null;
                     return (
-                      <tr key={p.id} className="border-t border-border">
-                        <th scope="row" className="px-3 py-2 font-medium">
-                          {p.title}
-                          {p.subTitle && <span className="block text-xs font-normal text-muted-foreground">{p.subTitle}</span>}
+                      <tr key={p.id} className={t.tr}>
+                        <th scope="row" className={t.rowHeader}>
+                          <span className="line-clamp-2">{p.title}</span>
+                          {p.subTitle && <span className="block truncate text-xs font-normal text-foreground-secondary">{p.subTitle}</span>}
                         </th>
-                        <td className="px-3 py-2">{p.ownerName}</td>
-                        <td className="px-3 py-2"><ProjectStatusBadge status={p.status} /></td>
-                        <td className="px-3 py-2 whitespace-nowrap">{p.startDate ? formatJakartaDate(p.startDate) : "—"}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">{p.dueDate ? formatJakartaDate(p.dueDate) : "—"}</td>
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          {left !== null ? (<>{left < 0 && <span aria-hidden="true">⚠ </span>}{deadlineText(left)}</>) : "—"}
+                        <td className={t.td}>
+                          <span className="flex min-w-0 items-center gap-2">
+                            <Avatar name={p.ownerName} size="sm" decorative />
+                            <span className="truncate">{p.ownerName}</span>
+                          </span>
                         </td>
-                        <td className="px-3 py-2">
+                        <td className={t.td}><StatusChip status={p.status} /></td>
+                        <td className={cn(t.td, "whitespace-nowrap tabular-nums")}>{p.startDate ? formatJakartaDate(p.startDate) : "—"}</td>
+                        <td className={t.td}>
+                          <span className="flex flex-col items-start gap-1">
+                            <span className="whitespace-nowrap tabular-nums">{p.dueDate ? formatJakartaDate(p.dueDate) : "—"}</span>
+                            {left !== null ? <DeadlineChip daysLeft={left} /> : null}
+                          </span>
+                        </td>
+                        <td className={t.td}>
                           {p.fileUrl && isHttpUrl(p.fileUrl) ? (
-                            <a href={p.fileUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-ring">
+                            <a href={p.fileUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md font-medium text-link hover:underline">
+                              <ExternalLink aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
                               Open file{" "}<span className="sr-only">for {p.title} (opens in a new tab)</span>
                             </a>
-                          ) : "—"}
+                          ) : <span className="text-foreground-secondary">—</span>}
                         </td>
                         {canManage && (
-                          <td className="px-3 py-2">
-                            <Link href={`/projects/${p.id}/edit`} className="underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-ring">
-                              Edit{" "}<span className="sr-only">{p.title}</span>
+                          <td className={cn(t.td, "text-right")}>
+                            <Link href={`/projects/${p.id}/edit`} className={buttonClass({ variant: "ghost", size: "sm", className: "px-2" })}>
+                              <Pencil aria-hidden="true" />Edit{" "}<span className="sr-only">{p.title}</span>
                             </Link>
                           </td>
                         )}
@@ -97,6 +112,6 @@ export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; can
           </section>
         );
       })}
-    </div>
+    </Card>
   );
 }

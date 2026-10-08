@@ -5,6 +5,11 @@ import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ProjectTable } from "@/components/ProjectTable";
 import { ProjectTimeline } from "@/components/ProjectTimeline";
+import { ProjectsSkeleton } from "@/components/PageSkeletons";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { buttonClass } from "@/components/ui/Button";
+import { Plus } from "lucide-react";
 
 async function ProjectsContent() {
   const user = await requireUserOrRedirect();
@@ -17,20 +22,22 @@ async function ProjectsContent() {
   const now = new Date();
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">Projects</h1>
-        {canManage && (
-          <Link href="/projects/new" className="ml-auto rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-            New project
+      <PageHeader title="Projects" count={rows.length} description="Brand projects grouped by brand, soonest due first."
+        actions={canManage && (
+          <Link href="/projects/new" className={buttonClass({ variant: "primary" })}>
+            <Plus aria-hidden="true" />New project
           </Link>
-        )}
-      </div>
+        )} />
       <ProjectTable rows={rows} canManage={canManage} now={now} />
       {rows.length > 0 && (
-        <section aria-labelledby="timeline-h" className="mt-8">
-          <h2 id="timeline-h" className="mb-2 text-lg font-semibold">Timeline</h2>
-          <ProjectTimeline projects={rows} today={now} />
-        </section>
+        <Card className="mt-6">
+          <section aria-labelledby="timeline-h">
+            <CardHeader>
+              <CardTitle id="timeline-h">Timeline</CardTitle>
+            </CardHeader>
+            <ProjectTimeline projects={rows} today={now} />
+          </section>
+        </Card>
       )}
     </>
   );
@@ -39,7 +46,7 @@ async function ProjectsContent() {
 export default function ProjectsPage() {
   return (
     <div>
-      <Suspense fallback={<p className="text-muted-foreground">Loading projects…</p>}>
+      <Suspense fallback={<ProjectsSkeleton />}>
         <ProjectsContent />
       </Suspense>
     </div>
