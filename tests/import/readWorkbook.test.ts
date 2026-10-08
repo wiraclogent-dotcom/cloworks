@@ -31,9 +31,9 @@ describe("readMasterWorkbook: Request List tab", () => {
   it("hyperlink cells: label in the column, target in '<Header> URL'", () => {
     const a = byTask(t.requests, "Banner Promo");
     expect(a["Brief Link"]).toBe("Brief Banner");
-    expect(a["Brief Link URL"]).toBe("https://docs.google.com/presentation/d/AAA");
+    expect(a["Brief Link URL"]).toBe("https://example.com/brief/AAA");
     expect(a["Design Folder"]).toBe("Folder Banner");
-    expect(a["Design Folder URL"]).toBe("https://drive.google.com/drive/folders/FFF");
+    expect(a["Design Folder URL"]).toBe("https://example.com/folder/FFF");
   });
   it("drops mailto:, javascript:, #fragment and targets containing spaces but keeps the label", () => {
     const m = byTask(t.requests, "Mailto Link");
@@ -61,10 +61,10 @@ describe("readMasterWorkbook: SocMed tab", () => {
     const a = byTask(t.socmed, "Short Video A");
     expect([a["Request Date"], a.Deadline]).toEqual(["9/30/2026", "10/1/2026"]);
     expect([a.Published, a.KerKun, a.Shooting, a.Upload, a.Edited]).toEqual(["TRUE", "FALSE", "TRUE", "TRUE", "TRUE"]);
-    expect(a["Link Upload"]).toBe("https://tiktok.com/@x/1");
-    expect(a["Link Upload URL"]).toBe("https://tiktok.com/@x/1");
-    expect(a["Brief Link URL"]).toBe("https://docs.google.com/presentation/d/BBB");
-    expect(a["Design Folder URL"]).toBe("https://x.gd/2bVjw");
+    expect(a["Link Upload"]).toBe("https://example.com/post/1");
+    expect(a["Link Upload URL"]).toBe("https://example.com/post/1");
+    expect(a["Brief Link URL"]).toBe("https://example.com/brief/BBB");
+    expect(a["Design Folder URL"]).toBe("https://example.com/s/2bVjw");
     expect(a.Month_Key).toBe("2026-09");
     expect(a["Jumlah Output"]).toBe("1");
     expect(byTask(t.socmed, "Reel B")["Request Date"]).toBe("10/5/2026");
@@ -82,7 +82,7 @@ describe("readMasterWorkbook: Dimas tab", () => {
   it("m/d/yyyy dates, TRUE booleans, empty Upload", () => {
     const r = t.dimas.rows[0];
     expect([r.Tanggal, r["Nam File"], r.Shooting, r.Upload, r.Editing]).toEqual(["9/17/2026", "FAFA 12 SEPT 1", "TRUE", "", "TRUE"]);
-    expect(t.dimas.rows.filter((x) => x["Nam File"] === "MOTION LIVE")).toHaveLength(3);
+    expect(t.dimas.rows.filter((x) => x["Nam File"] === "MOTION DEMO")).toHaveLength(3);
   });
 });
 
@@ -126,6 +126,21 @@ describe("readMasterWorkbook: errors and tolerance", () => {
     await expect(readMasterWorkbook(f)).rejects.toThrow(/Request List[\s\S]*Platform\/Include_KPI/);
     const g = await make((wb) => { good(wb); wb.getWorksheet("SocMed Tracker")!.spliceRows(1, 1, ["Requester", "Task", "Brief Link"]); });
     await expect(readMasterWorkbook(g)).rejects.toThrow(/SocMed[\s\S]*Platform[\s\S]*Include_KPI/);
+  });
+  it("Dimas columns outside the first contiguous header block: named, readable error", async () => {
+    const f = await make((wb) => { good(wb); wb.getWorksheet("Dimas Tracker")!.spliceRows(1, 1, ["No", "Tanggal", null, "Nam File"]); });
+    await expect(readMasterWorkbook(f)).rejects.toThrow(/Dimas Tracker[\s\S]*Tanggal[\s\S]*Nam File[\s\S]*contiguous/);
+  });
+  it("hyperlink targets with credentials / control characters / over 2048 chars are dropped", async () => {
+    const f = await make((wb) => {
+      good(wb);
+      const ws = wb.getWorksheet("SocMed Tracker")!;
+      ws.spliceRows(1, 1, ["Requester", "Platform", "Task", "Brief Link", "Include_KPI", "Link Upload"]);
+      ws.getRow(2).getCell(4).value = { text: "a", hyperlink: "https://user:pw@example.com/x" };
+      ws.getRow(2).getCell(6).value = { text: "b", hyperlink: "https://example.com/" + "a".repeat(2100) };
+    });
+    const r = (await readMasterWorkbook(f)).socmed.rows[0];
+    expect([r["Brief Link"], r["Brief Link URL"], r["Link Upload"], r["Link Upload URL"]]).toEqual(["a", "", "b", ""]);
   });
   it("error cell values read as empty", async () => {
     const f = await make((wb) => { good(wb); wb.getWorksheet("Request List All Clogent")!.getRow(2).getCell(1).value = { error: "#N/A" }; });

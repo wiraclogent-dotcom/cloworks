@@ -47,7 +47,7 @@ describe("workbook import into a real database", () => {
     expect(one.statusEvents.map((e) => e.to)).toEqual(["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE"]);
     expect(new Set(one.statusEvents.map((e) => e.at.toISOString())).size).toBe(1);
     expect(one.statusEvents.every((e) => e.actorId === dimas.id)).toBe(true);
-    expect(await db.prisma.request.count({ where: { title: "MOTION LIVE" } })).toBe(3);
+    expect(await db.prisma.request.count({ where: { title: "MOTION DEMO" } })).toBe(3);
 
     const r2 = await run(true);
     expect(r2!.inserted).toBe(0);
@@ -74,6 +74,33 @@ describe("workbook import into a real database", () => {
       expect(await db.prisma.request.count()).toBe(0);
     } finally {
       await db.prisma.requestType.update({ where: { id: t.id }, data: { name: "Motion Support" } });
+    }
+  });
+});
+
+describe("workbook mode lookup checks", () => {
+  it("aborts naming every missing brand/division/user, in dry-run too, writing nothing", async () => {
+    const p = db.prisma;
+    const bw = await p.brand.findFirstOrThrow({ where: { name: "Bubble Wash" } });
+    const sm = await p.division.findFirstOrThrow({ where: { name: "Social Media" } });
+    const dm = await p.user.findFirstOrThrow({ where: { name: "Dimas Pandu" } });
+    const wi = await p.user.findFirstOrThrow({ where: { name: "Wira" } });
+    await p.brand.update({ where: { id: bw.id }, data: { name: "X1" } });
+    await p.division.update({ where: { id: sm.id }, data: { name: "X2" } });
+    await p.user.update({ where: { id: dm.id }, data: { name: "X3" } });
+    await p.user.update({ where: { id: wi.id }, data: { name: "X4" } });
+    try {
+      for (const apply of [false, true]) {
+        const err = await run(apply).then(() => null, (e: Error) => e.message);
+        expect(err).toMatch(/Bubble Wash/);
+        for (const n of ["division \"Social Media\"", "user \"Dimas Pandu\"", "user \"Wira\""]) expect(err).toContain(n);
+      }
+      expect(await p.request.count()).toBe(0);
+    } finally {
+      await p.brand.update({ where: { id: bw.id }, data: { name: "Bubble Wash" } });
+      await p.division.update({ where: { id: sm.id }, data: { name: "Social Media" } });
+      await p.user.update({ where: { id: dm.id }, data: { name: "Dimas Pandu" } });
+      await p.user.update({ where: { id: wi.id }, data: { name: "Wira" } });
     }
   });
 });

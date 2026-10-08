@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import type { RequestStatus } from "@prisma/client";
-import { isHttpUrl } from "@/lib/fieldSchema";
+import { isSafeHttpUrl as isHttpUrl } from "./urls";
 import { resolveUserDetailed, normalizeName, type ImportUser } from "./aliases";
 
 /*
@@ -24,6 +24,8 @@ export type ImportRecord = {
   divisionId: string;
   typeName: string;
   requesterId: string;
+  /** Dimas only: false when the requester could not be read from the file name (Wira fallback). */
+  requesterRecorded?: boolean;
   assigneeId: string | null;
   requestedAt: Date;
   deadline: Date | null;
@@ -156,7 +158,7 @@ function buildNotes(text: string, extra: string[]): string | null {
  */
 function isTemplateTask(task: string): boolean {
   const t = task.toLowerCase().replace(/\s+/g, " ").trim();
-  return t.startsWith("contoh task") || t.includes("jangan di hapus") || t.includes("jangan dihapus");
+  return t.startsWith("contoh task") || t.startsWith("isi dengan ") || t.includes("jangan di hapus") || t.includes("jangan dihapus");
 }
 
 export function parseRequestRows(
@@ -295,6 +297,7 @@ export function parseRequestRows(
   return { records, report };
 }
 
+const DIMAS_NOTE = "Video/motion edit logged in Dimas Tracker.";
 export const DIMAS_TYPE = "Motion Support";
 export const DIMAS_DESIGNER = "Dimas Pandu";
 export const FALLBACK_BRAND = "Clogent";
@@ -350,16 +353,17 @@ export function parseDimasRows(
     if (!divisionId) return skip('Unknown division "Social Media"');
     if (!designer) return skip(`Designer "${DIMAS_DESIGNER}" not found in the database`);
 
-    let requesterId = resolveUserDetailed(file.split(/\s+/)[0], ctx.users).id;
+    let requesterId = resolveUserDetailed(file.split(/[\s_\-.]+/).find(Boolean) ?? "", ctx.users).id;
+    const recorded = !!requesterId;
     if (!requesterId) {
       if (!wira) return skip("Requester not recorded and no fallback user named Wira");
       requesterId = wira.id;
-      report.warnings.push({ row, message: "requester not recorded (first word of the file name is not a person); used Wira" });
+      report.warnings.push({ row, message: `requester not recorded (first word of "${file}" is not a person); used Wira` });
     }
 
     records.push({
-      source: "dimas", row, title: clip(file, 200), briefUrl: null, notes: "Video/motion edit logged in Dimas Tracker.",
-      brandId, divisionId, typeName: DIMAS_TYPE, requesterId, assigneeId: designer, requestedAt, deadline: null, status: "DONE",
+      source: "dimas", row, title: clip(file, 200), briefUrl: null, notes: recorded ? DIMAS_NOTE : `${DIMAS_NOTE}\nRequester not recorded in Dimas Tracker; Wira used.`,
+      requesterRecorded: recorded, brandId, divisionId, typeName: DIMAS_TYPE, requesterId, assigneeId: designer, requestedAt, deadline: null, status: "DONE",
       outputCount: 1, includeKpi: true, designFolderUrl: null,
       fields: {
         shooting: get(r, "shooting").toUpperCase() === "TRUE", editing: get(r, "editing").toUpperCase() === "TRUE",

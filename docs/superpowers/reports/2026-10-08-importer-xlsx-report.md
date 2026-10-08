@@ -65,3 +65,16 @@ Dry-run, 0.6 s read+parse:
 - 34 SocMed rows below the data have values (ghost checkbox booleans etc.) but no Task: skipped as "Blank task".
 - Re-run caveat remains: the Dimas key uses file name + date, so renaming a file in the sheet and re-running duplicates it.
 - Unverified: files exported by the live Google Sheets UI other than the one provided; exceljs cannot read `HYPERLINK()` formula targets (label only).
+
+## Fix round 1
+- A: `isTemplateTask` also matches the prefix `isi dengan ` (SocMed example row); "Isi konten promo" is kept.
+- B: Dimas rows with an unrecorded requester (`requesterRecorded: false` on the record) skip brand inference and default to Clogent (note still says inferred).
+- C: workbook mode (dry-run too) aborts before parsing/writing listing every missing lookup: brands Clogent / Bubble Wash, division Social Media, users Dimas Pandu / Wira (plus the type check).
+- D: Dimas fallback rows get `Requester not recorded in Dimas Tracker; Wira used.` in notes; the console warning quotes the file name.
+- E: first token split on `/[\s_\-.]+/`, whole-token match. Note: `FAFAYOEL` DOES match, because the seeded Fafa alias is "Fafa & Yoel" (normalizes to fafayoel); the negative tests use FAFAYO and RIOT.
+- F: Dimas Tanggal / Nam File outside the first contiguous header block gives a named error.
+- G: README reworded (requester rule, abort conditions).
+- H: new `src/lib/import/urls.ts` `isSafeHttpUrl` (http/https, <= 2048 chars, no whitespace/control chars, no credentials), used by the parser (URL columns and label cells, brief/folder/published, CSV and workbook mode) and by the reader.
+- I: workbook fixtures use example.com links and neutral names (only the template texts needed by the tests remain).
+- Evidence: RED `Tests 9 failed | 85 passed` before the code; then GREEN.
+- Smoke on the real export (throwaway DB, temp test deleted), dry-run: requests 353 importable / 1 template; socmed 96 importable (was 97) / 1 template / 35 skipped; dimas 103 importable, brands Clogent 83 / Bubble Wash 20 (unchanged: Wira's own majority was Clogent anyway); throwaway apply inserted 552, re-run 0; 16 Dimas rows use the Wira fallback.

@@ -18,11 +18,11 @@ export const DIMAS_LOG: [Date, string, boolean][] = [
   [utc(2026, 9, 17), "FAFA 12 SEPT 2", true],
   [utc(2026, 9, 18), "SYAHDA 28 SEPT 1", true],
   [utc(2026, 9, 30), "RIO 12 SEPT 1", true],
-  [utc(2026, 10, 1), "MOTION LIVE", true],
-  [utc(2026, 10, 2), "MOTION LIVE", true],
-  [utc(2026, 10, 7), "MOTION LIVE", true],
-  [utc(2026, 9, 25), "RESIZE KONTEN OM YOS", true],
-  [utc(2026, 9, 25), "RESIZE KONTEN OM YOS", true],
+  [utc(2026, 10, 1), "MOTION DEMO", true],
+  [utc(2026, 10, 2), "MOTION DEMO", true],
+  [utc(2026, 10, 7), "MOTION DEMO", true],
+  [utc(2026, 9, 25), "RESIZE KONTEN DEMO", true],
+  [utc(2026, 9, 25), "RESIZE KONTEN DEMO", true],
 ];
 /** Fixture log rows dated in September 2026 (for the KPI proof). */
 export const DIMAS_SEPT = DIMAS_LOG.filter(([d]) => d.getUTCMonth() === 8).length;
@@ -36,12 +36,12 @@ export async function buildFixtureWorkbook(): Promise<{ file: string; dir: strin
   const rl = wb.addWorksheet("Request List All Clogent");
   rl.addRow(REQ_HDR);
   const R = (o: Record<string, Cell>) => rl.addRow(rowOf(REQ_HDR, o));
-  R({ Requester: "Wira", Brand: "Clogent", Division: "Creative", Task: "Contoh Task | JANGAN DI HAPUS", "Brief Link": link("Brief Mei", "https://docs.google.com/presentation/d/TEMPLATE"), "Request Date": utc(2026, 5, 22), Deadline: utc(2026, 5, 22), "Request Time": { formula: "IF(G2:G3400=\"\", \"\", H2:H3400 - G2:G3400)", result: 0 }, Designer: "Daus", Progress: "Done" }); // row 2
-  R({ Requester: "Rio", Brand: "Clogent", Division: "Creative", Task: "Banner Promo", "Brief Link": link("Brief Banner", "https://docs.google.com/presentation/d/AAA"), Notes: "Mohon cepat", "Request Date": utc(2026, 6, 4), Deadline: utc(2026, 6, 5), "Request Time": { formula: "H3-G3", result: 1 }, "Days Left": { formula: "IF(...)", result: "Completed" }, Designer: "Irshyad", Progress: "Done", "Design Folder": link("Folder Banner", "https://drive.google.com/drive/folders/FFF"), "Jumlah Output": 2 }); // 3: 4 June
+  R({ Requester: "Wira", Brand: "Clogent", Division: "Creative", Task: "Contoh Task | JANGAN DI HAPUS", "Brief Link": link("Brief Mei", "https://example.com/brief/TEMPLATE"), "Request Date": utc(2026, 5, 22), Deadline: utc(2026, 5, 22), "Request Time": { formula: "IF(G2:G3400=\"\", \"\", H2:H3400 - G2:G3400)", result: 0 }, Designer: "Daus", Progress: "Done" }); // row 2
+  R({ Requester: "Rio", Brand: "Clogent", Division: "Creative", Task: "Banner Promo", "Brief Link": link("Brief Banner", "https://example.com/brief/AAA"), Notes: "Mohon cepat", "Request Date": utc(2026, 6, 4), Deadline: utc(2026, 6, 5), "Request Time": { formula: "H3-G3", result: 1 }, "Days Left": { formula: "IF(...)", result: "Completed" }, Designer: "Irshyad", Progress: "Done", "Design Folder": link("Folder Banner", "https://example.com/folder/FFF"), "Jumlah Output": 2 }); // 3: 4 June
   R({ Requester: "Rio", Brand: "Bubble Wash", Division: "Creative", Task: "Label Refill", "Request Date": utc(2026, 4, 6), Deadline: utc(2026, 4, 9), Designer: "Fadli", Progress: "Done" }); // 4: 6 April
   R({ Requester: "Yoel", Brand: "Clogent", Division: "Creative", Task: "Poster Akhir Bulan", "Request Date": utc(2026, 9, 30), Deadline: utc(2026, 10, 2), Designer: "Fadli", Progress: "Done" }); // 5: month-end
   R({ Requester: "Ibnu", Brand: "Clogent", Division: "Creative", Task: "Mailto Link", "Brief Link": link("mail me", "mailto:x@y.z"), "Request Date": utc(2026, 7, 1), Designer: "Fadli", Progress: "On Progress", "Design Folder": link("evil", "javascript:alert(1)") }); // 6
-  R({ Requester: "Rio", Brand: "Clogent", Division: "Creative", Task: "Rich Notes", Notes: { richText: [{ text: "Hello " }, { text: "World" }] }, "Brief Link": link("https://x.gd/abc", "https://x.gd/abc"), "Request Date": utc(2026, 7, 2), Designer: "Fadli", Progress: "Requested", "Design Folder": link("Folder with space", "https://bad host/x") }); // 7
+  R({ Requester: "Rio", Brand: "Clogent", Division: "Creative", Task: "Rich Notes", Notes: { richText: [{ text: "Hello " }, { text: "World" }] }, "Brief Link": link("https://example.com/s/abc", "https://example.com/s/abc"), "Request Date": utc(2026, 7, 2), Designer: "Fadli", Progress: "Requested", "Design Folder": link("Folder with space", "https://bad host/x") }); // 7
   R({ Requester: " ", Brand: "Clogent", Division: "Creative", Task: "Blank requester", "Request Date": utc(2026, 7, 3), Designer: "", Progress: "Requested", "Brief Link": link("frag", "#gid=0") }); // 8
 
   // ---- SocMed Tracker (two header rows; data from row 3; blank formatted rows below)
@@ -50,7 +50,7 @@ export async function buildFixtureWorkbook(): Promise<{ file: string; dir: strin
   grp.getCell(1).value = "Diisi oleh SocMed"; grp.getCell(11).value = "Otomatis"; grp.getCell(15).value = "Diisi oleh Creative";
   sm.addRow(SOC_HDR);
   const S = (o: Record<string, Cell>) => sm.addRow(rowOf(SOC_HDR, o));
-  S({ Requester: "Fafa", Brand: "Bubble Wash", Division: "Social Media", Platform: "TikTok", Task: "Short Video A", "Brief Link": link("Content Plan", "https://docs.google.com/presentation/d/BBB"), Notes: "CAMPAIGN CONTENT", Published: true, "Link Upload": { text: { richText: [{ text: "https://tiktok.com/@x/1" }] }, hyperlink: "https://tiktok.com/@x/1" } as unknown as Cell, KerKun: false, "Request Date": utc(2026, 9, 30), Deadline: utc(2026, 10, 1), "Request Time": { formula: "L3-K3", result: 1 }, "Days Left": { formula: "x", result: "Completed" }, "Designer/Editor": "Fadli", Progress: "Done", Shooting: true, Upload: true, Edited: true, "Design Folder": link("https://x.gd/2bVjw", "https://x.gd/2bVjw"), "Jumlah Output": 1, Month_Key: { formula: "TEXT()", result: "2026-09" }, Include_KPI: "Yes" }); // 3
+  S({ Requester: "Fafa", Brand: "Bubble Wash", Division: "Social Media", Platform: "TikTok", Task: "Short Video A", "Brief Link": link("Content Plan", "https://example.com/brief/BBB"), Notes: "CAMPAIGN CONTENT", Published: true, "Link Upload": { text: { richText: [{ text: "https://example.com/post/1" }] }, hyperlink: "https://example.com/post/1" } as unknown as Cell, KerKun: false, "Request Date": utc(2026, 9, 30), Deadline: utc(2026, 10, 1), "Request Time": { formula: "L3-K3", result: 1 }, "Days Left": { formula: "x", result: "Completed" }, "Designer/Editor": "Fadli", Progress: "Done", Shooting: true, Upload: true, Edited: true, "Design Folder": link("https://example.com/s/2bVjw", "https://example.com/s/2bVjw"), "Jumlah Output": 1, Month_Key: { formula: "TEXT()", result: "2026-09" }, Include_KPI: "Yes" }); // 3
   S({ Requester: "Fafa", Brand: "Bubble Wash", Division: "Social Media", Platform: "Instagram", Task: "Reel B", "Request Date": utc(2026, 10, 5), Deadline: utc(2026, 10, 6), "Designer/Editor": "Fadli", Progress: "Done", Shooting: false, Upload: false, Edited: true, "Jumlah Output": 2, Month_Key: { formula: "TEXT()", result: "2026-10" }, Include_KPI: "Yes" }); // 4
   S({ Requester: "Fafa", Brand: "Clogent", Division: "Social Media", Platform: "TikTok", Task: "Story C", "Request Date": utc(2026, 10, 6), Deadline: utc(2026, 10, 7), "Designer/Editor": "Fadli", Progress: "Done", Shooting: false, Upload: false, Edited: false, "Jumlah Output": 1, Include_KPI: "No" }); // 5
   S({ Requester: "Rio", Brand: "Clogent", Division: "Social Media", Platform: "TikTok", Task: "Rio Post", "Request Date": utc(2026, 10, 3), Deadline: utc(2026, 10, 4), "Designer/Editor": "Fadli", Progress: "Done", "Jumlah Output": 1, Include_KPI: "Yes" }); // 6

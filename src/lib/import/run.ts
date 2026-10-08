@@ -67,6 +67,12 @@ export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps =
     const found = await db.requestType.findMany({ where: { name: { in: WORKBOOK_TYPES } }, select: { name: true } });
     const missing = WORKBOOK_TYPES.filter((n) => !found.some((t) => t.name === n));
     if (missing.length) throw new Error(`Request type(s) missing in DB: ${missing.join(", ")}. Run "npm run db:seed" (idempotent) first. Nothing was written.`);
+    const missingLookups = [
+      ...["Clogent", "Bubble Wash"].filter((n) => !brands.some((b) => b.name.trim().toLowerCase() === n.toLowerCase())).map((n) => `brand "${n}"`),
+      ...(divisions.some((d) => d.name.trim().toLowerCase() === "social media") ? [] : ['division "Social Media"']),
+      ...["Dimas Pandu", "Wira"].filter((n) => !users.some((u) => u.name.trim().toLowerCase() === n.toLowerCase())).map((n) => `user "${n}"`),
+    ];
+    if (missingLookups.length) throw new Error(`Missing in DB: ${missingLookups.join(", ")}. Run "npm run db:seed" (idempotent) first. Nothing was written.`);
     const parsed = parseMaster(await (deps.readWorkbook ?? readMasterWorkbook)(args.workbookPath), ctx);
     reports.push(...parsed.reports);
     records.push(...parsed.records);

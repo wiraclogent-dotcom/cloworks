@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import ExcelJS from "exceljs";
+import { isSafeHttpUrl } from "./urls";
 
 /** Same shape the CSV reader produces and parseRequestRows consumes; lines = real worksheet row numbers. */
 export type SourceTable = { headers: string[]; rows: Record<string, string>[]; lines: number[] };
@@ -22,17 +23,11 @@ function dateText(d: Date, fmt: Fmt): string {
   return fmt === "dmy" ? `${pad(day)}/${pad(m)}/${y}` : `${m}/${day}/${y}`;
 }
 
-/** Only absolute http(s) links without whitespace survive (no mailto:, javascript:, #fragments). */
+/** Only safe absolute http(s) links survive (no mailto:, javascript:, #fragments, credentials, control chars, > 2048 chars). */
 function cleanUrl(u: unknown): string {
   if (typeof u !== "string") return "";
   const s = u.trim();
-  if (!s || /\s/.test(s)) return "";
-  try {
-    const p = new URL(s);
-    return p.protocol === "http:" || p.protocol === "https:" ? s : "";
-  } catch {
-    return "";
-  }
+  return isSafeHttpUrl(s) ? s : "";
 }
 
 /** Plain value of any exceljs cell shape. Never evaluates formulas: cached results only. */
@@ -87,6 +82,11 @@ function readTable(ws: ExcelJS.Worksheet, spec: Spec): SourceTable {
     if (seen.has(h)) continue;
     seen.add(h);
     cols.push({ idx: i + 1, header: hdrTexts[i] });
+  }
+  if (spec.contiguous) {
+    const need = spec.required.map((alts) => alts.find((a) => cols.some((c) => norm(c.header) === a)));
+    if (need.some((n) => !n))
+      throw new Error(`Tab "${spec.label}": the ${spec.required.map((a) => (a[0] === "nam file" ? "Nam File" : "Tanggal")).join(" and ")} columns must sit in the first contiguous block of headed columns (no blank header cell between them); only that block is read.`);
   }
   const urlCols = cols.filter((c) => LINK_HEADERS.has(norm(c.header)));
   const headers = [...cols.map((c) => c.header), ...urlCols.map((c) => `${c.header} URL`)];

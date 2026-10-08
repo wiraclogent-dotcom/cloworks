@@ -4,7 +4,7 @@ import { parseMaster } from "@/lib/import/parseMaster";
 import { inferBrands } from "@/lib/import/inferBrands";
 import { parseRequestRows, parseDimasRows, statusChain, type ImportRecord } from "@/lib/import/parseRequests";
 import { formatReport } from "@/lib/import/run";
-import { users, brands, divisions, REQ_HEADERS, reqRow } from "./fixtures";
+import { users, brands, divisions, REQ_HEADERS, SOC_HEADERS, reqRow, socRow } from "./fixtures";
 import { buildFixtureWorkbook, DIMAS_LOG } from "./xlsxFixtures";
 
 const ctx = {
@@ -34,11 +34,11 @@ describe("parseMaster: requests + socmed from the workbook", () => {
   });
   it("URL columns win; labels are kept in notes; label equal to URL adds nothing", () => {
     const a = rec("requests", "Banner Promo");
-    expect(a.briefUrl).toBe("https://docs.google.com/presentation/d/AAA");
-    expect(a.designFolderUrl).toBe("https://drive.google.com/drive/folders/FFF");
+    expect(a.briefUrl).toBe("https://example.com/brief/AAA");
+    expect(a.designFolderUrl).toBe("https://example.com/folder/FFF");
     expect(a.notes).toBe("Mohon cepat\nBrief: Brief Banner\nFolder: Folder Banner");
     const r = rec("requests", "Rich Notes");
-    expect(r.briefUrl).toBe("https://x.gd/abc");
+    expect(r.briefUrl).toBe("https://example.com/s/abc");
     expect(r.notes).toBe("Hello World\nFolder: Folder with space"); // brief label == URL: no note; bad folder target dropped, label kept
     expect(r.designFolderUrl).toBeNull();
     const m = rec("requests", "Mailto Link");
@@ -46,9 +46,9 @@ describe("parseMaster: requests + socmed from the workbook", () => {
   });
   it("socmed Link Upload URL -> fields.publishedUrl; Design Folder URL used", () => {
     const s = rec("socmed", "Short Video A");
-    expect(s.fields.publishedUrl).toBe("https://tiktok.com/@x/1");
-    expect(s.designFolderUrl).toBe("https://x.gd/2bVjw");
-    expect(s.briefUrl).toBe("https://docs.google.com/presentation/d/BBB");
+    expect(s.fields.publishedUrl).toBe("https://example.com/post/1");
+    expect(s.designFolderUrl).toBe("https://example.com/s/2bVjw");
+    expect(s.briefUrl).toBe("https://example.com/brief/BBB");
     expect(s.notes).toBe("CAMPAIGN CONTENT\nBrief: Content Plan");
     expect(s.typeName).toBe("Social Media");
     expect(s.fields).toMatchObject({ platform: "TikTok", contentType: "Campaign", shooting: true, upload: true, editing: true });
@@ -71,8 +71,8 @@ describe("parseMaster: requests + socmed from the workbook", () => {
     expect([b.requesterId, b.notes]).toEqual(["u-wira", "Brief: frag"]);
   });
   it("legacy CSV-shaped rows (no URL columns) still behave as before, plus the requester note", () => {
-    const r = parseRequestRows("requests", [reqRow({ Requester: "Iyok", "Brief Link": "label only", "Design Folder": "https://drive.google.com/x" })], ctx, REQ_HEADERS).records[0];
-    expect([r.briefUrl, r.designFolderUrl]).toEqual([null, "https://drive.google.com/x"]);
+    const r = parseRequestRows("requests", [reqRow({ Requester: "Iyok", "Brief Link": "label only", "Design Folder": "https://example.com/x" })], ctx, REQ_HEADERS).records[0];
+    expect([r.briefUrl, r.designFolderUrl]).toEqual([null, "https://example.com/x"]);
     expect(r.notes).toBe("Brief: label only\nRequester (as typed): Iyok");
   });
   it("notes stay <= 5000 chars and keep the requester note", () => {
@@ -110,16 +110,19 @@ describe("parseMaster: Dimas Tracker", () => {
     expect(by("FAFA 12 SEPT 2")[0].requesterId).toBe("u-fafa");
     expect(by("SYAHDA 28 SEPT 1")[0].requesterId).toBe("u-syahda");
     expect(by("RIO 12 SEPT 1")[0].requesterId).toBe("u-rio");
-    expect(by("MOTION LIVE").map((r) => r.requesterId)).toEqual(["u-wira", "u-wira", "u-wira"]);
-    expect(by("RESIZE KONTEN OM YOS")[0].requesterId).toBe("u-wira");
+    expect(by("MOTION DEMO").map((r) => r.requesterId)).toEqual(["u-wira", "u-wira", "u-wira"]);
+    expect(by("RESIZE KONTEN DEMO")[0].requesterId).toBe("u-wira");
     expect(rep("dimas").warnings.filter((w) => /requester not recorded/i.test(w.message))).toHaveLength(5);
     expect(rep("dimas").unmapped).toEqual([]);
-    expect(by("MOTION LIVE")[0].notes).not.toMatch(/as typed/);
+    expect(by("MOTION DEMO")[0].notes).not.toMatch(/as typed/);
+    expect(by("MOTION DEMO")[0].notes).toContain("Requester not recorded in Dimas Tracker; Wira used.");
+    expect(by("FAFA 12 SEPT 1")[0].notes).not.toContain("Requester not recorded");
+    expect(rep("dimas").warnings.some((w) => w.message.includes('"MOTION DEMO"'))).toBe(true);
   });
   it("duplicate file names are separate tasks with distinct keys (counter on same name + date)", () => {
-    const keys = dim().filter((r) => r.title === "MOTION LIVE").map((r) => r.fields.importKey);
+    const keys = dim().filter((r) => r.title === "MOTION DEMO").map((r) => r.fields.importKey);
     expect(new Set(keys).size).toBe(3);
-    const same = dim().filter((r) => r.title === "RESIZE KONTEN OM YOS").map((r) => r.fields.importKey); // same name AND same date
+    const same = dim().filter((r) => r.title === "RESIZE KONTEN DEMO").map((r) => r.fields.importKey); // same name AND same date
     expect(same[1]).toBe(`${same[0]}#2`);
     expect(new Set(dim().map((r) => r.fields.importKey)).size).toBe(DIMAS_LOG.length);
   });
@@ -128,7 +131,7 @@ describe("parseMaster: Dimas Tracker", () => {
     expect(brandOf("FAFA 12 SEPT 1")).toBe("Bubble Wash");
     expect(brandOf("SYAHDA 28 SEPT 1")).toBe("Clogent");
     expect(brandOf("RIO 12 SEPT 1")).toBe("Clogent");
-    expect(brandOf("MOTION LIVE")).toBe("Clogent");
+    expect(brandOf("MOTION DEMO")).toBe("Clogent");
     expect(dim().every((r) => /Brand not recorded in Dimas Tracker; inferred (Clogent|Bubble Wash)\.$/.test(r.notes!))).toBe(true);
     expect(rep("dimas").brandInferred).toBe(DIMAS_LOG.length);
     expect(formatReport(rep("dimas")).join("\n")).toMatch(/brand inferred: 9/);
@@ -168,8 +171,51 @@ describe("inferBrands (pure)", () => {
     expect(r.records.map((x) => x.brandId)).toEqual(["b-clogent", "b-clogent", "b-bw"]);
     expect(d[0].notes).toBe("base");
   });
+  it("requester not recorded (Wira fallback): Wira's own records are NOT used, straight to Clogent", () => {
+    const others = [mk({ requesterId: "u-wira", brandId: "b-bw" }), mk({ requesterId: "u-wira", brandId: "b-bw" })];
+    const notRecorded = { ...dimas("d1", "u-wira"), requesterRecorded: false };
+    const recorded = dimas("d2", "u-wira");
+    const r = inferBrands([notRecorded, recorded], others, brands);
+    expect(r.records.map((x) => x.brandId)).toEqual(["b-clogent", "b-bw"]);
+    expect(r.records[0].notes).toBe("base\nBrand not recorded in Dimas Tracker; inferred Clogent.");
+  });
   it("ignores dimas-source records among 'others'", () => {
     const r = inferBrands([dimas("d1", "u-a")], [mk({ source: "dimas", brandId: "b-bw" })], brands);
     expect(r.records[0].brandId).toBe("b-clogent");
+  });
+});
+
+describe("template rows and URL hygiene", () => {
+  const soc = (rows: Record<string, string>[]) => parseRequestRows("socmed", rows, ctx, SOC_HEADERS);
+  it("SocMed example row 'ISI DENGAN JUDUL COVER/CONTENT' is a template; 'Isi konten promo' is not", () => {
+    const r = soc([socRow({ Task: "ISI DENGAN JUDUL COVER/CONTENT" }), socRow({ Task: "  isi   dengan judul lain" }), socRow({ Task: "Isi konten promo" }), socRow({ Task: "Isi dengan" })]);
+    expect(r.report.template).toBe(2);
+    expect(r.records.map((x) => x.title)).toEqual(["Isi konten promo", "Isi dengan"]);
+  });
+  const reqOne = (o: Record<string, string>) => parseRequestRows("requests", [reqRow(o)], ctx, [...REQ_HEADERS, "Brief Link URL", "Design Folder URL"].filter((h, i, a) => a.indexOf(h) === i)).records[0];
+  it("rejects credentials, whitespace/control chars and >2048 chars (URL column and label cell); label goes to notes", () => {
+    const long = "https://example.com/" + "a".repeat(2100);
+    const r = reqOne({ "Brief Link": "https://user:pw@example.com/x", "Design Folder": "https://example.com/a b", Notes: "" });
+    expect([r.briefUrl, r.designFolderUrl]).toEqual([null, null]);
+    expect(r.notes).toBe("Brief: https://user:pw@example.com/x\nFolder: https://example.com/a b");
+    const c = reqOne({ "Brief Link": "label", "Brief Link URL": "https://example.com/x\u0007y", "Design Folder": long });
+    expect([c.briefUrl, c.designFolderUrl]).toEqual([null, null]);
+    const u = reqOne({ "Brief Link": "label", "Brief Link URL": "https://:pw@example.com/x" });
+    expect(u.briefUrl).toBeNull();
+    const ok = reqOne({ "Brief Link": "https://example.com/" + "a".repeat(2000) });
+    expect(ok.briefUrl).not.toBeNull();
+  });
+  it("published URL gets the same checks", () => {
+    const bad = soc([socRow({ "Link Upload": "https://user:pw@example.com/p" }), socRow({ Task: "T2", "Link Upload": "https://example.com/p" })]);
+    expect(bad.records[0].fields.publishedUrl).toBeUndefined();
+    expect(bad.records[1].fields.publishedUrl).toBe("https://example.com/p");
+  });
+});
+
+describe("Dimas first-token requester matching", () => {
+  const hdr = ["No", "Tanggal", "Nam File", "Shooting", "Upload", "Editing"];
+  const run = (names: string[]) => parseDimasRows(names.map((n, i) => ({ No: String(i), Tanggal: "9/1/2026", "Nam File": n, Shooting: "", Upload: "", Editing: "" })), ctx, hdr).records.map((r) => r.requesterId);
+  it("splits on whitespace, _ - . but needs a whole-token match", () => {
+    expect(run(["FAFA_12SEPT", "FAFA-12 SEPT", "syahda.5", "Rio_1", "RIOT 3", "FAFAYO 2", "RIO12 4"])).toEqual(["u-fafa", "u-fafa", "u-syahda", "u-rio", "u-wira", "u-wira", "u-wira"]);
   });
 });

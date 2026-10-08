@@ -129,10 +129,14 @@ What to know:
   The visible chip label is kept in the notes (`Brief: ...`, `Folder: ...`). Only http(s) targets are kept.
 - **Dimas Tracker** is a log of video-edit files. Each row becomes its **own** task of type "Motion Support" assigned to
   Dimas Pandu (status Done, division Social Media), never merged into another request, even when other designers or
-  social-media staff worked on the same content. The requester is guessed from the first word of the file name
-  (FAFA, SYAHDA, RIO); any other file name falls back to Wira. The log has no brand, so the brand is inferred as the
-  requester's most common brand in the other tabs (ties or none: Clogent) and noted on the task. The side table in
+  social-media staff worked on the same content. The requester is read from the first word of the file name (split on
+  spaces, `_`, `-` or `.`): it must equal a roster short name, full name or alias exactly (FAFA, SYAHDA, RIO ...);
+  anything else (MOTION, RESIZE, ...) falls back to Wira and the task notes say so. The log has no brand, so the brand is inferred as the
+  requester's most common brand in the other tabs (ties, none, or an unrecorded requester: Clogent) and noted on the task. The side table in
   columns H..N of that tab is ignored.
+- **Workbook mode aborts** (dry-run too, nothing written) when the database lacks the brands Clogent / Bubble Wash,
+  the division Social Media, the users Dimas Pandu / Wira, or the request types General Design / Social Media /
+  Motion Support; the message lists what is missing (fix with `npm run db:seed`).
 - **Requester nicknames are kept in notes.** A requester that is not in the roster (for example Yoel, Iyok, Ibnu) is not
   guessed: the request is imported under Wira and the notes say `Requester (as typed): <name>`. They are also listed
   in the report under "unmapped names".

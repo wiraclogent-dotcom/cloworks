@@ -2,7 +2,7 @@ import { FALLBACK_BRAND, type ImportRecord } from "./parseRequests";
 
 /**
  * The Dimas log has no brand column. Each Dimas task gets the most common brand among the already
- * parsed NON-Dimas records of the same resolved requester; ties or no records fall back to Clogent.
+ * parsed NON-Dimas records of the same resolved requester (rows without a recorded requester skip this); ties or no records fall back to Clogent.
  * Pure: returns new records (input untouched) and how many were inferred (all of them).
  */
 export function inferBrands(
@@ -29,7 +29,8 @@ export function inferBrands(
   };
 
   const records = dimasRecords.map((r) => {
-    const brandId = pick(r.requesterId, r.brandId);
+    // An unrecorded requester (Wira fallback) says nothing about the brand: default straight to Clogent.
+    const brandId = r.requesterRecorded === false ? (fallbackId ?? r.brandId) : pick(r.requesterId, r.brandId);
     const note = `Brand not recorded in Dimas Tracker; inferred ${nameOf.get(brandId) ?? FALLBACK_BRAND}.`;
     return { ...r, brandId, notes: [r.notes, note].filter(Boolean).join("\n") };
   });
