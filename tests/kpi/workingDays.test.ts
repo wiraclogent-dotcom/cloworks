@@ -9,10 +9,10 @@ describe("workingDaysBetween", () => {
     expect(workingDaysBetween(new Date("2026-10-07T09:00:00Z"), new Date("2026-10-07T15:00:00Z"))).toBeCloseTo(0.25, 10);
   });
   it("weekend-only span = 0", () => {
-    expect(workingDaysBetween(new Date("2026-10-10T00:00:00Z"), new Date("2026-10-11T23:00:00Z"))).toBe(0);
+    expect(workingDaysBetween(new Date("2026-10-10T00:00:00+07:00"), new Date("2026-10-11T23:00:00+07:00"))).toBe(0);
   });
   it("full Mon -> next Mon = 5", () => {
-    expect(workingDaysBetween(new Date("2026-10-05T00:00:00Z"), new Date("2026-10-12T00:00:00Z"))).toBeCloseTo(5, 10);
+    expect(workingDaysBetween(new Date("2026-10-05T00:00:00+07:00"), new Date("2026-10-12T00:00:00+07:00"))).toBeCloseTo(5, 10);
   });
   it("end before start = 0", () => {
     expect(workingDaysBetween(new Date("2026-10-07T15:00:00Z"), new Date("2026-10-07T09:00:00Z"))).toBe(0);
