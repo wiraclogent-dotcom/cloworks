@@ -23,7 +23,7 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
         aria-valuetext={text}
         className="h-3 w-full overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border"
       >
-        <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+        <div className="h-full rounded-full bg-chart-done" style={{ width: `${width}%` }} />
       </div>
     </div>
   );

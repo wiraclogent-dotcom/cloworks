@@ -9,6 +9,10 @@ import { Board, type BoardColumnView } from "@/components/Board";
 import { Pagination } from "@/components/Pagination";
 import { RequestTable } from "@/components/RequestTable";
 import { FilterBar } from "@/components/FilterBar";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { buttonClass } from "@/components/ui/Button";
+import { Plus, SquareKanban, Table2 } from "lucide-react";
 import { hrefWith, parseParams, toFilter } from "./params";
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
@@ -22,19 +26,15 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.user.findMany({ where: { active: true, appRole: { not: "REQUESTER" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
-  const tab = (view: "board" | "table", label: string) => (
-    <Link href={hrefWith(p, { view: view === "table" ? "table" : undefined })} aria-current={p.view === view ? "page" : undefined}
-      className={`rounded-md px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring ${p.view === view ? "bg-secondary text-secondary-foreground" : "border border-border"}`}>
-      {label}
-    </Link>
-  );
   const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold">Requests</h1>
-        <nav aria-label="View" className="ml-auto flex gap-2">{tab("board", "Board")}{tab("table", "Table")}</nav>
-      </div>
+      <PageHeader title="Requests"
+        switcher={<SegmentedControl label="View" value={p.view} items={[
+          { value: "board", label: "Board", icon: <SquareKanban aria-hidden="true" />, href: hrefWith(p, { view: undefined }) },
+          { value: "table", label: "Table", icon: <Table2 aria-hidden="true" />, href: hrefWith(p, { view: "table" }) },
+        ]} />}
+        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
       <div className="mb-4">
         <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
           mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
@@ -69,10 +69,10 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
 
 export default function RequestsPage({ searchParams }: PageProps<"/requests">) {
   return (
-    <main className="mx-auto w-full max-w-[96rem] p-4 sm:p-6">
+    <div>
       <Suspense fallback={<p className="text-muted-foreground">Loading requests…</p>}>
         <RequestsContent searchParams={searchParams} />
       </Suspense>
-    </main>
+    </div>
   );
 }

@@ -30,9 +30,9 @@ async function Content({ params }: { params: Promise<{ id: string }> }) {
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <main className="mx-auto w-full max-w-xl p-6">
+    <div className="mx-auto w-full max-w-xl">
       <h1 className="mb-6 text-2xl font-semibold">Edit project</h1>
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}><Content params={params} /></Suspense>
-    </main>
+    </div>
   );
 }

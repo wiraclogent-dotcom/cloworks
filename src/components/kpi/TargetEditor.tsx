@@ -47,7 +47,7 @@ export function TargetEditor({ userId, name, month, role, initial, initialNote =
         className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60">
         {pending ? "Saving…" : "Save"}
       </button>
-      <span role="status" aria-live="polite" className={`text-sm ${status?.kind === "error" ? "text-red-700 dark:text-red-300" : "text-muted-foreground"}`}>
+      <span role="status" aria-live="polite" className={`text-sm ${status?.kind === "error" ? "text-danger" : "text-muted-foreground"}`}>
         {status?.text}
       </span>
     </form>

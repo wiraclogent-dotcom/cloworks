@@ -164,7 +164,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   }
 
   return (
-    <div>
+    <div data-page-wide="">
       {message && (
         <div role="alert" className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card p-3 text-sm">
           <p><span aria-hidden="true">⚠ </span>{message}</p>

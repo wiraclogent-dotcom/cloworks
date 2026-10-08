@@ -175,10 +175,10 @@ const statusText = (s: keyof typeof STATUS_LABEL) => STATUS_LABEL[s];
 
 export default function RequestDetailPage({ params }: PageProps<"/requests/[id]">) {
   return (
-    <main className="mx-auto w-full max-w-5xl p-4 sm:p-6">
+    <div className="mx-auto w-full max-w-5xl">
       <Suspense fallback={<p className="text-muted-foreground">Loading request…</p>}>
         <DetailContent params={params} />
       </Suspense>
-    </main>
+    </div>
   );
 }

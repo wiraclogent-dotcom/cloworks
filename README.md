@@ -160,6 +160,22 @@ What to know:
 - **Legacy CSV mode** still exists (`npm run import:sheet -- requests.csv [socmed.csv] [--apply]`, requests file first),
   but a CSV only carries the label text of chips, so link targets are lost and there is no Dimas Tracker. Prefer the .xlsx.
 
+## Design system
+
+- **Tokens** live in `src/app/globals.css`: light under `:root` (the default, independent of the OS) and dark under
+  `:root[data-theme="dark"]`. Use the Tailwind theme classes (`bg-card`, `bg-surface-muted`, `text-foreground-secondary`,
+  `border-border`, `bg-primary`, `bg-sidebar`, ...) or `var(--token)`; never hex values in components.
+- **Status, tag and avatar colours** come from `src/lib/palette.ts` and are mirrored by hand as `--status-<tone>-*` and
+  `--avatar-<n>-*` in `globals.css`; `tests/palette.test.ts` fails if they drift, `tests/theme.test.ts` checks every
+  text/background pair for WCAG contrast in both themes.
+- **Theme switch**: Light / Dark / System in the sidebar footer, stored in `localStorage` key `ct-theme` (default light).
+  A blocking inline script in `src/app/layout.tsx` (`THEME_INIT_SCRIPT`, `src/lib/theme.ts`) sets `<html data-theme>`
+  to `light` or `dark` before first paint; the collapsed sidebar (`ct-sidebar`) is restored the same way.
+- **Shell**: `src/components/AppShell.tsx` (server: permission checks) + `src/components/shell/*` (client: active
+  route, collapse, mobile drawer).
+- **UI kit**: `src/components/ui/` (Button, Chip, StatusChip, Avatar, PageHeader, fields, RadioCards, ProgressBar,
+  KpiTile, EmptyState, Alert, table helpers, ...). Read `src/components/ui/README.md` before building a page.
+
 ## Running tests
 
 ```bash

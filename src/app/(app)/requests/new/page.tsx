@@ -18,11 +18,11 @@ async function NewRequestContent() {
 
 export default function NewRequestPage() {
   return (
-    <main className="mx-auto w-full max-w-xl p-6">
+    <div className="mx-auto w-full max-w-xl">
       <h1 className="mb-6 text-2xl font-semibold">New creative request</h1>
       <Suspense fallback={<p className="text-muted-foreground">Loading…</p>}>
         <NewRequestContent />
       </Suspense>
-    </main>
+    </div>
   );
 }

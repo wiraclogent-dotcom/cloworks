@@ -1,57 +1,105 @@
 import { Suspense } from "react";
-import Link from "next/link";
+import type { AppRole } from "@prisma/client";
+import { ChartColumn, FolderKanban, LogOut, Plus, ShieldCheck, SquareKanban, Users } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { signOut } from "@/lib/auth";
 import { can } from "@/lib/permissions";
+import { Avatar } from "./ui/Avatar";
+import { Skeleton } from "./ui/Skeleton";
+import { ThemeSwitch } from "./ui/ThemeSwitch";
+import { AppFrame } from "./shell/AppFrame";
+import { NavItem } from "./shell/NavItem";
+import { sidebarRowClass } from "./shell/classes";
 
-const LINK = "rounded-md px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring hover:underline";
+const ROLE_LABEL: Record<AppRole, string> = { REQUESTER: "Requester", CREATIVE: "Creative", LEAD: "Lead", ADMIN: "Admin" };
 
-/** Team KPI is only offered to users who may open it (the page re-checks on the server). */
-async function TeamKpiLink() {
-  const { appRole } = await requireUserOrRedirect();
-  return can(appRole, "dashboard.team") ? <Link href="/dashboard/team" className={LINK}>Team KPI</Link> : null;
-}
-
-/** Admin pages are only offered to users who may open them (the pages re-check on the server). */
-async function AdminLink() {
-  const { appRole } = await requireUserOrRedirect();
-  return can(appRole, "admin.manage") ? <Link href="/admin/users" className={LINK}>Admin</Link> : null;
-}
-
-async function UserMenu() {
-  const { id } = await requireUserOrRedirect();
-  const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
+/** A titled group of sidebar links. The title stays the list's accessible name when the rail hides it. */
+function NavGroup({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
-    <div className="ml-auto flex items-center gap-3">
-      <span className="text-sm">{me?.name}</span>
-      <form action={async () => { "use server"; await signOut({ redirectTo: "/signin" }); }}>
-        <button className="rounded-md border border-border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring">Sign out</button>
-      </form>
+    <div className="pt-3">
+      <p id={id} className="sb-label px-2.5 pb-1 text-[11px] font-semibold tracking-wider text-sidebar-foreground-secondary uppercase">{label}</p>
+      <hr aria-hidden="true" className="sb-collapsed-only mx-2 mb-2 border-0 border-t border-sidebar-border" />
+      <ul aria-labelledby={id} className="space-y-0.5">{children}</ul>
     </div>
   );
 }
 
-/** Header + nav for authenticated pages. The sign-in page does not use it. */
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const link = LINK;
+/** Team KPI is only offered to users who may open it (the page re-checks on the server). */
+async function TeamKpiItem() {
+  const { appRole } = await requireUserOrRedirect();
+  return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/team" label="Team KPI" icon={<Users aria-hidden="true" />} /> : null;
+}
+
+/** Admin pages are only offered to users who may open them (the pages re-check on the server). */
+async function AdminGroup() {
+  const { appRole } = await requireUserOrRedirect();
+  return can(appRole, "admin.manage") ? (
+    <NavGroup id="nav-admin" label="Admin">
+      <NavItem href="/admin/users" label="Admin" icon={<ShieldCheck aria-hidden="true" />} />
+    </NavGroup>
+  ) : null;
+}
+
+async function UserChip() {
+  const { id, appRole } = await requireUserOrRedirect();
+  const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
+  const name = me?.name ?? "";
   return (
-    <>
-      <header className="border-b border-border bg-card text-card-foreground">
-        <div className="mx-auto flex w-full max-w-[96rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
-          <Link href="/requests" className="font-semibold">Creative Requests</Link>
-          <nav aria-label="Main" className="flex gap-1">
-            <Link href="/requests" className={link}>Requests</Link>
-            <Link href="/requests/new" className={link}>New request</Link>
-            <Link href="/projects" className={link}>Projects</Link>
-            <Link href="/dashboard" className={link}>KPI</Link>
-            <Suspense fallback={null}><TeamKpiLink /></Suspense>
-            <Suspense fallback={null}><AdminLink /></Suspense>
-          </nav>
-          <Suspense fallback={<span className="ml-auto" />}><UserMenu /></Suspense>
-        </div>
-      </header>
+    <div title={name} className="sb-item flex items-center gap-2.5 px-1.5 py-1">
+      <Avatar name={name} size="md" decorative />
+      <div className="sb-label min-w-0">
+        <p className="truncate text-sm font-medium text-sidebar-foreground">{name}</p>
+        <p className="truncate text-xs text-sidebar-foreground-secondary">{ROLE_LABEL[appRole]}</p>
+      </div>
+    </div>
+  );
+}
+
+function UserChipFallback() {
+  return (
+    <div className="sb-item flex items-center gap-2.5 px-1.5 py-1">
+      <Skeleton rounded="full" className="size-7 bg-sidebar-hover" />
+      <Skeleton className="sb-expanded-only h-3.5 w-24 bg-sidebar-hover" />
+    </div>
+  );
+}
+
+/**
+ * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Admin), user chip, theme switch, sign out.
+ * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
+ * links render immediately. The sign-in page does not use it.
+ */
+export function AppShell({ children }: { children: React.ReactNode }) {
+  return (
+    <AppFrame
+      nav={
+        <nav aria-label="Main">
+          <NavGroup id="nav-work" label="Work">
+            <NavItem href="/requests" label="Requests" icon={<SquareKanban aria-hidden="true" />} />
+            <NavItem href="/requests/new" label="New request" icon={<Plus aria-hidden="true" />} />
+            <NavItem href="/projects" label="Projects" icon={<FolderKanban aria-hidden="true" />} />
+          </NavGroup>
+          <NavGroup id="nav-insights" label="Insights">
+            <NavItem href="/dashboard" label="My KPI" icon={<ChartColumn aria-hidden="true" />} />
+            <Suspense fallback={null}><TeamKpiItem /></Suspense>
+          </NavGroup>
+          <Suspense fallback={null}><AdminGroup /></Suspense>
+        </nav>
+      }
+      footer={
+        <>
+          <Suspense fallback={<UserChipFallback />}><UserChip /></Suspense>
+          <ThemeSwitch tone="sidebar" />
+          <form action={async () => { "use server"; await signOut({ redirectTo: "/signin" }); }}>
+            <button title="Sign out" className={sidebarRowClass}>
+              <LogOut aria-hidden="true" />
+              <span className="sb-label">Sign out</span>
+            </button>
+          </form>
+        </>
+      }>
       {children}
-    </>
+    </AppFrame>
   );
 }

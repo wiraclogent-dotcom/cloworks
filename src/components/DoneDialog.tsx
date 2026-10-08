@@ -60,9 +60,9 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
 
   const input = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--backdrop)] p-4">
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={`${uid}-t`} onKeyDown={onKeyDown}
-        className="w-full max-w-md rounded-lg border border-border bg-card p-6 text-card-foreground shadow-lg">
+        className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-raised">
         <h2 id={`${uid}-t`} className="text-lg font-semibold">Mark as done</h2>
         <p className="mt-1 text-sm text-muted-foreground">“{title}” is finished. Tell us what was delivered.</p>
         <form onSubmit={submit} noValidate className="mt-4 space-y-4">

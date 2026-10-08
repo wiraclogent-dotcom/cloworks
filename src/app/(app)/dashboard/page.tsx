@@ -84,10 +84,10 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
 
 export default function DashboardPage({ searchParams }: PageProps<"/dashboard">) {
   return (
-    <main className="mx-auto w-full max-w-[96rem] p-4 sm:p-6">
+    <div>
       <Suspense fallback={<p className="text-muted-foreground">Loading KPI…</p>}>
         <DashboardContent searchParams={searchParams} />
       </Suspense>
-    </main>
+    </div>
   );
 }
