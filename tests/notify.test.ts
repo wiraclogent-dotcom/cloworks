@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
-import { notifyWith, type Mailer, type NotifyInput } from "@/lib/notify";
+import { notifyWith, buildMessage, type Mailer, type NotifyInput } from "@/lib/notify";
 import { createMailerFromEnv } from "@/lib/mailer";
 import { addCommentWith, assignRequestWith } from "@/lib/collab";
 import { transitionRequestWith } from "@/lib/transition";
@@ -255,5 +255,12 @@ describe("notifications", () => {
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))!.status).toBe("FIRST_LOOK");
       vi.restoreAllMocks();
     });
+  });
+});
+
+describe("buildMessage DEADLINE", () => {
+  it("describes a move and a first-time set", () => {
+    expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "10 Oct", to: "14 Oct" })).toBe("Wira moved the deadline of “Banner” from 10 Oct to 14 Oct");
+    expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "", to: "14 Oct" })).toBe("Wira set the deadline of “Banner” to 14 Oct");
   });
 });

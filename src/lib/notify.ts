@@ -3,7 +3,7 @@ import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
 
 export type { Mailer } from "./mailer";
-export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS";
+export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE";
 export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string };
 export type Notifier = (input: NotifyInput) => Promise<void>;
 
@@ -16,6 +16,7 @@ const SUBJECTS: Record<NotificationType, string> = {
   COMMENT: "New comment",
   MENTION: "You were mentioned",
   STATUS: "Status changed",
+  DEADLINE: "Deadline changed",
 };
 
 /** Strips control characters (incl. CR/LF), collapses whitespace, caps length. */
@@ -36,6 +37,9 @@ export function buildMessage(
     case "ASSIGNED": return `${a} assigned you to “${t}”`;
     case "COMMENT": return `${a} commented on “${t}”`;
     case "MENTION": return `${a} mentioned you in “${t}”`;
+    case "DEADLINE": return change?.from
+      ? `${a} moved the deadline of “${t}” from ${cleanLine(change.from, 40)} to ${cleanLine(change.to, 40)}`
+      : `${a} set the deadline of “${t}” to ${cleanLine(change?.to ?? "", 40)}`;
     case "STATUS": return `${a} moved “${t}” from ${(STATUS_LABEL as Record<string, string>)[change?.from ?? ""] ?? change?.from} to ${(STATUS_LABEL as Record<string, string>)[change?.to ?? ""] ?? change?.to}`;
   }
 }

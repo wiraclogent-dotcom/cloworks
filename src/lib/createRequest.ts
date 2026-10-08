@@ -38,7 +38,7 @@ export function jakartaDate(d: Date): string {
   return new Date(d.getTime() + JAKARTA_OFFSET_MS).toISOString().slice(0, 10);
 }
 
-function isRealDate(s: string): boolean {
+export function isRealDate(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
   const [y, m, d] = s.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d));
