@@ -70,7 +70,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
     ...req.deadlineEvents.map((e) => ({ kind: "deadline" as const, at: e.at, e })),
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return (
-    <article>
+    <article className="@container">
       <nav aria-label="Breadcrumb" className="mb-2">
         <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-foreground-secondary hover:text-foreground", focusRing)}>
           <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />Requests
@@ -85,7 +85,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
           : <Chip tone="tag-neutral" icon={<CircleSlash aria-hidden="true" strokeWidth={1.75} />}>Not counted toward KPI</Chip>}
       </div>
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-5">
           <Card>
             <section aria-labelledby="brief-h">
@@ -193,7 +193,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
           </Card>
         </div>
 
-        <aside className="min-w-0 space-y-5 lg:sticky lg:top-6" aria-label="Details and actions">
+        <aside className="min-w-0 space-y-5 @3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16" aria-label="Details and actions">
           <Card>
             <section aria-labelledby="details-h">
               <CardTitle id="details-h">Details</CardTitle>
