@@ -68,8 +68,8 @@ export function StaticCalendarCard({ card, today }: { card: CalendarRow; today: 
  * Draggable card (movers, desktop grid). As on the board, the whole card is the pointer/touch surface (6px mouse
  * distance / 250ms hold keep the link clickable and the page scrollable) and the handle is the keyboard entry point.
  */
-export function DraggableCalendarCard({ card, today, busy, dragging }: { card: CalendarRow; today: string; busy: boolean; dragging: boolean }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: busy });
+export function DraggableCalendarCard({ card, today, busy, locked, dragging }: { card: CalendarRow; today: string; busy: boolean; locked: boolean; dragging: boolean }) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: busy || locked });
   return (
     <li ref={setNodeRef} data-card={card.id} data-tone={cardTone(card, today)} data-draggable="true" {...listeners}
       className={cn(

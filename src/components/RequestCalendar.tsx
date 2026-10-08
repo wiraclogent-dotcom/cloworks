@@ -100,7 +100,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
 
   function onDragStart(e: DragStartEvent) {
     const card = cards.find((c) => c.id === e.active.id);
-    if (!card) return;
+    if (!card || busyId !== null) return;
     setActiveId(card.id);
     drag.start(dayOf(card), card.requestDay, e.activatorEvent instanceof KeyboardEvent);
   }
@@ -109,8 +109,10 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
     setActiveId(null);
     const card = cards.find((c) => c.id === e.active.id);
     const to = typeof e.over?.id === "string" ? e.over.id : null;
-    // Same day: nothing to do. Before the request day: never a legal target (the cell is disabled; this is the guard).
-    if (!card || !to || to === dayOf(card) || to < card.requestDay) return;
+    // One move at a time (every card is locked while a move is pending, so undo/refresh never race).
+    // Same deadline: nothing to do; a no-deadline card dropped on today DOES get today as its first deadline.
+    // Before the request day: never a legal target (the cell is disabled; this is the guard).
+    if (!card || !to || busyId !== null || to === card.deadlineDay || to < card.requestDay) return;
     void submit(card, to);
   }
   function onDragCancel() { drag.stop(); setActiveId(null); }

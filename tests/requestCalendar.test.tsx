@@ -85,7 +85,9 @@ describe("RequestCalendar", () => {
     view(five);
     const day = cell("Wednesday 14 October");
     expect(within(day).getAllByRole("link")).toHaveLength(3);
-    fireEvent.click(within(day).getByRole("button", { name: "+2 more" }));
+    const more = within(day).getByRole("button", { name: "2 more on Wednesday 14 October" });
+    expect(more.textContent).toBe("+2 more");
+    fireEvent.click(more);
     const dialog = screen.getByRole("dialog", { name: "Wednesday 14 October" });
     expect(within(dialog).getAllByRole("link").map((l) => l.textContent)).toEqual(five.map((r) => r.title));
     fireEvent.click(within(dialog).getByRole("button", { name: "Close" }));
@@ -146,6 +148,33 @@ describe("RequestCalendar", () => {
     view([row("1", "Banner")]);
     await keyboardMove("Banner", ["ArrowRight", "ArrowLeft"]);
     expect(reschedule).not.toHaveBeenCalled();
+  });
+
+  it("sets a first deadline when a no-deadline card is dropped on today", async () => {
+    mockLayout();
+    reschedule.mockResolvedValue({ ok: true });
+    view([row("1", "Loose", { deadline: null, deadlineDay: null, daysLeft: null })]);
+    await keyboardMove("Loose", ["ArrowRight", "ArrowLeft"]);
+    await waitFor(() => expect(reschedule).toHaveBeenCalledTimes(1));
+    expect(reschedule).toHaveBeenCalledWith("1", TODAY);
+  });
+
+  it("blocks every other drag while a move is pending", async () => {
+    mockLayout();
+    let settle: (v: unknown) => void = () => {};
+    reschedule.mockReturnValueOnce(new Promise((r) => { settle = r; }));
+    view([row("1", "Banner"), row("2", "Poster", { deadlineDay: "2026-10-20" })]);
+    await keyboardMove("Banner", ["ArrowRight"]);
+    await waitFor(() => expect(reschedule).toHaveBeenCalledTimes(1));
+    // Move 1 is still in flight: neither the other card nor the moved one can be picked up.
+    expect(document.querySelector('[data-card="2"] [aria-disabled="true"]')).toBeTruthy();
+    await keyboardMove("Poster", ["ArrowRight"]);
+    expect(reschedule).toHaveBeenCalledTimes(1);
+    await act(async () => { settle({ ok: true }); });
+    reschedule.mockResolvedValue({ ok: true });
+    await keyboardMove("Poster", ["ArrowRight"]);
+    await waitFor(() => expect(reschedule).toHaveBeenCalledTimes(2));
+    expect(reschedule).toHaveBeenLastCalledWith("2", "2026-10-21");
   });
 
   it("puts the card back and shows the server message when the move is refused", async () => {

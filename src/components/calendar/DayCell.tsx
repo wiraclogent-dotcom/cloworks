@@ -38,12 +38,12 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
       {shown.length > 0 && (
         <ul className="space-y-1">
           {shown.map((c) => canMove
-            ? <DraggableCalendarCard key={c.id} card={c} today={today} busy={busyId === c.id} dragging={activeId === c.id} />
+            ? <DraggableCalendarCard key={c.id} card={c} today={today} busy={busyId === c.id} locked={busyId !== null} dragging={activeId === c.id} />
             : <StaticCalendarCard key={c.id} card={c} today={today} />)}
         </ul>
       )}
       {more > 0 && (
-        <button type="button" aria-haspopup="dialog" onClick={() => onMore(day.day)}
+        <button type="button" aria-haspopup="dialog" aria-label={`${more} more on ${dayLabel(day.day)}`} onClick={() => onMore(day.day)}
           className={cn("mt-1 self-start rounded-md px-1 py-0.5 text-xs font-medium text-link hover:bg-surface-muted hover:underline", focusRing)}>
           {`+${more} more`}
         </button>
