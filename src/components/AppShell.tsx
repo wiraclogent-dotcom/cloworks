@@ -1,0 +1,38 @@
+import { Suspense } from "react";
+import Link from "next/link";
+import { prisma } from "@/lib/db";
+import { requireUser } from "@/lib/session";
+import { signOut } from "@/lib/auth";
+
+async function UserMenu() {
+  const { id } = await requireUser();
+  const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
+  return (
+    <div className="ml-auto flex items-center gap-3">
+      <span className="text-sm">{me?.name}</span>
+      <form action={async () => { "use server"; await signOut({ redirectTo: "/signin" }); }}>
+        <button className="rounded-md border border-border px-3 py-1.5 text-sm focus-visible:outline-2 focus-visible:outline-ring">Sign out</button>
+      </form>
+    </div>
+  );
+}
+
+/** Header + nav for authenticated pages. The sign-in page does not use it. */
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const link = "rounded-md px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring hover:underline";
+  return (
+    <>
+      <header className="border-b border-border bg-card text-card-foreground">
+        <div className="mx-auto flex w-full max-w-[96rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 sm:px-6">
+          <Link href="/requests" className="font-semibold">Creative Requests</Link>
+          <nav aria-label="Main" className="flex gap-1">
+            <Link href="/requests" className={link}>Requests</Link>
+            <Link href="/requests/new" className={link}>New request</Link>
+          </nav>
+          <Suspense fallback={<span className="ml-auto" />}><UserMenu /></Suspense>
+        </div>
+      </header>
+      {children}
+    </>
+  );
+}
