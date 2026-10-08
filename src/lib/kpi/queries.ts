@@ -16,7 +16,7 @@ export async function loadKpiRequests(db: PrismaClient, months: string[]): Promi
   const rows = await db.request.findMany({
     where: { OR: [...ranges, { status: { in: OPEN } }] },
     select: {
-      id: true, requesterId: true, assigneeId: true, requestedAt: true, deadline: true, status: true,
+      id: true, requesterId: true, assigneeId: true, requestedAt: true, deadline: true, originalDeadline: true, status: true,
       includeKpi: true, outputCount: true,
       statusEvents: { select: { from: true, to: true, at: true }, orderBy: { at: "asc" } },
     },

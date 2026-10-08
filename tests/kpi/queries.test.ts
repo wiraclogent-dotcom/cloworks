@@ -29,12 +29,13 @@ describe("kpi queries + targets", () => {
   });
   afterAll(async () => { await db?.stop(); });
 
-  const mkReq = async (o: { requestedAt: string; status?: S; assignee?: string; requester?: string; includeKpi?: boolean; outputCount?: number; doneAt?: string; deadline?: string }) => {
+  const mkReq = async (o: { requestedAt: string; status?: S; assignee?: string; requester?: string; includeKpi?: boolean; outputCount?: number; doneAt?: string; deadline?: string; originalDeadline?: string }) => {
     const r = await db.prisma.request.create({
       data: {
         title: "t", ...base, requesterId: ids[o.requester ?? "req"], assigneeId: o.assignee ? ids[o.assignee] : null,
         requestedAt: new Date(o.requestedAt), status: o.status ?? S.DONE, includeKpi: o.includeKpi ?? true,
         outputCount: o.outputCount ?? 1, deadline: o.deadline ? new Date(o.deadline) : null,
+        originalDeadline: o.originalDeadline ? new Date(o.originalDeadline) : null,
       },
     });
     if (o.doneAt) await db.prisma.statusEvent.create({ data: { requestId: r.id, from: S.FIRST_LOOK, to: S.DONE, actorId: ids.fadli, at: new Date(o.doneAt) } });
@@ -71,6 +72,17 @@ describe("kpi queries + targets", () => {
       const again = (await loadKpiRequests(db.prisma, ["2026-10"])).map((r) => r.id);
       expect(again.filter((i) => i === openInMonth)).toHaveLength(1);
       expect(await loadKpiRequests(db.prisma, [])).toEqual(expect.any(Array));
+    });
+  });
+
+  describe("originalDeadline", () => {
+    it("loadKpiRequests returns originalDeadline", async () => {
+      const id = await mkReq({ requestedAt: "2026-10-04T03:00:00Z", assignee: "creative", doneAt: "2026-10-06T03:00:00Z", deadline: "2026-10-20T00:00:00Z", originalDeadline: "2026-10-10T00:00:00Z" });
+      const plain = await mkReq({ requestedAt: "2026-10-04T03:00:00Z", assignee: "creative" });
+      await db.prisma.deadlineEvent.create({ data: { requestId: id, from: null, to: new Date("2026-10-20T00:00:00Z"), actorId: ids.lead } });
+      const rows = await loadKpiRequests(db.prisma, ["2026-10"]);
+      expect(rows.find((r) => r.id === id)!.originalDeadline).toEqual(new Date("2026-10-10T00:00:00Z"));
+      expect(rows.find((r) => r.id === plain)!.originalDeadline).toBeNull();
     });
   });
 

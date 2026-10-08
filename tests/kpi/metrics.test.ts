@@ -14,6 +14,7 @@ function req(p: Partial<KpiRequest> & { doneAt?: string }): KpiRequest {
     assigneeId: "d1",
     requestedAt: d("2026-10-05T00:00:00Z"),
     deadline: null,
+    originalDeadline: null,
     status: S.DONE,
     includeKpi: true,
     outputCount: 1,
@@ -94,6 +95,12 @@ describe("computeKpi", () => {
     const onTime = req({ deadline: d("2026-10-07T00:00:00Z"), doneAt: "2026-10-07T00:00:00Z" });
     const late = req({ deadline: d("2026-10-07T00:00:00Z"), doneAt: "2026-10-08T00:00:00Z" });
     expect(computeKpi([noDl, onTime, late], designer, "2026-10", null).onTimeRate).toBe(0.5);
+  });
+
+  it("on-time uses originalDeadline when set", () => {
+    const moved = { deadline: d("2026-10-20T00:00:00+07:00"), originalDeadline: d("2026-10-10T00:00:00+07:00"), doneAt: "2026-10-15T00:00:00+07:00" };
+    expect(computeKpi([req(moved)], designer, "2026-10", null).onTimeRate).toBe(0);
+    expect(computeKpi([req({ ...moved, originalDeadline: null })], designer, "2026-10", null).onTimeRate).toBe(1);
   });
 
   it("includeKpi=false and CANCELLED excluded", () => {

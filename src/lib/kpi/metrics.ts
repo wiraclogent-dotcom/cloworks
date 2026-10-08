@@ -7,6 +7,7 @@ export type KpiRequest = {
   assigneeId: string | null;
   requestedAt: Date;
   deadline: Date | null;
+  originalDeadline: Date | null;
   status: RequestStatus;
   includeKpi: boolean;
   outputCount: number;
@@ -85,9 +86,10 @@ export function computeKpi(
     if (!at) continue;
     turnaroundSum += workingDaysBetween(r.requestedAt, at);
     turnaroundN++;
-    if (r.deadline) {
+    const dl = r.originalDeadline ?? r.deadline;
+    if (dl) {
       withDeadline++;
-      if (dayOf(at) <= dayOf(r.deadline)) onTime++;
+      if (dayOf(at) <= dayOf(dl)) onTime++;
     }
   }
 

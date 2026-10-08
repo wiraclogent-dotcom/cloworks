@@ -48,14 +48,15 @@ model User {
   aliases    String[]
   active     Boolean  @default(true)
 
-  requested     Request[]      @relation("RequestRequester")
-  assigned      Request[]      @relation("RequestAssignee")
-  statusEvents  StatusEvent[]
-  comments      Comment[]
-  attachments   Attachment[]
-  kpiTargets    KpiTarget[]
-  notifications Notification[]
-  ownedProjects Project[]
+  requested      Request[]       @relation("RequestRequester")
+  assigned       Request[]       @relation("RequestAssignee")
+  statusEvents   StatusEvent[]
+  deadlineEvents DeadlineEvent[]
+  comments       Comment[]
+  attachments    Attachment[]
+  kpiTargets     KpiTarget[]
+  notifications  Notification[]
+  ownedProjects  Project[]
 }
 
 model AllowedEmail {
@@ -86,23 +87,24 @@ model RequestType {
 }
 
 model Request {
-  id              String        @id @default(cuid())
-  title           String
-  briefUrl        String?
-  notes           String?
-  brandId         String
-  divisionId      String
-  typeId          String
-  requesterId     String
-  assigneeId      String?
-  requestedAt     DateTime      @default(now())
-  deadline        DateTime?
-  status          RequestStatus @default(REQUESTED)
-  outputCount     Int           @default(1)
-  includeKpi      Boolean       @default(true)
-  needsMotion     Boolean       @default(false)
-  designFolderUrl String?
-  fields          Json          @default("{}")
+  id               String        @id @default(cuid())
+  title            String
+  briefUrl         String?
+  notes            String?
+  brandId          String
+  divisionId       String
+  typeId           String
+  requesterId      String
+  assigneeId       String?
+  requestedAt      DateTime      @default(now())
+  deadline         DateTime?
+  originalDeadline DateTime?
+  status           RequestStatus @default(REQUESTED)
+  outputCount      Int           @default(1)
+  includeKpi       Boolean       @default(true)
+  needsMotion      Boolean       @default(false)
+  designFolderUrl  String?
+  fields           Json          @default("{}")
 
   brand     Brand       @relation(fields: [brandId], references: [id])
   division  Division    @relation(fields: [divisionId], references: [id])
@@ -110,10 +112,11 @@ model Request {
   requester User        @relation("RequestRequester", fields: [requesterId], references: [id])
   assignee  User?       @relation("RequestAssignee", fields: [assigneeId], references: [id])
 
-  statusEvents  StatusEvent[]
-  comments      Comment[]
-  attachments   Attachment[]
-  notifications Notification[]
+  statusEvents   StatusEvent[]
+  deadlineEvents DeadlineEvent[]
+  comments       Comment[]
+  attachments    Attachment[]
+  notifications  Notification[]
 
   @@index([status])
   @@index([assigneeId])
@@ -127,6 +130,20 @@ model StatusEvent {
   to        RequestStatus
   actorId   String
   at        DateTime       @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User    @relation(fields: [actorId], references: [id])
+
+  @@index([requestId])
+}
+
+model DeadlineEvent {
+  id        String    @id @default(cuid())
+  requestId String
+  from      DateTime?
+  to        DateTime
+  actorId   String
+  at        DateTime  @default(now())
 
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   actor   User    @relation(fields: [actorId], references: [id])
