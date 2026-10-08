@@ -169,4 +169,26 @@ describe("decideSignIn + session", () => {
     await expect(requireUserWith(sess(u.id), db.prisma)).rejects.toThrow();
     expect(await loadActiveUser(db.prisma, u.id)).toBeNull();
   });
+  it("revocation: removing the AllowedEmail row denies on the very next request", async () => {
+    await db.prisma.allowedEmail.create({ data: { email: "outsider@gmail.com" } });
+    const u = await db.prisma.user.create({ data: { email: "outsider@gmail.com", name: "Out", fullName: "Out", appRole: "CREATIVE" } });
+    const sess = async () => ({ user: { id: u.id } });
+    expect((await requireUserWith(sess, db.prisma)).id).toBe(u.id);
+    expect(await refreshJwt(db.prisma, { uid: u.id })).not.toBeNull();
+    await db.prisma.allowedEmail.delete({ where: { email: "outsider@gmail.com" } });
+    await expect(requireUserWith(sess, db.prisma)).rejects.toThrow();
+    expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
+  });
+  it("revocation: company-domain user is unaffected by the allow list", async () => {
+    const u = await db.prisma.user.create({ data: { email: "Staff@Clogent.co.id", name: "Staff", fullName: "Staff" } });
+    await db.prisma.allowedEmail.deleteMany({});
+    expect((await requireUserWith(async () => ({ user: { id: u.id } }), db.prisma)).id).toBe(u.id);
+    expect(await refreshJwt(db.prisma, { uid: u.id })).not.toBeNull();
+  });
+  it("revocation: a user with no email is denied", async () => {
+    const u = await db.prisma.user.create({ data: { email: null, name: "NoMail", fullName: "NoMail" } });
+    await expect(requireUserWith(async () => ({ user: { id: u.id } }), db.prisma)).rejects.toThrow();
+    expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
+    expect(await loadActiveUser(db.prisma, u.id)).toBeNull();
+  });
 });
