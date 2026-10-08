@@ -11,7 +11,7 @@ import { resolveUserDetailed, normalizeName, type ImportUser } from "./aliases";
 export const DONE_CAVEAT =
   "Completion dates are not in the sheet; DONE events are placed at the deadline, so on-time rate and turnaround for imported months are NOT meaningful. Tasks-done KPI is unaffected.";
 
-export type ImportSource = "requests" | "socmed";
+export type ImportSource = "requests" | "socmed" | "dimas";
 export type ParseCtx = { users: ImportUser[]; brands: { id: string; name: string }[]; divisions: { id: string; name: string }[] };
 
 export type ImportRecord = {
@@ -47,11 +47,16 @@ export type ParseReport = {
   samples: { row: number; requestRaw: string; requestIso: string; deadlineRaw: string; deadlineIso: string | null }[];
   /** Date order assumed for this source. */
   dateFormat: "dmy" | "mdy";
+  /** Records that carry a real link target (from URL columns or URL-valued cells). */
+  links: { brief: number; folder: number; published: number };
+  /** Dimas only: rows whose brand was inferred (the log has no brand column). */
+  brandInferred?: number;
 };
 
 type Canon =
   | "requester" | "brand" | "division" | "platform" | "task" | "briefLink" | "notes" | "linkUpload" | "requestDate"
-  | "deadline" | "designer" | "progress" | "shooting" | "upload" | "edited" | "designFolder" | "output" | "includeKpi";
+  | "deadline" | "designer" | "progress" | "shooting" | "upload" | "edited" | "designFolder" | "output" | "includeKpi"
+  | "briefLinkUrl" | "designFolderUrl" | "linkUploadUrl";
 
 const normHeader = (h: string) => h.toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ").trim();
 
@@ -61,6 +66,9 @@ const MATCHERS: [Canon, (h: string) => boolean][] = [
   ["requestDate", (h) => h.includes("request date")],
   ["requester", (h) => h.includes("requester")],
   ["designer", (h) => h.includes("designer")],
+  ["linkUploadUrl", (h) => h === "link upload url"],
+  ["briefLinkUrl", (h) => h === "brief link url"],
+  ["designFolderUrl", (h) => h === "design folder url"],
   ["linkUpload", (h) => h === "link upload"],
   ["briefLink", (h) => h === "brief link"],
   ["designFolder", (h) => h === "design folder"],
@@ -77,15 +85,17 @@ const MATCHERS: [Canon, (h: string) => boolean][] = [
   ["upload", (h) => h === "upload"],
   ["edited", (h) => h === "edited"],
 ];
+// Optional canonical headers (never required): the real link targets from the .xlsx reader.
 const REQUIRED: Canon[] = ["requester", "brand", "division", "task", "requestDate", "deadline", "designer", "progress"];
 const LABEL: Record<Canon, string> = {
   requester: "Requester", brand: "Brand", division: "Division", platform: "Platform", task: "Task", briefLink: "Brief Link",
   notes: "Notes", linkUpload: "Link Upload", requestDate: "Request Date", deadline: "Deadline", designer: "Designer",
   progress: "Progress", shooting: "Shooting", upload: "Upload", edited: "Edited", designFolder: "Design Folder",
   output: "Jumlah Output", includeKpi: "Include_KPI",
+  briefLinkUrl: "Brief Link URL", designFolderUrl: "Design Folder URL", linkUploadUrl: "Link Upload URL",
 };
 
-function mapHeaders(source: ImportSource, headers: string[]): Partial<Record<Canon, string>> {
+function mapHeaders(source: "requests" | "socmed", headers: string[]): Partial<Record<Canon, string>> {
   const out: Partial<Record<Canon, string>> = {};
   for (const h of headers) {
     const n = normHeader(h);
@@ -129,6 +139,15 @@ function jakartaMonthOf(d: Date): string {
 /** Jakarta calendar date (YYYY-MM-DD) of an instant. */
 const jakartaIso = (d: Date) => new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 const clip = (s: string, n: number) => s.slice(0, n);
+export const NOTES_MAX = 5000;
+/** Joins the sheet's notes with import annotations; the notes themselves are shortened first so annotations survive the cap. */
+function buildNotes(text: string, extra: string[]): string | null {
+  const tail = extra.join("\n");
+  if (!tail) return clip(text, NOTES_MAX) || null;
+  const room = NOTES_MAX - tail.length - 1;
+  const head = text && room > 0 ? clip(text, room) : "";
+  return clip([head, tail].filter(Boolean).join("\n"), NOTES_MAX);
+}
 
 /**
  * The sheet's example row reads "Contoh Task | JANGAN DI HAPUS" ("example task | don't delete"),
@@ -141,7 +160,7 @@ function isTemplateTask(task: string): boolean {
 }
 
 export function parseRequestRows(
-  source: ImportSource,
+  source: "requests" | "socmed",
   rows: Record<string, string>[],
   ctx: ParseCtx,
   headers: string[] = Object.keys(rows[0] ?? {}),
@@ -151,7 +170,7 @@ export function parseRequestRows(
   const fmt = source === "requests" ? "dmy" : "mdy";
   const get = (r: Record<string, string>, c: Canon) => (hm[c] ? (r[hm[c]!] ?? "").trim() : "");
   const records: ImportRecord[] = [];
-  const report: ParseReport = { source, rowsRead: rows.length, importable: 0, template: 0, skipped: [], warnings: [], unmapped: [], months: {}, samples: [], dateFormat: fmt };
+  const report: ParseReport = { source, rowsRead: rows.length, importable: 0, template: 0, skipped: [], warnings: [], unmapped: [], months: {}, samples: [], dateFormat: fmt, links: { brief: 0, folder: 0, published: 0 } };
   const seen = new Map<string, number>();
   const wira = ctx.users.find((u) => u.name.trim().toLowerCase() === "wira");
   const brandByName = new Map(ctx.brands.map((b) => [b.name.trim().toLowerCase(), b.id]));
@@ -184,11 +203,14 @@ export function parseRequestRows(
     const reqText = get(r, "requester");
     const reqRes = resolveUserDetailed(reqText, ctx.users);
     let requesterId = reqRes.id;
+    const extra: string[] = [];
     if (!requesterId) {
       if (!wira) return skip("Requester unresolved and no fallback user named Wira");
       requesterId = wira.id;
       if (reqText) report.unmapped.push({ row, field: "Requester", value: reqText });
       warn(reqText ? `Requester "${reqText}" ${reqRes.ambiguous ? "is ambiguous (matches several users)" : "not found"}; used Wira` : "Blank requester; used Wira");
+      // Owner decision: do not try to identify nicknames / people outside the roster; keep what was typed.
+      if (reqText) extra.push(`Requester (as typed): ${reqText}`);
     }
 
     const progText = get(r, "progress");
@@ -216,15 +238,23 @@ export function parseRequestRows(
     const outputCount = out >= 1 ? out : 1;
     if (outRaw && out < 1) warn(`Invalid Jumlah Output "${outRaw}"; used 1`);
 
-    const extra: string[] = [];
     const brief = get(r, "briefLink");
     const folder = get(r, "designFolder");
-    const briefUrl = brief && isHttpUrl(brief) ? brief : null;
-    const designFolderUrl = folder && isHttpUrl(folder) ? folder : null;
-    if (brief && !briefUrl) extra.push(`Brief: ${brief}`);
-    if (folder && !designFolderUrl) extra.push(`Folder: ${folder}`);
+    // A real target (URL column from the .xlsx reader, else a URL typed in the cell) wins; the visible
+    // label is kept in notes unless it is the URL itself. Label-only cells go to notes as before.
+    const pick = (label: string, urlCol: string): { url: string | null; label: string } => {
+      const u = urlCol && isHttpUrl(urlCol) ? urlCol : label && isHttpUrl(label) ? label : null;
+      return { url: u, label: !label || label === u ? "" : label };
+    };
+    const b = pick(brief, get(r, "briefLinkUrl"));
+    const f = pick(folder, get(r, "designFolderUrl"));
+    const briefUrl = b.url, designFolderUrl = f.url;
+    const labelNotes: string[] = [];
+    if (b.label) labelNotes.push(`Brief: ${b.label}`);
+    if (f.label) labelNotes.push(`Folder: ${f.label}`);
+    extra.unshift(...labelNotes);
     const notesText = get(r, "notes");
-    const notes = clip([notesText, ...extra].filter(Boolean).join("\n"), 5000) || null;
+    const notes = buildNotes(notesText, extra);
 
     const includeKpi = source === "socmed" ? !["no", "false", "0"].includes(get(r, "includeKpi").toLowerCase()) : true;
 
@@ -244,10 +274,13 @@ export function parseRequestRows(
       fields.shooting = get(r, "shooting").toUpperCase() === "TRUE";
       fields.upload = get(r, "upload").toUpperCase() === "TRUE";
       fields.editing = get(r, "edited").toUpperCase() === "TRUE";
-      const pub = get(r, "linkUpload");
-      if (pub && isHttpUrl(pub)) fields.publishedUrl = pub;
+      const pubUrl = get(r, "linkUploadUrl");
+      const pub = pubUrl && isHttpUrl(pubUrl) ? pubUrl : get(r, "linkUpload");
+      if (pub && isHttpUrl(pub)) { fields.publishedUrl = pub; report.links.published++; }
     }
 
+    if (briefUrl) report.links.brief++;
+    if (designFolderUrl) report.links.folder++;
     records.push({
       source, row, title: clip(task, 200), briefUrl, notes, brandId, divisionId,
       typeName: source === "socmed" ? "Social Media" : "General Design",
@@ -255,6 +288,85 @@ export function parseRequestRows(
     });
     if (report.samples.length < 3)
       report.samples.push({ row, requestRaw: get(r, "requestDate"), requestIso: jakartaIso(requestedAt), deadlineRaw: dlText, deadlineIso: deadline ? jakartaIso(deadline) : null });
+    const m = jakartaMonthOf(requestedAt);
+    report.months[m] = (report.months[m] ?? 0) + 1;
+  });
+  report.importable = records.length;
+  return { records, report };
+}
+
+export const DIMAS_TYPE = "Motion Support";
+export const DIMAS_DESIGNER = "Dimas Pandu";
+export const FALLBACK_BRAND = "Clogent";
+
+const DIMAS_HEADERS: Record<"date" | "file" | "shooting" | "upload" | "editing", string[]> = {
+  date: ["tanggal"], file: ["nam file", "nama file"], shooting: ["shooting"], upload: ["upload"], editing: ["editing", "edited"],
+};
+
+/**
+ * "Dimas Tracker" log: one Motion Support task per row for the video editor (never merged into other
+ * requests, even when the same content also appears there). Requester is inferred from the file name's
+ * first word (FAFA, SYAHDA, RIO ...); anything else falls back to Wira. Brand is not in the log: the
+ * record carries the fallback brand and inferBrands() refines it.
+ */
+export function parseDimasRows(
+  rows: Record<string, string>[],
+  ctx: ParseCtx,
+  headers: string[] = Object.keys(rows[0] ?? {}),
+  lines?: number[],
+): { records: ImportRecord[]; report: ParseReport } {
+  const col: Partial<Record<keyof typeof DIMAS_HEADERS, string>> = {};
+  for (const h of headers) {
+    const n = normHeader(h);
+    for (const k of Object.keys(DIMAS_HEADERS) as (keyof typeof DIMAS_HEADERS)[]) if (!col[k] && DIMAS_HEADERS[k].includes(n)) col[k] = h;
+  }
+  const missing = [!col.date && "Tanggal", !col.file && "Nam File"].filter(Boolean);
+  if (missing.length) throw new Error(`Dimas Tracker: missing required header(s): ${missing.join(", ")}`);
+  const get = (r: Record<string, string>, k: keyof typeof DIMAS_HEADERS) => (col[k] ? (r[col[k]!] ?? "").trim() : "");
+
+  const records: ImportRecord[] = [];
+  const report: ParseReport = { source: "dimas", rowsRead: rows.length, importable: 0, template: 0, skipped: [], warnings: [], unmapped: [], months: {}, samples: [], dateFormat: "mdy", links: { brief: 0, folder: 0, published: 0 } };
+  const seen = new Map<string, number>();
+  const wira = ctx.users.find((u) => u.name.trim().toLowerCase() === "wira");
+  const designer = resolveUserDetailed(DIMAS_DESIGNER, ctx.users).id;
+  const brandId = ctx.brands.find((b) => b.name.trim().toLowerCase() === FALLBACK_BRAND.toLowerCase())?.id;
+  const divisionId = ctx.divisions.find((d) => d.name.trim().toLowerCase() === "social media")?.id;
+
+  rows.forEach((r, i) => {
+    const row = lines?.[i] ?? i + 2;
+    const file = get(r, "file");
+    if (!file) return; // side-table remnants / empty log rows
+    const skip = (reason: string) => report.skipped.push({ row, reason });
+    const dateRaw = get(r, "date");
+    const requestedAt = parseSheetDate(dateRaw, "mdy");
+    if (!requestedAt) return skip(`Invalid date "${dateRaw}"`);
+
+    const base = createHash("sha1").update(["dimas", normalizeName(file), requestedAt.toISOString()].join("|")).digest("hex");
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    const importKey = n === 1 ? base : `${base}#${n}`;
+
+    if (!brandId) return skip(`Unknown brand "${FALLBACK_BRAND}"`);
+    if (!divisionId) return skip('Unknown division "Social Media"');
+    if (!designer) return skip(`Designer "${DIMAS_DESIGNER}" not found in the database`);
+
+    let requesterId = resolveUserDetailed(file.split(/\s+/)[0], ctx.users).id;
+    if (!requesterId) {
+      if (!wira) return skip("Requester not recorded and no fallback user named Wira");
+      requesterId = wira.id;
+      report.warnings.push({ row, message: "requester not recorded (first word of the file name is not a person); used Wira" });
+    }
+
+    records.push({
+      source: "dimas", row, title: clip(file, 200), briefUrl: null, notes: "Video/motion edit logged in Dimas Tracker.",
+      brandId, divisionId, typeName: DIMAS_TYPE, requesterId, assigneeId: designer, requestedAt, deadline: null, status: "DONE",
+      outputCount: 1, includeKpi: true, designFolderUrl: null,
+      fields: {
+        shooting: get(r, "shooting").toUpperCase() === "TRUE", editing: get(r, "editing").toUpperCase() === "TRUE",
+        upload: get(r, "upload").toUpperCase() === "TRUE", importSource: "dimas", importKey,
+      },
+    });
+    if (report.samples.length < 3) report.samples.push({ row, requestRaw: dateRaw, requestIso: jakartaIso(requestedAt), deadlineRaw: "", deadlineIso: null });
     const m = jakartaMonthOf(requestedAt);
     report.months[m] = (report.months[m] ?? 0) + 1;
   });

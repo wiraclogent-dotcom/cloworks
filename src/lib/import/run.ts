@@ -3,7 +3,7 @@ import type { PrismaClient } from "@prisma/client";
 import type { CliArgs } from "./cliArgs";
 import { readCsv } from "./csv";
 import { applyImport } from "./applyImport";
-import { DONE_CAVEAT, parseRequestRows, type ImportRecord, type ParseReport, type ImportSource } from "./parseRequests";
+import { DONE_CAVEAT, parseRequestRows, type ImportRecord, type ParseReport } from "./parseRequests";
 
 export const DUPLICATE_NOTE =
   "Re-run caveat: correcting a requester name in the sheet after import and re-running will create a duplicate of that row (the import key includes the requester text). The dry-run only reads from the database (read-only).";
@@ -14,6 +14,8 @@ export function formatReport(rep: ParseReport, already?: number): string[] {
   const reasons = new Map<string, number>();
   for (const s of rep.skipped) reasons.set(s.reason, (reasons.get(s.reason) ?? 0) + 1);
   for (const [r, n] of reasons) out.push(`  - ${r}: ${n}`);
+  out.push(`links:       brief ${rep.links.brief}, folder ${rep.links.folder}, published ${rep.links.published}`);
+  if (rep.brandInferred !== undefined) out.push(`brand inferred: ${rep.brandInferred} (Brand is not recorded in Dimas Tracker)`);
   out.push(`warnings:    ${rep.warnings.length}`);
   for (const w of rep.warnings.slice(0, 20)) out.push(`  - line ${w.row}: ${w.message}`);
   if (rep.warnings.length > 20) out.push(`  ... and ${rep.warnings.length - 20} more`);
@@ -48,7 +50,7 @@ export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps =
 
   const [users, brands, divisions] = await Promise.all([db.user.findMany(), db.brand.findMany(), db.division.findMany()]);
   const ctx = { users, brands, divisions };
-  const inputs: [ImportSource, string][] = [["requests", args.requestsPath]];
+  const inputs: ["requests" | "socmed", string][] = [["requests", args.requestsPath]];
   if (args.socmedPath) inputs.push(["socmed", args.socmedPath]);
 
   const reports: ParseReport[] = [];

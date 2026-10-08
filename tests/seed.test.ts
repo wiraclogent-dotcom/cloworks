@@ -18,7 +18,7 @@ describe("seed", () => {
   it("is idempotent and does not overwrite admin edits", async () => {
     await seed(db.prisma);
     const first = await counts();
-    expect(first).toEqual({ users: 13, brands: 2, divisions: 5, types: 2, allowed: 0 });
+    expect(first).toEqual({ users: 13, brands: 2, divisions: 5, types: 3, allowed: 0 });
 
     await db.prisma.user.update({ where: { id: (await db.prisma.user.findFirstOrThrow({ where: { name: "Idzni" } })).id }, data: { email: "idzni@example.com", appRole: "ADMIN" } });
     await seed(db.prisma);
@@ -34,5 +34,7 @@ describe("seed", () => {
     expect((await db.prisma.user.findFirstOrThrow({ where: { name: "Irsyad" } })).aliases).toEqual(["Irshyad"]);
     const social = await db.prisma.requestType.findFirstOrThrow({ where: { name: "Social Media" } });
     expect((social.fieldSchema as unknown[]).length).toBe(6);
+    const motion = await db.prisma.requestType.findFirstOrThrow({ where: { name: "Motion Support" } });
+    expect(motion).toMatchObject({ fieldSchema: [], active: true });
   });
 });

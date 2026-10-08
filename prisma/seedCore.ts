@@ -46,6 +46,8 @@ export async function seed(db: PrismaClient): Promise<void> {
   for (const name of ["Creative", "Digital Ads", "Social Media", "Ecommerce", "Brand"])
     await db.division.upsert({ where: { name }, update: {}, create: { name } });
   await db.requestType.upsert({ where: { name: "General Design" }, update: {}, create: { name: "General Design", fieldSchema: [] } });
+  // Video/motion edit work logged by the video editor (imported from the "Dimas Tracker" tab).
+  await db.requestType.upsert({ where: { name: "Motion Support" }, update: {}, create: { name: "Motion Support", fieldSchema: [] } });
   await db.requestType.upsert({
     where: { name: "Social Media" },
     update: {},
