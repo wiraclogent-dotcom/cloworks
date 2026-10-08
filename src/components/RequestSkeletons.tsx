@@ -74,7 +74,29 @@ export function TableSkeleton() {
   );
 }
 
-const WIDTH: Record<number, string> = { 14: "w-14", 16: "w-16", 24: "w-24" };
+/** Requests calendar fallback: month bar, weekday row and a 5-week grid with a few card placeholders. */
+export function CalendarSkeleton() {
+  return (
+    <Busy label="Loading calendar…" wide className="w-full">
+      <HeaderSkeleton />
+      <div className="mb-3 flex items-center gap-2">
+        <Skeleton className="h-6 w-36" />
+        <Skeleton className="ml-auto h-8 w-32" rounded="xl" />
+      </div>
+      <div className="grid grid-cols-7 gap-1" data-skeleton-calendar="">
+        {Array.from({ length: 35 }, (_, i) => (
+          <div key={i} data-skeleton-day="" className="min-h-28 space-y-1.5 rounded-lg border border-border bg-surface p-1.5">
+            <Skeleton className="size-5" rounded="full" />
+            {i % 3 === 1 && <Skeleton className="h-9 w-full" />}
+            {i % 5 === 2 && <Skeleton className="h-9 w-full" />}
+          </div>
+        ))}
+      </div>
+    </Busy>
+  );
+}
+
+const WIDTH: Record<number, string> ={ 14: "w-14", 16: "w-16", 24: "w-24" };
 
 /** Request detail fallback: header, then a wide column of cards and a narrow details column. */
 export function DetailSkeleton() {
