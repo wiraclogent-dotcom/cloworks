@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DndContext, KeyboardSensor, PointerSensor, useDroppable, useSensor, useSensors, type DragEndEvent, type KeyboardCoordinateGetter } from "@dnd-kit/core";
 import type { RequestStatus } from "@prisma/client";
 import { moveRequest } from "@/app/(app)/requests/actions";
 import type { RequestRow } from "@/lib/requests";
 import { canTransition } from "@/lib/workflow";
+import { BOARD_DND_ID, SCREEN_READER_INSTRUCTIONS, buildAnnouncements } from "@/lib/boardA11y";
 import { BoardCard } from "./BoardCard";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { BOARD_STATUSES, STATUS_LABEL, StatusIcon } from "./status";
@@ -31,7 +32,7 @@ function Column({ status, count, children }: { status: RequestStatus; count: num
   const id = `col-${status}`;
   return (
     <section ref={setNodeRef} role="region" aria-labelledby={id}
-      className={`flex w-72 shrink-0 flex-col rounded-lg border bg-muted p-3 ${isOver ? "border-ring" : "border-border"}`}>
+      className={`flex min-w-0 flex-col rounded-lg border bg-muted p-3 ${isOver ? "border-ring" : "border-border"}`}>
       <h2 id={id} className="mb-3 flex items-center gap-2 text-sm font-semibold">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
@@ -50,6 +51,20 @@ export function Board({ requests, canMove, showCancelled = false }: { requests: 
   const [message, setMessage] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [pendingDone, setPendingDone] = useState<RequestRow | null>(null);
+
+  // Focus bookkeeping: a moved card remounts in its new column, so focus would fall to <body>.
+  const focusCardId = useRef<string | null>(null);
+  useEffect(() => {
+    const id = focusCardId.current;
+    if (!id || pendingDone) return;
+    const active = document.activeElement;
+    if (active && active !== document.body && document.contains(active)) { focusCardId.current = null; return; }
+    const target = document.querySelector<HTMLElement>(`[data-card="${CSS.escape(id)}"]`)
+      ?.querySelector<HTMLElement>("button:not([disabled]), select:not([disabled]), a[href]");
+    if (target) { target.focus(); focusCardId.current = null; }
+  });
+
+  const announcements = useMemo(() => buildAnnouncements((id) => cards.find((c) => c.id === id)?.title), [cards]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -78,6 +93,11 @@ export function Board({ requests, canMove, showCancelled = false }: { requests: 
 
   function requestMove(card: RequestRow, to: RequestStatus) {
     if (to === card.status) return;
+    focusCardId.current = card.id;
+    if (to === "DONE" && canTransition(card.status, "DONE") && !card.assigneeName) {
+      setMessage("Assign someone before marking this request Done.");
+      return;
+    }
     // Legal DONE needs delivery details first; an illegal one goes to the server so the user sees its message.
     if (to === "DONE" && canTransition(card.status, "DONE")) setPendingDone(card);
     else void submit(card, to);
@@ -100,8 +120,9 @@ export function Board({ requests, canMove, showCancelled = false }: { requests: 
         </div>
       )}
       {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
+      <DndContext id={BOARD_DND_ID} sensors={sensors} onDragEnd={onDragEnd}
+        accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
+        <div className="grid gap-4 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(13rem, 1fr))` }}>
           {columns.map((status) => {
             const inCol = visible.filter((c) => c.status === status);
             return (

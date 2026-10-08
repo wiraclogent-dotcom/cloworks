@@ -7,6 +7,7 @@ vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: (...a: unknown[]) 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
+import { renderToString } from "react-dom/server";
 import { Board } from "@/components/Board";
 import type { RequestRow } from "@/lib/requests";
 
@@ -91,7 +92,7 @@ describe("Board", () => {
   });
 
   it("shows the server message and keeps the card in its column when the move fails", async () => {
-    move.mockResolvedValue({ ok: false, code: "INVALID", message: "Request needs an assignee before it can be marked DONE" });
+    move.mockResolvedValue({ ok: false, code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
     render(<Board requests={rows} canMove={true} />);
     fireEvent.change(screen.getByLabelText(/Move “Banner”/), { target: { value: "DONE" } });
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /mark as done/i }));
@@ -106,5 +107,43 @@ describe("Board", () => {
     fireEvent.change(screen.getByLabelText(/Move “Poster”/), { target: { value: "ON_PROGRESS" } });
     await waitFor(() => expect(screen.getByRole("alert").textContent).toMatch(/concurrently/));
     expect(within(column("Requested")).getByText("Poster")).toBeTruthy();
+  });
+
+  it("renders a deterministic dnd aria-describedby id (no hydration mismatch)", () => {
+    const ids = (html: string) => [...html.matchAll(/aria-describedby="([^"]*)"/g)].map((m) => m[1]);
+    const first = ids(renderToString(<Board requests={rows} canMove={true} />));
+    const second = ids(renderToString(<Board requests={rows} canMove={true} />));
+    expect(first.length).toBeGreaterThan(0);
+    expect(second).toEqual(first);
+    expect(new Set(first)).toEqual(new Set(["request-board"]));
+    render(<Board requests={rows} canMove={true} />);
+    expect(screen.getByRole("button", { name: /drag “Banner”/i }).getAttribute("aria-describedby")).toBe("request-board");
+  });
+
+  it("returns focus to the card after Escape closes the Done dialog", () => {
+    render(<Board requests={rows} canMove={true} />);
+    fireEvent.change(screen.getByLabelText(/Move “Banner”/), { target: { value: "DONE" } });
+    const dialog = screen.getByRole("dialog");
+    fireEvent.keyDown(dialog, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement?.closest("[data-card]")?.getAttribute("data-card")).toBe("1");
+  });
+
+  it("returns focus to the moved card after a move completes", async () => {
+    move.mockResolvedValue({ ok: true });
+    render(<Board requests={rows} canMove={true} />);
+    fireEvent.change(screen.getByLabelText(/Move “Poster”/), { target: { value: "ON_PROGRESS" } });
+    await waitFor(() => expect(within(column("On progress")).getByText("Poster")).toBeTruthy());
+    await waitFor(() => expect(document.activeElement?.closest("[data-card]")?.getAttribute("data-card")).toBe("2"));
+  });
+
+  it("does not open the dialog for an unassigned card: shows an inline message", () => {
+    move.mockResolvedValue({ ok: true });
+    const r = [row("3", "Flyer", "FIRST_LOOK", { assigneeName: null })];
+    render(<Board requests={r} canMove={true} />);
+    fireEvent.change(screen.getByLabelText(/Move “Flyer”/), { target: { value: "DONE" } });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("Assign someone before marking this request Done.");
+    expect(move).not.toHaveBeenCalled();
   });
 });

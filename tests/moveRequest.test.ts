@@ -27,7 +27,7 @@ describe("moveRequestWith", () => {
   });
   it("returns the server message when DONE has no assignee", async () => {
     const r = await moveRequestWith(async () => creative, db.prisma, reqId, "DONE", { outputCount: 1 });
-    expect(r).toEqual({ ok: false, code: "INVALID", message: "Request needs an assignee before it can be marked DONE" });
+    expect(r).toEqual({ ok: false, code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
   });
   it("returns ok on a legal move and NOT_FOUND for a missing id", async () => {
     expect(await moveRequestWith(async () => creative, db.prisma, reqId, "ON_PROGRESS")).toEqual({ ok: true });

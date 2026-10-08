@@ -1,6 +1,7 @@
 import type { AppRole, PrismaClient, RequestStatus } from "@prisma/client";
 import { can } from "./permissions";
 import { canTransition } from "./workflow";
+import { STATUS_LABEL } from "./statusLabels";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 
 export class TransitionError extends Error {
@@ -42,8 +43,8 @@ export async function transitionRequestWith(
     const req = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, requesterId: true, title: true } });
     if (!req) throw new TransitionError("NOT_FOUND", "Request not found");
     const from = req.status;
-    if (!canTransition(from, to)) throw new TransitionError("INVALID", `Cannot move request from ${from} to ${to}`);
-    if (to === "DONE" && !req.assigneeId) throw new TransitionError("INVALID", "Request needs an assignee before it can be marked DONE");
+    if (!canTransition(from, to)) throw new TransitionError("INVALID", `Cannot move request from ${STATUS_LABEL[from]} to ${STATUS_LABEL[to]}`);
+    if (to === "DONE" && !req.assigneeId) throw new TransitionError("INVALID", "Request needs an assignee before it can be marked Done");
 
     const data: { status: RequestStatus; outputCount?: number; designFolderUrl?: string } = { status: to };
     if (to === "DONE") {
