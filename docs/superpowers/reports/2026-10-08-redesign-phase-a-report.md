@@ -212,7 +212,7 @@ Accents are decoration only (column top bar, dots); status is always icon + labe
 ## Checks
 
 `npm run lint` 0 errors / 0 warnings; `npx tsc --noEmit` clean; `npm run build` passes (all app routes partial
-prerender as before); `npx vitest run` 60 files / 797 tests green (609 before; +188 new).
+prerender as before); `npx vitest run` 60 files / 803 tests green (609 before; +194 new).
 
 ## Not verified without a browser
 
