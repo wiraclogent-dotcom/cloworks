@@ -14,7 +14,8 @@
     "postinstall": "prisma generate",
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
-    "import:sheet": "tsx scripts/import-sheet.ts"
+    "import:sheet": "tsx scripts/import-sheet.ts",
+    "dev:session": "tsx scripts/dev-session.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
