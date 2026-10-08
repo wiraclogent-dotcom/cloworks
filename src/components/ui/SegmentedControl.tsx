@@ -13,7 +13,7 @@ export type Segment = {
 };
 
 const ITEM =
-  "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out [&_svg]:size-4 " + focusRing;
+  "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out [&_svg]:size-4 " + focusRing;
 const ON = "bg-surface text-foreground shadow-card";
 const OFF = "text-foreground-secondary hover:text-foreground hover:bg-surface/60";
 
@@ -22,7 +22,7 @@ const OFF = "text-foreground-secondary hover:text-foreground hover:bg-surface/60
  * otherwise a `role="group"` of buttons with aria-pressed.
  */
 export function SegmentedControl({ label, items, value, className }: { label: string; items: Segment[]; value: string; className?: string }) {
-  const wrap = cn("inline-flex items-center gap-0.5 rounded-lg border border-border bg-surface-muted p-0.5", className);
+  const wrap = cn("inline-flex items-center gap-1 rounded-xl bg-surface-muted p-1", className);
   const links = items.some((i) => i.href !== undefined);
   if (links) {
     return (

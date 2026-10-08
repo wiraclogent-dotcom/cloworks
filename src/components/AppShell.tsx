@@ -18,7 +18,7 @@ const ROLE_LABEL: Record<AppRole, string> = { REQUESTER: "Requester", CREATIVE: 
 function NavGroup({ id, label, children }: { id: string; label: string; children: React.ReactNode }) {
   return (
     <div className="pt-3">
-      <p id={id} className="sb-label px-2.5 pb-1 text-[11px] font-semibold tracking-wider text-sidebar-foreground-secondary uppercase">{label}</p>
+      <p id={id} className="sb-label px-2.5 pb-1 text-[13px] font-medium text-sidebar-foreground-secondary">{label}</p>
       <hr aria-hidden="true" className="sb-collapsed-only mx-2 mb-2 border-0 border-t border-sidebar-border" />
       <ul aria-labelledby={id} className="space-y-0.5">{children}</ul>
     </div>

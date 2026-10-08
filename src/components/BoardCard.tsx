@@ -10,9 +10,9 @@ import { NeedsMotionChip } from "./ui/NeedsMotionChip";
 import { Avatar, UnassignedAvatar } from "./ui/Avatar";
 import { cn, focusRing } from "./ui/cn";
 
-const CARD_SHAPE = "rounded-xl border bg-card p-3 text-sm text-card-foreground";
-/** Card in its column: white, 12px radius, hairline, soft shadow. */
-export const CARD_SURFACE = `${CARD_SHAPE} border-border shadow-card`;
+const CARD_SHAPE = "rounded-xl border bg-card p-4 text-sm text-card-foreground";
+/** Card in its column: white, 12px radius, a whisper of a hairline and a soft shadow. */
+export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card`;
 /** The drag overlay copy: same card, Aqua outline and the raised shadow. */
 export const CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
 
@@ -27,7 +27,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
   return (
     <>
       <div className="flex items-start gap-1">
-        <p className="line-clamp-2 min-w-0 flex-1 text-sm leading-5 font-medium break-words text-foreground">
+        <p className="line-clamp-2 min-w-0 flex-1 text-sm leading-5 font-semibold break-words text-foreground">
           {interactive ? (
             <Link href={`/requests/${card.id}`} draggable={false} className={cn("rounded-sm underline-offset-2 hover:underline", focusRing)}>{card.title}</Link>
           ) : card.title}

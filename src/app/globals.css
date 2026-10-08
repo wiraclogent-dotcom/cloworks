@@ -24,42 +24,40 @@
   --brand-deep-blue-night: #062b47;
 
   /* Surfaces and text */
-  --background: #f4f6fa;
+  --background: #f5f3ee;
   --surface: #ffffff;
-  --surface-muted: #f1f4f8;
-  --border: #e4e8ef;
-  --border-strong: #d0d7e2;
-  --foreground: #1b2a3a;
-  --foreground-secondary: #5b6b7f;
+  --surface-muted: #f0eee9;
+  --border: #e6e3dc;
+  --border-strong: #d3cfc5;
+  --foreground: #17181c;
+  --foreground-secondary: #62656d;
   /* Non-text only (decorative icons, dividers): 3.26:1 on white is below AA for text. */
-  --foreground-muted: #8190a3;
+  --foreground-muted: #7d8088;
   /* Field placeholders are text: AA (4.5:1) on the field and on a disabled (muted) field. */
   --placeholder: var(--foreground-secondary);
-  --heading: var(--brand-deep-blue);
+  --heading: #17181c;
   --link: var(--brand-aqua-strong);
   /* Field outline: 3:1 against white (WCAG 1.4.11), slightly darker than --border-strong. */
-  --input: #8493a7;
+  --input: #8a8c93;
   /* Focus ring: brand Aqua darkened one step so it reaches 3:1 on the canvas (spec #11AA9F is 2.7:1). */
-  --ring: #0e9a90;
+  --ring: #0c8a81;
 
-  /* Sidebar */
-  --sidebar: #09426d;
-  --sidebar-foreground: #e6eef6;
-  /* Lightened from spec #9DB7CF so it stays ≥ 4.5:1 on the hover (5.29) and active (4.76) pills, not only on the bar. */
-  --sidebar-foreground-secondary: #bcd0e2;
-  --sidebar-hover: rgba(255, 255, 255, 0.08);
-  --sidebar-active: rgba(17, 170, 159, 0.24);
-  /* Aqua icon/indicator on the active pill: lighter Aqua (brand Aqua is 2.6:1 there). */
-  --sidebar-accent: #4fd1c5;
-  --sidebar-border: rgba(255, 255, 255, 0.12);
-  --sidebar-ring: #4fd1c5;
+  /* Sidebar: a quiet rail in the canvas colour; the active link is a white pill */
+  --sidebar: #f5f3ee;
+  --sidebar-foreground: #17181c;
+  --sidebar-foreground-secondary: #62656d;
+  --sidebar-hover: rgba(23, 24, 28, 0.06);
+  --sidebar-active: #ffffff;
+  --sidebar-border: #e6e3dc;
+  --sidebar-accent: #0b756d;
+  --sidebar-ring: #0b756d;
 
   /* Semantic tokens (shadcn-style), mapped onto the tokens above */
   --card: var(--surface);
   --card-foreground: var(--foreground);
-  --primary: var(--brand-deep-blue);
+  --primary: #17181c;
   --primary-foreground: #ffffff;
-  --primary-hover: #0b3a60;
+  --primary-hover: #2b2d35;
   --secondary: var(--surface-muted);
   --muted: var(--surface-muted);
   --muted-foreground: var(--foreground-secondary);
@@ -80,7 +78,7 @@
   --progress-complete: #3b7a1e;
 
   /* Depth */
-  --elevation-card: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --elevation-card: 0 1px 2px rgba(23, 24, 28, 0.05), 0 1px 3px rgba(23, 24, 28, 0.04);
   --elevation-raised: 0 8px 24px rgba(16, 24, 40, 0.14);
   --backdrop: rgba(16, 24, 40, 0.45);
 
@@ -141,31 +139,31 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #0e1b29;
-  --surface: #14263a;
-  --surface-muted: #1b3249;
-  --border: #243b52;
-  --border-strong: #34506b;
-  --foreground: #e8eef5;
-  --foreground-secondary: #a9bbcd;
-  --foreground-muted: #7d93a9;
-  --heading: #e8eef5;
+  --background: #111113;
+  --surface: #1a1a1d;
+  --surface-muted: #232327;
+  --border: #2c2c31;
+  --border-strong: #3b3b42;
+  --foreground: #f2f1ee;
+  --foreground-secondary: #b3b4ba;
+  --foreground-muted: #7f8087;
+  --heading: #f2f1ee;
   --link: #4fd1c5;
-  --input: #5f7a96;
+  --input: #7a7d86;
   --ring: #11aa9f;
 
-  --sidebar: #0a2f4e;
-  --sidebar-foreground: #e6eef6;
-  --sidebar-foreground-secondary: #bcd0e2;
-  --sidebar-hover: rgba(255, 255, 255, 0.07);
-  --sidebar-active: rgba(17, 170, 159, 0.24);
+  --sidebar: #111113;
+  --sidebar-foreground: #f2f1ee;
+  --sidebar-foreground-secondary: #a6a7ad;
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active: #26262b;
   --sidebar-accent: #4fd1c5;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-border: #2c2c31;
   --sidebar-ring: #4fd1c5;
 
-  --primary: var(--brand-aqua);
-  --primary-foreground: var(--brand-deep-blue-night);
-  --primary-hover: #3cc9be;
+  --primary: #f2f1ee;
+  --primary-foreground: #111113;
+  --primary-hover: #dcdbd6;
   --accent: #134350;
   --accent-foreground: #9fe1cb;
   --destructive: #c2342f;

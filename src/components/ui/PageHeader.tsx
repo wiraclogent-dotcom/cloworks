@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { cn } from "./cn";
 
 /**
- * The one page header: renders the page `<h1>` (22px/600, Deep Blue), an optional count pill and description,
+ * The one page header: renders the page `<h1>` (28px/600, ink), an optional count pill and description,
  * an optional view switcher (e.g. <SegmentedControl>) and the page's actions on the right (primary action last).
  */
 export function PageHeader({ title, count, description, switcher, actions, className }: {
@@ -14,7 +14,7 @@ export function PageHeader({ title, count, description, switcher, actions, class
           10rem, so a switcher can no longer squeeze it to a few pixels (QA D2/D7). */}
       <div data-page-title="" className="min-w-0 grow basis-full sm:min-w-[10rem] sm:basis-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-[22px] leading-7 font-semibold text-heading">{title}</h1>
+          <h1 className="text-[28px] leading-9 font-semibold tracking-tight text-heading">{title}</h1>
           {count !== undefined ? (
             <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-foreground-secondary tabular-nums">{count}</span>
           ) : null}

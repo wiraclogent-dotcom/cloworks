@@ -112,8 +112,7 @@ describe("board columns", () => {
     const tones = BOARD_STATUSES.map((s) => screen.getByRole("region", { name: new RegExp(`^${s === "ON_PROGRESS" ? "On progress" : s === "FIRST_LOOK" ? "First look" : s === "DONE" ? "Done" : "Requested"}`) }).getAttribute("data-tone"));
     expect(tones).toEqual(["requested", "in-progress", "first-look", "done"]);
     const header = document.querySelector("#col-REQUESTED") as HTMLElement;
-    expect(header.className).toMatch(/border-t-\[3px\]/);
-    expect(header.className).toMatch(/border-tone-accent/);
+    expect(header.className).toMatch(/rounded-full/);
     expect(header.className).toMatch(/bg-tone-tint/);
     expect(header.querySelector("svg[aria-hidden]")).toBeTruthy();
   });
