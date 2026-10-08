@@ -81,3 +81,8 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* Board columns fill the viewport and scroll their cards independently, so the page height never depends on the card count. */
+.board-column {
+  max-height: max(20rem, calc(100dvh - 16rem));
+}

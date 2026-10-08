@@ -9,6 +9,12 @@ comments, @mentions and link attachments, email notifications, projects with a t
 (self and team), an admin area (people, access, brands, divisions, request types), and a CSV importer for the legacy
 Google Sheets.
 
+**Board and table.** On the board, grab a card anywhere and drop it on a column (press and hold on touch screens).
+Keyboard and screen-reader users use the small drag handle on each card (Space or Enter to lift, Left/Right arrows to
+change column, Space or Enter to drop, Escape to cancel). There is no "Move to…" menu on board cards; the request
+detail page keeps one. Each column scrolls on its own and loads 25 cards at first: use "Show 25 more" (or "Open all in
+table") for the rest, and the Done column lists the newest requests first. The table shows 50 rows per page.
+
 ## Stack
 
 Next.js 16 (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS 4, Auth.js v5 (JWT sessions; Google and

@@ -1,4 +1,5 @@
 import type { RequestStatus } from "@prisma/client";
+import { parseMore, parsePage, type MoreLimits } from "@/lib/paging";
 import { SORT_KEYS, type RequestFilter, type SortKey } from "@/lib/requests";
 
 const STATUSES: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED"];
@@ -8,6 +9,10 @@ export type ViewParams = {
   view: "board" | "table";
   status?: RequestStatus; assigneeId?: string; brandId?: string; divisionId?: string; q?: string;
   mine: boolean; sort: SortKey; dir: "asc" | "desc";
+  /** Per-column board limits from ?more=STATUS:n (whitelisted, capped). */
+  more: MoreLimits;
+  /** Table page, 1-based; clamped to the real page count by the query. */
+  page: number;
 };
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
@@ -30,6 +35,8 @@ export function parseParams(raw: RawParams): ViewParams {
     mine: one(raw.mine) === "1",
     sort: SORT_KEYS.find((k) => k === sort) ?? "deadline",
     dir: one(raw.dir) === "desc" ? "desc" : "asc",
+    more: parseMore(raw.more),
+    page: parsePage(raw.page),
   };
 }
 
@@ -40,8 +47,8 @@ export function toFilter(p: ViewParams, userId: string): RequestFilter {
   };
 }
 
-/** Builds a /requests URL from the current params with overrides (undefined removes a key). */
-export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "status" | "assignee" | "brand" | "division" | "q" | "mine" | "sort" | "dir", string | undefined>>): string {
+/** Builds a /requests URL from the current params with overrides (undefined removes a key). `page` and `more` are never carried over: they only appear when passed explicitly, so changing a filter, sort or view resets them. */
+export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "status" | "assignee" | "brand" | "division" | "q" | "mine" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
   const cur: Record<string, string | undefined> = {
     view: p.view === "table" ? "table" : undefined, status: p.status, assignee: p.assigneeId, brand: p.brandId, division: p.divisionId,
     q: p.q, mine: p.mine ? "1" : undefined, sort: p.view === "table" && p.sort !== "deadline" ? p.sort : undefined,
