@@ -74,6 +74,10 @@
   --chart-done: var(--brand-aqua-strong);
   --chart-target: var(--brand-deep-blue);
   --chart-grid: var(--border);
+  /* KPI progress fills by threshold (graphics: ≥ 3:1 against the card and the muted track; the % is always printed). */
+  --progress-low: #ba7517;
+  --progress-mid: var(--chart-done);
+  --progress-complete: #3b7a1e;
 
   /* Depth */
   --elevation-card: 0 1px 2px rgba(16, 24, 40, 0.06);
@@ -170,6 +174,8 @@
 
   --chart-done: var(--brand-aqua);
   --chart-target: #a9bbcd;
+  --progress-low: #ef9f27;
+  --progress-complete: #97c459;
 
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --elevation-raised: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -286,6 +292,10 @@
   --color-tone-text: var(--tone-text);
   --color-chart-done: var(--chart-done);
   --color-chart-target: var(--chart-target);
+  --color-chart-grid: var(--chart-grid);
+  --color-progress-low: var(--progress-low);
+  --color-progress-mid: var(--progress-mid);
+  --color-progress-complete: var(--progress-complete);
   --shadow-card: var(--elevation-card);
   --shadow-raised: var(--elevation-raised);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;

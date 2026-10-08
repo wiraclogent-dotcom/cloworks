@@ -2,7 +2,7 @@ import { Skeleton } from "./ui/Skeleton";
 import { cn } from "./ui/cn";
 
 /** Screen-reader status for a loading region; the skeleton blocks themselves are aria-hidden. */
-function Busy({ label, wide, className, children }: { label: string; wide?: boolean; className?: string; children: React.ReactNode }) {
+export function Busy({ label, wide, className, children }: { label: string; wide?: boolean; className?: string; children: React.ReactNode }) {
   return (
     <div role="status" aria-busy="true" aria-live="polite" data-page-wide={wide ? "" : undefined} className={className}>
       <span className="sr-only">{label}</span>

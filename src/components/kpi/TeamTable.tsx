@@ -1,59 +1,78 @@
 import Link from "next/link";
+import { Check } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import { formatCount, formatDays, formatPercent, progressPercent } from "@/lib/kpi/format";
 import type { KpiResult } from "@/lib/kpi/metrics";
+import { PROGRESS_LEVEL_LABEL, progressLevel } from "@/lib/kpi/presentation";
+import { Avatar } from "@/components/ui/Avatar";
+import { Chip } from "@/components/ui/Chip";
+import { tableClass } from "@/components/ui/table";
+import { cn } from "@/components/ui/cn";
+import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
 
 export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
 
-const ROLE_LABEL: Record<JobRole, string> = { DESIGNER: "Designer", SOCIAL_MEDIA: "Social media", OTHER: "Other" };
+export const JOB_ROLE_LABEL: Record<JobRole, string> = { DESIGNER: "Designer", SOCIAL_MEDIA: "Social media", OTHER: "Other" };
+
+/** Compact per-person bar: colour by threshold (see PROGRESS_THRESHOLDS), always with the % as text (+ check at ≥ 100%). */
+export function TeamProgress({ name, pct }: { name: string; pct: number }) {
+  const level = progressLevel(pct);
+  return (
+    <div data-level={level} className="flex items-center gap-2">
+      <div role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
+        className="h-2 w-24 shrink-0 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
+        <div className={cn("h-full rounded-full", PROGRESS_FILL[level])} style={{ width: `${Math.min(100, pct)}%` }} />
+      </div>
+      <span className="inline-flex items-center gap-0.5 tabular-nums">
+        {level === "complete" ? <Check aria-hidden="true" strokeWidth={2.25} className="size-3.5 text-progress-complete" /> : null}
+        {pct}%
+        <span className="sr-only"> ({PROGRESS_LEVEL_LABEL[level]})</span>
+      </span>
+    </div>
+  );
+}
 
 export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: string; canEdit: boolean }) {
-  const th = "px-3 py-2 font-medium";
+  const t = tableClass({ minWidth: canEdit ? "min-w-[64rem]" : "min-w-[44rem]" });
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-card text-card-foreground">
-      <table className="w-full text-left text-sm">
+    <div className={cn(t.wrapper, "max-h-[calc(100dvh-16rem)]")}>
+      <table className={t.table}>
         <caption className="sr-only">KPI per person for the selected month</caption>
         <thead>
-          <tr className="border-b border-border bg-muted">
-            <th scope="col" className={th}>Name</th>
-            <th scope="col" className={th}>Role</th>
-            <th scope="col" className={th}>Tasks done</th>
-            <th scope="col" className={th}>Target</th>
-            <th scope="col" className={th}>Progress</th>
-            <th scope="col" className={th}>On-time</th>
-            <th scope="col" className={th}>Turnaround (days)</th>
-            <th scope="col" className={th}>Workload</th>
-            {canEdit ? <th scope="col" className={th}>Set target</th> : null}
+          <tr>
+            <th scope="col" className={t.th}>Name</th>
+            <th scope="col" className={cn(t.th, t.numeric)}>Tasks done</th>
+            <th scope="col" className={cn(t.th, t.numeric)}>Target</th>
+            <th scope="col" className={t.th}>Progress</th>
+            <th scope="col" className={cn(t.th, t.numeric)}>On-time</th>
+            <th scope="col" className={cn(t.th, t.numeric)}>Turnaround (days)</th>
+            <th scope="col" className={cn(t.th, t.numeric)}>Workload</th>
+            {canEdit ? <th scope="col" className={t.th}>Set target</th> : null}
           </tr>
         </thead>
         <tbody>
           {rows.map((r) => {
             const pct = progressPercent(r.kpi.progress);
             return (
-              <tr key={r.userId} className="border-b border-border last:border-0">
-                <th scope="row" className="px-3 py-2 font-medium">
-                  <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="underline focus-visible:outline-2 focus-visible:outline-ring">{r.name}</Link>
-                </th>
-                <td className="px-3 py-2">{ROLE_LABEL[r.role]}</td>
-                <td className="px-3 py-2">{r.kpi.tasksDone}</td>
-                <td className="px-3 py-2">{formatCount(r.kpi.target)}</td>
-                <td className="px-3 py-2">
-                  {pct === null ? "—" : (
-                    <div className="flex items-center gap-2">
-                      <div role="progressbar" aria-label={`${r.name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
-                        className="h-2 w-24 overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border">
-                        <div className="h-full bg-primary" style={{ width: `${Math.min(100, pct)}%` }} />
-                      </div>
-                      <span>{pct}%</span>
+              <tr key={r.userId} className={t.tr}>
+                <th scope="row" className={t.rowHeader}>
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={r.name} size="md" decorative />
+                    <div className="min-w-0">
+                      <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="font-medium text-foreground hover:text-link hover:underline">{r.name}</Link>
+                      <div className="mt-0.5"><Chip tone="tag-neutral" data-role={r.role}>{JOB_ROLE_LABEL[r.role]}</Chip></div>
                     </div>
-                  )}
-                </td>
-                <td className="px-3 py-2">{formatPercent(r.kpi.onTimeRate)}</td>
-                <td className="px-3 py-2">{formatDays(r.kpi.avgTurnaroundDays)}</td>
-                <td className="px-3 py-2">{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
+                  </div>
+                </th>
+                <td className={cn(t.td, t.numeric)}>{r.kpi.tasksDone}</td>
+                <td className={cn(t.td, t.numeric)}>{formatCount(r.kpi.target)}</td>
+                <td className={t.td}>{pct === null ? <span className="text-foreground-secondary">—</span> : <TeamProgress name={r.name} pct={pct} />}</td>
+                <td className={cn(t.td, t.numeric)}>{formatPercent(r.kpi.onTimeRate)}</td>
+                <td className={cn(t.td, t.numeric)}>{formatDays(r.kpi.avgTurnaroundDays)}</td>
+                <td className={cn(t.td, t.numeric)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
                 {canEdit ? (
-                  <td className="px-3 py-2">
+                  <td className={t.td}>
                     <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} initialNote={r.note ?? null} />
                   </td>
                 ) : null}

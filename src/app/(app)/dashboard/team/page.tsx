@@ -5,20 +5,23 @@ import { can } from "@/lib/permissions";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
 import { monthLabel } from "@/lib/kpi/months";
+import { teamSummary } from "@/lib/kpi/presentation";
+import { formatCount } from "@/lib/kpi/format";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { TeamTable, type TeamRow } from "@/components/kpi/TeamTable";
+import { AccessDenied } from "@/components/AccessDenied";
+import { TeamKpiSkeleton } from "@/components/PageSkeletons";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { KpiTile } from "@/components/ui/KpiTile";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { CircleCheckBig, Gauge, Users } from "lucide-react";
 import { parseMonthParam } from "../params";
 
 async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboard/team">["searchParams"] }) {
   const viewer = await requireUserOrRedirect();
   if (!can(viewer.appRole, "dashboard.team")) {
     // Same pattern as the personal page: an inline message, never the data.
-    return (
-      <div role="alert" className="rounded-md border border-border p-6">
-        <h1 className="text-xl font-semibold">403 · Access denied</h1>
-        <p className="text-muted-foreground">The team KPI page is only available to leads and admins.</p>
-      </div>
-    );
+    return <AccessDenied description="The team KPI page is only available to leads and admins." backHref="/dashboard" backLabel="Back to My KPI" />;
   }
   const month = parseMonthParam((await searchParams).month);
   const [targets, requests] = await Promise.all([loadTargets(prisma, [month]), loadKpiRequests(prisma, [month])]);
@@ -37,19 +40,30 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
       kpi: computeKpi(requests, u, month, t ? { role: t.role, targetTasks: t.targetTasks } : null),
     };
   });
+  const summary = teamSummary(rows);
   return (
     <>
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Team KPI</h1>
-          <p className="text-muted-foreground">{monthLabel(month)}</p>
-        </div>
-        <div className="ml-auto"><MonthPicker month={month} action="/dashboard/team" /></div>
-      </div>
+      <PageHeader title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} action="/dashboard/team" />} />
       {rows.length === 0 ? (
-        <p className="rounded-md border border-dashed border-border p-6 text-center text-muted-foreground">No designers or social media staff yet.</p>
+        <EmptyState icon={<Users />} title="No team members to show" description="No designers or social media staff yet." />
       ) : (
-        <TeamTable rows={rows} month={month} canEdit />
+        <div className="space-y-4">
+          <section aria-labelledby="team-summary">
+            <h2 id="team-summary" className="sr-only">Team summary</h2>
+            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <li data-kpi="people"><KpiTile icon={<Users />} tone="in-progress" label="People" value={formatCount(summary.people)} className="h-full" /></li>
+              <li data-kpi="tasksDone"><KpiTile icon={<CircleCheckBig />} tone="done" label="Tasks done" value={formatCount(summary.tasksDone)} className="h-full" /></li>
+              <li data-kpi="avgProgress">
+                <KpiTile icon={<Gauge />} tone="first-look" label="Average progress" value={summary.avgProgress === null ? "—" : `${summary.avgProgress}%`}
+                  sub={summary.avgProgress === null ? "Nobody has a target this month." : `Across ${summary.withTarget} ${summary.withTarget === 1 ? "person" : "people"} with a target.`} className="h-full" />
+              </li>
+            </ul>
+          </section>
+          <section aria-labelledby="team-table">
+            <h2 id="team-table" className="sr-only">People</h2>
+            <TeamTable rows={rows} month={month} canEdit />
+          </section>
+        </div>
       )}
     </>
   );
@@ -58,7 +72,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
 export default function TeamKpiPage({ searchParams }: PageProps<"/dashboard/team">) {
   return (
     <div>
-      <Suspense fallback={<p className="text-muted-foreground">Loading team KPI…</p>}>
+      <Suspense fallback={<TeamKpiSkeleton />}>
         <TeamContent searchParams={searchParams} />
       </Suspense>
     </div>

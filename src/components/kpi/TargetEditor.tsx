@@ -3,6 +3,9 @@
 import { useId, useState, useTransition } from "react";
 import type { JobRole } from "@prisma/client";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
+import { Button } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
+import { cn } from "@/components/ui/cn";
 
 /** Inline target editor for one team row. Typed input is kept when a save fails. */
 export function TargetEditor({ userId, name, month, role, initial, initialNote = null }: { userId: string; name: string; month: string; role: JobRole; initial: number | null; initialNote?: string | null }) {
@@ -34,20 +37,19 @@ export function TargetEditor({ userId, name, month, role, initial, initialNote =
   }
 
   return (
-    <form onSubmit={save} className="flex flex-wrap items-center gap-2">
+    <form onSubmit={save} className="flex flex-wrap items-center gap-2 py-0.5">
       <label htmlFor={id} className="sr-only">Target tasks for {name}</label>
       <input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
         onChange={(e) => { setValue(e.target.value); setStatus(null); }}
-        className="w-20 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring" />
+        className={fieldClass({ size: "sm", className: "w-20 tabular-nums" })} />
       <label htmlFor={`${id}-note`} className="sr-only">Note for {name} (optional, up to 200 characters)</label>
       <input id={`${id}-note`} type="text" maxLength={200} placeholder="Note (optional)" value={note}
         onChange={(e) => { setNote(e.target.value); setStatus(null); }}
-        className="w-44 rounded-md border border-input bg-background px-2 py-1 text-sm focus-visible:outline-2 focus-visible:outline-ring" />
-      <button type="submit" disabled={pending} aria-label={`Save target for ${name}`}
-        className="rounded-md bg-primary px-3 py-1 text-sm text-primary-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-60">
+        className={fieldClass({ size: "sm", className: "w-44" })} />
+      <Button type="submit" variant="primary" size="sm" loading={pending} aria-label={`Save target for ${name}`}>
         {pending ? "Saving…" : "Save"}
-      </button>
-      <span role="status" aria-live="polite" className={`text-sm ${status?.kind === "error" ? "text-danger" : "text-muted-foreground"}`}>
+      </Button>
+      <span role="status" aria-live="polite" className={cn("text-[13px]", status?.kind === "error" ? "text-danger" : "text-foreground-secondary")}>
         {status?.text}
       </span>
     </form>

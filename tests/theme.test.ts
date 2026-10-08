@@ -139,6 +139,15 @@ describe.each(themes)("contrast (%s)", (theme) => {
     ["--foreground-muted", "--background"],
     ["--chart-done", "--card"],
     ["--chart-target", "--card"],
+    // Phase B2: KPI progress fills (three thresholds) against the card and the muted track; chart series on the canvas.
+    ["--progress-low", "--card"],
+    ["--progress-low", "--surface-muted"],
+    ["--progress-mid", "--card"],
+    ["--progress-mid", "--surface-muted"],
+    ["--progress-complete", "--card"],
+    ["--progress-complete", "--surface-muted"],
+    ["--chart-done", "--surface-muted"],
+    ["--chart-target", "--surface-muted"],
   ])("UI/graphic %s against %s ≥ 3:1", (fg, bg) => {
     expect(ratio(t(fg), t(bg))).toBeGreaterThanOrEqual(UI);
   });
