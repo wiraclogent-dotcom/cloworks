@@ -1,4 +1,4 @@
-import type { RequestStatus } from "@prisma/client";
+import type { ProjectStatus, RequestStatus } from "@prisma/client";
 
 /** Plain-TS status labels shared by the UI and notifications (no client code). */
 export const STATUS_LABEL: Record<RequestStatus, string> = {
@@ -7,4 +7,12 @@ export const STATUS_LABEL: Record<RequestStatus, string> = {
   FIRST_LOOK: "First look",
   DONE: "Done",
   CANCELLED: "Cancelled",
+};
+
+export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
+  NOT_STARTED: "Not started",
+  IN_PROGRESS: "In progress",
+  IN_REVIEW: "In review",
+  DONE: "Done",
+  ON_HOLD: "On hold",
 };

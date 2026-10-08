@@ -6,13 +6,7 @@ import { jakartaDate } from "./createRequest";
 import { MONTHS } from "./timeline";
 
 export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD"] as const satisfies readonly ProjectStatus[];
-export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
-  NOT_STARTED: "Not started",
-  IN_PROGRESS: "In progress",
-  IN_REVIEW: "In review",
-  DONE: "Done",
-  ON_HOLD: "On hold",
-};
+export { PROJECT_STATUS_LABEL } from "./statusLabels";
 
 export type ProjectInput = {
   title: string;
