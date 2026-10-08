@@ -1,7 +1,8 @@
-import { Prisma, type AppRole, type JobRole, type PrismaClient } from "@prisma/client";
+import { Prisma, AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type JobRole, type PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
 import { fieldSchemaSchema } from "./fieldSchema";
-import { DEFAULT_ALLOWED_DOMAIN } from "./signin";
+import { DEFAULT_ALLOWED_DOMAIN, isAllowedEmail } from "./signin";
+import { normalizeName } from "./import/aliases";
 
 export type AdminErrorCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "LAST_ADMIN";
 
@@ -70,20 +71,63 @@ async function lockRoster(tx: Tx) {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(7312001)`;
 }
 
-/** Throws CONFLICT when any candidate collides with another user's name or alias (case-insensitive). */
+/**
+ * Mirrors the import resolver (normalizeName over name, fullName and aliases): throws CONFLICT when any candidate
+ * collides with ANOTHER user's name, fullName or alias.
+ */
 async function assertNoCollision(tx: Tx, candidates: string[], excludeId: string | null) {
   if (!candidates.length) return;
-  const wanted = new Map(candidates.map((c) => [key(c), c]));
+  const wanted = new Map<string, string>();
+  for (const c of candidates) {
+    const k = normalizeName(c);
+    if (!k) throw new AdminError("VALIDATION", `"${c}" must contain letters or numbers`);
+    wanted.set(k, c);
+  }
   const others = await tx.user.findMany({
     where: excludeId ? { id: { not: excludeId } } : {},
-    select: { name: true, aliases: true },
+    select: { name: true, fullName: true, aliases: true },
   });
   for (const o of others) {
-    for (const v of [o.name, ...o.aliases]) {
-      const hit = wanted.get(key(v));
+    for (const v of [o.name, o.fullName, ...o.aliases]) {
+      const hit = wanted.get(normalizeName(v));
       if (hit) throw new AdminError("CONFLICT", `"${hit}" is already used by ${o.name}`);
     }
   }
+}
+
+/** The user's own name, fullName and aliases must not collide (name equal to fullName is fine). */
+function assertOwnDistinct(name: string, fullName: string, aliases: string[]) {
+  const base = new Set([normalizeName(name), normalizeName(fullName)]);
+  const seen = new Set<string>();
+  for (const a of aliases) {
+    const k = normalizeName(a);
+    if (base.has(k) || seen.has(k)) throw new AdminError("VALIDATION", `Alias "${a}" duplicates another name or alias of this person`);
+    seen.add(k);
+  }
+}
+
+function assertRoles(appRole: unknown, jobRole: unknown) {
+  if (appRole !== undefined && !Object.values(AppRoleEnum).includes(appRole as AppRole))
+    throw new AdminError("VALIDATION", `Unknown app role "${String(appRole)}"`);
+  if (jobRole !== undefined && !Object.values(JobRoleEnum).includes(jobRole as JobRole))
+    throw new AdminError("VALIDATION", `Unknown job role "${String(jobRole)}"`);
+}
+
+/**
+ * Active admins who can actually sign in: have an email that sign-in would accept (company domain or on the allow list).
+ * Run under the roster lock.
+ */
+export async function countSignInCapableAdmins(tx: Tx, excludeUserId?: string): Promise<number> {
+  const [admins, rows] = await Promise.all([
+    tx.user.findMany({
+      where: { appRole: "ADMIN", active: true, email: { not: null }, ...(excludeUserId ? { id: { not: excludeUserId } } : {}) },
+      select: { email: true },
+    }),
+    tx.allowedEmail.findMany({ select: { email: true } }),
+  ]);
+  const allow = rows.map((r) => r.email);
+  const domain = companyDomain();
+  return admins.filter((a) => a.email && isAllowedEmail(a.email, domain, allow)).length;
 }
 
 function mapUnique(e: unknown, message: string): never {
@@ -103,6 +147,7 @@ export type UserPatch = {
 
 export async function updateUser(db: Db, actor: Actor, userId: string, patch: UserPatch) {
   assertAdmin(actor);
+  assertRoles(patch.appRole, patch.jobRole);
   const data: Prisma.UserUpdateInput = {};
   if (patch.appRole !== undefined) data.appRole = patch.appRole;
   if (patch.jobRole !== undefined) data.jobRole = patch.jobRole;
@@ -121,10 +166,13 @@ export async function updateUser(db: Db, actor: Actor, userId: string, patch: Us
     const wasActiveAdmin = target.appRole === "ADMIN" && target.active;
     const willBeActiveAdmin = (patch.appRole ?? target.appRole) === "ADMIN" && (patch.active ?? target.active);
     if (wasActiveAdmin && !willBeActiveAdmin) {
-      const remaining = await tx.user.count({ where: { appRole: "ADMIN", active: true, id: { not: target.id } } });
-      if (remaining === 0) throw new AdminError("LAST_ADMIN", "There must always be at least one active admin");
+      if ((await countSignInCapableAdmins(tx, target.id)) === 0)
+        throw new AdminError("LAST_ADMIN", "There must always be at least one active admin who can sign in");
     }
-    await assertNoCollision(tx, [...(aliases ?? []), ...(fullName !== undefined ? [fullName] : [])], target.id);
+    if (aliases || fullName !== undefined) {
+      assertOwnDistinct(target.name, fullName ?? target.fullName, aliases ?? target.aliases);
+      await assertNoCollision(tx, [...(aliases ?? []), ...(fullName !== undefined ? [fullName] : [])], target.id);
+    }
     return tx.user.update({ where: { id: userId }, data });
   });
 }
@@ -142,6 +190,7 @@ export type NewUserInput = {
 /** Roster record WITHOUT a login email (bind one later with setUserLoginEmail). */
 export async function createUser(db: Db, actor: Actor, input: NewUserInput) {
   assertAdmin(actor);
+  assertRoles(input.appRole ?? null, input.jobRole ?? null);
   const name = cleanName(input.name, "Name");
   const fullName = input.fullName?.trim() ? cleanName(input.fullName, "Full name") : name;
   const aliases = cleanAliases(input.aliases ?? []);
@@ -149,7 +198,8 @@ export async function createUser(db: Db, actor: Actor, input: NewUserInput) {
   const department = input.department?.trim() ? norm(input.department) : null;
   return db.$transaction(async (tx) => {
     await lockRoster(tx);
-    await assertNoCollision(tx, [name, ...aliases], null);
+    assertOwnDistinct(name, fullName, aliases);
+    await assertNoCollision(tx, [name, fullName, ...aliases], null);
     return tx.user.create({
       data: { name, fullName, title, department, jobRole: input.jobRole, appRole: input.appRole, aliases, email: null },
     });
@@ -166,6 +216,7 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw new AdminError("NOT_FOUND", "User not found");
       const old = user.email?.trim().toLowerCase() ?? null;
+      const capableBefore = user.appRole === "ADMIN" && user.active ? await countSignInCapableAdmins(tx) : 0;
       if (next) {
         const clash = await tx.user.findFirst({ where: { id: { not: userId }, email: { equals: next, mode: "insensitive" } }, select: { name: true } });
         if (clash) throw new AdminError("CONFLICT", `${next} is already the login email of ${clash.name}`);
@@ -175,13 +226,15 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
         const stillUsed = await tx.user.count({ where: { id: { not: userId }, email: { equals: old, mode: "insensitive" } } });
         if (!stillUsed) await tx.allowedEmail.deleteMany({ where: { email: { equals: old, mode: "insensitive" } } });
       }
-      if (next && next.split("@")[1] !== companyDomain()) {
+      if (next && !isAllowedEmail(next, companyDomain(), [])) {
         await tx.allowedEmail.upsert({
           where: { email: next },
           create: { email: next, note: `login for ${user.name}` },
           update: {},
         });
       }
+      if (capableBefore > 0 && (await countSignInCapableAdmins(tx)) === 0)
+        throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
       return updated;
     });
   } catch (e) {
@@ -200,7 +253,13 @@ export async function addAllowedEmail(db: Db, actor: Actor, email: string, note?
 export async function removeAllowedEmail(db: Db, actor: Actor, email: string) {
   assertAdmin(actor);
   const e = normalizeEmail(email);
-  await db.allowedEmail.deleteMany({ where: { email: { equals: e, mode: "insensitive" } } });
+  await db.$transaction(async (tx) => {
+    await lockRoster(tx);
+    const before = await countSignInCapableAdmins(tx);
+    await tx.allowedEmail.deleteMany({ where: { email: { equals: e, mode: "insensitive" } } });
+    if (before > 0 && (await countSignInCapableAdmins(tx)) === 0)
+      throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
+  });
 }
 
 type NamedDelegate = "brand" | "division";

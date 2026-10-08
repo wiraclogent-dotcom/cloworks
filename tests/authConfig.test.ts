@@ -14,6 +14,15 @@ describe("edge authorized + shared session callback", () => {
     expect(session.user.appRole).toBe("CREATIVE");
     expect(cb.authorized({ auth: session, request: req("/") })).toBe(true);
   });
+  it("session callback copies the loginEmail claim; authorized does not need it", () => {
+    const session = cb.session({
+      session: { user: { name: "A" }, expires: "x" },
+      token: { uid: "u1", appRole: "CREATIVE", jobRole: "DESIGNER", loginEmail: "a@clogent.co.id" },
+    });
+    expect(session.user.loginEmail).toBe("a@clogent.co.id");
+    const noClaim = cb.session({ session: { user: { name: "A" }, expires: "x" }, token: { uid: "u1", appRole: "CREATIVE", jobRole: "DESIGNER" } });
+    expect(cb.authorized({ auth: noClaim, request: req("/") })).toBe(true);
+  });
   it("no appRole or no session is not authorized on protected paths", () => {
     expect(cb.authorized({ auth: { user: { name: "A" } }, request: req("/") })).toBe(false);
     expect(cb.authorized({ auth: null, request: req("/requests") })).toBe(false);

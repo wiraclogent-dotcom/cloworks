@@ -156,19 +156,19 @@ describe("createUser", () => {
 });
 
 describe("setUserLoginEmail", () => {
-  const sess = (id: string) => async () => ({ user: { id } });
+  const sess = (id: string, loginEmail?: string) => async () => ({ user: { id, loginEmail } });
   it("gmail creates an AllowedEmail row and enables login; company domain does not", async () => {
     const u = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, u.id, "  Fadli.Test@Gmail.com ");
     expect((await db.prisma.user.findUnique({ where: { id: u.id } }))?.email).toBe("fadli.test@gmail.com");
     const row = await db.prisma.allowedEmail.findUnique({ where: { email: "fadli.test@gmail.com" } });
     expect(row?.note).toBe(`login for ${u.name}`);
-    expect((await requireUserWith(sess(u.id), db.prisma)).id).toBe(u.id);
+    expect((await requireUserWith(sess(u.id, "fadli.test@gmail.com"), db.prisma)).id).toBe(u.id);
 
     const c = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, c.id, "Someone@CLOGENT.co.id");
     expect(await db.prisma.allowedEmail.count({ where: { email: "someone@clogent.co.id" } })).toBe(0);
-    expect((await requireUserWith(sess(c.id), db.prisma)).id).toBe(c.id);
+    expect((await requireUserWith(sess(c.id, "someone@clogent.co.id"), db.prisma)).id).toBe(c.id);
   });
   it("lookalike domain is treated as outside (gets an allow-list row)", async () => {
     const u = await mk({ email: null });
@@ -201,7 +201,7 @@ describe("setUserLoginEmail", () => {
     await setUserLoginEmail(db.prisma, admin, u.id, null);
     expect((await db.prisma.user.findUnique({ where: { id: u.id } }))?.email).toBeNull();
     expect(await db.prisma.allowedEmail.count({ where: { email: "gone@gmail.com" } })).toBe(0);
-    await expect(requireUserWith(sess(u.id), db.prisma)).rejects.toThrow();
+    await expect(requireUserWith(sess(u.id, "gone@gmail.com"), db.prisma)).rejects.toThrow();
   });
   it("rejects invalid shapes", async () => {
     const u = await mk({ email: null });
@@ -225,12 +225,12 @@ describe("allowed emails", () => {
   it("removal is idempotent and revokes an existing session", async () => {
     const u = await mk({ email: "rev@gmail.com" });
     await addAllowedEmail(db.prisma, admin, "REV@gmail.com");
-    const s = async () => ({ user: { id: u.id } });
+    const s = async () => ({ user: { id: u.id, loginEmail: "rev@gmail.com" } });
     expect((await requireUserWith(s, db.prisma)).id).toBe(u.id);
     await removeAllowedEmail(db.prisma, admin, " Rev@Gmail.com");
     await removeAllowedEmail(db.prisma, admin, "rev@gmail.com");
     await expect(requireUserWith(s, db.prisma)).rejects.toThrow();
-    expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
+    expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "rev@gmail.com" })).toBeNull();
   });
 });
 
@@ -280,5 +280,117 @@ describe("upsertRequestType", () => {
     await upsertRequestType(db.prisma, admin, { name, fieldSchema: [], active: true });
     expect(await code(upsertRequestType(db.prisma, admin, { name: name.toUpperCase(), fieldSchema: [], active: true }))).toBe("CONFLICT");
     expect(await code(upsertRequestType(db.prisma, admin, { id: "nope", name: uniq("T"), fieldSchema: [], active: true }))).toBe("NOT_FOUND");
+  });
+});
+
+describe("sign-in-capable admin guard (email path)", () => {
+  async function fresh() {
+    const d = await createTestDb();
+    const mkA = (name: string, email: string | null, extra: Record<string, unknown> = {}) =>
+      d.prisma.user.create({ data: { name, fullName: name, email, appRole: "ADMIN", ...extra } });
+    return { d, mkA };
+  }
+  const snapshot = async (d: TestDb, id: string) => ({
+    email: (await d.prisma.user.findUnique({ where: { id } }))?.email,
+    rows: await d.prisma.allowedEmail.count(),
+  });
+
+  it("single Gmail admin: removeAllowedEmail, clearing and re-pointing are LAST_ADMIN and change nothing", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const a = await mkA("Gm", "gm@gmail.com");
+      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
+      const act = { id: a.id, appRole: "ADMIN" as const };
+      const before = await snapshot(d, a.id);
+      expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("LAST_ADMIN");
+      expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("LAST_ADMIN");
+      expect(await code(setUserLoginEmail(d.prisma, act, a.id, "other@yahoo.com.invalid"))).toBe("OK"); // gets its own allow row: still capable
+      expect(await code(setUserLoginEmail(d.prisma, act, a.id, "gm@gmail.com"))).toBe("OK");
+      expect(await snapshot(d, a.id)).toEqual(before);
+    } finally {
+      await d.stop();
+    }
+  });
+  it("demoting/deactivating: an admin with no email does not count", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const a = await mkA("Ok", "ok@clogent.co.id");
+      await mkA("NoMail", null);
+      const act = { id: a.id, appRole: "ADMIN" as const };
+      expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
+      expect(await code(updateUser(d.prisma, act, a.id, { active: false }))).toBe("LAST_ADMIN");
+    } finally {
+      await d.stop();
+    }
+  });
+  it("demoting: an admin whose only email was never allow-listed does not count", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const a = await mkA("Ok", "ok@clogent.co.id");
+      await mkA("Orphan", "orphan@gmail.com");
+      expect(await code(updateUser(d.prisma, { id: a.id, appRole: "ADMIN" }, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
+    } finally {
+      await d.stop();
+    }
+  });
+  it("with a second sign-in-capable admin every path is allowed; company-domain admin needs no AllowedEmail row", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const a = await mkA("Gm", "gm@gmail.com");
+      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
+      await mkA("Co", "co@clogent.co.id");
+      const act = { id: a.id, appRole: "ADMIN" as const };
+      expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("OK");
+      expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("OK");
+      expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("OK");
+    } finally {
+      await d.stop();
+    }
+  });
+  it("concurrent: removing the allow row and demoting the company admin cannot both succeed", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const g = await mkA("Gm", "gm@gmail.com");
+      const c = await mkA("Co", "co@clogent.co.id");
+      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
+      const act = { id: g.id, appRole: "ADMIN" as const };
+      await Promise.allSettled([removeAllowedEmail(d.prisma, act, "gm@gmail.com"), updateUser(d.prisma, act, c.id, { appRole: "LEAD" })]);
+      const capable = await d.prisma.user.findMany({ where: { appRole: "ADMIN", active: true } });
+      const rows = await d.prisma.allowedEmail.count();
+      expect(capable.some((u) => u.email?.endsWith("@clogent.co.id") || rows > 0)).toBe(true);
+    } finally {
+      await d.stop();
+    }
+  });
+});
+
+describe("collisions mirror the import resolver", () => {
+  it("fullName vs another user's fullName / name via createUser", async () => {
+    const o = await mk({ name: uniq("Rina"), fullName: "Rina Putri Z" });
+    await expect(createUser(db.prisma, admin, { name: "Rina Putri Z", jobRole: "OTHER", appRole: "REQUESTER" })).rejects.toMatchObject({ code: "CONFLICT", message: expect.stringContaining(o.name) });
+    await expect(createUser(db.prisma, admin, { name: uniq("N"), fullName: "rina-putri z", jobRole: "OTHER", appRole: "REQUESTER" })).rejects.toMatchObject({ code: "CONFLICT" });
+  });
+  it("punctuation and spacing do not escape the check on aliases", async () => {
+    await mk({ aliases: ["Rina Pq"] });
+    const b = await mk();
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: ["Rina P.q"] }))).toBe("CONFLICT");
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: ["RinaPq"] }))).toBe("CONFLICT");
+    expect(await code(updateUser(db.prisma, admin, b.id, { fullName: "rina pq" }))).toBe("CONFLICT");
+  });
+  it("own fields: alias equal to own name is rejected, name == fullName is fine, unrelated passes", async () => {
+    const b = await mk();
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: [b.name.toLowerCase()] }))).toBe("VALIDATION");
+    expect(await code(updateUser(db.prisma, admin, b.id, { aliases: ["totally-unique-alias-xyz"] }))).toBe("OK");
+    expect(await code(createUser(db.prisma, admin, { name: uniq("Fresh"), jobRole: "OTHER", appRole: "REQUESTER", aliases: ["fresh-one"] }))).toBe("OK");
+  });
+});
+
+describe("enum validation", () => {
+  it("rejects unknown roles with VALIDATION, not a Prisma error", async () => {
+    const u = await mk();
+    expect(await code(updateUser(db.prisma, admin, u.id, { appRole: "ROOT" as AppRole }))).toBe("VALIDATION");
+    expect(await code(updateUser(db.prisma, admin, u.id, { jobRole: "NINJA" as never }))).toBe("VALIDATION");
+    expect(await code(createUser(db.prisma, admin, { name: uniq("E"), jobRole: "OTHER", appRole: "" as AppRole }))).toBe("VALIDATION");
+    expect(await code(createUser(db.prisma, admin, { name: uniq("E"), jobRole: undefined as never, appRole: "REQUESTER" }))).toBe("VALIDATION");
   });
 });

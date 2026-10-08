@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { isAllowedEmail, resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
-import { refreshJwt, loadActiveUser, requireUserWith } from "@/lib/session-core";
+import { refreshJwt, loadActiveUser, requireUserWith, bindSignInToken } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 const D = "clogent.co.id";
@@ -150,7 +150,7 @@ describe("decideSignIn + session", () => {
 
   it("jwt refresh: deactivated -> null; demotion reflected; missing -> null", async () => {
     const u = await db.prisma.user.create({ data: { email: "lead@clogent.co.id", name: "L", fullName: "L", appRole: "LEAD" } });
-    const tok = { uid: u.id, appRole: "LEAD" as const, jobRole: "OTHER" as const };
+    const tok = { uid: u.id, loginEmail: "lead@clogent.co.id", appRole: "LEAD" as const, jobRole: "OTHER" as const };
     expect((await refreshJwt(db.prisma, { ...tok }))?.appRole).toBe("LEAD");
     await db.prisma.user.update({ where: { id: u.id }, data: { appRole: "REQUESTER" } });
     expect((await refreshJwt(db.prisma, { ...tok }))?.appRole).toBe("REQUESTER");
@@ -160,7 +160,7 @@ describe("decideSignIn + session", () => {
   });
   it("requireUser uses DB state and throws for no session / inactive / missing", async () => {
     const u = await db.prisma.user.create({ data: { email: "c@clogent.co.id", name: "C", fullName: "C", appRole: "CREATIVE" } });
-    const sess = (id: string) => async () => ({ user: { id, appRole: "ADMIN" } });
+    const sess = (id: string) => async () => ({ user: { id, loginEmail: "c@clogent.co.id", appRole: "ADMIN" } });
     const ok = await requireUserWith(sess(u.id), db.prisma);
     expect(ok).toEqual({ id: u.id, appRole: "CREATIVE", jobRole: "OTHER" });
     await expect(requireUserWith(async () => null, db.prisma)).rejects.toThrow();
@@ -172,23 +172,44 @@ describe("decideSignIn + session", () => {
   it("revocation: removing the AllowedEmail row denies on the very next request", async () => {
     await db.prisma.allowedEmail.create({ data: { email: "outsider@gmail.com" } });
     const u = await db.prisma.user.create({ data: { email: "outsider@gmail.com", name: "Out", fullName: "Out", appRole: "CREATIVE" } });
-    const sess = async () => ({ user: { id: u.id } });
+    const sess = async () => ({ user: { id: u.id, loginEmail: "outsider@gmail.com" } });
     expect((await requireUserWith(sess, db.prisma)).id).toBe(u.id);
-    expect(await refreshJwt(db.prisma, { uid: u.id })).not.toBeNull();
+    expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).not.toBeNull();
     await db.prisma.allowedEmail.delete({ where: { email: "outsider@gmail.com" } });
     await expect(requireUserWith(sess, db.prisma)).rejects.toThrow();
-    expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
+    expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).toBeNull();
   });
   it("revocation: company-domain user is unaffected by the allow list", async () => {
     const u = await db.prisma.user.create({ data: { email: "Staff@Clogent.co.id", name: "Staff", fullName: "Staff" } });
     await db.prisma.allowedEmail.deleteMany({});
-    expect((await requireUserWith(async () => ({ user: { id: u.id } }), db.prisma)).id).toBe(u.id);
-    expect(await refreshJwt(db.prisma, { uid: u.id })).not.toBeNull();
+    expect((await requireUserWith(async () => ({ user: { id: u.id, loginEmail: "staff@clogent.co.id" } }), db.prisma)).id).toBe(u.id);
+    expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "staff@clogent.co.id" })).not.toBeNull();
   });
   it("revocation: a user with no email is denied", async () => {
     const u = await db.prisma.user.create({ data: { email: null, name: "NoMail", fullName: "NoMail" } });
     await expect(requireUserWith(async () => ({ user: { id: u.id } }), db.prisma)).rejects.toThrow();
     expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
     expect(await loadActiveUser(db.prisma, u.id)).toBeNull();
+  });
+  it("rebinding the email invalidates the old holder's token; claim must match; missing claim denied", async () => {
+    await db.prisma.allowedEmail.createMany({ data: [{ email: "contractor@gmail.com" }, { email: "newhire@gmail.com" }] });
+    const u = await db.prisma.user.create({ data: { email: "contractor@gmail.com", name: "X", fullName: "X" } });
+    const tok = { uid: u.id, loginEmail: "Contractor@Gmail.com" };
+    const sess = (loginEmail?: string) => async () => ({ user: { id: u.id, loginEmail } });
+    expect(await refreshJwt(db.prisma, { ...tok })).not.toBeNull();
+    expect((await requireUserWith(sess("contractor@gmail.com"), db.prisma)).id).toBe(u.id);
+    expect(await refreshJwt(db.prisma, { uid: u.id })).toBeNull();
+    await expect(requireUserWith(sess(undefined), db.prisma)).rejects.toThrow();
+    await db.prisma.user.update({ where: { id: u.id }, data: { email: "newhire@gmail.com" } });
+    expect(await refreshJwt(db.prisma, { ...tok })).toBeNull();
+    await expect(requireUserWith(sess("contractor@gmail.com"), db.prisma)).rejects.toThrow();
+    expect((await requireUserWith(sess("NewHire@gmail.com"), db.prisma)).id).toBe(u.id);
+  });
+  it("sign-in binds the loginEmail claim (normalised) and refresh keeps it valid", async () => {
+    const u = await db.prisma.user.create({ data: { email: "bind@clogent.co.id", name: "Bind", fullName: "Bind", appRole: "LEAD" } });
+    const tok = bindSignInToken({} as { uid?: string; loginEmail?: string }, u);
+    expect(tok.loginEmail).toBe("bind@clogent.co.id");
+    expect(tok.uid).toBe(u.id);
+    expect(await refreshJwt(db.prisma, tok)).not.toBeNull();
   });
 });

@@ -5,12 +5,14 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; appRole: AppRole; jobRole: JobRole } & import("next-auth").DefaultSession["user"];
+    user: { id: string; appRole: AppRole; jobRole: JobRole; loginEmail?: string } & import("next-auth").DefaultSession["user"];
   }
 }
 declare module "@auth/core/jwt" {
   interface JWT {
     uid?: string;
+    /** Normalised email this token was issued for; a rebound/cleared email invalidates it. */
+    loginEmail?: string;
     appRole?: AppRole;
     jobRole?: JobRole;
   }
@@ -32,6 +34,7 @@ export const authConfig = {
         session.user.id = token.uid;
         session.user.appRole = token.appRole;
         session.user.jobRole = token.jobRole;
+        session.user.loginEmail = token.loginEmail;
       }
       return session;
     },

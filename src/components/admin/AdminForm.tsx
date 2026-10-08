@@ -123,7 +123,7 @@ export function ConfirmAction({
           </div>
         </div>
       ) : (
-        <button ref={triggerRef} type="button" className={ghostBtn} onClick={() => setAsking(true)} aria-expanded={false}>{triggerLabel}</button>
+        <button ref={triggerRef} type="button" className={ghostBtn} onClick={() => setAsking(true)}>{triggerLabel}</button>
       )}
       {state && (
         <p id={`${prefix}-msg`} role={failed ? "alert" : "status"} className="text-sm font-medium">

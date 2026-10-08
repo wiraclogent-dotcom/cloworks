@@ -2,7 +2,7 @@ import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
 import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
-import { refreshJwt } from "./session-core";
+import { bindSignInToken, refreshJwt } from "./session-core";
 
 export { isAllowedEmail } from "./signin";
 
@@ -27,10 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           viaAllowList: true,
         });
         if (!r.ok) return null;
-        token.uid = r.user.id;
-        token.appRole = r.user.appRole;
-        token.jobRole = r.user.jobRole;
-        return token;
+        return bindSignInToken(token, r.user);
       }
       // Every later call: re-read DB; deleted/inactive invalidates the session.
       return refreshJwt(prisma, token);
