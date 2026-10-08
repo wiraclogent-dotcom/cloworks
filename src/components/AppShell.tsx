@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <nav aria-label="Main" className="flex gap-1">
             <Link href="/requests" className={link}>Requests</Link>
             <Link href="/requests/new" className={link}>New request</Link>
+            <Link href="/projects" className={link}>Projects</Link>
             <Link href="/dashboard" className={link}>KPI</Link>
             <Suspense fallback={null}><TeamKpiLink /></Suspense>
           </nav>
