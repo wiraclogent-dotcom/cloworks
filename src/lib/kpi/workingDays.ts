@@ -1,12 +1,15 @@
 const DAY_MS = 86_400_000;
 
+/** Asia/Jakarta is UTC+7 with no DST. Shift an instant by this, then read getUTC* fields. */
+export const JAKARTA_OFFSET_MS = 7 * 3600 * 1000;
+
 /**
  * Fractional working days (Mon-Fri) between two instants.
- * Days are UTC calendar days; Saturday/Sunday contribute 0. end <= start gives 0.
+ * Days are Asia/Jakarta calendar days (UTC+7); Saturday/Sunday contribute 0. end <= start gives 0.
  */
 export function workingDaysBetween(start: Date, end: Date): number {
-  const s = start.getTime();
-  const e = end.getTime();
+  const s = start.getTime() + JAKARTA_OFFSET_MS;
+  const e = end.getTime() + JAKARTA_OFFSET_MS;
   if (e <= s) return 0;
   let total = 0;
   let dayStart = Math.floor(s / DAY_MS) * DAY_MS;

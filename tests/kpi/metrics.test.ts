@@ -150,4 +150,24 @@ describe("computeKpi", () => {
     expect(r.avgTurnaroundDays).toBeNull();
     expect(r.activeWorkload).toBe(2);
   });
+
+  it("month bucketing uses Jakarta time", () => {
+    const a = req({ requestedAt: d("2026-09-30T23:00:00Z"), doneAt: "2026-10-05T00:00:00Z" });
+    const b = req({ requestedAt: d("2026-09-30T16:59:00Z"), doneAt: "2026-10-05T00:00:00Z" });
+    expect(computeKpi([a, b], designer, "2026-10", null).tasksDone).toBe(1);
+    expect(computeKpi([a, b], designer, "2026-09", null).tasksDone).toBe(1);
+  });
+
+  it("on-time compares Jakarta calendar dates", () => {
+    const deadline = d("2026-10-05T00:00:00+07:00");
+    const ok = req({ deadline, doneAt: "2026-10-05T15:00:00+07:00" });
+    const late = req({ deadline, doneAt: "2026-10-06T00:30:00+07:00" });
+    expect(computeKpi([ok], designer, "2026-10", null).onTimeRate).toBe(1);
+    expect(computeKpi([late], designer, "2026-10", null).onTimeRate).toBe(0);
+  });
+
+  it("targetTasks 0 gives progress null", () => {
+    const r = computeKpi([req({ doneAt: "2026-10-06T00:00:00Z" })], designer, "2026-10", { role: JobRole.DESIGNER, targetTasks: 0 });
+    expect(r.progress).toBeNull();
+  });
 });

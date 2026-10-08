@@ -1,5 +1,5 @@
 import { JobRole, RequestStatus } from "@prisma/client";
-import { workingDaysBetween } from "./workingDays";
+import { JAKARTA_OFFSET_MS, workingDaysBetween } from "./workingDays";
 
 export type KpiRequest = {
   id: string;
@@ -24,9 +24,18 @@ export type KpiResult = {
   activeWorkload: number;
 };
 
-// Timezone rule: the month of `requestedAt` is computed in UTC.
+// Timezone rule: all calendar logic uses Asia/Jakarta (UTC+7, no DST): the month
+// of `requestedAt`, working days, and deadline dates.
+function jakarta(d: Date): Date {
+  return new Date(d.getTime() + JAKARTA_OFFSET_MS);
+}
 function monthOf(d: Date): string {
-  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+  const j = jakarta(d);
+  return `${j.getUTCFullYear()}-${String(j.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+// Jakarta calendar day index; deadlines are dates, so done any time that day is on time.
+function dayOf(d: Date): number {
+  return Math.floor(jakarta(d).getTime() / 86_400_000);
 }
 
 function latestDoneAt(r: KpiRequest): Date | null {
@@ -78,7 +87,7 @@ export function computeKpi(
     turnaroundN++;
     if (r.deadline) {
       withDeadline++;
-      if (at <= r.deadline) onTime++;
+      if (dayOf(at) <= dayOf(r.deadline)) onTime++;
     }
   }
 

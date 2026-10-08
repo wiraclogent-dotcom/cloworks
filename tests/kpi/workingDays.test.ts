@@ -17,4 +17,14 @@ describe("workingDaysBetween", () => {
   it("end before start = 0", () => {
     expect(workingDaysBetween(new Date("2026-10-07T15:00:00Z"), new Date("2026-10-07T09:00:00Z"))).toBe(0);
   });
+
+  it("Jakarta: Mon 00:00+07 -> Tue 00:00+07 = 1", () => {
+    expect(workingDaysBetween(new Date("2026-10-05T00:00:00+07:00"), new Date("2026-10-06T00:00:00+07:00"))).toBeCloseTo(1, 10);
+  });
+  it("Jakarta: Sat 05:00+07 -> Sat 20:00+07 = 0", () => {
+    expect(workingDaysBetween(new Date("2026-10-10T05:00:00+07:00"), new Date("2026-10-10T20:00:00+07:00"))).toBe(0);
+  });
+  it("Jakarta: Fri 09:00+07 -> Mon 09:00+07 = 1", () => {
+    expect(workingDaysBetween(new Date("2026-10-09T09:00:00+07:00"), new Date("2026-10-12T09:00:00+07:00"))).toBeCloseTo(1, 10);
+  });
 });
