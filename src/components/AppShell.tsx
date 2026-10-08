@@ -13,6 +13,12 @@ async function TeamKpiLink() {
   return can(appRole, "dashboard.team") ? <Link href="/dashboard/team" className={LINK}>Team KPI</Link> : null;
 }
 
+/** Admin pages are only offered to users who may open them (the pages re-check on the server). */
+async function AdminLink() {
+  const { appRole } = await requireUser();
+  return can(appRole, "admin.manage") ? <Link href="/admin/users" className={LINK}>Admin</Link> : null;
+}
+
 async function UserMenu() {
   const { id } = await requireUser();
   const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
@@ -40,6 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/projects" className={link}>Projects</Link>
             <Link href="/dashboard" className={link}>KPI</Link>
             <Suspense fallback={null}><TeamKpiLink /></Suspense>
+            <Suspense fallback={null}><AdminLink /></Suspense>
           </nav>
           <Suspense fallback={<span className="ml-auto" />}><UserMenu /></Suspense>
         </div>
