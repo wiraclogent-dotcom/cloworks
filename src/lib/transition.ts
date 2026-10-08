@@ -1,6 +1,7 @@
 import type { AppRole, PrismaClient, RequestStatus } from "@prisma/client";
 import { can } from "./permissions";
 import { canTransition } from "./workflow";
+import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 
 export class TransitionError extends Error {
   constructor(
@@ -29,6 +30,7 @@ export async function transitionRequestWith(
   requestId: string,
   to: RequestStatus,
   opts: TransitionOpts = {},
+  notifier: Notifier = notifierFor(db),
 ): Promise<void> {
   if (!can(user.appRole, "request.transition")) throw new TransitionError("FORBIDDEN", "Forbidden: not allowed to change request status");
   if (opts.outputCount !== undefined && (!Number.isInteger(opts.outputCount) || opts.outputCount < 1))
@@ -36,8 +38,8 @@ export async function transitionRequestWith(
   if (opts.designFolderUrl !== undefined && !isHttpUrl(opts.designFolderUrl))
     throw new TransitionError("INVALID", "designFolderUrl must be an http(s) URL");
 
-  await db.$transaction(async (tx) => {
-    const req = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true } });
+  const change = await db.$transaction(async (tx) => {
+    const req = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, requesterId: true, title: true } });
     if (!req) throw new TransitionError("NOT_FOUND", "Request not found");
     const from = req.status;
     if (!canTransition(from, to)) throw new TransitionError("INVALID", `Cannot move request from ${from} to ${to}`);
@@ -52,5 +54,13 @@ export async function transitionRequestWith(
     const res = await tx.request.updateMany({ where: { id: requestId, status: from }, data });
     if (res.count !== 1) throw new TransitionError("CONFLICT", "Request status changed concurrently; reload and retry");
     await tx.statusEvent.create({ data: { requestId, from, to, actorId: user.id, at: new Date() } });
+    return { from, to, assigneeId: req.assigneeId, requesterId: req.requesterId, title: req.title };
+  });
+
+  await bestEffort(async () => {
+    const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
+    const message = buildMessage("STATUS", actor?.name ?? "Someone", change.title, { from: change.from, to: change.to });
+    const userIds = [...new Set([change.requesterId, change.assigneeId])].filter((id): id is string => !!id && id !== user.id);
+    await notifier({ actorId: user.id, userIds, requestId, type: "STATUS", message });
   });
 }

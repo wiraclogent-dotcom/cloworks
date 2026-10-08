@@ -1,6 +1,7 @@
 import type { AppRole, PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
+import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 
 export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID";
 export type CollabFail = { ok: false; code: CollabCode; message: string };
@@ -73,15 +74,25 @@ export async function addCommentWith(
   requestId: string,
   body: string,
   now: Date = new Date(),
+  notifier: Notifier = notifierFor(db),
 ): Promise<{ ok: true; commentId: string; mentionedUserIds: string[] } | CollabFail> {
   const text = typeof body === "string" ? body.trim() : "";
   if (!text) return fail("INVALID", "Write a comment before posting.");
   if (text.length > MAX_COMMENT) return fail("INVALID", `Comments can be at most ${MAX_COMMENT} characters.`);
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true, title: true, requesterId: true, assigneeId: true } });
   if (!req) return fail("NOT_FOUND", "Request not found.");
   const mentionedUserIds = await resolveMentions(db, text, user.id);
   const c = await db.comment.create({ data: { requestId, authorId: user.id, body: text, mentions: mentionedUserIds, createdAt: now } });
+  await bestEffort(async () => {
+    const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
+    const name = actor?.name ?? "Someone";
+    if (mentionedUserIds.length)
+      await notifier({ actorId: user.id, userIds: mentionedUserIds, requestId, type: "MENTION", message: buildMessage("MENTION", name, req.title) });
+    const others = [req.requesterId, req.assigneeId].filter((id): id is string => !!id && id !== user.id && !mentionedUserIds.includes(id));
+    if (others.length)
+      await notifier({ actorId: user.id, userIds: others, requestId, type: "COMMENT", message: buildMessage("COMMENT", name, req.title) });
+  });
   return { ok: true, commentId: c.id, mentionedUserIds };
 }
 
@@ -90,9 +101,10 @@ export async function assignRequestWith(
   user: Actor,
   requestId: string,
   assigneeId: string | null,
+  notifier: Notifier = notifierFor(db),
 ): Promise<{ ok: true } | CollabFail> {
   if (!can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only leads and admins can assign requests.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, title: true } });
   if (!req) return fail("NOT_FOUND", "Request not found.");
   if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
   if (assigneeId !== null) {
@@ -102,6 +114,12 @@ export async function assignRequestWith(
     if (a.appRole === "REQUESTER") return fail("INVALID", "Requesters cannot be assignees. Pick a creative, lead or admin.");
   }
   await db.request.update({ where: { id: requestId }, data: { assigneeId } });
+  if (assigneeId !== null && assigneeId !== req.assigneeId) {
+    await bestEffort(async () => {
+      const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
+      await notifier({ actorId: user.id, userIds: [assigneeId], requestId, type: "ASSIGNED", message: buildMessage("ASSIGNED", actor?.name ?? "Someone", req.title) });
+    });
+  }
   return { ok: true };
 }
 

@@ -1,0 +1,112 @@
+import type { PrismaClient } from "@prisma/client";
+import { createMailerFromEnv, type Mailer } from "./mailer";
+
+export type { Mailer } from "./mailer";
+export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS";
+export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string };
+export type Notifier = (input: NotifyInput) => Promise<void>;
+
+const STATUS_LABELS: Record<string, string> = {
+  REQUESTED: "Requested",
+  ON_PROGRESS: "On progress",
+  FIRST_LOOK: "First look",
+  DONE: "Done",
+  CANCELLED: "Cancelled",
+};
+
+const SUBJECTS: Record<NotificationType, string> = {
+  ASSIGNED: "Assigned to you",
+  COMMENT: "New comment",
+  MENTION: "You were mentioned",
+  STATUS: "Status changed",
+};
+
+/** Strips control characters (incl. CR/LF), collapses whitespace, caps length. */
+export function cleanLine(s: string, max: number): string {
+  // eslint-disable-next-line no-control-regex
+  const t = s.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim();
+  return t.length > max ? t.slice(0, max - 1) + "…" : t;
+}
+
+export function buildMessage(
+  type: NotificationType,
+  actorName: string,
+  title: string,
+  change?: { from: string; to: string },
+): string {
+  const a = cleanLine(actorName, 80);
+  const t = cleanLine(title, 120);
+  switch (type) {
+    case "ASSIGNED": return `${a} assigned you to “${t}”`;
+    case "COMMENT": return `${a} commented on “${t}”`;
+    case "MENTION": return `${a} mentioned you in “${t}”`;
+    case "STATUS": return `${a} moved “${t}” from ${STATUS_LABELS[change?.from ?? ""] ?? change?.from} to ${STATUS_LABELS[change?.to ?? ""] ?? change?.to}`;
+  }
+}
+
+function safeBaseUrl(raw: string | undefined): string | null {
+  if (!raw) return null;
+  try {
+    const u = new URL(raw.trim());
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    return u.origin + u.pathname.replace(/\/+$/, "");
+  } catch {
+    return null;
+  }
+}
+
+/** Best-effort: never throws. Writes in-app rows for every recipient, emails those with an address. */
+export async function notifyWith(
+  db: PrismaClient,
+  mailer: Mailer,
+  input: NotifyInput,
+  opts: { baseUrl?: string | undefined } = { baseUrl: process.env.APP_BASE_URL },
+): Promise<void> {
+  try {
+    const ids = [...new Set(input.userIds)].filter((id) => id !== input.actorId);
+    if (ids.length === 0) return;
+    const [users, req] = await Promise.all([
+      db.user.findMany({ where: { id: { in: ids }, active: true }, select: { id: true, email: true } }),
+      db.request.findUnique({ where: { id: input.requestId }, select: { title: true } }),
+    ]);
+    const base = safeBaseUrl(opts.baseUrl);
+    const subject = `${SUBJECTS[input.type]}: ${cleanLine(req?.title ?? "", 120)}`.replace(/: $/, "");
+    const message = cleanLine(input.message, 500);
+    const text = base ? `${message}\n\n${base}/requests/${encodeURIComponent(input.requestId)}\n` : `${message}\n`;
+    for (const u of users) {
+      try {
+        const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
+        if (!u.email) continue;
+        await mailer.send({ to: u.email, subject, text });
+        await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
+      } catch (e) {
+        console.error("[notify] failed for a recipient:", e instanceof Error ? e.message : "unknown error");
+      }
+    }
+  } catch (e) {
+    console.error("[notify] failed:", e instanceof Error ? e.message : "unknown error");
+  }
+}
+
+let mailer: Mailer | undefined;
+const realMailer = () => (mailer ??= createMailerFromEnv());
+
+/** Default notifier for a given db handle, using the env-configured mailer. */
+export function notifierFor(db: PrismaClient): Notifier {
+  return (input) => notifyWith(db, realMailer(), input);
+}
+
+/** Thin entry point using the app's shared Prisma client. */
+export async function notify(input: NotifyInput): Promise<void> {
+  const { prisma } = await import("./db");
+  return notifyWith(prisma, realMailer(), input);
+}
+
+/** Runs a post-commit notification step; any failure is logged and swallowed. */
+export async function bestEffort(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch (e) {
+    console.error("[notify] skipped:", e instanceof Error ? e.message : "unknown error");
+  }
+}
