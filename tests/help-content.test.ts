@@ -24,6 +24,17 @@ describe("parseArticle", () => {
     expect(a.requiresPermission).toBeUndefined();
   });
 
+  it("strips matching quotes around a value so titles containing colons render cleanly", () => {
+    const a = parseArticle("x", '---\ntitle: "Requests: board, table, and calendar"\nsection: Requests\norder: 1\n---\nb');
+    expect(a.title).toBe("Requests: board, table, and calendar");
+  });
+
+  it("rejects an unknown frontmatter key so a misspelled requiresPermission cannot open a guide to everyone", () => {
+    expect(() =>
+      parseArticle("x", "---\ntitle: T\nsection: Admin\norder: 1\nrequiredPermission: admin.manage\n---\nb"),
+    ).toThrow(/unknown frontmatter key "requiredPermission"/);
+  });
+
   it.each([
     ["missing title", "---\nsection: Requests\norder: 1\n---\nb"],
     ["unknown section", "---\ntitle: T\nsection: Nope\norder: 1\n---\nb"],

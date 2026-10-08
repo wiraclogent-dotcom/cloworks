@@ -21,6 +21,14 @@ export class HelpContentError extends Error {
   }
 }
 
+const FRONTMATTER_KEYS = ["title", "section", "order", "requiresPermission"] as const;
+
+/** Removes one pair of matching surrounding quotes, so a title containing a colon can be quoted in YAML style. */
+function unquote(value: string): string {
+  const q = value[0];
+  return (q === '"' || q === "'") && value.length >= 2 && value.endsWith(q) ? value.slice(1, -1) : value;
+}
+
 /** Reads `key: value` frontmatter between two `---` fences. Returns the fields and the body after the closing fence. */
 function splitFrontmatter(slug: string, source: string): { fields: Record<string, string>; body: string } {
   const text = source.replace(/^﻿/, "").replace(/\r\n/g, "\n");
@@ -31,9 +39,15 @@ function splitFrontmatter(slug: string, source: string): { fields: Record<string
 
   const fields: Record<string, string> = {};
   for (const line of lines.slice(1, end)) {
+    if (line.trim() === "") continue;
     const idx = line.indexOf(":");
-    if (idx === -1) continue;
-    fields[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    if (idx === -1) throw new HelpContentError(slug, `frontmatter line "${line.trim()}" has no key`);
+    const key = line.slice(0, idx).trim();
+    if (!(FRONTMATTER_KEYS as readonly string[]).includes(key)) {
+      // Unknown keys are rejected, not ignored: a misspelled requiresPermission would otherwise open the guide to every role.
+      throw new HelpContentError(slug, `unknown frontmatter key "${key}"`);
+    }
+    fields[key] = unquote(line.slice(idx + 1).trim());
   }
   return { fields, body: lines.slice(end + 1).join("\n").replace(/^\n+/, "").trim() };
 }
