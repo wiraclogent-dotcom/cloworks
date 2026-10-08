@@ -1,13 +1,16 @@
 import type { AppRole } from "@prisma/client";
 
-export type Action =
-  | "request.create"
-  | "request.assign"
-  | "request.transition"
-  | "dashboard.team"
-  | "dashboard.self"
-  | "project.manage"
-  | "admin.manage";
+export const ACTIONS = [
+  "request.create",
+  "request.assign",
+  "request.transition",
+  "dashboard.team",
+  "dashboard.self",
+  "project.manage",
+  "admin.manage",
+] as const;
+
+export type Action = (typeof ACTIONS)[number];
 
 const REQUESTER: readonly Action[] = ["request.create", "dashboard.self"];
 const CREATIVE: readonly Action[] = [...REQUESTER, "request.transition", "project.manage"];
