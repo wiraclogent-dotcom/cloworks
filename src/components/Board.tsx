@@ -70,7 +70,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
           {legal ? <><ArrowDownToLine aria-hidden="true" strokeWidth={1.75} className="size-3.5" />{`Drop to move to ${STATUS_LABEL[status]}`}</> : <><Ban aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Not a valid move</>}
         </p>
       )}
-      <div data-column-body className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+      <div data-column-body className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1">
         {children}
       </div>
       {total > 0 && (

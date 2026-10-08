@@ -102,7 +102,9 @@ describe("Board", () => {
       view(many, true, { DONE: 523 });
       const body = column("Done").querySelector("[data-column-body]") as HTMLElement;
       expect(body.className).toMatch(/overflow-y-auto/);
-      expect(body.className).toMatch(/overscroll-contain/);
+      // Vertical only: the board's horizontal swipe must pass through the column bodies.
+      expect(body.className).toMatch(/overscroll-y-contain/);
+      expect(body.className).not.toMatch(/(^|\s)overscroll-contain(\s|$)/);
       expect(body.contains(column("Done").querySelector("h2"))).toBe(false);
       expect(column("Done").className).toMatch(/board-column/); // globals.css: max-height max(20rem, 100dvh - 16rem)
     });

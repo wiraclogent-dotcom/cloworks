@@ -45,16 +45,19 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   return (
     <>
       <PageHeader title="Requests"
-        switcher={<SegmentedControl label="View" value={p.view} items={[
+        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
+      {/* One toolbar row: the view switcher, then the filters (they wrap under it on narrow screens). */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+        <SegmentedControl label="View" value={p.view} items={[
           { value: "board", label: "Board", icon: <SquareKanban aria-hidden="true" />, href: hrefWith(p, { view: undefined }) },
           { value: "table", label: "Table", icon: <Table2 aria-hidden="true" />, href: hrefWith(p, { view: "table" }) },
           { value: "calendar", label: "Calendar", icon: <CalendarDays aria-hidden="true" />, href: hrefWith(p, { view: "calendar" }) },
-        ]} />}
-        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
-      <div className="mb-4">
-        <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
-          mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
-          clearHref={clearHref} />
+        ]} />
+        <div className="ml-auto">
+          <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
+            mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
+            clearHref={clearHref} />
+        </div>
       </div>
       {board ? (
         board.every((c) => c.total === 0) && filtered ? (
