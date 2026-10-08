@@ -44,7 +44,19 @@ describe("loadArticles", () => {
     expect(loadArticles(dir).map((a) => a.slug)).toEqual(["start", "req"]);
   });
 
-  it("returns an array for the real guides directory", () => {
-    expect(Array.isArray(loadArticles(`${process.cwd()}/content/help`))).toBe(true);
+  it("loads all eleven guides from the real directory with the expected slugs and order", () => {
+    const articles = loadArticles(`${process.cwd()}/content/help`);
+    expect(articles.map((a) => a.slug)).toEqual([
+      "getting-started", "signing-in-and-roles",
+      "requests-views", "creating-a-request", "request-details-and-statuses", "todays-overview-search-filters",
+      "projects", "my-kpi", "team-kpi",
+      "admin-users", "admin-lists",
+    ]);
+  });
+
+  it("every real guide has a body", () => {
+    for (const a of loadArticles(`${process.cwd()}/content/help`)) {
+      expect(a.body.length).toBeGreaterThan(0);
+    }
   });
 });
