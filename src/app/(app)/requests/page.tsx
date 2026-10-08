@@ -9,6 +9,7 @@ import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, rangeText, serializeMore } from 
 import { Board, type BoardColumnView } from "@/components/Board";
 import { Pagination } from "@/components/Pagination";
 import { RequestCalendar } from "@/components/RequestCalendar";
+import { TodayOverview } from "@/components/TodayOverview";
 import { RequestTable } from "@/components/RequestTable";
 import { FilterBar } from "@/components/FilterBar";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -19,7 +20,19 @@ import { BoardSkeleton, CalendarSkeleton, TableSkeleton } from "@/components/Req
 import { CalendarDays, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
+import { todayOverview } from "@/lib/todayOverview";
 import { hrefWith, parseParams, parseView, toFilter } from "./params";
+
+/** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
+async function TodayLoader() {
+  const user = await requireUserOrRedirect();
+  const now = new Date();
+  const [me, overview] = await Promise.all([
+    prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }),
+    todayOverview(prisma, now),
+  ]);
+  return <TodayOverview name={me?.name ?? ""} now={now} overview={overview} />;
+}
 
 /** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Requests" };
@@ -46,6 +59,9 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     <>
       <PageHeader title="Requests"
         actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
+      {p.view === "board" ? (
+        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-surface-muted" />}><TodayLoader /></Suspense>
+      ) : null}
       {/* One toolbar row: the view switcher, then the filters (they wrap under it on narrow screens). */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
         <SegmentedControl label="View" value={p.view} items={[
