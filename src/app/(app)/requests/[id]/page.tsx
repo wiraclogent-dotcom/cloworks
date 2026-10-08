@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -7,6 +8,9 @@ import { daysLeft } from "@/lib/daysLeft";
 import { parseFieldSchema } from "@/lib/fieldSchema";
 import { DetailSkeleton } from "@/components/RequestSkeletons";
 import { RequestDetailView } from "./RequestDetailView";
+
+/** Generic on purpose: the request title would need a DB read in generateMetadata, outside the page's Suspense/permission flow (cacheComponents). */
+export const metadata: Metadata = { title: "Request" };
 
 async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["params"] }) {
   const user = await requireUserOrRedirect();

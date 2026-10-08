@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
-import { setSidebarCollapsed } from "@/lib/theme";
+import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { sidebarRowClass } from "./classes";
@@ -12,9 +12,13 @@ const SIDEBAR_ID = "app-sidebar";
 function subscribeCollapsed(cb: () => void) {
   const mo = new MutationObserver(cb);
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-sidebar"] });
-  return () => mo.disconnect();
+  // The width-based default (no stored choice) changes with the viewport.
+  const mq = typeof window.matchMedia === "function" ? window.matchMedia(RAIL_DEFAULT_QUERY) : null;
+  mq?.addEventListener?.("change", cb);
+  return () => { mo.disconnect(); mq?.removeEventListener?.("change", cb); };
 }
-const getCollapsed = () => document.documentElement.getAttribute("data-sidebar") === "collapsed";
+// Client snapshot only; while hydrating React uses the server snapshot (false), so the first render matches the HTML.
+const getCollapsed = sidebarIsCollapsed;
 
 /**
  * Client frame of the signed-in app: Deep Blue sidebar (232px, collapsible to a 64px rail on desktop, remembered in
@@ -35,14 +39,28 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
 
   useEffect(() => {
     if (open) {
-      closeButton.current?.focus();
+      // The drawer is `visibility: hidden` until this commit and its visibility is transitioned, so focus() can be a
+      // no-op in the same tick in a real browser (QA saw focus stay on the hamburger). Try now, then again on the next
+      // frame and after the 200ms slide, stopping as soon as focus is inside the drawer.
+      const focusIn = () => {
+        const el = closeButton.current;
+        if (el && !el.closest("aside")?.contains(document.activeElement)) el.focus();
+      };
+      focusIn();
+      const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(focusIn) : 0;
+      const late = window.setTimeout(focusIn, 220);
       const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { restoreFocus.current = true; setOpen(false); } };
       document.addEventListener("keydown", onKey);
       // Growing past the mobile breakpoint turns the drawer back into the static sidebar.
       const mq = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 768px)") : null;
       const onWide = () => { if (mq?.matches) { restoreFocus.current = false; setOpen(false); } };
       mq?.addEventListener?.("change", onWide);
-      return () => { document.removeEventListener("keydown", onKey); mq?.removeEventListener?.("change", onWide); };
+      return () => {
+        if (raf) cancelAnimationFrame(raf);
+        window.clearTimeout(late);
+        document.removeEventListener("keydown", onKey);
+        mq?.removeEventListener?.("change", onWide);
+      };
     }
     if (restoreFocus.current) {
       restoreFocus.current = false;
@@ -84,7 +102,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
             </button>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-3">{nav}</div>
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3">{nav}</div>
 
           <div className="hidden flex-none px-3 pb-2 md:block">
             <button type="button" onClick={() => setSidebarCollapsed(!collapsed)} aria-expanded={!collapsed} aria-controls={SIDEBAR_ID}

@@ -64,7 +64,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />
           View as table
         </summary>
-        <div className="mt-2 overflow-x-auto">
+        <div className="relative mt-2 overflow-x-auto">
           <table className={t.table}>
             <caption className="sr-only">Tasks done versus target by month</caption>
             <thead>

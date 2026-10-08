@@ -48,7 +48,7 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   return (
     <>
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
-    <p role="status" aria-live="polite" className="sr-only">{summary}</p>
+    <p role="status" aria-live="polite" className="sr-only">{pending ? "" : summary}</p>
     <form ref={formRef} key={nonce} action={action} className="space-y-4" noValidate>
       {generic && <Alert tone="danger">{generic}</Alert>}
       <Card className="space-y-4">

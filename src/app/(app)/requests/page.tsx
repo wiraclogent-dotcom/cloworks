@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -16,6 +17,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, TableSkeleton } from "@/components/RequestSkeletons";
 import { Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { hrefWith, parseParams, toFilter } from "./params";
+
+/** Tab title: "Requests · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+export const metadata: Metadata = { title: "Requests" };
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
   const user = await requireUserOrRedirect();

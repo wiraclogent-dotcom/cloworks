@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -6,6 +7,9 @@ import { Alert } from "@/components/ui/Alert";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { NewRequestForm } from "./NewRequestForm";
+
+/** Tab title: "New request · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+export const metadata: Metadata = { title: "New request" };
 
 function FormSkeleton() {
   return (

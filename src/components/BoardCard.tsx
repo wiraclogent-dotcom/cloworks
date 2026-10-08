@@ -65,7 +65,7 @@ export function BoardCard({ card, canMove, busy, dragging }: { card: RequestRow;
   return (
     <li ref={setNodeRef} data-card={card.id} data-draggable={canMove ? "true" : undefined} {...(canMove ? listeners : undefined)}
       className={cn(
-        "group/card", CARD_SURFACE,
+        "group/card relative", CARD_SURFACE,
         "transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-px hover:border-border-strong motion-reduce:hover:translate-y-0",
         canMove && "cursor-grab touch-manipulation active:cursor-grabbing",
         dragging ? "opacity-40" : busy ? "opacity-60" : "",

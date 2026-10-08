@@ -10,7 +10,7 @@ import { cn } from "./cn";
 export function tableClass({ compact = false, minWidth }: { compact?: boolean; minWidth?: string } = {}) {
   const pad = compact ? "px-3 py-1.5" : "px-3 py-2.5";
   return {
-    wrapper: "overflow-auto rounded-xl border border-border bg-card shadow-card",
+    wrapper: "relative overflow-auto rounded-xl border border-border bg-card shadow-card",
     table: cn("w-full border-collapse text-left text-[13px] text-foreground", minWidth),
     thead: "",
     th: cn("sticky top-0 z-10 border-b border-border bg-surface-muted font-semibold whitespace-nowrap text-foreground-secondary text-xs", pad),

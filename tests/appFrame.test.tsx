@@ -60,7 +60,8 @@ describe("AppFrame / sidebar shell", () => {
     // Labels stay in the accessible name; the title gives sighted users a tooltip.
     expect(screen.getByRole("link", { name: "Projects" }).getAttribute("title")).toBe("Projects");
     await act(async () => { fireEvent.click(expand); });
-    expect(html().hasAttribute("data-sidebar")).toBe(false);
+    // An explicit "expanded" (not a removed attribute): the user's choice must beat the < 1280px rail default.
+    expect(html().getAttribute("data-sidebar")).toBe("expanded");
     expect(localStorage.getItem("ct-sidebar")).toBe("expanded");
   });
 

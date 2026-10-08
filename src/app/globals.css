@@ -337,8 +337,11 @@
 }
 
 /*
- * Sidebar collapse is driven by `<html data-sidebar="collapsed">` (set before paint by the root layout script and
- * by the collapse button), so the rail never flashes open. Desktop only: the mobile drawer is always full width.
+ * Sidebar collapse is driven by `<html data-sidebar>` (set before paint by the root layout script from the stored
+ * choice, and by the collapse button), so the rail never flashes open. Desktop only: the mobile drawer is always full
+ * width. A stored choice wins (`collapsed` | `expanded`); with NO stored choice (attribute absent) the sidebar is the
+ * 64px rail from 768px up to 1279.98px and expanded from 1280px: pure CSS, so the server HTML and the first client
+ * render never differ (QA fix round 1, D4/D6).
  */
 @media (min-width: 768px) {
   .app-sidebar {
@@ -362,7 +365,34 @@
   :root[data-sidebar="collapsed"] .app-sidebar .sb-expanded-only {
     display: none;
   }
-  :root:not([data-sidebar="collapsed"]) .app-sidebar .sb-collapsed-only {
+  :root[data-sidebar="expanded"] .app-sidebar .sb-collapsed-only {
+    display: none;
+  }
+}
+/* Default (no stored choice), 768–1279.98px: the rail. Same declarations as `collapsed` above. */
+@media (min-width: 768px) and (max-width: 1279.98px) {
+  :root:not([data-sidebar]) .app-sidebar {
+    width: 64px;
+  }
+  :root:not([data-sidebar]) .app-sidebar .sb-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  :root:not([data-sidebar]) .app-sidebar .sb-item {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  :root:not([data-sidebar]) .app-sidebar .sb-expanded-only {
+    display: none;
+  }
+}
+/* Default (no stored choice), ≥ 1280px: expanded. */
+@media (min-width: 1280px) {
+  :root:not([data-sidebar]) .app-sidebar .sb-collapsed-only {
     display: none;
   }
 }

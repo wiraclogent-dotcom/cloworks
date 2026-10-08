@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -10,6 +11,9 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { buttonClass } from "@/components/ui/Button";
 import { Plus } from "lucide-react";
+
+/** Tab title: "Projects · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+export const metadata: Metadata = { title: "Projects" };
 
 async function ProjectsContent() {
   const user = await requireUserOrRedirect();

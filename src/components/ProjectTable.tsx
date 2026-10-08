@@ -48,7 +48,7 @@ export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; can
               <h2 id={hid} className="text-[15px] font-semibold text-foreground">{g.brand ?? "No brand"}</h2>
               <CountPill value={g.projects.length} aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-surface" />
             </div>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className={cn(t.table, "min-w-[56rem] table-fixed")}>
                 <colgroup>
                   <col className="w-[30%]" /><col className="w-[15%]" /><col className="w-[13%]" /><col className="w-[10%]" />

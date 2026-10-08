@@ -10,7 +10,9 @@ export function PageHeader({ title, count, description, switcher, actions, class
 }) {
   return (
     <div className={cn("mb-5 flex flex-wrap items-center gap-x-4 gap-y-3", className)}>
-      <div className="min-w-0 flex-1">
+      {/* Below sm the title takes its own row (actions wrap under it); from sm it shares the row but never shrinks below
+          10rem, so a switcher can no longer squeeze it to a few pixels (QA D2/D7). */}
+      <div data-page-title="" className="min-w-0 grow basis-full sm:min-w-[10rem] sm:basis-0">
         <div className="flex items-center gap-2">
           <h1 className="text-[22px] leading-7 font-semibold text-heading">{title}</h1>
           {count !== undefined ? (
@@ -20,7 +22,7 @@ export function PageHeader({ title, count, description, switcher, actions, class
         {description ? <p className="mt-1 text-sm text-foreground-secondary">{description}</p> : null}
       </div>
       {switcher || actions ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div data-page-actions="" className="flex flex-wrap items-center gap-2">
           {switcher}
           {actions}
         </div>

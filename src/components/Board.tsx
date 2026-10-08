@@ -70,7 +70,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
           {legal ? <><ArrowDownToLine aria-hidden="true" strokeWidth={1.75} className="size-3.5" />{`Drop to move to ${STATUS_LABEL[status]}`}</> : <><Ban aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Not a valid move</>}
         </p>
       )}
-      <div data-column-body className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+      <div data-column-body className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
         {children}
       </div>
       {total > 0 && (
@@ -189,7 +189,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
       {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
+        <div className="relative grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (

@@ -3,6 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import type { JobRole } from "@prisma/client";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
+import { Check } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { fieldClass } from "@/components/ui/Field";
 import { cn } from "@/components/ui/cn";
@@ -37,19 +38,21 @@ export function TargetEditor({ userId, name, month, role, initial, initialNote =
   }
 
   return (
-    <form onSubmit={save} className="flex flex-wrap items-center gap-2 py-0.5">
+    // Compact grid so the Team KPI table fits at 1024px: [target][Save] on one row, the note under them, then the status.
+    <form onSubmit={save} data-target-editor="" className="grid w-full max-w-48 grid-cols-[minmax(0,1fr)_auto] items-center gap-1.5 py-0.5">
       <label htmlFor={id} className="sr-only">Target tasks for {name}</label>
       <input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
         onChange={(e) => { setValue(e.target.value); setStatus(null); }}
-        className={fieldClass({ size: "sm", className: "w-20 tabular-nums" })} />
+        className={fieldClass({ size: "sm", className: "w-full min-w-16 tabular-nums" })} />
+      <Button type="submit" variant="primary" size="sm" loading={pending} aria-label={`Save target for ${name}`} title={`Save target for ${name}`}
+        icon={<Check aria-hidden="true" />} className="w-8 px-0">
+        <span className="sr-only">{pending ? "Saving…" : "Save"}</span>
+      </Button>
       <label htmlFor={`${id}-note`} className="sr-only">Note for {name} (optional, up to 200 characters)</label>
       <input id={`${id}-note`} type="text" maxLength={200} placeholder="Note (optional)" value={note}
         onChange={(e) => { setNote(e.target.value); setStatus(null); }}
-        className={fieldClass({ size: "sm", className: "w-44" })} />
-      <Button type="submit" variant="primary" size="sm" loading={pending} aria-label={`Save target for ${name}`}>
-        {pending ? "Saving…" : "Save"}
-      </Button>
-      <span role="status" aria-live="polite" className={cn("text-[13px]", status?.kind === "error" ? "text-danger" : "text-foreground-secondary")}>
+        className={fieldClass({ size: "sm", className: "col-span-2 w-full min-w-24" })} />
+      <span role="status" aria-live="polite" className={cn("col-span-2 text-[13px] empty:hidden", status?.kind === "error" ? "text-danger" : "text-foreground-secondary")}>
         {status?.text}
       </span>
     </form>

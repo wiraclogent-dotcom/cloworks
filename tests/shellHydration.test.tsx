@@ -126,6 +126,19 @@ describe("app shell hydration", () => {
     expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toBe("Dark");
   });
 
+  it("no hydration error with no stored choice at a rail-default width (768–1279px)", async () => {
+    window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+      matches: q.includes("1279.98px"), media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    const { errors, recoverable } = await hydrateWithStoredPrefs({});
+    expect(errors.mock.calls.map((c) => String(c[0]))).toEqual([]);
+    expect(recoverable).toEqual([]);
+    expect(html().hasAttribute("data-sidebar")).toBe(false);
+    expect(container.querySelector('button[aria-label="Expand sidebar"]')).not.toBeNull();
+    // @ts-expect-error jsdom has no matchMedia by default; remove the mock again.
+    delete window.matchMedia;
+  });
+
   it("no hydration error with default prefs (user chip, expanded rail)", async () => {
     const { errors } = await hydrateWithStoredPrefs({});
     expect(errors.mock.calls.map((c) => String(c[0]))).toEqual([]);

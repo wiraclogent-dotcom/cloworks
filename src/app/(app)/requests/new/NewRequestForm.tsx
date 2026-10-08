@@ -85,7 +85,7 @@ export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions
   return (
     <>
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
-    <p role="status" aria-live="polite" className="sr-only">{summary}</p>
+    <p role="status" aria-live="polite" className="sr-only">{pending ? "" : summary}</p>
     <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_20rem]">
     <form ref={formRef} key={nonce} action={action} className="min-w-0 space-y-5" noValidate>
       {generic && <Alert tone="danger">{generic}</Alert>}

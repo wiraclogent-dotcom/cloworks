@@ -1,8 +1,8 @@
 /**
  * Theme and sidebar preferences (client-side only, no server state).
  * localStorage `ct-theme` = light | dark | system (default light, never the OS unless "system" was chosen);
- * localStorage `ct-sidebar` = expanded | collapsed (default expanded).
- * `<html data-theme>` is always the RESOLVED theme (light | dark); `<html data-sidebar="collapsed">` collapses the rail.
+ * localStorage `ct-sidebar` = expanded | collapsed (no value = rail below 1280px, expanded above; CSS only).
+ * `<html data-theme>` is always the RESOLVED theme (light | dark); `<html data-sidebar>` mirrors the stored sidebar choice.
  */
 export const THEME_KEY = "ct-theme";
 export const SIDEBAR_KEY = "ct-sidebar";
@@ -76,10 +76,28 @@ export function readSidebarCollapsed(): boolean {
   }
 }
 
+/**
+ * Without a stored choice the sidebar is the icon rail between 768px and 1279.98px (CSS in globals.css, same query).
+ * A stored choice (`data-sidebar="collapsed" | "expanded"`) always wins.
+ */
+export const RAIL_DEFAULT_QUERY = "(min-width: 768px) and (max-width: 1279.98px)";
+
+/** What the CSS currently shows (client only; never call during the first render). */
+export function sidebarIsCollapsed(): boolean {
+  const v = document.documentElement.getAttribute("data-sidebar");
+  if (v === "collapsed") return true;
+  if (v === "expanded") return false;
+  try {
+    return typeof window.matchMedia === "function" && window.matchMedia(RAIL_DEFAULT_QUERY).matches;
+  } catch {
+    return false;
+  }
+}
+
 export function setSidebarCollapsed(collapsed: boolean): void {
   const root = document.documentElement;
-  if (collapsed) root.setAttribute("data-sidebar", "collapsed");
-  else root.removeAttribute("data-sidebar");
+  // Always explicit, so the user's choice overrides the width-based default.
+  root.setAttribute("data-sidebar", collapsed ? "collapsed" : "expanded");
   try {
     window.localStorage.setItem(SIDEBAR_KEY, collapsed ? "collapsed" : "expanded");
   } catch {
@@ -91,4 +109,4 @@ export function setSidebarCollapsed(collapsed: boolean): void {
  * Inlined, blocking, in <head> of the root layout: runs before first paint so there is no theme or sidebar flash.
  * Must stay dependency-free ES5 and must never throw.
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=window.localStorage,t=s.getItem("${THEME_KEY}"),r="light";if(t==="dark")r="dark";else if(t==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)r="dark";d.setAttribute("data-theme",r);d.style.colorScheme=r;if(s.getItem("${SIDEBAR_KEY}")==="collapsed")d.setAttribute("data-sidebar","collapsed");}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=window.localStorage,t=s.getItem("${THEME_KEY}"),r="light";if(t==="dark")r="dark";else if(t==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)r="dark";d.setAttribute("data-theme",r);d.style.colorScheme=r;var b=s.getItem("${SIDEBAR_KEY}");if(b==="collapsed"||b==="expanded")d.setAttribute("data-sidebar",b);}catch(e){}})();`;

@@ -197,3 +197,80 @@ touched; `npm install tailwind-merge@3.6.0 --save-exact --ignore-scripts` used a
 - Admin `<details>` panels inside the users table (min 18rem) and the 60rem table at 1024/375 px; the confirm box
   inside the allowed-emails rows.
 - The `::after` hit-area extension on small buttons next to other controls (it overlaps neighbours by 2px vertically).
+
+## Fix round 1 (QA: `docs/superpowers/reports/2026-10-08-redesign-qa.md`)
+
+### Major
+1. **Board page grew with the card count (D1).** Root cause (as QA found): `.sr-only` is `position:absolute`; with no
+   positioned ancestor its containing block is the initial containing block, so the column's `overflow-y-auto` does
+   not clip it and ~500 hidden "Requester:" spans below the column extend the document (≈ 4187px). Fix at the root:
+   every scroll container is now positioned, so absolutely positioned descendants are clipped by it: board column body
+   and the board's horizontal scroller (`Board.tsx`), each card `li` (`BoardCard.tsx`), `tableClass().wrapper`
+   (all kit tables: team KPI, admin users), the request table scroller, project table group scroller, project
+   timeline scroller, the chart's data table scroller, and the sidebar nav scroller (its labels become `absolute` in
+   the rail). Audit covered sr-only text in table cells/links/headers, the drag handle, timeline bars and today marker,
+   the hit-area `::after` of small buttons (inside their own `relative` button), chips and avatars (static).
+   Regression test `tests/scrollContainment.test.tsx`: for every `.sr-only`/`absolute` element in the rendered board
+   (4 columns × 30 cards), request table, team table, project table + timeline, chart and sidebar, there must be a
+   positioned element between it and its nearest scroll container (fails on the old code: 2 of 3 tests red; a
+   self-check proves the checker catches an unpositioned scroller). **Expected numbers:** with every column body
+   `relative` + `overflow-y-auto` and `.board-column { max-height: max(20rem, 100dvh - 16rem) }`, nothing on the board
+   can extend past the columns, so `document.documentElement.scrollHeight` should equal the viewport height (or exceed
+   it only by the board's bottom padding at very short viewports where the 20rem column floor applies). Not measured
+   here (no browser): **the controller should measure** `scrollHeight` vs `innerHeight` on /requests.
+2. **PageHeader squeeze at 375px (D2/D7).** The title block was `min-w-0 flex-1` (basis 0) beside a non-shrinking
+   switcher. Now `min-w-0 grow basis-full sm:min-w-[10rem] sm:basis-0`: below 640px the title has its own row and the
+   switcher/actions wrap under it; from 640px it shares the row as before but never below 10rem (the wrapper already
+   `flex-wrap`s, so actions drop to the next line instead of covering it). Desktop layout unchanged.
+3. **Team KPI Save off-screen (D4).** The table no longer has a min width from `lg` (1024px): Turnaround and Workload
+   columns show only from `xl` (1280px) (`hidden xl:table-cell` on header and cells), the progress bar is 64px, the name
+   cell wraps, and the editor is a compact 12rem grid: [target][icon-only Save] then the note, then the status line.
+   Save is a check icon with `aria-label` and `title` "Save target for <name>" (same name; `loading` spinner while
+   saving). Estimated width at 1024px with the 232px sidebar ≈ 733px of 744px available; with the default rail (item 4)
+   ≈ 834px of 912px. Below 1024px the table keeps a min width and scrolls inside its card with a visible "Scroll
+   sideways to see every column." hint (`lg:hidden`).
+
+### Minor
+4. **Rail by default below 1280px (D6).** Pure CSS: with no stored choice `<html>` has no `data-sidebar`, and
+   `@media (min-width:768px) and (max-width:1279.98px) :root:not([data-sidebar])` applies the same rail rules as
+   `collapsed`; from 1280px it is expanded. A stored choice is now always explicit (`collapsed` or `expanded`, set by
+   the boot script and by the toggle) and wins. AppFrame's `useSyncExternalStore` client snapshot (`sidebarIsCollapsed`)
+   reads the attribute, else the same media query (and subscribes to it); the server snapshot stays `false`, so
+   hydration is unchanged (new hydration case: no stored choice at a rail width, no errors). Tests:
+   `tests/sidebarDefault.test.tsx` (CSS contract, boot script, state, toggle stores an explicit choice).
+5. **Tap targets / drawer focus (D8).** Sort header links `min-h-8` (32px) with `-my-1.5` so the header stays
+   compact; Team KPI name links `min-h-7`; small avatar 20 → 24px with 11px initials (no avatar text below 11px);
+   theme options were already 36px. Drawer: the close button is focused immediately, again on the next animation frame
+   and after the 200ms slide (stops once focus is inside), because `visibility` is still `hidden` in the commit tick in
+   a real browser; return-to-hamburger on close unchanged. Test simulates a first no-op `focus()`.
+6. **Per-page titles (D11).** Root `title: { default: "Creative Tracker", template: "%s · Creative Tracker" }`;
+   static `metadata` on Requests, New request, Request (detail), My KPI, Team KPI, Projects, "Admin · Users",
+   "Admin · Lists", Sign in. The request detail keeps a generic "Request · Creative Tracker": the request title would
+   need a DB read in `generateMetadata`, outside the page's Suspense boundary and permission flow under cacheComponents.
+   New project / Edit project: see concerns (files are being rewritten by another session).
+7. **Validation announcements (D9).** Verified: new request and project forms already have ONE persistent
+   `role="status" aria-live="polite"` summary outside the keyed form ("1 problem: …"), plus focus moves to the first
+   invalid field whose `aria-describedby` is the inline error; it is `sr-only`, which is likely why QA did not see it.
+   Change: the summary is emptied while the submit is pending, so an identical error set after a resubmit is announced
+   again. Inline FieldErrors deliberately have no `role="alert"` (would double the summary). Admin forms announce via
+   their single outcome Alert (`role="alert"` / `status`); detail forms via their existing `role="alert"` errors.
+8. **Sign-in brand (D10).** Deep Blue band (`bg-sidebar`, both themes) with a 4px Aqua bottom border, logo mark,
+   "Creative Tracker" and the tagline (sidebar text tokens, AA); the form card overlaps it with `shadow-raised`
+   (h1 "Sign in", same provider buttons and error Alert).
+9. **404 status (D5)** not changed: `notFound()` inside a streamed Suspense boundary returns HTTP 200 in dev
+   (framework behaviour); **the controller should verify on a production build.**
+
+### Assertions changed
+| Test | Old | New | Why |
+|---|---|---|---|
+| `tests/appFrame.test.tsx` collapse test | after expanding, `data-sidebar` attribute absent | `data-sidebar="expanded"` | A stored "expanded" must be explicit to beat the < 1280px rail default. |
+
+New tests: `tests/scrollContainment.test.tsx` (3), `tests/sidebarDefault.test.tsx` (4), `tests/fixRound1.test.tsx`
+(7), +1 case in `tests/shellHydration.test.tsx`. Suite: 73 files / 963 tests.
+
+### Concerns
+- Another session was editing `src/app/(app)/projects/{new,[id]/edit}/page.tsx` (+ untracked `@modal`, `layout.tsx`,
+  `ProjectFormContent.tsx`, `ui/Modal.tsx`) at the same time; those files are NOT in this commit and their
+  "New project" / "Edit project" metadata is not set. `ui/Modal.tsx` (theirs) uses `backdrop:bg-black/40`, outside
+  the token rule.
+- Not measured in a browser: board scrollHeight, 375px headers, team table width at 1024/1205/1280, drawer focus.

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarCheck, ChartColumn, CircleCheckBig, Clock, Gauge, Layers, Repeat, Target, UserX } from "lucide-react";
@@ -20,6 +21,9 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
 import type { Tone } from "@/lib/palette";
 import { parseMonthParam, parseUserParam, resolveSubject } from "./params";
+
+/** Tab title: "My KPI · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+export const metadata: Metadata = { title: "My KPI" };
 
 const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone }> = {
   tasksDone: { icon: <CircleCheckBig />, tone: "done" },

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, MoveHorizontal } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import { formatCount, formatDays, formatPercent, progressPercent } from "@/lib/kpi/format";
 import type { KpiResult } from "@/lib/kpi/metrics";
@@ -21,7 +21,7 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   return (
     <div data-level={level} className="flex items-center gap-2">
       <div role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
-        className="h-2 w-24 shrink-0 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
+        className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
         <div className={cn("h-full rounded-full", PROGRESS_FILL[level])} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
       <span className="inline-flex items-center gap-0.5 tabular-nums">
@@ -34,8 +34,15 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
 }
 
 export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: string; canEdit: boolean }) {
-  const t = tableClass({ minWidth: canEdit ? "min-w-[64rem]" : "min-w-[44rem]" });
+  // ≥ 1024px (lg) the table fits its card: no min width, Turnaround and Workload only from xl (1280px), compact editor.
+  // Below lg it keeps a min width and scrolls sideways inside the card, with a visible hint.
+  const t = tableClass({ minWidth: canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0" });
+  const xlOnly = "hidden xl:table-cell";
   return (
+    <>
+    <p data-scroll-hint="" className="mb-2 flex items-center gap-1.5 text-xs text-foreground-secondary lg:hidden">
+      <MoveHorizontal aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Scroll sideways to see every column.
+    </p>
     <div className={cn(t.wrapper, "max-h-[calc(100dvh-16rem)]")}>
       <table className={t.table}>
         <caption className="sr-only">KPI per person for the selected month</caption>
@@ -46,9 +53,9 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
             <th scope="col" className={cn(t.th, t.numeric)}>Target</th>
             <th scope="col" className={t.th}>Progress</th>
             <th scope="col" className={cn(t.th, t.numeric)}>On-time</th>
-            <th scope="col" className={cn(t.th, t.numeric)}>Turnaround (days)</th>
-            <th scope="col" className={cn(t.th, t.numeric)}>Workload</th>
-            {canEdit ? <th scope="col" className={t.th}>Set target</th> : null}
+            <th scope="col" className={cn(t.th, t.numeric, xlOnly)}>Turnaround (days)</th>
+            <th scope="col" className={cn(t.th, t.numeric, xlOnly)}>Workload</th>
+            {canEdit ? <th scope="col" className={cn(t.th, "w-48")}>Set target</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -60,7 +67,7 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
                   <div className="flex items-center gap-2.5">
                     <Avatar name={r.name} size="md" decorative />
                     <div className="min-w-0">
-                      <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="font-medium text-foreground hover:text-link hover:underline">{r.name}</Link>
+                      <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="-my-1 inline-flex min-h-7 items-center rounded-md font-medium text-foreground hover:text-link hover:underline">{r.name}</Link>
                       <div className="mt-0.5"><Chip tone="tag-neutral" data-role={r.role}>{JOB_ROLE_LABEL[r.role]}</Chip></div>
                     </div>
                   </div>
@@ -69,8 +76,8 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
                 <td className={cn(t.td, t.numeric)}>{formatCount(r.kpi.target)}</td>
                 <td className={t.td}>{pct === null ? <span className="text-foreground-secondary">—</span> : <TeamProgress name={r.name} pct={pct} />}</td>
                 <td className={cn(t.td, t.numeric)}>{formatPercent(r.kpi.onTimeRate)}</td>
-                <td className={cn(t.td, t.numeric)}>{formatDays(r.kpi.avgTurnaroundDays)}</td>
-                <td className={cn(t.td, t.numeric)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
+                <td className={cn(t.td, t.numeric, xlOnly)}>{formatDays(r.kpi.avgTurnaroundDays)}</td>
+                <td className={cn(t.td, t.numeric, xlOnly)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
                 {canEdit ? (
                   <td className={t.td}>
                     <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} initialNote={r.note ?? null} />
@@ -82,5 +89,6 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
         </tbody>
       </table>
     </div>
+    </>
   );
 }

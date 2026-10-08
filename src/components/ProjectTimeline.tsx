@@ -31,7 +31,7 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
         {layout.truncated && " Showing the first 26 weeks only; later parts of longer projects are cut off."}
         {layout.omitted.length > 0 && ` Not drawn because they start after this range: ${layout.omitted.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
       </p>
-      <div className="overflow-x-auto rounded-lg border border-border">
+      <div className="relative overflow-x-auto rounded-lg border border-border">
         <div style={{ minWidth: `${Math.max(40, cols * 4.5 + LABEL_REM)}rem`, "--label-w": `${LABEL_REM}rem` } as React.CSSProperties} className="relative">
           <div className="flex border-b border-border bg-surface-muted text-xs font-semibold text-foreground-secondary">
             <div className="w-(--label-w) shrink-0 px-3 py-2">Project</div>

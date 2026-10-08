@@ -4,7 +4,8 @@ import { cn } from "./cn";
 
 export type AvatarSize = "sm" | "md" | "lg";
 const SIZE: Record<AvatarSize, string> = {
-  sm: "size-5 text-[9px]",
+  // Initials never below 11px (QA D8): the small avatar is 24px.
+  sm: "size-6 text-[11px]",
   md: "size-7 text-[11px]",
   lg: "size-9 text-[13px]",
 };
@@ -37,7 +38,7 @@ export function UnassignedAvatar({ size = "md", ring, decorative, className }: C
   return (
     <span {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Unassigned" })} title={decorative ? undefined : "Unassigned"}
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-input bg-surface text-foreground-secondary", SIZE[size], ring && "ring-2 ring-surface", className)}>
-      <UserPlus aria-hidden="true" strokeWidth={1.75} className={size === "sm" ? "size-3" : size === "md" ? "size-3.5" : "size-4"} />
+      <UserPlus aria-hidden="true" strokeWidth={1.75} className={size === "sm" ? "size-3.5" : size === "md" ? "size-3.5" : "size-4"} />
     </span>
   );
 }

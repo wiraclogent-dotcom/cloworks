@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -16,6 +17,9 @@ import { KpiTile } from "@/components/ui/KpiTile";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CircleCheckBig, Gauge, Users } from "lucide-react";
 import { parseMonthParam } from "../params";
+
+/** Tab title: "Team KPI · Creative Tracker" (root layout template). Static: no per-user data in metadata. */
+export const metadata: Metadata = { title: "Team KPI" };
 
 async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboard/team">["searchParams"] }) {
   const viewer = await requireUserOrRedirect();

@@ -53,7 +53,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
   }
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
-      <div className="max-h-[calc(100dvh-15rem)] overflow-auto" data-table-scroll="">
+      <div className="relative max-h-[calc(100dvh-15rem)] overflow-auto" data-table-scroll="">
         <table className={t.table}>
           <thead>
             <tr>
@@ -64,7 +64,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                 return (
                   <th key={c.key} scope="col" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"} className={t.th}>
                     <Link href={hrefFor(c.key, next)}
-                      className={cn("group/sort -mx-1 inline-flex items-center gap-1 rounded-md px-1 py-0.5 hover:bg-surface hover:text-foreground", active && "text-foreground", focusRing)}>
+                      className={cn("group/sort -mx-1 -my-1.5 inline-flex min-h-8 items-center gap-1 rounded-md px-1 py-1 hover:bg-surface hover:text-foreground", active && "text-foreground", focusRing)}>
                       {c.label}
                       <Icon aria-hidden="true" strokeWidth={1.75} data-sort-icon={active ? dir : "none"}
                         className={cn("size-3.5", active ? "opacity-100" : "opacity-50 group-hover/sort:opacity-100")} />
