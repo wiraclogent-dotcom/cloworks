@@ -28,6 +28,7 @@ export function AdminForm({
   action,
   prefix,
   submitLabel,
+  submitAriaLabel,
   children,
   className,
   hidden,
@@ -35,6 +36,8 @@ export function AdminForm({
   action: (prev: AdminFormState, fd: FormData) => Promise<AdminFormState>;
   prefix: string;
   submitLabel: string;
+  /** Unique accessible name when the visible label repeats per row (e.g. "Save changes for Rina"). */
+  submitAriaLabel?: string;
   children: (ctx: FormCtx) => React.ReactNode;
   className?: string;
   hidden?: Record<string, string>;
@@ -58,7 +61,7 @@ export function AdminForm({
       {Object.entries(hidden ?? {}).map(([k, val]) => <input key={k} type="hidden" name={k} value={val} />)}
       {children(ctx)}
       <div className="flex flex-wrap items-center gap-3">
-        <button type="submit" disabled={pending} className={primaryBtn}>{pending ? "Saving…" : submitLabel}</button>
+        <button type="submit" disabled={pending} aria-label={submitAriaLabel} className={primaryBtn}>{pending ? "Saving…" : submitLabel}</button>
         {state && (
           <div id={msgId} role={failed ? "alert" : "status"} className="text-sm">
             <p className="font-medium">{failed ? `Error: ${state.message}` : state.message}</p>
@@ -90,6 +93,7 @@ export function ConfirmAction({
   prefix,
   hidden,
   triggerLabel,
+  triggerAriaLabel,
   question,
   confirmLabel,
 }: {
@@ -97,19 +101,21 @@ export function ConfirmAction({
   prefix: string;
   hidden: Record<string, string>;
   triggerLabel: string;
+  /** Unique accessible name for the trigger when the visible label repeats per row. */
+  triggerAriaLabel?: string;
   question: string;
   confirmLabel: string;
 }) {
   const [state, run, pending] = useActionState<AdminFormState, FormData>(action, null);
-  const [asking, setAsking] = useState(false);
+  // The question is open only for the action state it was opened against, so any new result closes it (no effect needed).
+  const [askedAt, setAskedAt] = useState<{ state: AdminFormState } | null>(null);
+  const asking = askedAt !== null && askedAt.state === state;
+  const setAsking = (open: boolean) => setAskedAt(open ? { state } : null);
   const confirmRef = useRef<HTMLButtonElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (asking) confirmRef.current?.focus();
   }, [asking]);
-  useEffect(() => {
-    if (state) setAsking(false);
-  }, [state]);
   const failed = !!state && !state.ok;
   return (
     <form action={run} className="space-y-2">
@@ -123,7 +129,7 @@ export function ConfirmAction({
           </div>
         </div>
       ) : (
-        <button ref={triggerRef} type="button" className={ghostBtn} onClick={() => setAsking(true)}>{triggerLabel}</button>
+        <button ref={triggerRef} type="button" aria-label={triggerAriaLabel} className={ghostBtn} onClick={() => setAsking(true)}>{triggerLabel}</button>
       )}
       {state && (
         <p id={`${prefix}-msg`} role={failed ? "alert" : "status"} className="text-sm font-medium">

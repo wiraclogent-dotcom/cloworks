@@ -33,6 +33,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
       userId: u.id,
       name: u.name,
       role: t?.role ?? u.jobRole,
+      note: t?.note ?? null,
       kpi: computeKpi(requests, u, month, t ? { role: t.role, targetTasks: t.targetTasks } : null),
     };
   });

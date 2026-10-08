@@ -4,7 +4,7 @@ import { formatCount, formatDays, formatPercent, progressPercent } from "@/lib/k
 import type { KpiResult } from "@/lib/kpi/metrics";
 import { TargetEditor } from "./TargetEditor";
 
-export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult };
+export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
 
 const ROLE_LABEL: Record<JobRole, string> = { DESIGNER: "Designer", SOCIAL_MEDIA: "Social media", OTHER: "Other" };
 
@@ -54,7 +54,7 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
                 <td className="px-3 py-2">{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
                 {canEdit ? (
                   <td className="px-3 py-2">
-                    <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} />
+                    <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} initialNote={r.note ?? null} />
                   </td>
                 ) : null}
               </tr>

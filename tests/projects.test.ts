@@ -23,6 +23,16 @@ describe("projects cores", () => {
   const get = (id: string) => db.prisma.project.findUniqueOrThrow({ where: { id } });
 
   describe("createProjectWith", () => {
+    it("reports empty title AND due-before-start together", async () => {
+      const err = await createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), title: " ", startDate: "2026-10-20", dueDate: "2026-10-10" }).catch((e) => e);
+      expect(err).toBeInstanceOf(ProjectError);
+      expect(err.fieldErrors).toMatchObject({ title: "Title is required", dueDate: "Due date cannot be before the start date" });
+    });
+    it("reports a bad file link, unknown brand and inverted dates together", async () => {
+      const err = await createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), brandId: "nope", fileUrl: "ftp://x", startDate: "2026-10-20", dueDate: "2026-10-10" }).catch((e) => e);
+      expect(Object.keys(err.fieldErrors).sort()).toEqual(["brandId", "dueDate", "fileUrl"]);
+    });
+
     it("stores dates as Jakarta midnight instants", async () => {
       const { id } = await createProjectWith(db.prisma, actor("CREATIVE"), {
         ...base(), subTitle: "  sub ", brandId, startDate: "2026-10-05", dueDate: "2026-10-30", fileUrl: "https://drive.google.com/x",

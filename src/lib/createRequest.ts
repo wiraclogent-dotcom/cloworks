@@ -77,33 +77,34 @@ export async function createRequestWith(
 ): Promise<{ id: string }> {
   if (!can(user.appRole, "request.create")) throw new CreateRequestError("FORBIDDEN", "You are not allowed to create requests");
 
-  const parsed = inputSchema.safeParse(input);
-  if (!parsed.success) {
-    const errs: Record<string, string> = {};
-    for (const i of parsed.error.issues) errs[i.path.join(".") || "form"] ??= i.message;
-    return fail(errs);
-  }
-  const v = parsed.data;
+  // Collect every independent error in one pass (field-keyed) so the form can show them together.
   const errs: Record<string, string> = {};
+  const parsed = inputSchema.safeParse(input);
+  if (!parsed.success) for (const i of parsed.error.issues) errs[i.path.join(".") || "form"] ??= i.message;
+  const raw = parsed.success ? parsed.data : null;
 
-  if (v.deadline !== null && v.deadline < jakartaDate(now)) errs.deadline = "Deadline cannot be in the past";
+  const deadline = raw ? raw.deadline : typeof input.deadline === "string" && isRealDate(input.deadline) ? input.deadline : null;
+  if (deadline !== null && !errs.deadline && deadline < jakartaDate(now)) errs.deadline = "Deadline cannot be in the past";
 
+  const idOf = (k: "brandId" | "divisionId" | "typeId") => (typeof input[k] === "string" && input[k] ? input[k] : null);
+  const [brandId, divisionId, typeId] = [idOf("brandId"), idOf("divisionId"), idOf("typeId")];
   const [brand, division, type] = await Promise.all([
-    db.brand.findUnique({ where: { id: v.brandId }, select: { id: true } }),
-    db.division.findUnique({ where: { id: v.divisionId }, select: { id: true } }),
-    db.requestType.findUnique({ where: { id: v.typeId } }),
+    brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
+    divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
+    typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
   ]);
-  if (!brand) errs.brandId = "Unknown brand";
-  if (!division) errs.divisionId = "Unknown division";
-  if (!type || !type.active) errs.typeId = "Unknown or inactive request type";
+  if (brandId && !brand) errs.brandId ??= "Unknown brand";
+  if (divisionId && !division) errs.divisionId ??= "Unknown division";
+  if (typeId && (!type || !type.active)) errs.typeId ??= "Unknown or inactive request type";
 
   let fields: Record<string, unknown> = {};
-  if (type && type.active) {
+  if (type && type.active && typeof input.fields === "object" && input.fields !== null) {
     const fr = validateFields(parseFieldSchema(type.fieldSchema), input.fields) // raw input: zod drops "__proto__" keys silently;
     if (fr.ok) fields = fr.value;
-    else for (const [k, m] of Object.entries(fr.errors)) errs[`fields.${k}`] = m;
+    else for (const [k, m] of Object.entries(fr.errors)) errs[`fields.${k}`] ??= m;
   }
-  if (Object.keys(errs).length) return fail(errs);
+  if (Object.keys(errs).length || !raw) return fail(errs);
+  const v = raw;
 
   return db.$transaction(async (tx) => {
     const req = await tx.request.create({

@@ -54,6 +54,9 @@ describe("NewRequestForm", () => {
     expect((screen.getByLabelText("Deadline") as HTMLInputElement).value).toBe("2099-01-01");
     expect((screen.getByLabelText("Shooting") as HTMLInputElement).checked).toBe(true);
     expect(document.activeElement).toBe(screen.getByLabelText("Brief link"));
+    const live = screen.getByRole("status");
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.textContent).toBe("2 problems: Brief link: Must be an http(s) link; Platform is required");
   });
 
   it("shows banner for errors with no rendered field", async () => {

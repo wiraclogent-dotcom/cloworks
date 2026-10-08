@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { submitRequest } from "../actions";
 import type { SubmitState } from "@/lib/submitRequest";
 import type { FieldSchema } from "@/lib/fieldSchema";
+import { errorSummary } from "@/lib/formErrors";
 
 type Opt = { id: string; name: string };
 type TypeOpt = Opt & { fieldSchema: FieldSchema };
@@ -46,7 +47,10 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
   // Errors with no rendered field (e.g. "form", unknown detail keys) go in the banner.
   const rendered = new Set(["title", "briefUrl", "notes", "brandId", "divisionId", "typeId", "deadline", ...schema.map((f) => `fields.${f.key}`)]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
-  const generic = state && !state.ok ? (Object.keys(errs).length ? orphan.join(" ") : state.message) : "";
+  const hasFieldErrors = Object.keys(errs).length > 0;
+  const generic = state && !state.ok ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
+  const LABELS: Record<string, string> = { title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", typeId: "Request type", deadline: "Deadline" };
+  const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? schema.find((f) => `fields.${f.key}` === k)?.label ?? "");
 
   // React 19 resets uncontrolled fields after the action; the key remounts them with defaults from the echoed values.
   const nonce = state?.nonce ?? "initial";
@@ -58,6 +62,9 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
   }, [state?.nonce]);
 
   return (
+    <>
+    {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
+    <p role="status" aria-live="polite" className="sr-only">{summary}</p>
     <form ref={formRef} key={nonce} action={action} className="space-y-5" noValidate>
       {generic && (
         <p role="alert" className="rounded-md border border-border bg-muted p-3 text-sm">
@@ -136,5 +143,6 @@ export function NewRequestForm({ brands, divisions, types }: { brands: Opt[]; di
         {pending ? "Submitting…" : "Submit request"}
       </button>
     </form>
+    </>
   );
 }

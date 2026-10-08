@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { submitProject } from "./actions";
+import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
 
 type Opt = { id: string; name: string };
@@ -32,7 +33,10 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   });
   const rendered = new Set(["title", "subTitle", "brandId", "ownerId", "status", "startDate", "dueDate", "fileUrl"]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
-  const generic = state ? (Object.keys(errs).length ? orphan.join(" ") : state.message) : "";
+  const hasFieldErrors = Object.keys(errs).length > 0;
+  const generic = state ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
+  const LABELS: Record<string, string> = { title: "Title", subTitle: "Sub title", brandId: "Brand", ownerId: "Owner", status: "Status", startDate: "Start date", dueDate: "Due date", fileUrl: "File link" };
+  const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? "");
   const nonce = state?.nonce ?? "initial";
 
   useEffect(() => {
@@ -40,6 +44,9 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   }, [state?.nonce]);
 
   return (
+    <>
+    {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
+    <p role="status" aria-live="polite" className="sr-only">{summary}</p>
     <form ref={formRef} key={nonce} action={action} className="space-y-5" noValidate>
       {generic && <p role="alert" className="rounded-md border border-border bg-muted p-3 text-sm">{generic}</p>}
       <Field id="title" label="Title" required error={errs.title}>
@@ -80,5 +87,6 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
         {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
       </button>
     </form>
+    </>
   );
 }

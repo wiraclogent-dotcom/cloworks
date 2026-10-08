@@ -70,56 +70,58 @@ function throwFields(fieldErrors: Record<string, string>): never {
   throw new ProjectError("VALIDATION", Object.values(fieldErrors)[0] ?? "Invalid project", fieldErrors);
 }
 
-/** Syntax checks only (no DB). Keys absent from `raw` stay absent from the result. */
-function parse(raw: Partial<ProjectInput>, partial: boolean): Cleaned {
+/**
+ * Syntax checks only (no DB). Keys absent from `raw` stay absent from `out`. Never throws: every independent
+ * error is collected so the form can show them together; callers add DB/cross-field errors then call `throwFields`.
+ */
+function parse(raw: Partial<ProjectInput>, partial: boolean): { out: Cleaned; errors: Record<string, string> } {
   const schema = partial ? shape.partial() : shape;
   const r = schema.safeParse(raw);
   const errors: Record<string, string> = {};
   if (!r.success) for (const i of r.error.issues) errors[String(i.path[0] ?? "form")] ??= i.message;
-  if (!r.success) throwFields(errors);
-  const data = r.data;
+  const data = (r.success ? r.data : raw) as Partial<ProjectInput>;
   const out: Cleaned = {};
-  if (data.title !== undefined) out.title = data.title;
+  if (data.title !== undefined) out.title = typeof data.title === "string" ? data.title.trim() : data.title;
   if (data.ownerId !== undefined) out.ownerId = data.ownerId;
   if (data.status !== undefined) out.status = data.status;
   for (const k of ["subTitle", "brandId", "startDate", "dueDate", "fileUrl"] as const) {
-    const v = blankToNull(data[k]);
+    const t = data[k];
+    const v = blankToNull(typeof t === "string" ? t.trim() : t);
     if (v !== undefined) out[k] = v;
   }
   for (const k of ["startDate", "dueDate"] as const)
-    if (out[k] && !isRealDate(out[k]!)) errors[k] = `${k === "startDate" ? "Start" : "Due"} date must be a real date (YYYY-MM-DD)`;
-  if (out.fileUrl && !isHttpUrl(out.fileUrl)) errors.fileUrl = "File link must be an http(s) link";
-  if (Object.keys(errors).length) throwFields(errors);
-  return out;
+    if (out[k] && !isRealDate(out[k]!)) errors[k] ??= `${k === "startDate" ? "Start" : "Due"} date must be a real date (YYYY-MM-DD)`;
+  if (out.fileUrl && !isHttpUrl(out.fileUrl)) errors.fileUrl ??= "File link must be an http(s) link";
+  return { out, errors };
 }
 
 function assertManager(user: Actor) {
   if (!can(user.appRole, "project.manage")) throw new ProjectError("FORBIDDEN", "You are not allowed to manage projects.");
 }
 
-/** Owner must exist; must also be active unless `keepOwnerId` is the (unchanged) current owner. */
-async function checkRefs(db: PrismaClient, c: Cleaned, keepOwnerId?: string) {
-  const errors: Record<string, string> = {};
-  if (c.brandId) {
+/** Owner must exist; must also be active unless `keepOwnerId` is the (unchanged) current owner. Adds to `errors`. */
+async function checkRefs(db: PrismaClient, c: Cleaned, errors: Record<string, string>, keepOwnerId?: string) {
+  if (c.brandId && !errors.brandId) {
     if (!(await db.brand.findUnique({ where: { id: c.brandId }, select: { id: true } }))) errors.brandId = "That brand does not exist";
   }
-  if (c.ownerId !== undefined) {
+  if (c.ownerId && !errors.ownerId) {
     const o = await db.user.findUnique({ where: { id: c.ownerId }, select: { active: true } });
     if (!o) errors.ownerId = "That owner does not exist";
     else if (!o.active && c.ownerId !== keepOwnerId) errors.ownerId = "That owner is no longer active";
   }
-  if (Object.keys(errors).length) throwFields(errors);
 }
 
-function checkOrder(start: string | null | undefined, due: string | null | undefined) {
-  if (start && due && due < start) throwFields({ dueDate: "Due date cannot be before the start date" });
+function checkOrder(start: string | null | undefined, due: string | null | undefined, errors: Record<string, string>) {
+  if (errors.startDate || errors.dueDate) return;
+  if (start && due && due < start) errors.dueDate = "Due date cannot be before the start date";
 }
 
 export async function createProjectWith(db: PrismaClient, user: Actor, input: ProjectInput): Promise<{ id: string }> {
   assertManager(user);
-  const c = parse(input, false);
-  await checkRefs(db, c);
-  checkOrder(c.startDate, c.dueDate);
+  const { out: c, errors } = parse(input, false);
+  await checkRefs(db, c, errors);
+  checkOrder(c.startDate, c.dueDate, errors);
+  if (Object.keys(errors).length) throwFields(errors);
   const p = await db.project.create({
     data: {
       title: c.title!,
@@ -140,11 +142,12 @@ export async function updateProjectWith(db: PrismaClient, user: Actor, id: strin
   assertManager(user);
   const existing = await db.project.findUnique({ where: { id } });
   if (!existing) throw new ProjectError("NOT_FOUND", "Project not found.");
-  const c = parse(patch, true);
-  await checkRefs(db, c, existing.ownerId);
+  const { out: c, errors } = parse(patch, true);
+  await checkRefs(db, c, errors, existing.ownerId);
   const start = c.startDate !== undefined ? c.startDate : existing.startDate ? jakartaDate(existing.startDate) : null;
   const due = c.dueDate !== undefined ? c.dueDate : existing.dueDate ? jakartaDate(existing.dueDate) : null;
-  checkOrder(start, due);
+  checkOrder(start, due, errors);
+  if (Object.keys(errors).length) throwFields(errors);
   const data: Record<string, unknown> = {};
   for (const k of ["title", "subTitle", "brandId", "ownerId", "status", "fileUrl"] as const) if (c[k] !== undefined) data[k] = c[k];
   if (c.startDate !== undefined) data.startDate = c.startDate ? toJakartaMidnight(c.startDate) : null;

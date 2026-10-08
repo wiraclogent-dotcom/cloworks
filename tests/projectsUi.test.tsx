@@ -102,5 +102,8 @@ describe("ProjectForm", () => {
     expect((screen.getByLabelText("File link") as HTMLInputElement).value).toBe("https://x.test/f");
     expect(document.activeElement).toBe(screen.getByLabelText("Due date"));
     expect(screen.getByLabelText("Due date").getAttribute("aria-invalid")).toBe("true");
+    const live = screen.getByRole("status");
+    expect(live.getAttribute("aria-live")).toBe("polite");
+    expect(live.textContent).toBe("1 problem: Due date cannot be before the start date");
   });
 });

@@ -20,7 +20,6 @@ const SUBJECTS: Record<NotificationType, string> = {
 
 /** Strips control characters (incl. CR/LF), collapses whitespace, caps length. */
 export function cleanLine(s: string, max: number): string {
-  // eslint-disable-next-line no-control-regex
   const t = s.replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim();
   return t.length > max ? t.slice(0, max - 1) + "…" : t;
 }

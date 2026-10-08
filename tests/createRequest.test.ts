@@ -36,6 +36,15 @@ async function rejects(input: CreateRequestInput, code = "VALIDATION") {
 }
 
 describe("createRequestWith", () => {
+  it("reports base and cross-field errors together (empty title AND past deadline)", async () => {
+    const err = await rejects({ ...base, title: "  ", deadline: "2026-10-01" });
+    expect(err.fieldErrors).toMatchObject({ title: "Title is required", deadline: "Deadline cannot be in the past" });
+  });
+  it("reports a bad deadline format, unknown refs and missing title in one pass", async () => {
+    const err = await rejects({ ...base, title: "", brandId: "nope", deadline: null });
+    expect(Object.keys(err.fieldErrors!).sort()).toEqual(["brandId", "title"]);
+  });
+
   it("creates a REQUESTED request with exactly one first event", async () => {
     const { id } = await createRequestWith(db.prisma, user, { ...base, title: "  Poster  ", notes: "n", briefUrl: "https://drive.google.com/x" }, now);
     const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { statusEvents: true } });

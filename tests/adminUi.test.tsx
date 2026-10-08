@@ -44,11 +44,11 @@ describe("admin forms", () => {
       ok: false, code: "CONFLICT", message: "x@gmail.com is already the login email of Dina", nonce: "n1", values: { email: String(fd.get("email")), userId: "u1" },
     }));
     render(<LoginEmailForm u={u} />);
-    fireEvent.change(screen.getByLabelText(/login email/i), { target: { value: "x@gmail.com" } });
+    fireEvent.change(screen.getByLabelText(/^login email/i), { target: { value: "x@gmail.com" } });
     fireEvent.click(screen.getByRole("button", { name: /save login email/i }));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/^Error: .*Dina/);
-    const input = screen.getByLabelText(/login email/i) as HTMLInputElement;
+    const input = screen.getByLabelText(/^login email/i) as HTMLInputElement;
     expect(input.value).toBe("x@gmail.com");
     expect(input.getAttribute("aria-invalid")).toBe("true");
     expect(input.getAttribute("aria-describedby")).toBe(alert.id);
@@ -57,13 +57,13 @@ describe("admin forms", () => {
   it("deactivate needs an explicit confirmation step", async () => {
     act.setUserActive.mockResolvedValue({ ok: true, message: "Deactivated. History is kept.", values: {}, nonce: "n2" });
     render(<ActiveToggle u={u} />);
-    fireEvent.click(screen.getByRole("button", { name: "Deactivate" }));
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate Rina" }));
     expect(act.setUserActive).not.toHaveBeenCalled();
     expect(screen.getByRole("group", { name: /confirm/i })).toBeTruthy();
     // cancel leaves nothing submitted
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(act.setUserActive).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Deactivate" }));
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate Rina" }));
     fireEvent.click(screen.getByRole("button", { name: /yes, deactivate rina/i }));
     await waitFor(() => expect(act.setUserActive).toHaveBeenCalledTimes(1));
     const fd = act.setUserActive.mock.calls[0][1] as FormData;
@@ -75,7 +75,7 @@ describe("admin forms", () => {
   it("removing an allowed email needs confirmation; a failure is reported as text", async () => {
     act.removeAllowed.mockResolvedValue({ ok: false, message: "nope", values: {}, nonce: "n3" });
     render(<RemoveAllowed email="a@gmail.com" />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+    fireEvent.click(screen.getByRole("button", { name: "Remove a@gmail.com" }));
     expect(act.removeAllowed).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /yes, remove a@gmail.com/i }));
     await waitFor(() => expect(act.removeAllowed).toHaveBeenCalledTimes(1));
