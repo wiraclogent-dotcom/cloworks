@@ -135,9 +135,17 @@ describe("notifications", () => {
       vi.restoreAllMocks();
     });
     it("sends to recipients in parallel", async () => {
-      // Assert overlap (all three sends in flight at once) rather than elapsed wall-clock time.
-      let inFlight = 0, maxInFlight = 0;
-      const mailer: Mailer = { send: async () => { inFlight++; maxInFlight = Math.max(maxInFlight, inFlight); await new Promise((r) => setTimeout(r, 200)); inFlight--; } };
+      // Assert overlap (all three sends in flight at once) rather than elapsed wall-clock time. Each send waits at a
+      // barrier until the other two have started, so the overlap is deterministic (no 200 ms race under load).
+      let inFlight = 0, maxInFlight = 0, started = 0;
+      let release!: () => void;
+      const barrier = new Promise<void>((r) => { release = r; });
+      const mailer: Mailer = { send: async () => {
+        inFlight++; started++; maxInFlight = Math.max(maxInFlight, inFlight);
+        if (started === 3) release();
+        await Promise.race([barrier, new Promise((r) => setTimeout(r, 2000))]);
+        inFlight--;
+      } };
       await notifyWith(db.prisma, mailer, input({ userIds: [ids.dimas, ids.irsyad, ids.rina] }), { baseUrl: undefined });
       expect(maxInFlight).toBe(3);
       expect(await rows()).toHaveLength(3);
