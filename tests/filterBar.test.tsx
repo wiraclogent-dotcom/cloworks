@@ -25,4 +25,13 @@ describe("FilterBar", () => {
     // Phase B1: the "✓ " text became a check icon (state is announced by aria-current).
     expect(link.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
+  it("lists only the open statuses in the calendar view", () => {
+    bar({ view: "calendar" });
+    const opts = [...screen.getByLabelText("Status").querySelectorAll("option")].map((o) => o.textContent);
+    expect(opts).toEqual(["All", "Requested", "On progress", "First look"]);
+  });
+  it("carries the month through Apply in the calendar view", () => {
+    const { container } = bar({ view: "calendar", month: "2026-03" });
+    expect(hidden(container)).toEqual({ view: "calendar", month: "2026-03" });
+  });
 });
