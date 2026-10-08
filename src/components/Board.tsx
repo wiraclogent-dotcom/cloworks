@@ -11,9 +11,14 @@ import { BOARD_PAGE_SIZE } from "@/lib/paging";
 import { canTransition } from "@/lib/workflow";
 import { decideDrop } from "@/lib/boardDrop";
 import { BOARD_DND_ID, SCREEN_READER_INSTRUCTIONS, buildAnnouncements } from "@/lib/boardA11y";
-import { BoardCard, CardFace } from "./BoardCard";
+import { REQUEST_STATUS_TONE } from "@/lib/palette";
+import { ArrowDownToLine, Ban, ChevronDown, Inbox, Table2, X } from "lucide-react";
+import { BoardCard, CARD_OVERLAY, CardFace } from "./BoardCard";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
+import { Alert } from "./ui/Alert";
+import { Button } from "./ui/Button";
+import { cn, focusRing } from "./ui/cn";
 
 /** Arrow Left/Right jumps the lifted card to the neighbouring column instead of nudging it 25px. */
 const columnKeyboardCoordinates: KeyboardCoordinateGetter = (event, { context: { droppableRects, droppableContainers, collisionRect } }) => {
@@ -34,6 +39,9 @@ const columnKeyboardCoordinates: KeyboardCoordinateGetter = (event, { context: {
 export type BoardColumnView = BoardColumn & { moreHref: string | null; tableHref: string };
 type Totals = Partial<Record<RequestStatus, number>>;
 
+/** Quiet text-link look for the column footer (Show more / Open all in table). */
+const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-surface hover:underline underline-offset-2", focusRing);
+
 function Column({ status, total, shown, dragFrom, moreHref, tableHref, children }: {
   status: RequestStatus; total: number; shown: number; dragFrom: RequestStatus | null; moreHref: string | null; tableHref: string; children: React.ReactNode;
 }) {
@@ -41,31 +49,37 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
   const id = `col-${status}`;
   const dragging = dragFrom !== null && dragFrom !== status;
   const legal = dragging && canTransition(dragFrom, status);
-  const border = legal ? (isOver ? "border-solid border-ring bg-background" : "border-dashed border-ring") : "border-border";
   const remaining = total - shown;
   return (
-    <section ref={setNodeRef} role="region" aria-labelledby={id}
-      className={`board-column flex min-w-0 flex-col rounded-lg border-2 bg-muted p-3 ${border} ${dragging && !legal ? "opacity-60" : ""}`}>
-      <h2 id={id} className="mb-3 flex flex-none items-center gap-2 text-sm font-semibold">
+    <section ref={setNodeRef} role="region" aria-labelledby={id} data-tone={REQUEST_STATUS_TONE[status]}
+      data-drop={legal ? (isOver ? "over" : "valid") : dragging ? "invalid" : undefined}
+      className={cn(
+        "board-column flex min-w-0 flex-col rounded-xl border border-border p-2 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
+        legal && isOver ? "bg-accent" : "bg-surface-muted",
+        legal ? (isOver ? "outline-ring outline-solid" : "outline-ring outline-dashed") : "outline-transparent",
+        dragging && !legal && "opacity-60",
+      )}>
+      <h2 id={id} data-column-header=""
+        className="mb-2 flex flex-none items-center gap-2 rounded-lg border-t-[3px] border-tone-accent bg-tone-tint px-3 py-2 text-sm font-semibold text-tone-text">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
-        <span className="ml-auto rounded-full bg-background px-2 text-xs font-normal">{total}</span>
+        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-xs leading-4 font-medium text-foreground-secondary tabular-nums shadow-card">{total}</span>
       </h2>
       {dragging && (
-        <p className="mb-2 flex-none text-xs font-medium">
-          {legal ? `Drop to move to ${STATUS_LABEL[status]}` : "Not a valid move"}
+        <p className="mb-2 flex flex-none items-center gap-1.5 px-1 text-xs font-medium text-foreground">
+          {legal ? <><ArrowDownToLine aria-hidden="true" strokeWidth={1.75} className="size-3.5" />{`Drop to move to ${STATUS_LABEL[status]}`}</> : <><Ban aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Not a valid move</>}
         </p>
       )}
-      <div data-column-body className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div data-column-body className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
         {children}
       </div>
       {total > 0 && (
-        <div className="mt-2 flex-none border-t border-border pt-2 text-xs">
-          <p>Showing {shown} of {total}</p>
+        <div className="mt-1 flex-none border-t border-border px-1 pt-2 text-xs text-foreground-secondary">
+          <p className="tabular-nums">Showing {shown} of {total}</p>
           {remaining > 0 && (
-            <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
-              {moreHref && <Link href={moreHref} scroll={false} className="underline focus-visible:outline-2 focus-visible:outline-ring">Show {Math.min(BOARD_PAGE_SIZE, remaining)} more</Link>}
-              <Link href={tableHref} className="underline focus-visible:outline-2 focus-visible:outline-ring">Open all in table</Link>
+            <p className="mt-1 -ml-1.5 flex flex-wrap gap-x-1 gap-y-1">
+              {moreHref && <Link href={moreHref} scroll={false} className={FOOTER_LINK}><ChevronDown aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Show {Math.min(BOARD_PAGE_SIZE, remaining)} more</Link>}
+              <Link href={tableHref} className={FOOTER_LINK}><Table2 aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Open all in table</Link>
             </p>
           )}
         </div>
@@ -95,8 +109,9 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
     if (!id || pendingDone) return;
     const active = document.activeElement;
     if (active && active !== document.body && document.contains(active)) { focusCardId.current = null; return; }
-    const target = document.querySelector<HTMLElement>(`[data-card="${CSS.escape(id)}"]`)
-      ?.querySelector<HTMLElement>("button:not([disabled]), a[href]");
+    // Prefer the drag handle (so the keyboard user can lift the card again), else the title link.
+    const el = document.querySelector<HTMLElement>(`[data-card="${CSS.escape(id)}"]`);
+    const target = el?.querySelector<HTMLElement>("button:not([disabled])") ?? el?.querySelector<HTMLElement>("a[href]");
     if (target) { target.focus(); focusCardId.current = null; }
   });
 
@@ -166,22 +181,25 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   return (
     <div data-page-wide="">
       {message && (
-        <div role="alert" className="mb-3 flex items-start justify-between gap-3 rounded-md border border-border bg-card p-3 text-sm">
-          <p><span aria-hidden="true">⚠ </span>{message}</p>
-          <button type="button" onClick={() => setMessage(null)} className="underline focus-visible:outline-2 focus-visible:outline-ring">Dismiss</button>
-        </div>
+        <Alert tone="danger" className="mb-3"
+          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
+          <p>{message}</p>
+        </Alert>
       )}
-      {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
+      {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="grid gap-4 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(13rem, 1fr))` }}>
+        <div className="grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (
               <Column key={col.status} status={col.status} total={totals[col.status] ?? 0} shown={inCol.length}
                 dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref}>
                 {inCol.length === 0 ? (
-                  <p className="rounded-md border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Nothing here yet.</p>
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-surface/60 px-3 py-6 text-center text-[13px] text-foreground-secondary">
+                    <Inbox aria-hidden="true" strokeWidth={1.75} className="size-5" />
+                    <p>No requests here</p>
+                  </div>
                 ) : (
                   <ul className="space-y-2">
                     {inCol.map((c) => <BoardCard key={c.id} card={c} canMove={canMove} busy={busyId === c.id} dragging={activeId === c.id} />)}
@@ -194,7 +212,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
         {/* Rendered in a portal-like fixed layer so the dragged card is never clipped by the scrolling columns. */}
         <DragOverlay>
           {activeCard ? (
-            <div aria-hidden="true" className="cursor-grabbing rounded-md border border-ring bg-card p-3 text-sm text-card-foreground shadow-lg">
+            <div aria-hidden="true" data-drag-overlay="" className={cn(CARD_OVERLAY, "cursor-grabbing rotate-2 motion-reduce:rotate-0")}>
               <CardFace card={activeCard} interactive={false} />
             </div>
           ) : null}

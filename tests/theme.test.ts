@@ -94,6 +94,9 @@ describe.each(themes)("contrast (%s)", (theme) => {
     ["--heading", "--background"],
     ["--link", "--surface"],
     ["--link", "--background"],
+    // Phase B1: board column footer links sit on the muted column fill (and on the Aqua tint while a drop target).
+    ["--link", "--surface-muted"],
+    ["--link", "--accent"],
     ["--primary-foreground", "--primary"],
     ["--primary-foreground", "--primary-hover"],
     ["--destructive-foreground", "--destructive"],
@@ -123,6 +126,8 @@ describe.each(themes)("contrast (%s)", (theme) => {
     ["--ring", "--surface-muted"],
     ["--ring", "--accent"],
     ["--input", "--surface"],
+    // Phase B1: Switch track (off = --input, on = --primary) against the card and its --surface knob.
+    ["--primary", "--surface"],
     ["--foreground-muted", "--surface"],
     ["--chart-done", "--card"],
     ["--chart-target", "--card"],

@@ -32,7 +32,7 @@ describe("BoardCard", () => {
     render(<Harness canMove={true} onStart={onStart} />);
     const li = document.querySelector("[data-card]") as HTMLElement;
     expect(li.getAttribute("data-draggable")).toBe("true");
-    const body = screen.getByText(/Requester: Rina/);
+    const body = screen.getByTitle("Requester: Rina"); // Phase B1: requester line is avatar + name (was the text "Requester: Rina")
     fireEvent.mouseDown(body, { clientX: 10, clientY: 10, button: 0 });
     fireEvent.mouseMove(document, { clientX: 12, clientY: 10 });
     expect(onStart).not.toHaveBeenCalled(); // under the 6px activation distance: still a click
@@ -47,7 +47,7 @@ describe("BoardCard", () => {
     const li = document.querySelector("[data-card]") as HTMLElement;
     expect(li.hasAttribute("data-draggable")).toBe(false);
     expect(screen.queryByRole("button", { name: /drag/i })).toBeNull();
-    fireEvent.mouseDown(screen.getByText(/Requester: Rina/), { clientX: 10, clientY: 10, button: 0 });
+    fireEvent.mouseDown(screen.getByTitle("Requester: Rina"), { clientX: 10, clientY: 10, button: 0 });
     fireEvent.mouseMove(document, { clientX: 60, clientY: 10 });
     expect(onStart).not.toHaveBeenCalled();
   });

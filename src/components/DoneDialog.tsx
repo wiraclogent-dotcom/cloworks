@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { CircleCheck } from "lucide-react";
+import { Button } from "./ui/Button";
+import { FieldError, fieldClass, labelClass } from "./ui/Field";
 
 /** Mirrors MAX_OUTPUT_COUNT in src/lib/transition.ts (kept local: that module is server-side). */
 const MAX_OUTPUTS = 1000;
@@ -58,29 +61,35 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
     onSubmit({ outputCount: n, ...(u ? { designFolderUrl: u } : {}) });
   }
 
-  const input = "mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring";
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--backdrop)] p-4">
-      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={`${uid}-t`} onKeyDown={onKeyDown}
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={`${uid}-t`} aria-describedby={`${uid}-d`} onKeyDown={onKeyDown}
         className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-raised">
-        <h2 id={`${uid}-t`} className="text-lg font-semibold">Mark as done</h2>
-        <p className="mt-1 text-sm text-muted-foreground">“{title}” is finished. Tell us what was delivered.</p>
-        <form onSubmit={submit} noValidate className="mt-4 space-y-4">
+        <div className="flex items-start gap-3">
+          <span aria-hidden="true" data-tone="done" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-tone-tint text-tone-text">
+            <CircleCheck strokeWidth={1.75} className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 id={`${uid}-t`} className="text-base font-semibold text-foreground">Mark as done</h2>
+            <p id={`${uid}-d`} className="mt-0.5 text-sm break-words text-foreground-secondary">“{title}” is finished. Tell us what was delivered.</p>
+          </div>
+        </div>
+        <form onSubmit={submit} noValidate className="mt-5 space-y-4">
           <div>
-            <label htmlFor={`${uid}-n`} className="text-sm font-medium">Number of outputs *</label>
+            <label htmlFor={`${uid}-n`} className={labelClass}>Number of outputs <span aria-hidden="true">*</span></label>
             <input id={`${uid}-n`} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={count} onChange={(e) => setCount(e.target.value)}
-              aria-invalid={!!errors.count} aria-describedby={errors.count ? `${uid}-ne` : undefined} className={input} />
-            {errors.count && <p id={`${uid}-ne`} className="mt-1 text-sm">{errors.count}</p>}
+              aria-invalid={!!errors.count} aria-describedby={errors.count ? `${uid}-ne` : undefined} className={fieldClass({ invalid: !!errors.count, className: "tabular-nums" })} />
+            <FieldError id={`${uid}-ne`}>{errors.count}</FieldError>
           </div>
           <div>
-            <label htmlFor={`${uid}-u`} className="text-sm font-medium">Design folder link (optional)</label>
+            <label htmlFor={`${uid}-u`} className={labelClass}>Design folder link (optional)</label>
             <input id={`${uid}-u`} type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://"
-              aria-invalid={!!errors.url} aria-describedby={errors.url ? `${uid}-ue` : undefined} className={input} />
-            {errors.url && <p id={`${uid}-ue`} className="mt-1 text-sm">{errors.url}</p>}
+              aria-invalid={!!errors.url} aria-describedby={errors.url ? `${uid}-ue` : undefined} className={fieldClass({ invalid: !!errors.url })} />
+            <FieldError id={`${uid}-ue`}>{errors.url}</FieldError>
           </div>
-          <div className="flex justify-end gap-2">
-            <button type="button" onClick={onCancel} className="rounded-md border border-border px-4 py-2 text-sm focus-visible:outline-2 focus-visible:outline-ring">Cancel</button>
-            <button type="submit" className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Mark as done</button>
+          <div className="flex justify-end gap-2 pt-1">
+            <Button variant="ghost" onClick={onCancel}>Cancel</Button>
+            <Button type="submit" variant="primary">Mark as done</Button>
           </div>
         </form>
       </div>

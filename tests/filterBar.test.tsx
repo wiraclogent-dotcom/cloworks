@@ -22,6 +22,7 @@ describe("FilterBar", () => {
     const link = screen.getByRole("link", { name: /My requests/ });
     expect(link.getAttribute("aria-current")).toBe("true");
     expect(link.hasAttribute("aria-pressed")).toBe(false);
-    expect(link.textContent).toContain("✓");
+    // Phase B1: the "✓ " text became a check icon (state is announced by aria-current).
+    expect(link.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
 });

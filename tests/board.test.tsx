@@ -55,7 +55,7 @@ describe("Board", () => {
 
   it("shows plain-language empty states", () => {
     view([], true);
-    expect(screen.getAllByText(/nothing here yet/i).length).toBe(4);
+    expect(screen.getAllByText("No requests here").length).toBe(4); // Phase B1 wording (was "Nothing here yet.")
   });
 
   it("is read-only for a requester: no drag handle, no draggable cards, no move menu", () => {
