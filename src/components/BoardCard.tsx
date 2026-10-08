@@ -3,7 +3,7 @@
 import { useDraggable } from "@dnd-kit/core";
 import type { RequestRow } from "@/lib/requests";
 import Link from "next/link";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Link2 } from "lucide-react";
 import { BrandTag } from "./ui/Chip";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { NeedsMotionChip } from "./ui/NeedsMotionChip";
@@ -16,38 +16,51 @@ export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card`;
 /** The drag overlay copy: same card, Aqua outline and the raised shadow. */
 export const CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
 
+const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
+
 /**
- * The card's visible content: title (max 2 lines), chips (brand tag, deadline for open requests, Needs motion only
- * when flagged), then requester left and assignee avatar right. `interactive=false` is the drag overlay copy (no
- * links, hidden from assistive tech by its wrapper).
+ * The card's visible content, laid out like the reference: a code row (link icon + short request code, drag handle
+ * on the right), the bold title, the division as a grey subtitle with the brand, deadline and motion chips, then a
+ * hairline and a footer with the requester and assignee avatars on the left and the request date on the right.
+ * `interactive=false` is the drag overlay copy (no links, hidden from assistive tech by its wrapper).
  */
 export function CardFace({ card, interactive = true, handle }: { card: RequestRow; interactive?: boolean; handle?: React.ReactNode }) {
   const open = card.status !== "DONE" && card.status !== "CANCELLED";
   const assignee = card.assigneeName ? `Assignee: ${card.assigneeName}` : "Assignee: Unassigned";
+  const code = `REQ-${card.id.slice(-4).toUpperCase()}`;
   return (
     <>
-      <div className="flex items-start gap-1">
-        <p className="line-clamp-2 min-w-0 flex-1 text-sm leading-5 font-semibold break-words text-foreground">
-          {interactive ? (
-            <Link href={`/requests/${card.id}`} draggable={false} className={cn("rounded-sm underline-offset-2 hover:underline", focusRing)}>{card.title}</Link>
-          ) : card.title}
-        </p>
+      <div className="flex items-center justify-between gap-2 text-xs text-foreground-secondary">
+        <span className="inline-flex min-w-0 items-center gap-1.5" title="Request code">
+          <Link2 aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />
+          <span className="font-medium tabular-nums">{code}</span>
+        </span>
         {handle}
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-1.5" data-card-chips="">
-        <BrandTag name={card.brandName} />
-        <span className="text-xs text-foreground-secondary">{card.divisionName}</span>
-        {open && <DeadlineChip daysLeft={card.daysLeft} />}
-        {card.needsMotion && <NeedsMotionChip />}
+      <p className="mt-2 line-clamp-2 text-sm leading-5 font-semibold break-words text-foreground">
+        {interactive ? (
+          <Link href={`/requests/${card.id}`} draggable={false} className={cn("rounded-sm underline-offset-2 hover:underline", focusRing)}>{card.title}</Link>
+        ) : card.title}
+      </p>
+      <div data-card-chips="" className="mt-1.5 space-y-2">
+        <p className="text-[13px] text-foreground-secondary">{card.divisionName}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <BrandTag name={card.brandName} />
+          {open && <DeadlineChip daysLeft={card.daysLeft} />}
+          {card.needsMotion && <NeedsMotionChip />}
+        </div>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <p className="flex min-w-0 items-center gap-1.5 text-xs text-foreground-secondary" title={`Requester: ${card.requesterName}`}>
-          <Avatar name={card.requesterName} size="sm" decorative />
-          <span className="truncate"><span className="sr-only">Requester: </span>{card.requesterName}</span>
-        </p>
-        <span className="inline-flex shrink-0" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
-          {card.assigneeName ? <Avatar name={card.assigneeName} decorative /> : <UnassignedAvatar decorative />}
-        </span>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3">
+        <div className="flex min-w-0 items-center">
+          <p className="inline-flex shrink-0" title={`Requester: ${card.requesterName}`}>
+            <Avatar name={card.requesterName} size="sm" ring decorative />
+            <span className="sr-only">Requester: {card.requesterName}</span>
+          </p>
+          <span className="-ml-1.5 inline-flex shrink-0" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
+            {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" ring decorative /> : <UnassignedAvatar size="sm" ring decorative />}
+          </span>
+        </div>
+        <time dateTime={card.requestedAt.toISOString()} className="shrink-0 text-xs tabular-nums text-foreground-secondary">{DATE_FORMAT.format(card.requestedAt)}</time>
       </div>
     </>
   );

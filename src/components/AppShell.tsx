@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { ChartColumn, FolderKanban, LogOut, ShieldCheck, SquareKanban, Users } from "lucide-react";
+import { Bell, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users, Workflow } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { signOut } from "@/lib/auth";
@@ -9,6 +9,7 @@ import { Skeleton } from "./ui/Skeleton";
 import { ThemeSwitch } from "./ui/ThemeSwitch";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
+import { DisabledNavItem } from "./shell/DisabledNavItem";
 import { UserChipView } from "./shell/UserChipView";
 import { sidebarRowClass } from "./shell/classes";
 
@@ -71,16 +72,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavGroup id="nav-work" label="Work">
             <NavItem href="/requests" label="Requests" icon={<SquareKanban aria-hidden="true" />} />
             <NavItem href="/projects" label="Projects" icon={<FolderKanban aria-hidden="true" />} />
+            <DisabledNavItem label="Workflow" icon={<Workflow aria-hidden="true" />} />
           </NavGroup>
           <NavGroup id="nav-insights" label="Insights" divided>
             <NavItem href="/dashboard" label="My KPI" icon={<ChartColumn aria-hidden="true" />} />
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
+          </NavGroup>
+          <NavGroup id="nav-tools" label="Tools" divided>
+            <DisabledNavItem label="Notifications" icon={<Bell aria-hidden="true" />} />
+            <DisabledNavItem label="Inbox" icon={<Inbox aria-hidden="true" />} />
+            <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
           <Suspense fallback={null}><AdminGroup /></Suspense>
         </nav>
       }
       footer={
         <>
+          <ul className="space-y-0.5">
+            <DisabledNavItem label="Help center" icon={<CircleHelp aria-hidden="true" />} />
+            <DisabledNavItem label="Settings" icon={<Settings aria-hidden="true" />} />
+          </ul>
           <Suspense fallback={<UserChipFallback />}><UserChip /></Suspense>
           <ThemeSwitch tone="sidebar" />
           <form action={async () => { "use server"; await signOut({ redirectTo: "/signin" }); }}>

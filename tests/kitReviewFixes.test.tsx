@@ -46,10 +46,9 @@ describe("ThemeSwitch when storage is blocked", () => {
   it("keeps an in-memory preference so aria-pressed matches the applied theme", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
     render(<ThemeSwitch />);
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    expect(screen.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "Light" }).getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
     expect(readThemePref()).toBe("dark");
   });
   it("storage working again: the stored value is the truth", () => {
@@ -80,6 +79,7 @@ describe("Avatar / touch targets", () => {
     render(<><Button size="sm">Go</Button><IconButton size="sm" aria-label="More" icon={<svg />} /><ThemeSwitch tone="sidebar" /></>);
     expect(screen.getByRole("button", { name: "Go" }).className).toMatch(/after:-inset-y-0\.5/);
     expect(screen.getByRole("button", { name: "More" }).className).toMatch(/after:-inset-0\.5/);
-    expect(screen.getByRole("button", { name: "Light" }).className).toMatch(/\bh-9\b/);
+    // The day/night switch sits in a 36px row (the track itself is 32px).
+    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].parentElement!.className).toMatch(/\bh-9\b/);
   });
 });

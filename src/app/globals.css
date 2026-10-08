@@ -27,6 +27,9 @@
   --background: #f5f3ee;
   --surface: #ffffff;
   --surface-muted: #f0eee9;
+  /* Board canvas: a warm tint with a faint dot grid behind the columns */
+  --board-canvas: #efece6;
+  --board-dot: rgba(23, 24, 28, 0.1);
   --border: #e6e3dc;
   --border-strong: #d3cfc5;
   --foreground: #17181c;
@@ -175,6 +178,9 @@
   --progress-low: #ef9f27;
   --progress-complete: #97c459;
 
+  --board-canvas: #17171a;
+  --board-dot: rgba(255, 255, 255, 0.08);
+
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --elevation-raised: 0 8px 24px rgba(0, 0, 0, 0.45);
   --backdrop: rgba(4, 10, 18, 0.6);
@@ -285,6 +291,14 @@
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-toggle-day: #cfe9f6;
+  --color-toggle-night: #1b2535;
+  --color-toggle-sun: #fff4cc;
+  --color-toggle-sun-ink: #b7741a;
+  --color-toggle-moon: #e9edf5;
+  --color-toggle-moon-ink: #2b3a57;
+  --color-toggle-star: #f5f7fb;
+  --color-toggle-cloud: #ffffff;
   --color-tone-accent: var(--tone-accent);
   --color-tone-tint: var(--tone-tint);
   --color-tone-text: var(--tone-text);

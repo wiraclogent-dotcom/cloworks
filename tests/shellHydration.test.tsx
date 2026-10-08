@@ -123,7 +123,7 @@ describe("app shell hydration", () => {
     expect(errors.mock.calls.map((c) => String(c[0]))).toEqual([]);
     expect(recoverable).toEqual([]);
     expect(html().getAttribute("data-theme")).toBe("dark");
-    expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toBe("Dark");
+    expect(container.querySelector('[role="switch"][aria-checked="true"]')).not.toBeNull();
   });
 
   it("no hydration error with no stored choice at a rail-default width (768–1279px)", async () => {

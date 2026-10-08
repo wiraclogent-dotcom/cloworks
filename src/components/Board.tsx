@@ -189,7 +189,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
       {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="relative grid gap-4 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
+        <div className="relative grid gap-4 overflow-x-auto rounded-2xl bg-[var(--board-canvas)] bg-[image:radial-gradient(var(--board-dot)_1px,transparent_1px)] p-3 pb-4 [background-size:18px_18px]" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (
