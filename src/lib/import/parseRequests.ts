@@ -130,6 +130,16 @@ function jakartaMonthOf(d: Date): string {
 const jakartaIso = (d: Date) => new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 10);
 const clip = (s: string, n: number) => s.slice(0, n);
 
+/**
+ * The sheet's example row reads "Contoh Task | JANGAN DI HAPUS" ("example task | don't delete"),
+ * so match on the prefix / the warning text, not the exact string. A real task that merely starts
+ * with "Contoh " (e.g. "Contoh banner promo") is kept.
+ */
+function isTemplateTask(task: string): boolean {
+  const t = task.toLowerCase().replace(/\s+/g, " ").trim();
+  return t.startsWith("contoh task") || t.includes("jangan di hapus") || t.includes("jangan dihapus");
+}
+
 export function parseRequestRows(
   source: ImportSource,
   rows: Record<string, string>[],
@@ -154,7 +164,7 @@ export function parseRequestRows(
 
     const task = get(r, "task");
     if (!task) return skip("Blank task");
-    if (task.toLowerCase() === "contoh task") { report.template++; return; }
+    if (isTemplateTask(task)) { report.template++; return; }
     const requestedAt = parseSheetDate(get(r, "requestDate"), fmt);
     if (!requestedAt) return skip(`Invalid request date "${get(r, "requestDate")}"`);
 

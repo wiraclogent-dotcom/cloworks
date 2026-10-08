@@ -55,6 +55,15 @@ describe("parseRequestRows: requests source", () => {
     expect(r.report.skipped.map((s) => s.reason).join("|")).toMatch(/unknown brand/i);
     expect(r.report.skipped.map((s) => s.reason).join("|")).toMatch(/unknown division/i);
   });
+  it("template row as it really appears in the sheet ('Contoh Task | JANGAN DI HAPUS') is skipped", () => {
+    const r = req([
+      reqRow({ Task: "Contoh Task | JANGAN DI HAPUS" }),
+      reqRow({ Task: "CONTOH TASK 2 (jangan dihapus)" }),
+      reqRow({ Task: "Contoh banner promo" }), // a real task that merely starts with 'Contoh' stays
+    ]);
+    expect(r.report.template).toBe(2);
+    expect(r.records.map((x) => x.title)).toEqual(["Contoh banner promo"]);
+  });
   it("blank requester -> Wira + warning; unresolvable requester -> Wira + unmapped", () => {
     const r = req([reqRow({ Requester: "" }), reqRow({ Task: "B", Requester: "Zed" })]);
     expect(r.records.map((x) => x.requesterId)).toEqual(["u-wira", "u-wira"]);
