@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  /* Brand palette (SKC Brand Guidelines 2026) */
+  --brand-deep-blue: #09426d;
+  --brand-aqua: #11aa9f;
+  --brand-grey: #cccccc;
+  --brand-white: #ffffff;
+  /* Darker Aqua tint: white on pure Aqua is ~2.9:1, this passes WCAG AA for button text. */
+  --brand-aqua-strong: #0b756d;
+  --brand-deep-blue-night: #062b47;
+
+  /* Semantic tokens (shadcn-style) */
+  --background: var(--brand-white);
+  --foreground: var(--brand-deep-blue);
+  --card: var(--brand-white);
+  --card-foreground: var(--brand-deep-blue);
+  --primary: var(--brand-aqua-strong);
+  --primary-foreground: var(--brand-white);
+  --secondary: var(--brand-deep-blue);
+  --secondary-foreground: var(--brand-white);
+  --muted: #f2f2f2;
+  --muted-foreground: #4d6a80;
+  --accent: var(--brand-aqua);
+  --accent-foreground: var(--brand-deep-blue);
+  --border: var(--brand-grey);
+  --input: var(--brand-grey);
+  --ring: var(--brand-aqua);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: var(--brand-deep-blue-night);
+    --foreground: var(--brand-white);
+    --card: var(--brand-deep-blue);
+    --card-foreground: var(--brand-white);
+    --primary: var(--brand-aqua-strong);
+    --primary-foreground: var(--brand-white);
+    --secondary: var(--brand-grey);
+    --secondary-foreground: var(--brand-deep-blue);
+    --muted: var(--brand-deep-blue);
+    --muted-foreground: var(--brand-grey);
+    --accent: var(--brand-aqua);
+    --accent-foreground: var(--brand-deep-blue);
+    --border: #3b6a8c;
+    --input: #3b6a8c;
+    --ring: var(--brand-aqua);
+  }
+}
+
+@theme inline {
+  --color-brand-deep-blue: var(--brand-deep-blue);
+  --color-brand-aqua: var(--brand-aqua);
+  --color-brand-grey: var(--brand-grey);
+  --color-brand-white: var(--brand-white);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}

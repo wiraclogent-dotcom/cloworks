@@ -1,0 +1,208 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppRole {
+  REQUESTER
+  CREATIVE
+  LEAD
+  ADMIN
+}
+
+enum JobRole {
+  DESIGNER
+  SOCIAL_MEDIA
+  OTHER
+}
+
+enum RequestStatus {
+  REQUESTED
+  ON_PROGRESS
+  FIRST_LOOK
+  DONE
+  CANCELLED
+}
+
+enum ProjectStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+  ON_HOLD
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String?  @unique
+  name       String
+  fullName   String
+  title      String?
+  department String?
+  appRole    AppRole  @default(REQUESTER)
+  jobRole    JobRole  @default(OTHER)
+  aliases    String[]
+  active     Boolean  @default(true)
+
+  requested     Request[]      @relation("RequestRequester")
+  assigned      Request[]      @relation("RequestAssignee")
+  statusEvents  StatusEvent[]
+  comments      Comment[]
+  attachments   Attachment[]
+  kpiTargets    KpiTarget[]
+  notifications Notification[]
+  ownedProjects Project[]
+}
+
+model AllowedEmail {
+  id    String  @id @default(cuid())
+  email String  @unique
+  note  String?
+}
+
+model Brand {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  requests Request[]
+  projects Project[]
+}
+
+model Division {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  requests Request[]
+}
+
+model RequestType {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  fieldSchema Json      @default("[]")
+  active      Boolean   @default(true)
+  requests    Request[]
+}
+
+model Request {
+  id              String        @id @default(cuid())
+  title           String
+  briefUrl        String?
+  notes           String?
+  brandId         String
+  divisionId      String
+  typeId          String
+  requesterId     String
+  assigneeId      String?
+  requestedAt     DateTime      @default(now())
+  deadline        DateTime?
+  status          RequestStatus @default(REQUESTED)
+  outputCount     Int           @default(1)
+  includeKpi      Boolean       @default(true)
+  designFolderUrl String?
+  fields          Json          @default("{}")
+
+  brand     Brand       @relation(fields: [brandId], references: [id])
+  division  Division    @relation(fields: [divisionId], references: [id])
+  type      RequestType @relation(fields: [typeId], references: [id])
+  requester User        @relation("RequestRequester", fields: [requesterId], references: [id])
+  assignee  User?       @relation("RequestAssignee", fields: [assigneeId], references: [id])
+
+  statusEvents  StatusEvent[]
+  comments      Comment[]
+  attachments   Attachment[]
+  notifications Notification[]
+
+  @@index([status])
+  @@index([assigneeId])
+  @@index([requestedAt])
+}
+
+model StatusEvent {
+  id        String         @id @default(cuid())
+  requestId String
+  from      RequestStatus?
+  to        RequestStatus
+  actorId   String
+  at        DateTime       @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  actor   User    @relation(fields: [actorId], references: [id])
+
+  @@index([requestId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  requestId String
+  authorId  String
+  body      String
+  mentions  String[]
+  createdAt DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  author  User    @relation(fields: [authorId], references: [id])
+
+  @@index([requestId])
+}
+
+model Attachment {
+  id         String   @id @default(cuid())
+  requestId  String
+  uploaderId String
+  name       String
+  url        String
+  mimeType   String?
+  sizeBytes  Int?
+  createdAt  DateTime @default(now())
+
+  request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  uploader User    @relation(fields: [uploaderId], references: [id])
+
+  @@index([requestId])
+}
+
+model KpiTarget {
+  id          String  @id @default(cuid())
+  userId      String
+  month       String
+  role        JobRole
+  targetTasks Int
+  note        String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  requestId String?
+  type      String
+  message   String
+  readAt    DateTime?
+  emailedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user    User     @relation(fields: [userId], references: [id])
+  request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model Project {
+  id        String        @id @default(cuid())
+  title     String
+  subTitle  String?
+  brandId   String?
+  ownerId   String
+  status    ProjectStatus @default(NOT_STARTED)
+  startDate DateTime?
+  dueDate   DateTime?
+  fileUrl   String?
+
+  brand Brand? @relation(fields: [brandId], references: [id])
+  owner User   @relation(fields: [ownerId], references: [id])
+}

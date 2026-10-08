@@ -3,3 +3,10 @@ node_modules/
 .next/
 .env
 .env.local
+
+.pgdata/
+/coverage
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+!.env.example
