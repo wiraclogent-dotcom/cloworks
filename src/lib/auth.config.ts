@@ -5,7 +5,7 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; appRole: AppRole; jobRole: JobRole; loginEmail?: string } & import("next-auth").DefaultSession["user"];
+    user: { id: string; appRole: AppRole; jobRole: JobRole; loginEmail?: string; pwv?: number } & import("next-auth").DefaultSession["user"];
   }
 }
 declare module "@auth/core/jwt" {
@@ -13,14 +13,27 @@ declare module "@auth/core/jwt" {
     uid?: string;
     /** Normalised email this token was issued for; a rebound/cleared email invalidates it. */
     loginEmail?: string;
+    /** User.passwordVersion when issued; a password change invalidates older tokens. */
+    pwv?: number;
     appRole?: AppRole;
     jobRole?: JobRole;
   }
 }
 
-/** Edge/DB-free part of the config, shared with proxy.ts. Env: AUTH_GOOGLE_ID/SECRET, AUTH_MICROSOFT_ENTRA_ID_ID/SECRET/ISSUER. */
+/** OAuth providers whose credentials are configured; each is optional now that email + password sign-in exists. */
+export function oauthProviderIds(env: Record<string, string | undefined> = process.env): ("google" | "microsoft-entra-id")[] {
+  const ids: ("google" | "microsoft-entra-id")[] = [];
+  if (env.AUTH_GOOGLE_ID?.trim()) ids.push("google");
+  if (env.AUTH_MICROSOFT_ENTRA_ID_ID?.trim()) ids.push("microsoft-entra-id");
+  return ids;
+}
+
+/**
+ * Edge/DB-free part of the config, shared with proxy.ts. Env: AUTH_GOOGLE_ID/SECRET, AUTH_MICROSOFT_ENTRA_ID_ID/SECRET/ISSUER.
+ * The password (Credentials) provider needs the database, so auth.ts adds it.
+ */
 export const authConfig = {
-  providers: [Google, MicrosoftEntraID],
+  providers: oauthProviderIds().map((id) => (id === "google" ? Google : MicrosoftEntraID)),
   pages: { signIn: "/signin", error: "/signin" },
   session: { strategy: "jwt" },
   callbacks: {
@@ -35,6 +48,7 @@ export const authConfig = {
         session.user.appRole = token.appRole;
         session.user.jobRole = token.jobRole;
         session.user.loginEmail = token.loginEmail;
+        session.user.pwv = token.pwv;
       }
       return session;
     },

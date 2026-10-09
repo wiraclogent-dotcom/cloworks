@@ -1,9 +1,8 @@
 "use server";
 
 import type { RequestStatus } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
-import { withUser, UNAUTH_MESSAGE } from "@/lib/actionUser";
+import { dbFor, requireUser } from "@/lib/session";
+import { withUser, UNAUTH_MESSAGE, unauthResult } from "@/lib/actionUser";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { rescheduleRequestWith, type RescheduleResult } from "@/lib/reschedule";
@@ -16,12 +15,16 @@ export async function moveRequest(
   to: RequestStatus,
   opts?: { outputCount?: number; designFolderUrl?: string },
 ): Promise<MoveResult> {
-  return moveRequestWith(requireUser, prisma, requestId, to, opts);
+  return withUser<MoveResult, MoveResult>(requireUser, (user) => moveRequestWith(async () => user, dbFor(user), requestId, to, opts), unauthResult);
 }
 
 /** Calendar drag / detail-page deadline change. Expected failures return as data. */
 export async function rescheduleRequest(requestId: string, day: string): Promise<RescheduleResult> {
-  const r = await rescheduleRequestWith(requireUser, prisma, requestId, day);
+  const r = await withUser<RescheduleResult, RescheduleResult>(
+    requireUser,
+    (user) => rescheduleRequestWith(async () => user, dbFor(user), requestId, day),
+    unauthResult,
+  );
   if (r.ok) {
     revalidatePath("/requests");
     revalidatePath(`/requests/${requestId}`);
@@ -34,7 +37,8 @@ export type { SubmitState } from "@/lib/submitRequest";
 /** Form-facing wrapper for useActionState: expected errors come back as data (production redacts thrown errors). */
 export async function submitRequest(_prev: SubmitState, fd: FormData): Promise<SubmitState> {
   return withUser<SubmitState, SubmitState>(requireUser, async (user) => {
-    const r = await submitRequestWith(prisma, user, fd);
+    const db = dbFor(user);
+    const r = await submitRequestWith(db, user, fd);
     if (r.ok) redirect("/requests");
     return r;
   }, () => ({ ok: false, code: "UNAUTHENTICATED", message: UNAUTH_MESSAGE, values: extractValues(fd), nonce: crypto.randomUUID() }));

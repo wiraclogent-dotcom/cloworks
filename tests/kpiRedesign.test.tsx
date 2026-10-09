@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";
 
 vi.mock("@/app/(app)/dashboard/targets/actions", () => ({ setTarget: vi.fn() }));
 
@@ -116,12 +116,31 @@ describe("Trend chart card", () => {
 });
 
 describe("month picker, skeletons, access denied", () => {
-  it("month picker is a labelled GET form that keeps user=", () => {
-    const { container } = render(<MonthPicker month="2026-10" userId="u9" action="/dashboard" />);
-    expect((screen.getByLabelText("Month") as HTMLInputElement).value).toBe("2026-10");
-    expect(container.querySelector('input[type=hidden][name=user]')!.getAttribute("value")).toBe("u9");
-    expect(screen.getByRole("button", { name: "Show" }).getAttribute("type")).toBe("submit");
-    expect(container.querySelector("form")!.getAttribute("method")).toBe("get");
+  it("month picker: design-system popover of month links that keep user=", () => {
+    render(<MonthPicker month="2026-03" current="2026-10" userId="u9" action="/dashboard" />);
+    const trigger = screen.getByText("March 2026").closest("summary")!;
+    expect(trigger.getAttribute("aria-label")).toBe("Month: March 2026");
+    expect(document.querySelector('input[type="month"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
+    fireEvent.click(trigger);
+    const panel = screen.getByRole("group", { name: "Choose a month" });
+    expect(within(panel).getByText("2026")).toBeTruthy();
+    const mar = within(panel).getByRole("link", { name: "March 2026" });
+    expect(mar.getAttribute("href")).toBe("/dashboard?month=2026-03&user=u9");
+    expect(mar.getAttribute("aria-current")).toBe("true");
+    expect(within(panel).getByRole("link", { name: "October 2026" }).hasAttribute("data-this-month")).toBe(true);
+    // Months after the current one have no data yet: shown, not linked.
+    expect(within(panel).queryByRole("link", { name: "November 2026" })).toBeNull();
+    expect(within(panel).getByText("Nov").getAttribute("aria-disabled")).toBe("true");
+    expect(within(panel).getByRole("button", { name: "Next year" }).hasAttribute("disabled")).toBe(true);
+    fireEvent.click(within(panel).getByRole("button", { name: "Previous year" }));
+    expect(within(panel).getByRole("link", { name: "December 2025" }).getAttribute("href")).toBe("/dashboard?month=2025-12&user=u9");
+    expect(within(panel).getByRole("link", { name: "This month" }).getAttribute("href")).toBe("/dashboard?month=2026-10&user=u9");
+  });
+  it("month picker without a user links to the month alone", () => {
+    render(<MonthPicker month="2026-10" current="2026-10" action="/dashboard/team" />);
+    fireEvent.click(screen.getByText("October 2026").closest("summary")!);
+    expect(screen.getByRole("link", { name: "January 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-01");
   });
   it("KPI fallbacks are skeletons with a loading status", () => {
     const { container, unmount } = render(<KpiSkeleton />);

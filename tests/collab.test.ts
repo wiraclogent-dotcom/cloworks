@@ -12,7 +12,8 @@ describe("collaboration cores", () => {
     db = await createTestDb();
     const p = db.prisma;
     const mk = async (k: string, name: string, appRole: "REQUESTER" | "CREATIVE" | "LEAD" | "ADMIN", extra: { aliases?: string[]; active?: boolean } = {}) => {
-      ids[k] = (await p.user.create({ data: { email: `${k}@clogent.co.id`, name, fullName: name, appRole, ...extra } })).id;
+      // Creatives are designers (the creative team); the lead is not on the team.
+      ids[k] = (await p.user.create({ data: { email: `${k}@clogent.co.id`, name, fullName: name, appRole, jobRole: appRole === "CREATIVE" ? "DESIGNER" : "OTHER", ...extra } })).id;
     };
     await mk("author", "Rina", "REQUESTER");
     await mk("dimas", "Dimas Pandu", "CREATIVE", { aliases: ["dp"] });
@@ -98,6 +99,11 @@ describe("collaboration cores", () => {
       expect(await assignRequestWith(db.prisma, lead, reqId, "nope")).toMatchObject({ ok: false, code: "NOT_FOUND" });
       expect(await assignRequestWith(db.prisma, lead, "nope", ids.dimas)).toMatchObject({ ok: false, code: "NOT_FOUND" });
       expect(await assignRequestWith(db.prisma, lead, cancelledId, ids.dimas)).toMatchObject({ ok: false, code: "INVALID" });
+    });
+    it("only assigns members of the creative team", async () => {
+      const r = await assignRequestWith(db.prisma, actor("lead", "LEAD"), reqId, ids.lead);
+      expect(r).toEqual({ ok: false, code: "INVALID", message: "Only creative team members can be assignees." });
+      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).not.toBe(ids.lead);
     });
   });
 

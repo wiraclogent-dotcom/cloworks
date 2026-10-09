@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense, use } from "react";
 import { signIn } from "@/lib/auth";
-import { signInErrorMessage } from "@/lib/signinError";
+import { oauthProviderIds } from "@/lib/auth.config";
+import { PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
+import { fieldClass, labelClass } from "@/components/ui/Field";
+import { passwordSignIn } from "./actions";
 import { Alert } from "@/components/ui/Alert";
 import { buttonClass } from "@/components/ui/Button";
 import { LogoMark } from "@/components/ui/LogoMark";
@@ -9,16 +12,19 @@ import { LogoMark } from "@/components/ui/LogoMark";
 /** Tab title: "Sign in · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Sign in" };
 
-type SP = Promise<{ error?: string | string[] }>;
+type SP = Promise<{ error?: string | string[]; changed?: string | string[] }>;
 
 /** Reads the request's query (dynamic), so it sits in its own Suspense boundary and the rest of the page stays static. */
 function Notice({ searchParams }: { searchParams: SP }) {
-  const notice = signInErrorMessage(use(searchParams).error);
-  return notice ? <Alert tone="danger">{notice}</Alert> : null;
+  const sp = use(searchParams);
+  const notice = signInErrorMessage(sp.error);
+  if (notice) return <Alert tone="danger">{notice}</Alert>;
+  return sp.changed ? <Alert tone="success">{PASSWORD_CHANGED_MESSAGE}</Alert> : null;
 }
 
 export default function SignInPage({ searchParams }: { searchParams: SP }) {
   const btn = buttonClass({ variant: "secondary", block: true, className: "h-10" });
+  const providers = oauthProviderIds();
   return (
     <main id="main" className="flex flex-1 flex-col">
       {/* Brand band: Deep Blue (the sidebar colour in both themes) with an Aqua accent line; the card overlaps it. */}
@@ -36,24 +42,44 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
           <p className="mt-1 text-sm text-foreground-secondary">Creative request tracker</p>
         </div>
         <div className="space-y-3">
-          <p className="text-center text-[13px] text-foreground-secondary">Sign in with your Clogent account.</p>
           <Suspense fallback={null}><Notice searchParams={searchParams} /></Suspense>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/" });
-            }}
-          >
-            <button className={btn}>Continue with Google</button>
+          <form action={passwordSignIn} className="space-y-3">
+            <div>
+              <label htmlFor="signin-email" className={labelClass}>Email</label>
+              <input id="signin-email" name="email" type="email" autoComplete="username" required className={fieldClass({ className: "h-10" })} />
+            </div>
+            <div>
+              <label htmlFor="signin-password" className={labelClass}>Password</label>
+              <input id="signin-password" name="password" type="password" autoComplete="current-password" required className={fieldClass({ className: "h-10" })} />
+            </div>
+            <button className={buttonClass({ variant: "primary", block: true, className: "h-10" })}>Sign in</button>
           </form>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("microsoft-entra-id", { redirectTo: "/" });
-            }}
-          >
-            <button className={btn}>Continue with Microsoft</button>
-          </form>
+          <p className="text-center text-xs text-foreground-secondary">No password yet, or forgot it? Ask Wira to set one.</p>
+          {providers.length > 0 && (
+            <>
+              <p className="pt-2 text-center text-[13px] text-foreground-secondary">Or sign in with your Clogent account.</p>
+              {providers.includes("google") && (
+                <form
+                  action={async () => {
+                    "use server";
+                    await signIn("google", { redirectTo: "/" });
+                  }}
+                >
+                  <button className={btn}>Continue with Google</button>
+                </form>
+              )}
+              {providers.includes("microsoft-entra-id") && (
+                <form
+                  action={async () => {
+                    "use server";
+                    await signIn("microsoft-entra-id", { redirectTo: "/" });
+                  }}
+                >
+                  <button className={btn}>Continue with Microsoft</button>
+                </form>
+              )}
+            </>
+          )}
         </div>
       </div>
       </div>

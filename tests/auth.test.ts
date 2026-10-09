@@ -163,7 +163,7 @@ describe("decideSignIn + session", () => {
     const u = await db.prisma.user.create({ data: { email: "c@clogent.co.id", name: "C", fullName: "C", appRole: "CREATIVE" } });
     const sess = (id: string) => async () => ({ user: { id, loginEmail: "c@clogent.co.id", appRole: "ADMIN" } });
     const ok = await requireUserWith(sess(u.id), db.prisma);
-    expect(ok).toEqual({ id: u.id, appRole: "CREATIVE", jobRole: "OTHER" });
+    expect(ok).toEqual({ id: u.id, appRole: "CREATIVE", jobRole: "OTHER", workspaceId: "clogent", mustChangePassword: false });
     await expect(requireUserWith(async () => null, db.prisma)).rejects.toThrow();
     await expect(requireUserWith(sess("nope"), db.prisma)).rejects.toThrow();
     await db.prisma.user.update({ where: { id: u.id }, data: { active: false } });
@@ -176,7 +176,7 @@ describe("decideSignIn + session", () => {
     const sess = async () => ({ user: { id: u.id, loginEmail: "outsider@gmail.com" } });
     expect((await requireUserWith(sess, db.prisma)).id).toBe(u.id);
     expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).not.toBeNull();
-    await db.prisma.allowedEmail.delete({ where: { email: "outsider@gmail.com" } });
+    await db.prisma.allowedEmail.deleteMany({ where: { email: "outsider@gmail.com" } });
     await expect(requireUserWith(sess, db.prisma)).rejects.toThrow();
     expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).toBeNull();
   });

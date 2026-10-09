@@ -39,9 +39,12 @@ describe("ProjectTable", () => {
     expect(zed1.textContent).toContain("In progress");
     const alpha = screen.getByRole("row", { name: /Alpha 1/ });
     expect(alpha.textContent).toContain("Done");
-    expect(within(alpha).queryByRole("link")).toBeNull();
+    // The only link in a row without a file is the title link to the project's detail page.
+    const rowLinks = within(alpha).queryAllByRole("link");
+    expect(rowLinks.map((a) => a.getAttribute("href"))).toEqual([`/projects/${"Alpha 1"}`]);
     expect(alpha.textContent).not.toContain("left");
-    const link = within(screen.getByRole("row", { name: /Zed 2/ })).getByRole("link");
+    // Two links now: the title (detail page) and the file. Pick the external file link.
+    const link = within(screen.getByRole("row", { name: /Zed 2/ })).getAllByRole("link").find((a) => a.getAttribute("rel"))!;
     expect(link.getAttribute("rel")).toBe("noopener noreferrer");
     expect(screen.getByRole("row", { name: /Orphan/ }).textContent).toContain("—");
   });

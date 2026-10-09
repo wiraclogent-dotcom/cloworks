@@ -1,15 +1,15 @@
-import { PrismaClient } from "@prisma/client";
 import { parseArgs } from "../src/lib/import/cliArgs";
 import { runImport } from "../src/lib/import/run";
+import { resolveWorkspace, withoutWorkspaceArg } from "./lib/workspaceArg";
 
 // Dry-run by default; --apply writes. Never fetches URLs; reads a local .xlsx workbook (or legacy CSV exports) only.
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
-  const db = new PrismaClient();
+  const args = parseArgs(withoutWorkspaceArg(process.argv.slice(2)));
+  const ws = await resolveWorkspace();
   try {
-    await runImport(db, args);
+    await runImport(ws.db, ws.id, args);
   } finally {
-    await db.$disconnect();
+    await ws.disconnect();
   }
 }
 

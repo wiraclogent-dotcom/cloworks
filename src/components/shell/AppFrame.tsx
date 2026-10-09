@@ -23,9 +23,9 @@ const getCollapsed = sidebarIsCollapsed;
 /**
  * Client frame of the signed-in app: Deep Blue sidebar (232px, collapsible to a 64px rail on desktop, remembered in
  * localStorage `ct-sidebar`), slim top bar + off-canvas drawer below 768px, skip link and `<main id="main">`.
- * The server AppShell passes in the nav and footer (permission checks stay on the server).
+ * The server AppShell passes in the nav, footer and workspace name (permission checks and reads stay on the server).
  */
-export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: ReactNode; children: ReactNode }) {
+export function AppFrame({ nav, footer, workspace, children }: { nav: ReactNode; footer: ReactNode; workspace?: ReactNode; children: ReactNode }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, getCollapsed, () => false);
   const [open, setOpen] = useState(false);
   const restoreFocus = useRef(false);
@@ -99,7 +99,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
               <LogoMark size={32} />
               <div className="sb-label min-w-0 flex-1 leading-tight">
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
-                <p className="truncate text-xs text-sidebar-foreground-secondary">Creative team</p>
+                <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
               </div>
               <ChevronsUpDown aria-hidden="true" className="sb-label size-4 shrink-0 text-sidebar-foreground-secondary" />
               <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"

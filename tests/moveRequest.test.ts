@@ -4,16 +4,16 @@ import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("moveRequestWith", () => {
   let db: TestDb;
-  let creative: { id: string; appRole: "CREATIVE"; jobRole: "DESIGNER" };
-  let requester: { id: string; appRole: "REQUESTER"; jobRole: "OTHER" };
+  let creative: { id: string; appRole: "CREATIVE"; jobRole: "DESIGNER"; workspaceId: string; mustChangePassword: boolean };
+  let requester: { id: string; appRole: "REQUESTER"; jobRole: "OTHER"; workspaceId: string; mustChangePassword: boolean };
   let reqId: string;
   beforeAll(async () => {
     db = await createTestDb();
     const p = db.prisma;
     const c = await p.user.create({ data: { email: "c@clogent.co.id", name: "C", fullName: "C", appRole: "CREATIVE" } });
     const r = await p.user.create({ data: { email: "r@clogent.co.id", name: "R", fullName: "R" } });
-    creative = { id: c.id, appRole: "CREATIVE", jobRole: "DESIGNER" };
-    requester = { id: r.id, appRole: "REQUESTER", jobRole: "OTHER" };
+    creative = { id: c.id, appRole: "CREATIVE", jobRole: "DESIGNER", workspaceId: "clogent", mustChangePassword: false };
+    requester = { id: r.id, appRole: "REQUESTER", jobRole: "OTHER", workspaceId: "clogent", mustChangePassword: false };
     const brand = await p.brand.create({ data: { name: "B" } });
     const div = await p.division.create({ data: { name: "D" } });
     const type = await p.requestType.create({ data: { name: "T" } });

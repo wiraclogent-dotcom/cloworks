@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { RequestStatus } from "@prisma/client";
-import { listRequests, listCalendarRequests } from "@/lib/requests";
+import { listRequests, listCalendarRequests, listTimelineRequests } from "@/lib/requests";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("listRequests", () => {
@@ -169,5 +169,58 @@ describe("listCalendarRequests", () => {
   it("still applies the assignee filter", async () => {
     const rows = await listCalendarRequests(db.prisma, { assigneeId: cre2 }, range);
     expect(rows.map((r) => r.title)).toEqual(["in"]);
+  });
+});
+
+describe("listTimelineRequests", () => {
+  let db: TestDb;
+  let cre: string;
+  let cre2: string;
+  let brandId: string; let divisionId: string; let typeId: string;
+  const range = { from: "2026-09-28", to: "2026-10-11", today: "2026-10-08" };
+
+  async function mk(title: string, requested: string, o: { status?: RequestStatus; deadline?: string | null; assigneeId?: string | null } = {}) {
+    await db.prisma.request.create({
+      data: {
+        title, brandId, divisionId, typeId, requesterId: cre, assigneeId: o.assigneeId ?? null,
+        status: o.status ?? "REQUESTED",
+        deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
+        requestedAt: new Date(`${requested}T00:00:00+07:00`),
+      },
+    });
+  }
+
+  beforeAll(async () => {
+    db = await createTestDb();
+    const p = db.prisma;
+    cre = (await p.user.create({ data: { email: "t@clogent.co.id", name: "T", fullName: "t" } })).id;
+    cre2 = (await p.user.create({ data: { email: "t2@clogent.co.id", name: "T2", fullName: "t2" } })).id;
+    brandId = (await p.brand.create({ data: { name: "B" } })).id;
+    divisionId = (await p.division.create({ data: { name: "D" } })).id;
+    typeId = (await p.requestType.create({ data: { name: "T" } })).id;
+    await mk("run", "2026-10-01", { deadline: "2026-10-14", assigneeId: cre2 });
+    await mk("overdue-old", "2026-09-10", { deadline: "2026-09-20" });
+    await mk("nodl", "2026-10-02");
+    await mk("future", "2026-10-20", { deadline: "2026-10-25" });
+    await mk("done", "2026-10-01", { deadline: "2026-10-05", status: "DONE" });
+    await mk("last-day", "2026-10-11", { deadline: "2026-10-12", status: "FIRST_LOOK" });
+  });
+  afterAll(async () => { await db?.stop(); });
+
+  it("returns open requests whose bar meets the window, oldest request first", async () => {
+    const rows = await listTimelineRequests(db.prisma, {}, range);
+    expect(rows.map((r) => r.title)).toEqual(["overdue-old", "run", "nodl", "last-day"]);
+    expect(rows[1]).toMatchObject({ assigneeId: cre2, assigneeName: "T2", requestDay: "2026-10-01", deadlineDay: "2026-10-14" });
+    expect(rows[2]).toMatchObject({ assigneeId: null, deadlineDay: null });
+  });
+  it("for a future window needs a deadline on or after its first day", async () => {
+    const rows = await listTimelineRequests(db.prisma, {}, { from: "2026-10-12", to: "2026-10-25", today: "2026-10-08" });
+    expect(rows.map((r) => r.title)).toEqual(["run", "last-day", "future"]);
+  });
+  it("returns nothing for a closed status filter", async () =>
+    expect(await listTimelineRequests(db.prisma, { status: "DONE" }, range)).toEqual([]));
+  it("applies an open status filter and the other filters", async () => {
+    expect((await listTimelineRequests(db.prisma, { status: "FIRST_LOOK" }, range)).map((r) => r.title)).toEqual(["last-day"]);
+    expect((await listTimelineRequests(db.prisma, { assigneeId: cre2 }, range)).map((r) => r.title)).toEqual(["run"]);
   });
 });

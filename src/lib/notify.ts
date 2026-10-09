@@ -105,12 +105,6 @@ export function notifierFor(db: PrismaClient): Notifier {
   return (input) => notifyWith(db, realMailer(), input);
 }
 
-/** Thin entry point using the app's shared Prisma client. */
-export async function notify(input: NotifyInput): Promise<void> {
-  const { prisma } = await import("./db");
-  return notifyWith(prisma, realMailer(), input);
-}
-
 /** Runs a post-commit notification step; any failure is logged and swallowed. */
 export async function bestEffort(fn: () => Promise<void>): Promise<void> {
   try {

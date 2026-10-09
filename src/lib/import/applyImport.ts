@@ -4,11 +4,11 @@ import { statusChain, type ImportRecord } from "./parseRequests";
 export type ApplyResult = { inserted: number; alreadyImported: Record<string, number> };
 
 /**
- * Writes parsed records. Idempotent via fields.importKey. One transaction per batch (<=100); a failing
+ * Writes parsed records into `workspaceId` (the raw query below is not scoped by the client, so it filters by it). Idempotent via fields.importKey. One transaction per batch (<=100); a failing
  * batch aborts the run (earlier batches stay committed and are skipped on re-run).
  * See DONE_CAVEAT in parseRequests.ts: synthetic DONE events are placed at the deadline.
  */
-export async function applyImport(db: PrismaClient, records: ImportRecord[], opts: { batchSize?: number } = {}): Promise<ApplyResult> {
+export async function applyImport(db: PrismaClient, workspaceId: string, records: ImportRecord[], opts: { batchSize?: number } = {}): Promise<ApplyResult> {
   const batchSize = Math.min(opts.batchSize ?? 100, 100);
 
   // Verify every needed lookup row exists BEFORE writing anything.
@@ -27,7 +27,7 @@ export async function applyImport(db: PrismaClient, records: ImportRecord[], opt
   const typeId = new Map(types.map((t) => [t.name, t.id]));
 
   const existing = new Set(
-    (await db.$queryRaw<{ k: string }[]>`SELECT fields->>'importKey' AS k FROM "Request" WHERE fields->>'importKey' IS NOT NULL`).map((r) => r.k),
+    (await db.$queryRaw<{ k: string }[]>`SELECT fields->>'importKey' AS k FROM "Request" WHERE fields->>'importKey' IS NOT NULL AND "workspaceId" = ${workspaceId}`).map((r) => r.k),
   );
   const alreadyImported: Record<string, number> = {};
   const fresh: ImportRecord[] = [];
