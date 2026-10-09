@@ -14,12 +14,12 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const ROW_GRID = "grid grid-cols-[12rem_minmax(0,1fr)]";
 const DAY_GRID = "grid grid-cols-[repeat(14,minmax(3.5rem,1fr))]";
 
-/** Weekend shading and today's outline behind the bars. */
+/** Day-off (Sunday) shading and today's outline behind the bars. */
 function DayUnderlay({ days }: { days: TimelineDay[] }) {
   return (
     <div aria-hidden="true" className={cn(DAY_GRID, "pointer-events-none absolute inset-0")}>
       {days.map((d) => (
-        <div key={d.day} className={cn("border-l border-border first:border-l-0", d.isWeekend && "bg-surface-muted", d.isToday && "border-x-2 border-ring")} />
+        <div key={d.day} className={cn("border-l border-border first:border-l-0", d.isDayOff && "bg-surface-muted", d.isToday && "border-x-2 border-ring")} />
       ))}
     </div>
   );
@@ -84,7 +84,7 @@ export function TimelineChart({ days, persons, rows }: { days: TimelineDay[]; pe
           <div className="border-r border-border px-3 py-2">Person</div>
           <div className={DAY_GRID}>
             {days.map((d) => (
-              <div key={d.day} data-day={d.day} data-weekend={d.isWeekend ? "" : undefined} aria-current={d.isToday ? "date" : undefined}
+              <div key={d.day} data-day={d.day} data-day-off={d.isDayOff ? "" : undefined} aria-current={d.isToday ? "date" : undefined}
                 className={cn("border-l border-border px-1.5 py-2 whitespace-nowrap tabular-nums first:border-l-0", d.isToday && "font-semibold text-link")}>
                 {`${WEEKDAYS[d.weekday]} ${Number(d.day.slice(8))}`}
               </div>

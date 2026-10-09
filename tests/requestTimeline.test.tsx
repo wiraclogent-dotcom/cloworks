@@ -41,7 +41,8 @@ describe("RequestTimeline", () => {
     const days = document.querySelectorAll("[data-day]");
     expect(days).toHaveLength(14);
     expect(document.querySelector(`[data-day="${TODAY}"]`)!.getAttribute("aria-current")).toBe("date");
-    expect(document.querySelectorAll("[data-day][data-weekend]")).toHaveLength(4);
+    // Monday to Saturday is the work week: only the two Sundays are shaded.
+    expect([...document.querySelectorAll("[data-day][data-day-off]")].map((d) => d.getAttribute("data-day"))).toEqual(["2026-10-04", "2026-10-11"]);
   });
 
   it("shows both years when the window crosses a new year", () => {

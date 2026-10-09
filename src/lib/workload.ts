@@ -5,7 +5,7 @@ import { DAY_MS, fmt, utc, weekdayOf } from "./calendar";
 
 export const TIMELINE_DAYS = 14;
 
-export type TimelineDay = { day: string; weekday: number; isToday: boolean; isWeekend: boolean };
+export type TimelineDay = { day: string; weekday: number; isToday: boolean; /** Sunday: the team works Monday to Saturday. */ isDayOff: boolean };
 export type TimelineItem = { id: string; assigneeId: string | null; assigneeName: string | null; requestDay: string; deadlineDay: string | null };
 export type TimelineBar = {
   id: string;
@@ -45,7 +45,7 @@ export function buildWindow(week: string, today: string): { days: TimelineDay[];
   const days = Array.from({ length: TIMELINE_DAYS }, (_, i): TimelineDay => {
     const day = addDays(week, i);
     const weekday = i % 7;
-    return { day, weekday, isToday: day === today, isWeekend: weekday >= 5 };
+    return { day, weekday, isToday: day === today, isDayOff: weekday === 6 };
   });
   return { days, from: days[0].day, to: days[TIMELINE_DAYS - 1].day };
 }

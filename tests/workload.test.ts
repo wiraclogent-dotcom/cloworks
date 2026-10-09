@@ -26,12 +26,12 @@ describe("weeks", () => {
 });
 
 describe("buildWindow", () => {
-  it("is 14 Monday-first days with weekends and today", () => {
+  it("is 14 Monday-first days with Sundays off (Saturday is a workday) and today", () => {
     const w = buildWindow("2026-09-28", TODAY);
     expect(w).toMatchObject({ from: "2026-09-28", to: "2026-10-11" });
     expect(w.days).toHaveLength(14);
     expect(w.days[0]).toMatchObject({ day: "2026-09-28", weekday: 0 });
-    expect(w.days.filter((d) => d.isWeekend).map((d) => d.day)).toEqual(["2026-10-03", "2026-10-04", "2026-10-10", "2026-10-11"]);
+    expect(w.days.filter((d) => d.isDayOff).map((d) => d.day)).toEqual(["2026-10-04", "2026-10-11"]);
     expect(w.days.filter((d) => d.isToday).map((d) => d.day)).toEqual([TODAY]);
   });
 });

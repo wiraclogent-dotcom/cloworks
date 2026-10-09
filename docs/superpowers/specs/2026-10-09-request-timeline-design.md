@@ -75,7 +75,7 @@ timeline reuses that list. Rows, in order:
 ## 3. Pure layout — `src/lib/workload.ts` (client-safe, no Prisma)
 
 - `parseWeek(raw, now)`, `defaultWeek(today)`, `shiftWeek(week, delta)` (±7 days per step).
-- `buildWindow(week, today)` → 14 `{ day, weekday (0 = Mon), isToday, isWeekend }`, plus `from` and `to`.
+- `buildWindow(week, today)` → 14 `{ day, weekday (0 = Mon), isToday, isDayOff }` (Sunday only), plus `from` and `to`.
 - `barSpan(row, today)` → `{ start, planEnd, end, overdue, noDeadline }` per the rule above.
 - `layoutRows(rows, people, window, today)` → per person `{ key, name, assigneeId | null, count, lanes: Bar[][] }`
   where each `Bar` has `id`, `startCol`, `endCol` (inclusive, clamped to 0–13), `planEndCol` (the deadline column
@@ -96,7 +96,7 @@ label "Timeline". Above the chart: the range as a heading ("28 Sep – 11 Oct 20
 
 ### Chart (≥ 640px)
 
-- A label column (~12rem) and a 14-column CSS grid. Header cells show weekday + date ("Mon 5"); weekend columns get
+- A label column (~12rem) and a 14-column CSS grid. Header cells show weekday + date ("Mon 5"); Sunday columns (the only day off; the team works Monday–Saturday) get
   a muted background; today's column gets the Aqua accent the Calendar uses for today. The whole chart sits in a
   horizontally scrollable card with a min width so day columns never get narrower than ~3.5rem.
 - Person row: avatar (or unassigned avatar), name, "N open". Then one line per lane (minimum one line, so empty people
@@ -141,7 +141,7 @@ placeholders), used by `ViewSkeleton` for `view=timeline`. Clock-free, like `Cal
 ## 6. Testing (test-first)
 
 - `tests/workload.test.ts`: `parseWeek` (valid, snapping to Monday, invalid, out-of-range, default = last week's
-  Monday), `shiftWeek`, `buildWindow` (14 days, weekends, today), `barSpan` (future deadline, today, overdue, no
+  Monday), `shiftWeek`, `buildWindow` (14 days, Sundays off, today), `barSpan` (future deadline, today, overdue, no
   deadline, bad data), `layoutRows` (lanes, clipping both sides, `planEndCol`, people order, empty people, inactive
   assignee, Unassigned only when non-empty, Assignee filter).
 - `tests/requestParams.test.ts`: `view=timeline`, `week` parsing, `hrefWith` keeps `week` only on the timeline and
