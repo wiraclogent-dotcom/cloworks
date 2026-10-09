@@ -236,11 +236,8 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
         if (!stillUsed) await tx.allowedEmail.deleteMany({ where: { email: { equals: old, mode: "insensitive" } } });
       }
       if (next && !isAllowedEmail(next, companyDomain(), [])) {
-        await tx.allowedEmail.upsert({
-          where: { email: next },
-          create: { email: next, note: `login for ${user.name}` },
-          update: {},
-        });
+        if (!(await tx.allowedEmail.findFirst({ where: { email: next } })))
+          await tx.allowedEmail.create({ data: { email: next, note: `login for ${user.name}` } });
       }
       if (capableBefore > 0 && (await countSignInCapableAdmins(tx)) === 0)
         throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
@@ -284,7 +281,10 @@ export async function addAllowedEmail(db: Db, actor: Actor, email: string, note?
   assertAdmin(actor);
   const e = normalizeEmail(email);
   const n = note?.trim() ? note.trim().slice(0, 200) : undefined;
-  return db.allowedEmail.upsert({ where: { email: e }, create: { email: e, note: n ?? null }, update: n !== undefined ? { note: n } : {} });
+  const existing = await db.allowedEmail.findFirst({ where: { email: e }, select: { id: true } });
+  return existing
+    ? db.allowedEmail.update({ where: { id: existing.id }, data: n !== undefined ? { note: n } : {} })
+    : db.allowedEmail.create({ data: { email: e, note: n ?? null } });
 }
 
 /** Idempotent. Sessions of users relying on this row end on their next request (session-core). */

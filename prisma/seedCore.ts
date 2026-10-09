@@ -42,17 +42,19 @@ export const SOCIAL_FIELDS: FieldSchema = [
  * (email, appRole, active, ...) are never overwritten by a re-run.
  */
 export async function seed(db: PrismaClient): Promise<void> {
-  for (const name of ["Clogent", "Bubble Wash"]) await db.brand.upsert({ where: { name }, update: {}, create: { name } });
+  // Names are unique per workspace, so find-or-create by name (the client decides the workspace).
+  for (const name of ["Clogent", "Bubble Wash"])
+    if (!(await db.brand.findFirst({ where: { name } }))) await db.brand.create({ data: { name } });
   for (const name of ["Creative", "Digital Ads", "Social Media", "Ecommerce", "Brand"])
-    await db.division.upsert({ where: { name }, update: {}, create: { name } });
-  await db.requestType.upsert({ where: { name: "General Design" }, update: {}, create: { name: "General Design", fieldSchema: [] } });
-  // Video/motion edit work logged by the video editor (imported from the "Dimas Tracker" tab).
-  await db.requestType.upsert({ where: { name: "Motion Support" }, update: {}, create: { name: "Motion Support", fieldSchema: [] } });
-  await db.requestType.upsert({
-    where: { name: "Social Media" },
-    update: {},
-    create: { name: "Social Media", fieldSchema: SOCIAL_FIELDS as object[] },
-  });
+    if (!(await db.division.findFirst({ where: { name } }))) await db.division.create({ data: { name } });
+  const types: { name: string; fieldSchema: object[] }[] = [
+    { name: "General Design", fieldSchema: [] },
+    // Video/motion edit work logged by the video editor (imported from the "Dimas Tracker" tab).
+    { name: "Motion Support", fieldSchema: [] },
+    { name: "Social Media", fieldSchema: SOCIAL_FIELDS as object[] },
+  ];
+  for (const t of types)
+    if (!(await db.requestType.findFirst({ where: { name: t.name } }))) await db.requestType.create({ data: t });
 
   for (const u of ROSTER) {
     // email is null for everyone but Wira, so identify roster rows by short name.

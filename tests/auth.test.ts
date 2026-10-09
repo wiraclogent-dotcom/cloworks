@@ -176,7 +176,7 @@ describe("decideSignIn + session", () => {
     const sess = async () => ({ user: { id: u.id, loginEmail: "outsider@gmail.com" } });
     expect((await requireUserWith(sess, db.prisma)).id).toBe(u.id);
     expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).not.toBeNull();
-    await db.prisma.allowedEmail.delete({ where: { email: "outsider@gmail.com" } });
+    await db.prisma.allowedEmail.deleteMany({ where: { email: "outsider@gmail.com" } });
     await expect(requireUserWith(sess, db.prisma)).rejects.toThrow();
     expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "outsider@gmail.com" })).toBeNull();
   });

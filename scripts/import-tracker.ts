@@ -81,26 +81,19 @@ async function main() {
         const first = ls[0];
         const starts = ls.map((l) => l.project_start).filter(Boolean).sort();
         const dues = ls.map((l) => l.project_due).filter(Boolean).sort();
-        const project = await tx.project.upsert({
-          where: { code },
-          create: {
-            code,
-            title: first.project_title,
-            brandId: brandId.get(first.brand)!,
-            ownerId: personId.get(first.project_owner)!,
-            status: first.project_status as ProjectStatus,
-            startDate: starts.length ? jakartaDay(starts[0]) : null,
-            dueDate: dues.length ? jakartaDay(dues[dues.length - 1]) : null,
-          },
-          update: {
-            title: first.project_title,
-            brandId: brandId.get(first.brand)!,
-            ownerId: personId.get(first.project_owner)!,
-            status: first.project_status as ProjectStatus,
-            startDate: starts.length ? jakartaDay(starts[0]) : null,
-            dueDate: dues.length ? jakartaDay(dues[dues.length - 1]) : null,
-          },
-        });
+        const fields = {
+          title: first.project_title,
+          brandId: brandId.get(first.brand)!,
+          ownerId: personId.get(first.project_owner)!,
+          status: first.project_status as ProjectStatus,
+          startDate: starts.length ? jakartaDay(starts[0]) : null,
+          dueDate: dues.length ? jakartaDay(dues[dues.length - 1]) : null,
+        };
+        // Codes are unique per workspace, so find-then-update/create rather than upsert by code.
+        const found = await tx.project.findFirst({ where: { code }, select: { id: true } });
+        const project = found
+          ? await tx.project.update({ where: { id: found.id }, data: fields })
+          : await tx.project.create({ data: { code, ...fields } });
         const plan = plans.get(code)!;
         const fieldsOf = ({ line: l, position }: Keyed) => ({
           position,

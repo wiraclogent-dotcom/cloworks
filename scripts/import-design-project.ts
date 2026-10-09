@@ -72,7 +72,7 @@ async function main() {
   console.log(`File links from ${linksXlsx ?? "(none)"}: ${links.size}`);
   const db = new PrismaClient();
   try {
-    const brand = await db.brand.findUnique({ where: { name: SECTION_OWNER_BRAND } });
+    const brand = await db.brand.findFirst({ where: { name: SECTION_OWNER_BRAND } });
     const projectOwner = await db.user.findFirst({ where: { name: PROJECT_OWNER, active: true } });
     if (!brand) throw new Error(`Brand "${SECTION_OWNER_BRAND}" is missing. Run npm run db:seed first.`);
     if (!projectOwner) throw new Error(`User "${PROJECT_OWNER}" is missing. Run npm run db:seed first.`);
@@ -105,7 +105,7 @@ async function main() {
     for (const r of rows.slice(0, 3)) console.log("  ", JSON.stringify({ ...r, startDate: jk(r.startDate), dueDate: jk(r.dueDate) }));
 
     // Match sheet rows to variants already in the database (by product + sub title). Stages set in the app are kept.
-    const existingProject = await db.project.findUnique({ where: { code }, select: { id: true } });
+    const existingProject = await db.project.findFirst({ where: { code }, select: { id: true } });
     const existing = existingProject
       ? await db.projectTask.findMany({ where: { projectId: existingProject.id }, select: { id: true, title: true, subTitle: true } })
       : [];
@@ -131,19 +131,20 @@ async function main() {
       notes: r.notes,
     });
     const project = await db.$transaction(async (tx) => {
-      const p = await tx.project.upsert({
-        where: { code },
-        create: {
-          code,
-          title,
-          brandId: brand.id,
-          ownerId: projectOwner.id,
-          status: "IN_PROGRESS",
-          startDate: earliestStart,
-          dueDate: latestDue,
-        },
-        update: { title, brandId: brand.id, startDate: earliestStart, dueDate: latestDue },
-      });
+      const found = await tx.project.findFirst({ where: { code }, select: { id: true } });
+      const p = found
+        ? await tx.project.update({ where: { id: found.id }, data: { title, brandId: brand.id, startDate: earliestStart, dueDate: latestDue } })
+        : await tx.project.create({
+            data: {
+              code,
+              title,
+              brandId: brand.id,
+              ownerId: projectOwner.id,
+              status: "IN_PROGRESS",
+              startDate: earliestStart,
+              dueDate: latestDue,
+            },
+          });
       if (plan.create.length) {
         // New variants take their stage from the sheet; existing ones keep whatever the app has set.
         await tx.projectTask.createMany({ data: plan.create.map((r) => ({ projectId: p.id, stage: r.stage, ...fieldsOf(r) })) });

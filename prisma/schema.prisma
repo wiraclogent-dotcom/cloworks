@@ -36,23 +36,51 @@ enum ProjectStatus {
   ON_HOLD
 }
 
+// Every scoped model carries `workspaceId String @default(dbgenerated())`. The database has NO default (an insert
+// without a workspace fails); the empty dbgenerated() only makes the field optional in Prisma's create types so
+// the scoped client (src/lib/db.ts) can stamp it.
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  users             User[]
+  allowedEmails     AllowedEmail[]
+  brands            Brand[]
+  divisions         Division[]
+  requestTypes      RequestType[]
+  requests          Request[]
+  statusEvents      StatusEvent[]
+  deadlineEvents    DeadlineEvent[]
+  comments          Comment[]
+  attachments       Attachment[]
+  kpiTargets        KpiTarget[]
+  notifications     Notification[]
+  projects          Project[]
+  projectTasks      ProjectTask[]
+  projectMilestones ProjectMilestone[]
+}
+
 model User {
-  id         String   @id @default(cuid())
-  email      String?  @unique
-  name       String
-  fullName   String
-  title      String?
-  department String?
-  appRole    AppRole  @default(REQUESTER)
-  jobRole    JobRole  @default(OTHER)
-  aliases    String[]
-  active     Boolean  @default(true)
+  id                 String    @id @default(cuid())
+  email              String?   @unique
+  name               String
+  fullName           String
+  title              String?
+  department         String?
+  appRole            AppRole   @default(REQUESTER)
+  jobRole            JobRole   @default(OTHER)
+  aliases            String[]
+  active             Boolean   @default(true)
   /// scrypt hash for email + password sign-in; null = no password set.
-  passwordHash    String?
+  passwordHash       String?
   /// Bumped on every password change; sessions issued under an older version end.
-  passwordVersion Int       @default(0)
-  failedLogins    Int       @default(0)
-  lockedUntil     DateTime?
+  passwordVersion    Int       @default(0)
+  failedLogins       Int       @default(0)
+  lockedUntil        DateTime?
+  /// Set when an admin sets or resets the password; cleared when the person changes it.
+  mustChangePassword Boolean   @default(false)
 
   requested      Request[]       @relation("RequestRequester")
   assigned       Request[]       @relation("RequestAssignee")
@@ -63,34 +91,63 @@ model User {
   kpiTargets     KpiTarget[]
   notifications  Notification[]
   ownedProjects  Project[]
-  projectTasks  ProjectTask[]
+  projectTasks   ProjectTask[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
 }
 
 model AllowedEmail {
   id    String  @id @default(cuid())
-  email String  @unique
+  email String
   note  String?
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, email])
+  @@index([workspaceId])
 }
 
 model Brand {
   id       String    @id @default(cuid())
-  name     String    @unique
+  name     String
   requests Request[]
   projects Project[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
 }
 
 model Division {
   id       String    @id @default(cuid())
-  name     String    @unique
+  name     String
   requests Request[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
 }
 
 model RequestType {
   id          String    @id @default(cuid())
-  name        String    @unique
+  name        String
   fieldSchema Json      @default("[]")
   active      Boolean   @default(true)
   requests    Request[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
 }
 
 model Request {
@@ -125,9 +182,13 @@ model Request {
   attachments    Attachment[]
   notifications  Notification[]
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([status])
   @@index([assigneeId])
   @@index([requestedAt])
+  @@index([workspaceId])
 }
 
 model StatusEvent {
@@ -141,7 +202,11 @@ model StatusEvent {
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   actor   User    @relation(fields: [actorId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([requestId])
+  @@index([workspaceId])
 }
 
 model DeadlineEvent {
@@ -155,7 +220,11 @@ model DeadlineEvent {
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   actor   User    @relation(fields: [actorId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([requestId])
+  @@index([workspaceId])
 }
 
 model Comment {
@@ -169,7 +238,11 @@ model Comment {
   request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   author  User    @relation(fields: [authorId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([requestId])
+  @@index([workspaceId])
 }
 
 model Attachment {
@@ -185,7 +258,11 @@ model Attachment {
   request  Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
   uploader User    @relation(fields: [uploaderId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([requestId])
+  @@index([workspaceId])
 }
 
 model KpiTarget {
@@ -198,7 +275,11 @@ model KpiTarget {
 
   user User @relation(fields: [userId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@unique([userId, month])
+  @@index([workspaceId])
 }
 
 model Notification {
@@ -214,7 +295,11 @@ model Notification {
   user    User     @relation(fields: [userId], references: [id])
   request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([userId, readAt])
+  @@index([workspaceId])
 }
 
 enum ProjectStage {
@@ -229,7 +314,7 @@ enum ProjectStage {
 
 model Project {
   id        String        @id @default(cuid())
-  code      String?       @unique
+  code      String?
   title     String
   subTitle  String?
   brandId   String?
@@ -239,15 +324,21 @@ model Project {
   dueDate   DateTime?
   fileUrl   String?
 
-  brand      Brand?           @relation(fields: [brandId], references: [id])
-  owner      User             @relation(fields: [ownerId], references: [id])
+  brand      Brand?             @relation(fields: [brandId], references: [id])
+  owner      User               @relation(fields: [ownerId], references: [id])
   tasks      ProjectTask[]
   milestones ProjectMilestone[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId])
 }
 
 /// One row of a design project sheet: a product (title) and its variant (subTitle). Grouped by title.
 model ProjectTask {
-  id        String        @id @default(cuid())
+  id        String         @id @default(cuid())
   projectId String
   position  Int
   title     String
@@ -258,7 +349,7 @@ model ProjectTask {
   startDate DateTime?
   dueDate   DateTime?
   /// Sheet says TBC for the due date; `dueDate` stays null.
-  dueTbc    Boolean       @default(false)
+  dueTbc    Boolean        @default(false)
   fileName  String?
   fileUrl   String?
   notes     String?
@@ -266,7 +357,11 @@ model ProjectTask {
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   owner   User?   @relation(fields: [ownerId], references: [id])
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([projectId, position])
+  @@index([workspaceId])
 }
 
 model ProjectMilestone {
@@ -279,5 +374,9 @@ model ProjectMilestone {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
   @@index([projectId, date])
+  @@index([workspaceId])
 }

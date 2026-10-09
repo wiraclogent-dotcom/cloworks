@@ -161,7 +161,7 @@ describe("setUserLoginEmail", () => {
     const u = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, u.id, "  Fadli.Test@Gmail.com ");
     expect((await db.prisma.user.findUnique({ where: { id: u.id } }))?.email).toBe("fadli.test@gmail.com");
-    const row = await db.prisma.allowedEmail.findUnique({ where: { email: "fadli.test@gmail.com" } });
+    const row = await db.prisma.allowedEmail.findFirst({ where: { email: "fadli.test@gmail.com" } });
     expect(row?.note).toBe(`login for ${u.name}`);
     expect((await requireUserWith(sess(u.id, "fadli.test@gmail.com"), db.prisma)).id).toBe(u.id);
 
@@ -219,7 +219,7 @@ describe("allowed emails", () => {
     await addAllowedEmail(db.prisma, admin, " Ext@Gmail.com ", "vendor");
     await addAllowedEmail(db.prisma, admin, "ext@gmail.com");
     expect(await db.prisma.allowedEmail.count({ where: { email: "ext@gmail.com" } })).toBe(1);
-    expect((await db.prisma.allowedEmail.findUnique({ where: { email: "ext@gmail.com" } }))?.note).toBe("vendor");
+    expect((await db.prisma.allowedEmail.findFirst({ where: { email: "ext@gmail.com" } }))?.note).toBe("vendor");
     expect(await code(addAllowedEmail(db.prisma, admin, "a@b@c"))).toBe("VALIDATION");
   });
   it("removal is idempotent and revokes an existing session", async () => {
