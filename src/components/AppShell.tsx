@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users } from "lucide-react";
+import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, ShieldCheck, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireScope, requireUserOrRedirect } from "@/lib/session";
@@ -105,7 +105,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <>
           <ul className="space-y-0.5">
             <NavItem href="/help" label="Help center" icon={<CircleHelp aria-hidden="true" />} />
-            <NavItem href="/settings" label="Settings" icon={<Settings aria-hidden="true" />} />
           </ul>
           <Suspense fallback={<UserChipFallback />}><UserChip /></Suspense>
           <ThemeSwitch tone="sidebar" />
