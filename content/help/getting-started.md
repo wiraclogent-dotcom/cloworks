@@ -21,3 +21,7 @@ Cloworks tracks creative requests from the moment someone asks for a piece of wo
 3. Select a card to open its details, or select **New request** to ask for new work. See [Creating a request](/help/creating-a-request).
 
 The sidebar shows only the sections your role can use.
+
+## Your profile menu
+
+Select your profile picture at the top right of any page to open **Account settings**, the **Help center**, switch **Dark mode** on or off, or **Sign out**.

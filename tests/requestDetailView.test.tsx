@@ -193,3 +193,17 @@ describe("Activity and Change deadline", () => {
     expect(screen.queryByLabelText("Change deadline", { selector: "input" })).toBeNull();
   });
 });
+
+describe("RequestDetailView top bar", () => {
+  it("as a full page it has the Work › Requests › code top bar (where the profile menu sits)", () => {
+    const req = base();
+    render(<RequestDetailView req={req} extra={[]} daysLeft={2} userId="me" {...LEAD} assignees={[]} fullPage />);
+    const crumbs = within(screen.getByRole("navigation", { name: "Breadcrumb" })).getAllByRole("listitem").map((li) => li.textContent);
+    expect(crumbs).toEqual(["Work", "Requests", `REQ-${req.id.slice(-4).toUpperCase()}`]);
+    expect(document.querySelector("[data-top-bar]")).toBeTruthy();
+  });
+  it("in the side panel it keeps the plain back link and no top bar", () => {
+    view();
+    expect(document.querySelector("[data-top-bar]")).toBeNull();
+  });
+});

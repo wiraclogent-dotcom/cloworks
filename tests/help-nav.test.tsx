@@ -16,11 +16,14 @@ import { AppShell } from "@/components/AppShell";
 
 afterEach(cleanup);
 
-describe("sidebar Help center link", () => {
-  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("is a live link to /help for %s", async (appRole) => {
+// Help center, Dark mode and Sign out moved to the profile menu (tests/profileMenu.test.tsx).
+describe("sidebar footer", () => {
+  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("no longer lists Help center, Dark mode or Sign out for %s", async (appRole) => {
     role = appRole as AppRole;
     render(<AppShell><p>page</p></AppShell>);
-    const link = await screen.findByRole("link", { name: "Help center" });
-    expect(link.getAttribute("href")).toBe("/help");
+    await screen.findByRole("link", { name: "Requests" });
+    expect(screen.queryByRole("link", { name: "Help center" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Dark mode" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
   });
 });

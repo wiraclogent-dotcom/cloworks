@@ -21,7 +21,7 @@ export async function ArticleContent({ params }: { params: Promise<{ slug: strin
   const { article, prev, next } = found;
   return (
     <>
-      <PageHeader title={article.title} description={article.section} />
+      <PageHeader breadcrumb={[{ label: "Help center", href: "/help" }, { label: article.title }]} title={article.title} description={article.section} />
       <div className="grid gap-6 lg:grid-cols-[1fr_200px]">
         <article>
           <ArticleBody body={article.body} />

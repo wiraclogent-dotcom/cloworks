@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { ThemeSync, useDarkMode } from "@/components/ui/darkMode";
 import { THEME_INIT_SCRIPT, parseThemePref, resetThemeMemory, resolveTheme } from "@/lib/theme";
 
 function mockMatchMedia(dark: boolean) {
@@ -50,55 +50,46 @@ describe("boot script (runs before first paint)", () => {
   });
 });
 
-describe("ThemeSwitch (day / night toggle)", () => {
-  it("is a switch labelled Dark mode; it starts off (day) with no stored choice", () => {
-    render(<ThemeSwitch />);
-    const sw = screen.getAllByRole("switch", { name: "Dark mode" })[0];
-    expect(sw.getAttribute("aria-checked")).toBe("false");
+/** Smallest consumer of the hook: what the profile menu's Dark mode item does. */
+function Probe() {
+  const { dark, flip } = useDarkMode();
+  return <button type="button" role="switch" aria-checked={dark} onClick={flip}>Dark mode</button>;
+}
+const sw = () => screen.getByRole("switch", { name: "Dark mode" });
+
+describe("useDarkMode + ThemeSync", () => {
+  it("starts off (day) with no stored choice", () => {
+    render(<Probe />);
+    expect(sw().getAttribute("aria-checked")).toBe("false");
   });
 
   it("flipping to night stores dark and switches <html data-theme>; flipping back stores light", () => {
-    render(<ThemeSwitch />);
-    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    render(<Probe />);
+    fireEvent.click(sw());
     expect(localStorage.getItem("ct-theme")).toBe("dark");
     expect(html().getAttribute("data-theme")).toBe("dark");
-    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    expect(sw().getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(sw());
     expect(localStorage.getItem("ct-theme")).toBe("light");
     expect(html().getAttribute("data-theme")).toBe("light");
   });
 
-  it("never offers a System option", () => {
-    render(<ThemeSwitch />);
-    expect(screen.queryByRole("button", { name: "System" })).toBeNull();
-    expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();
-  });
-
-  it("a stored system choice still follows the OS, and flipping replaces it with light or dark", () => {
+  it("a stored system choice still follows the OS (via ThemeSync), and flipping replaces it with light or dark", () => {
     mockMatchMedia(true);
     localStorage.setItem("ct-theme", "system");
-    render(<ThemeSwitch />);
+    render(<><ThemeSync /><Probe /></>);
     expect(html().getAttribute("data-theme")).toBe("dark");
-    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    expect(sw().getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(sw());
     expect(localStorage.getItem("ct-theme")).toBe("light");
     expect(html().getAttribute("data-theme")).toBe("light");
   });
 
   it("still switches when localStorage throws", () => {
     const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-    render(<ThemeSwitch />);
-    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    render(<Probe />);
+    fireEvent.click(sw());
     expect(html().getAttribute("data-theme")).toBe("dark");
     spy.mockRestore();
-  });
-
-  it("the collapsed rail has a round icon switch that flips the same way", () => {
-    render(<ThemeSwitch tone="sidebar" />);
-    const switches = screen.getAllByRole("switch", { name: "Dark mode" });
-    expect(switches).toHaveLength(2);
-    for (const b of switches) expect(b.tagName).toBe("BUTTON");
-    fireEvent.click(switches[1]);
-    expect(html().getAttribute("data-theme")).toBe("dark");
   });
 });

@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Help" };
 export default function HelpPage() {
   return (
     <>
-      <PageHeader title="Help" description="Short guides for the parts of Cloworks you can use." />
+      <PageHeader breadcrumb={[{ label: "Help center" }]} title="Help" description="Short guides for the parts of Cloworks you can use." />
       <Suspense fallback={<HelpSkeleton />}>
         <HelpContent />
       </Suspense>

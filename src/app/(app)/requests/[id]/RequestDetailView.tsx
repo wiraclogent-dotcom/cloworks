@@ -60,9 +60,11 @@ function Person({ name }: { name: string }) {
  * Request detail page body (server-safe, no data access): header with chips, a wide column (Brief, Attachments,
  * Comments, Activity) and a sticky side column (Details, and Manage for people who may assign or move).
  */
-export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, canMove, assignees }: {
+export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, canMove, assignees, fullPage = false }: {
   req: RequestDetail; extra: ExtraField[]; daysLeft: number | null; userId: string;
   canAssign: boolean; canMove: boolean; assignees: { id: string; name: string }[];
+  /** Full page: the Work › Requests › code top bar (where the profile menu sits). The side panel keeps a back link. */
+  fullPage?: boolean;
 }) {
   const open = req.status !== "DONE" && req.status !== "CANCELLED";
   const activity = [
@@ -71,12 +73,15 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
   ].sort((a, b) => a.at.getTime() - b.at.getTime());
   return (
     <article className="@container">
-      <nav aria-label="Breadcrumb" className="mb-2">
-        <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-foreground-secondary hover:text-foreground", focusRing)}>
-          <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />Requests
-        </Link>
-      </nav>
-      <PageHeader title={<span className="break-words">{req.title}</span>} className="mb-2" />
+      {fullPage ? null : (
+        <nav aria-label="Breadcrumb" className="mb-2">
+          <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-foreground-secondary hover:text-foreground", focusRing)}>
+            <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />Requests
+          </Link>
+        </nav>
+      )}
+      <PageHeader title={<span className="break-words">{req.title}</span>} className="mb-2"
+        breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
       <div className="mb-6 flex flex-wrap items-center gap-2" data-detail-chips="">
         <StatusChip status={req.status} />
         {req.needsMotion && <NeedsMotionChip />}

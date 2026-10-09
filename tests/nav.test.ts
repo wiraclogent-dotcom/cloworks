@@ -11,14 +11,14 @@ describe("activeNavHref", () => {
     ["/projects/p1/edit", "/projects"],
     ["/dashboard", "/dashboard"],
     ["/dashboard/team", "/dashboard/team"],
-    ["/admin/users", "/admin/users"],
-    ["/admin/lists", "/admin/users"],
+    ["/dashboard/briefs", "/dashboard/briefs"],
   ])("%s → %s", (path, want) => {
     expect(activeNavHref(path)).toBe(want);
   });
   it("does not match on a shared prefix that is not a path segment", () => {
     expect(activeNavHref("/requestsX")).toBeNull();
     expect(activeNavHref("/signin")).toBeNull();
+    expect(activeNavHref("/admin/users")).toBeNull(); // Admin lives in Settings, not the sidebar
     expect(activeNavHref(null)).toBeNull();
   });
 });

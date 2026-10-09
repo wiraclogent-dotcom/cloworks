@@ -22,7 +22,7 @@ Until you do this, every page sends you back to this screen. You can use **Sign 
 
 After 5 wrong passwords in a row, the account is locked for 15 minutes. Wait, or ask an admin to set a new password, which also lifts the lock.
 
-To change your password at any time, open **Settings** and use **Password**. You are signed out afterwards; sign in again with the new password.
+To change your password at any time, select your profile picture at the top right, choose **Account settings** and use **Password**. You are signed out afterwards; sign in again with the new password.
 
 If you still cannot sign in, ask an admin to check that your account is active and that your email is on the list of allowed addresses.
 

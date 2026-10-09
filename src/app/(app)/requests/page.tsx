@@ -17,7 +17,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton, TimelineSkeleton } from "@/components/RequestSkeletons";
-import { Bell, CalendarDays, ChartNoAxesGantt, Plus, SearchX, Settings, SquareKanban, Table2 } from "lucide-react";
+import { Bell, CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { buildWindow, shiftWeek } from "@/lib/workload";
@@ -67,7 +67,6 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         topBarActions={<>
           <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
           <ComingSoon label="Notifications" icon={<Bell aria-hidden="true" />} />
-          <ComingSoon label="Settings" icon={<Settings aria-hidden="true" />} />
         </>}
         actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
       {p.view === "board" ? (
