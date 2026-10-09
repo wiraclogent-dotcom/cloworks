@@ -12,7 +12,7 @@ import { requireUserOrRedirect } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { UnauthenticatedError } from "@/lib/session-core";
 
-const row = { id: "u1", active: true, email: "fadli@clogent.co.id", appRole: "CREATIVE", jobRole: "DESIGNER" };
+const row = { id: "u1", active: true, email: "fadli@clogent.co.id", appRole: "CREATIVE", jobRole: "DESIGNER", passwordVersion: 0 };
 beforeEach(() => { redirect.mockClear(); authFn.mockReset(); findUnique.mockReset(); findFirst.mockReset(); });
 
 describe("requireUserOrRedirect", () => {

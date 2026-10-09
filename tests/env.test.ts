@@ -12,16 +12,16 @@ describe("validateEnv", () => {
   });
   it("reports every missing required variable, and an empty environment is all errors", () => {
     const r = validateEnv({});
-    expect(r.errors.length).toBe(4);
-    expect(r.errors.join(" ")).toMatch(/DATABASE_URL[\s\S]*AUTH_SECRET[\s\S]*AUTH_URL[\s\S]*provider/);
+    expect(r.errors.length).toBe(3);
+    expect(r.errors.join(" ")).toMatch(/DATABASE_URL[\s\S]*AUTH_SECRET[\s\S]*AUTH_URL/);
     expect(r.warnings).toHaveLength(2);
   });
   it("rejects a placeholder or short AUTH_SECRET", () => {
     expect(validateEnv({ ...GOOD, AUTH_SECRET: "change-me-generate-with-openssl-rand-base64-32" }).errors.join()).toMatch(/placeholder/);
     expect(validateEnv({ ...GOOD, AUTH_SECRET: "short" }).errors.join()).toMatch(/16/);
   });
-  it("needs a provider, its secret, and the tenant id for Entra", () => {
-    expect(validateEnv({ ...GOOD, AUTH_GOOGLE_ID: undefined, AUTH_GOOGLE_SECRET: undefined }).errors.join()).toMatch(/provider/);
+  it("OAuth is optional (password sign-in), but a configured provider needs its secret and, for Entra, the tenant id", () => {
+    expect(validateEnv({ ...GOOD, AUTH_GOOGLE_ID: undefined, AUTH_GOOGLE_SECRET: undefined }).errors).toEqual([]);
     expect(validateEnv({ ...GOOD, AUTH_GOOGLE_SECRET: "" }).errors.join()).toMatch(/AUTH_GOOGLE_SECRET/);
     const entra = { ...GOOD, AUTH_GOOGLE_ID: undefined, AUTH_GOOGLE_SECRET: undefined, AUTH_MICROSOFT_ENTRA_ID_ID: "eid", AUTH_MICROSOFT_ENTRA_ID_SECRET: "es" };
     expect(validateEnv(entra).errors.join()).toMatch(/TENANT_ID/);

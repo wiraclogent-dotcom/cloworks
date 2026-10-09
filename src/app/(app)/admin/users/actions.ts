@@ -5,7 +5,7 @@ import type { AppRole, JobRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
-import { addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, updateUser } from "@/lib/admin";
+import { addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
 import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
@@ -54,6 +54,21 @@ export async function saveLoginEmail(_prev: AdminFormState, fd: FormData): Promi
       }),
     );
   }, () => adminUnauth(fd));
+}
+
+/** Sets or resets a password. The typed password is never echoed back in the form state. */
+export async function savePassword(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  const scrub = (r: NonNullable<AdminFormState>) => ({ ...r, values: { ...r.values, password: "" } });
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    return scrub(
+      done(
+        await adminResult(fd, async () => {
+          await setUserPassword(prisma, actor, s(fd, "userId"), s(fd, "password"));
+          return "Password saved. Share it with them privately; any open sessions of theirs have ended.";
+        }),
+      ),
+    );
+  }, () => scrub(adminUnauth(fd)));
 }
 
 export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {

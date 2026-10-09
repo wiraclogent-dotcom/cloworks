@@ -3,15 +3,20 @@ import { requireUserOrRedirect } from "@/lib/session";
 import { accountRows } from "@/lib/settings/account";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { ChangePasswordForm } from "./ChangePasswordForm";
 
 /** The General settings: the signed-in user's account (read-only) and appearance. Async, so it renders inside Suspense. */
 export async function SettingsContent() {
   const user = await requireUserOrRedirect();
   const me = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { fullName: true, email: true, title: true, department: true },
+    select: { fullName: true, email: true, title: true, department: true, passwordHash: true },
   });
-  const rows = accountRows({ ...(me ?? { fullName: "", email: null, title: null, department: null }), appRole: user.appRole, jobRole: user.jobRole });
+  const hasPassword = !!me?.passwordHash;
+  const rows = accountRows({
+    fullName: me?.fullName ?? "", email: me?.email ?? null, title: me?.title ?? null, department: me?.department ?? null,
+    appRole: user.appRole, jobRole: user.jobRole,
+  });
 
   return (
     <div className="grid gap-4">
@@ -27,6 +32,16 @@ export async function SettingsContent() {
             </div>
           ))}
         </dl>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle as="h2">Password</CardTitle>
+        </CardHeader>
+        {hasPassword ? (
+          <ChangePasswordForm />
+        ) : (
+          <p className="text-sm text-foreground-secondary">You sign in without a password. Ask an admin if you want one.</p>
+        )}
       </Card>
       <Card>
         <CardHeader>

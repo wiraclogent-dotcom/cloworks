@@ -3,6 +3,7 @@ import { can } from "./permissions";
 import { fieldSchemaSchema } from "./fieldSchema";
 import { DEFAULT_ALLOWED_DOMAIN, isAllowedEmail } from "./signin";
 import { normalizeName } from "./import/aliases";
+import { checkNewPassword, hashPassword, verifyPassword } from "./password";
 
 export type AdminErrorCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "LAST_ADMIN";
 
@@ -248,6 +249,35 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
   } catch (e) {
     return mapUnique(e, "That email is already in use");
   }
+}
+
+/** Admin sets (or resets) someone's sign-in password. Ends their existing sessions and clears any lockout. */
+export async function setUserPassword(db: Db, actor: Actor, userId: string, password: string) {
+  assertAdmin(actor);
+  const problem = checkNewPassword(password);
+  if (problem) throw new AdminError("VALIDATION", problem);
+  const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user) throw new AdminError("NOT_FOUND", "User not found");
+  if (!user.email) throw new AdminError("VALIDATION", "Set their login email first.");
+  await db.user.update({
+    where: { id: userId },
+    data: { passwordHash: await hashPassword(password), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null },
+  });
+}
+
+/** A signed-in person changes their own password; the current one must match. Ends their existing sessions. */
+export async function changeOwnPassword(db: Db, userId: string, current: string, next: string) {
+  const user = await db.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+  if (!user) throw new AdminError("NOT_FOUND", "User not found");
+  if (!user.passwordHash) throw new AdminError("VALIDATION", "You don't have a password yet. Ask an admin to set one.");
+  if (!(await verifyPassword(current, user.passwordHash))) throw new AdminError("VALIDATION", "Current password is incorrect.");
+  const problem = checkNewPassword(next);
+  if (problem) throw new AdminError("VALIDATION", problem);
+  if (next === current) throw new AdminError("VALIDATION", "Choose a password different from the current one.");
+  await db.user.update({
+    where: { id: userId },
+    data: { passwordHash: await hashPassword(next), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null },
+  });
 }
 
 export async function addAllowedEmail(db: Db, actor: Actor, email: string, note?: string) {

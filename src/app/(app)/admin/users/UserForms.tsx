@@ -2,7 +2,7 @@
 
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
 import { enumLabel } from "@/lib/adminChips";
-import { addAllowed, addPerson, removeAllowed, saveLoginEmail, saveUser, setUserActive } from "./actions";
+import { addAllowed, addPerson, removeAllowed, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
 
 const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
 const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
@@ -10,7 +10,7 @@ const label = enumLabel;
 
 export type UserRowData = {
   id: string; name: string; fullName: string; title: string | null; appRole: string; jobRole: string;
-  aliases: string[]; email: string | null; active: boolean;
+  aliases: string[]; email: string | null; active: boolean; hasPassword: boolean;
 };
 
 export function EditUserForm({ u }: { u: UserRowData }) {
@@ -51,6 +51,20 @@ export function LoginEmailForm({ u }: { u: UserRowData }) {
       {({ v, idFor, aria }) => (
         <Labeled id={idFor("email")} label="Login email (leave empty to remove access)">
           <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email", u.email ?? "")} {...aria()} />
+        </Labeled>
+      )}
+    </AdminForm>
+  );
+}
+
+/** Admin sets or resets the sign-in password; it is never echoed back after an error. */
+export function PasswordForm({ u }: { u: UserRowData }) {
+  if (!u.email) return <p className="text-xs text-foreground-secondary">Set a login email first, then a password.</p>;
+  return (
+    <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
+      {({ idFor, aria }) => (
+        <Labeled id={idFor("password")} label={u.hasPassword ? "New password (signs them out everywhere)" : "Password (at least 10 characters)"}>
+          <input id={idFor("password")} name="password" type="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
         </Labeled>
       )}
     </AdminForm>

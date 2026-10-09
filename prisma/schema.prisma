@@ -47,6 +47,12 @@ model User {
   jobRole    JobRole  @default(OTHER)
   aliases    String[]
   active     Boolean  @default(true)
+  /// scrypt hash for email + password sign-in; null = no password set.
+  passwordHash    String?
+  /// Bumped on every password change; sessions issued under an older version end.
+  passwordVersion Int       @default(0)
+  failedLogins    Int       @default(0)
+  lockedUntil     DateTime?
 
   requested      Request[]       @relation("RequestRequester")
   assigned       Request[]       @relation("RequestAssignee")

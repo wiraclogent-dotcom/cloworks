@@ -6,7 +6,13 @@ order: 2
 
 ## Signing in
 
-Sign in with your company email address. If you cannot sign in, ask an admin to check that your account is active and that your email is on the list of allowed addresses.
+Sign in with your company email address and the password an admin gave you. If you have no password yet or forgot it, ask an admin to set a new one.
+
+After 5 wrong passwords in a row, the account is locked for 15 minutes. Wait, or ask an admin to set a new password, which also lifts the lock.
+
+To change your password, open **Settings** and use **Password**. You are signed out afterwards; sign in again with the new password.
+
+If you still cannot sign in, ask an admin to check that your account is active and that your email is on the list of allowed addresses.
 
 ## What your role can do
 

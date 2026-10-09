@@ -11,7 +11,7 @@ import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
-import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailForm, RemoveAllowed } from "./UserForms";
+import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "./UserForms";
 
 function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
   return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
@@ -23,7 +23,13 @@ export async function UsersContent() {
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [users, allowed] = await Promise.all([
-    prisma.user.findMany({ orderBy: [{ active: "desc" }, { name: "asc" }] }),
+    // Explicit select: rows go to client forms, so secrets (passwordHash) must never be loaded here.
+    prisma.user
+      .findMany({
+        orderBy: [{ active: "desc" }, { name: "asc" }],
+        select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
+      })
+      .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash }))),
     prisma.allowedEmail.findMany({ orderBy: { email: "asc" } }),
   ]);
   const owners = new Map(users.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u.name]));
@@ -62,7 +68,14 @@ export async function UsersContent() {
                 </th>
                 <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
                 <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
-                <td className={cn(t.td, "align-top break-all")}>{u.email ?? <span className="text-foreground-secondary italic">No login</span>}</td>
+                <td className={cn(t.td, "align-top break-all")}>
+                  {u.email ?? <span className="text-foreground-secondary italic">No login</span>}
+                  {u.email && (
+                    <p className="mt-0.5 text-xs text-foreground-secondary" data-has-password={String(u.hasPassword)}>
+                      {u.hasPassword ? "Password set" : "No password yet"}
+                    </p>
+                  )}
+                </td>
                 <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
                 <td className={cn(t.td, "min-w-72 align-top")}>
                   <details className="group">
@@ -72,6 +85,7 @@ export async function UsersContent() {
                     <div className="mt-3 space-y-4 rounded-lg border border-border bg-surface-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
+                      <PasswordForm u={u} />
                       <ActiveToggle u={u} />
                     </div>
                   </details>

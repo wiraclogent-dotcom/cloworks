@@ -1,17 +1,35 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
+import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
 import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
 import { bindSignInToken, refreshJwt } from "./session-core";
+import { authenticateWithPassword } from "./passwordAuth";
 
 export { isAllowedEmail } from "./signin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  providers: [
+    ...authConfig.providers,
+    Credentials({
+      id: "credentials",
+      credentials: { email: {}, password: {} },
+      async authorize(c) {
+        const email = typeof c?.email === "string" ? c.email : "";
+        const password = typeof c?.password === "string" ? c.password : "";
+        const user = await authenticateWithPassword(prisma, email, password);
+        if (!user) throw new CredentialsSignin();
+        return { id: user.id, email: user.email, name: user.name };
+      },
+    }),
+  ],
   session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account, profile }) {
+      // Password sign-in was fully vetted in authorize() (active, permitted email, right password).
+      if (account?.provider === "credentials") return true;
       const r = await decideSignIn(
         prisma,
         account?.provider,
