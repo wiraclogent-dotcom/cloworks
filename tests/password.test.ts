@@ -129,6 +129,15 @@ describe("password sign-in (db)", () => {
     expect((await authenticateWithPassword(db.prisma, u.email!, "another-password-1"))?.id).toBe(u.id);
   });
 
+  it("setUserPassword flags the user to change it; changeOwnPassword clears the flag", async () => {
+    const u = await mk();
+    expect((await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } })).mustChangePassword).toBe(false);
+    await setUserPassword(db.prisma, admin, u.id, "temporary-pass-1");
+    expect((await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } })).mustChangePassword).toBe(true);
+    await changeOwnPassword(db.prisma, u.id, "temporary-pass-1", "my-own-password-1");
+    expect((await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } })).mustChangePassword).toBe(false);
+  });
+
   it("changeOwnPassword: needs the current password and a valid, different new one", async () => {
     const u = await mk();
     expect(await code(changeOwnPassword(db.prisma, u.id, "wrong-current-1", "brand-new-password"))).toBe("VALIDATION");

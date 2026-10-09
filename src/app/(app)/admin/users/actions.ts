@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
-import { addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { AdminError, addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { checkNewPassword } from "@/lib/password";
 import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
@@ -74,24 +75,52 @@ export async function savePassword(_prev: AdminFormState, fd: FormData): Promise
   }, () => scrub(adminUnauth(fd)));
 }
 
+/**
+ * Adds a person, optionally with a login email and a temporary password (which they must change at first sign-in).
+ * Everything is validated before anything is created. The typed password is never echoed back.
+ * Create, email and password are separate steps: if a later one fails the person already exists, and the message says
+ * so; the admin finishes with that row's login email and password forms.
+ */
 export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  const scrub = (r: NonNullable<AdminFormState>) => ({ ...r, values: { ...r.values, password: "" } });
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
     const db = dbFor(actor);
-    return done(
-      await adminResult(fd, async () => {
-        await createUser(db, actor, {
-          name: s(fd, "name"),
-          fullName: s(fd, "fullName"),
-          title: s(fd, "title"),
-          department: s(fd, "department"),
-          jobRole: s(fd, "jobRole") as JobRole,
-          appRole: s(fd, "appRole") as AppRole,
-          aliases: splitList(s(fd, "aliases")),
-        });
-        return "Person added. Set their login email so they can sign in.";
-      }),
+    return scrub(
+      done(
+        await adminResult(fd, async () => {
+          const email = s(fd, "email").trim();
+          const password = s(fd, "password");
+          if (password !== "") {
+            if (email === "") throw new AdminError("VALIDATION", "Add a login email to give them a password.");
+            const problem = checkNewPassword(password);
+            if (problem) throw new AdminError("VALIDATION", problem);
+          }
+          const person = await createUser(db, actor, {
+            name: s(fd, "name"),
+            fullName: s(fd, "fullName"),
+            title: s(fd, "title"),
+            department: s(fd, "department"),
+            jobRole: s(fd, "jobRole") as JobRole,
+            appRole: s(fd, "appRole") as AppRole,
+            aliases: splitList(s(fd, "aliases")),
+          });
+          if (email === "") return "Person added. Set their login email so they can sign in.";
+          try {
+            await setUserLoginEmail(db, actor, person.id, email);
+            if (password !== "") await setUserPassword(db, actor, person.id, password);
+          } catch (e) {
+            if (e instanceof AdminError) {
+              throw new AdminError(e.code, `${person.name} was added, but ${e.message.charAt(0).toLowerCase()}${e.message.slice(1)} Finish with Edit in their row.`, e.details);
+            }
+            throw e;
+          }
+          return password !== ""
+            ? "Person added. Share the temporary password with them privately; they choose their own at first sign-in."
+            : "Person added with a login email. Set a password so they can sign in.";
+        }),
+      ),
     );
-  }, () => adminUnauth(fd));
+  }, () => scrub(adminUnauth(fd)));
 }
 
 export async function addAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {

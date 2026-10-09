@@ -33,7 +33,7 @@ vi.mock("@/lib/session", () => ({
   requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
 }));
 
-import { ActiveToggle, LoginEmailForm, PasswordForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
+import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
 import { TypeForm } from "@/app/(app)/admin/lists/ListForms";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
@@ -44,6 +44,17 @@ beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
 describe("admin forms", () => {
+  it("add person offers an optional login email and temporary password", () => {
+    render(<AddPersonForm />);
+    const email = screen.getByLabelText(/^login email/i) as HTMLInputElement;
+    const pw = screen.getByLabelText(/^temporary password/i) as HTMLInputElement;
+    expect(email.name).toBe("email");
+    expect(email.required).toBe(false);
+    expect(pw.name).toBe("password");
+    expect(pw.type).toBe("password");
+    expect(pw.required).toBe(false);
+  });
+
   it("login email keeps typed input and flags the field after a failed save", async () => {
     act.saveLoginEmail.mockImplementation(async (_p: unknown, fd: FormData) => ({
       ok: false, code: "CONFLICT", message: "x@gmail.com is already the login email of Dina", nonce: "n1", values: { email: String(fd.get("email")), userId: "u1" },

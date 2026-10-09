@@ -123,6 +123,12 @@ export function AddPersonForm() {
               <input id={idFor("aliases")} name="aliases" className={control} defaultValue={v("aliases")} />
             </Labeled>
           </div>
+          <Labeled id={idFor("email")} label="Login email (optional)">
+            <input id={idFor("email")} name="email" type="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
+          </Labeled>
+          <Labeled id={idFor("password")} label="Temporary password (optional, needs a login email)">
+            <input id={idFor("password")} name="password" type="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
+          </Labeled>
         </div>
       )}
     </AdminForm>

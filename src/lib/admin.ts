@@ -259,7 +259,7 @@ export async function setUserPassword(db: Db, actor: Actor, userId: string, pass
   if (!user.email) throw new AdminError("VALIDATION", "Set their login email first.");
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash: await hashPassword(password), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null },
+    data: { passwordHash: await hashPassword(password), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null, mustChangePassword: true },
   });
 }
 
@@ -274,7 +274,7 @@ export async function changeOwnPassword(db: Db, userId: string, current: string,
   if (next === current) throw new AdminError("VALIDATION", "Choose a password different from the current one.");
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash: await hashPassword(next), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null },
+    data: { passwordHash: await hashPassword(next), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null, mustChangePassword: false },
   });
 }
 
