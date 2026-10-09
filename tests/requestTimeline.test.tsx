@@ -71,10 +71,25 @@ describe("RequestTimeline", () => {
 
   it("draws an overdue tail from the deadline to today", () => {
     view([row("1", "Banner", { deadlineDay: "2026-10-05" })]);
-    const tail = bar("1").querySelector("[data-overdue-tail]")!;
+    const tail = bar("1").querySelector<HTMLElement>("[data-overdue-tail]")!;
     expect(tail.getAttribute("data-tone")).toBe("overdue");
-    expect(tail.textContent).toContain("Overdue");
+    expect(tail.style.width).toBe(`${(3 / 8) * 100}%`); // cols 3..10, deadline col 7: 3 of 8 days
+    expect(bar("1").querySelector("[data-overdue-label]")!.textContent).toBe("Overdue");
     expect(bar("1").textContent).toContain("overdue since 5 Oct");
+  });
+
+  it("keeps the title, icon and start chevron above the tail when the whole bar is overdue", () => {
+    view([row("1", "Banner", { requestDay: "2026-09-10", deadlineDay: "2026-09-20" })]);
+    const tail = bar("1").querySelector<HTMLElement>("[data-overdue-tail]")!;
+    expect(tail.style.width).toBe("100%");
+    // The tail is an empty background layer painted first; the content layer comes after it and is positioned, so it paints on top.
+    expect(tail.textContent).toBe("");
+    const content = bar("1").querySelector<HTMLElement>("[data-bar-content]")!;
+    expect(tail.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(content.className).toContain("relative");
+    expect(content.textContent).toContain("Banner");
+    expect(content.querySelector('[data-clipped="start"]')).toBeTruthy();
+    expect(content.querySelector("[data-overdue-label]")).toBeTruthy();
   });
 
   it("marks a no-deadline bar", () => {

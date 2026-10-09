@@ -40,18 +40,16 @@ function Bar({ bar, row, lane }: { bar: TimelineBar; row: TimelineRow; lane: num
           focusRing,
         )}>
         <span className="sr-only">{text}</span>
-        {bar.clippedStart && <ChevronLeft data-clipped="start" aria-hidden="true" strokeWidth={2} className="-ml-1 size-3.5 shrink-0 text-foreground-secondary" />}
-        <span aria-hidden="true" className="inline-flex shrink-0 text-foreground-secondary"><StatusIcon status={row.status} /></span>
-        <span aria-hidden="true" className="min-w-0 flex-1 truncate font-medium text-foreground">{row.title}</span>
-        {bar.noDeadline && <span aria-hidden="true" className="shrink-0 text-foreground-secondary">No deadline</span>}
-        {tailPct > 0 && (
-          <span data-overdue-tail="" data-tone="overdue" aria-hidden="true"
-            className="absolute inset-y-0 right-0 flex items-center justify-end bg-tone-tint px-1.5 font-medium text-tone-text"
-            style={{ width: `${tailPct}%` }}>
-            <span className="truncate">Overdue</span>
-          </span>
-        )}
-        {bar.clippedEnd && <ChevronRight data-clipped="end" aria-hidden="true" strokeWidth={2} className="relative -mr-1 size-3.5 shrink-0 text-foreground-secondary" />}
+        {/* Background layer first; the content layer below is positioned, so it paints on top of the tail. */}
+        {tailPct > 0 && <span data-overdue-tail="" data-tone="overdue" aria-hidden="true" className="absolute inset-y-0 right-0 bg-tone-tint" style={{ width: `${tailPct}%` }} />}
+        <span data-bar-content="" aria-hidden="true" className="relative flex min-w-0 flex-1 items-center gap-1">
+          {bar.clippedStart && <ChevronLeft data-clipped="start" strokeWidth={2} className="-ml-1 size-3.5 shrink-0 text-foreground-secondary" />}
+          <span className="inline-flex shrink-0 text-foreground-secondary"><StatusIcon status={row.status} /></span>
+          <span className="min-w-0 flex-1 truncate font-medium text-foreground">{row.title}</span>
+          {bar.noDeadline && <span className="shrink-0 text-foreground-secondary">No deadline</span>}
+          {bar.overdue && <span data-overdue-label="" data-tone="overdue" className="shrink-0 font-medium text-tone-text">Overdue</span>}
+          {bar.clippedEnd && <ChevronRight data-clipped="end" strokeWidth={2} className="-mr-1 size-3.5 shrink-0 text-foreground-secondary" />}
+        </span>
       </Link>
     </li>
   );
