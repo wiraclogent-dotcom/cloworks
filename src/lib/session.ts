@@ -34,6 +34,8 @@ export async function requireUserOrRedirect(): Promise<SessionUser> {
   return user;
 }
 
+export type { ScopedDb };
+
 /** Database client scoped to the user's workspace. */
 export const dbFor = (user: SessionUser): ScopedDb => scopedDb(user.workspaceId);
 

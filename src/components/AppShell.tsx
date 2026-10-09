@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
 import { Bell, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users, Workflow } from "lucide-react";
+// eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope, requireUserOrRedirect } from "@/lib/session";
 import { signOut } from "@/lib/auth";
 import { can } from "@/lib/permissions";
 import { Skeleton } from "./ui/Skeleton";
@@ -44,9 +45,16 @@ export async function AdminGroup() {
   ) : null;
 }
 
+/** The signed-in person's workspace name, under the app name in the sidebar header. `Workspace` is not scoped. */
+export async function WorkspaceName() {
+  const { workspaceId } = await requireUserOrRedirect();
+  const ws = await prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } });
+  return ws?.name ?? null;
+}
+
 async function UserChip() {
-  const { id, appRole } = await requireUserOrRedirect();
-  const me = await prisma.user.findUnique({ where: { id }, select: { name: true } });
+  const { user: { id, appRole }, db } = await requireScope();
+  const me = await db.user.findUnique({ where: { id }, select: { name: true } });
   return <UserChipView name={me?.name ?? ""} roleLabel={ROLE_LABEL[appRole]} />;
 }
 
@@ -67,6 +75,7 @@ function UserChipFallback() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppFrame
+      workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
       nav={
         <nav aria-label="Main">
           <NavGroup id="nav-work" label="Work">

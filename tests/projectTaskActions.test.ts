@@ -2,14 +2,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vites
 import type { PrismaClient } from "@prisma/client";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
-// The actions use the app's `prisma` and session; point them at a throwaway database and a switchable user.
+// The actions use the session's user and workspace-scoped client; point them at a throwaway database and a switchable user.
 const h = vi.hoisted(() => ({ prisma: null as unknown as PrismaClient, user: { id: "u", appRole: "CREATIVE" as string } }));
-// Keep the real exports (the test helper needs makeScoped); only `prisma` is redirected.
-vi.mock("@/lib/db", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/db")>()),
-  get prisma() { return h.prisma; },
-}));
-vi.mock("@/lib/session", () => ({ requireUser: async () => h.user }));
+vi.mock("@/lib/session", () => ({ requireUser: async () => h.user, dbFor: () => h.prisma }));
 vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 
 import { createTaskDetail, deleteTask, moveTask, setTaskStatus, setTaskStage } from "@/app/(app)/projects/[id]/tasks/actions";

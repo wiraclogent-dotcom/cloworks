@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { dbFor, requireUser } from "@/lib/session";
 import { withUser, UNAUTH_MESSAGE, unauthResult } from "@/lib/actionUser";
 import {
   ProjectError, createProjectWith, projectValuesFromForm, submitProjectWith, updateProjectWith,
@@ -20,8 +19,9 @@ function failure(e: unknown): { ok: false; code: ProjectErrorCode; message: stri
 /** Result-object wrappers (Next redacts thrown errors in production). Both require `project.manage`. */
 export async function createProject(input: ProjectInput): Promise<ProjectActionResult<{ id: string }>> {
   return withUser<ProjectActionResult<{ id: string }>, ProjectActionResult<{ id: string }>>(requireUser, async (user) => {
+    const db = dbFor(user);
     try {
-      const r = await createProjectWith(prisma, user, input);
+      const r = await createProjectWith(db, user, input);
       revalidatePath("/projects");
       return { ok: true, ...r };
     } catch (e) {
@@ -32,8 +32,9 @@ export async function createProject(input: ProjectInput): Promise<ProjectActionR
 
 export async function updateProject(id: string, patch: Partial<ProjectInput>): Promise<ProjectActionResult> {
   return withUser<ProjectActionResult, ProjectActionResult>(requireUser, async (user) => {
+    const db = dbFor(user);
     try {
-      await updateProjectWith(prisma, user, id, patch);
+      await updateProjectWith(db, user, id, patch);
       revalidatePath("/projects");
       return { ok: true };
     } catch (e) {
@@ -47,7 +48,8 @@ export type { ProjectFormState } from "@/lib/projects";
 /** Form-facing wrapper for useActionState; bind the project id first when editing. */
 export async function submitProject(id: string | null, _prev: ProjectFormState, fd: FormData): Promise<ProjectFormState> {
   return withUser<ProjectFormState, ProjectFormState>(requireUser, async (user) => {
-    const r = await submitProjectWith(prisma, user, fd, id ?? undefined);
+    const db = dbFor(user);
+    const r = await submitProjectWith(db, user, fd, id ?? undefined);
     if (r.ok) {
       revalidatePath("/projects");
       redirect("/projects");

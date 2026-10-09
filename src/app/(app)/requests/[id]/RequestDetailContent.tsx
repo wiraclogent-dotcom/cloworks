@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { daysLeft } from "@/lib/daysLeft";
 import { parseFieldSchema } from "@/lib/fieldSchema";
@@ -9,9 +8,9 @@ import { RequestDetailView } from "./RequestDetailView";
 
 /** Loads one request and renders its detail view; shared by the full page and the intercepted side panel. */
 export async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["params"] }) {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const { id } = await params;
-  const req = await prisma.request.findUnique({
+  const req = await db.request.findUnique({
     where: { id },
     include: {
       brand: { select: { name: true } }, division: { select: { name: true } },
@@ -27,7 +26,7 @@ export async function DetailContent({ params }: { params: PageProps<"/requests/[
 
   const canAssign = can(user.appRole, "request.assign");
   const assignees = canAssign
-    ? assigneeOptions(await listCreativeTeam(prisma), req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
+    ? assigneeOptions(await listCreativeTeam(db), req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
     : [];
   const canMove = can(user.appRole, "request.transition");
   const left = daysLeft(req.deadline);

@@ -10,8 +10,7 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-/** The one workspace that exists today. The workspaces migration inserts it with this fixed id. */
-export const CLOGENT_WORKSPACE_ID = "clogent" as const;
+export { CLOGENT_WORKSPACE_ID } from "./workspace";
 
 /** Models whose rows carry `workspaceId`, by Prisma model name. `Workspace` itself is not scoped. */
 const SCOPED_MODELS = new Set([

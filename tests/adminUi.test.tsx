@@ -22,12 +22,16 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
 }));
 
 const requireUser = vi.fn();
-vi.mock("@/lib/session", () => ({ requireUser: () => requireUser(), requireUserOrRedirect: () => requireUser() }));
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
-vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+// Pages read through the workspace-scoped client that requireScope hands them.
+vi.mock("@/lib/session", () => ({
+  requireUser: () => requireUser(),
+  requireUserOrRedirect: () => requireUser(),
+  requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
+}));
 
 import { ActiveToggle, LoginEmailForm, PasswordForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
 import { TypeForm } from "@/app/(app)/admin/lists/ListForms";

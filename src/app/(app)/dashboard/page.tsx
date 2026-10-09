@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarCheck, ChartColumn, CircleCheckBig, Clock, Gauge, Layers, Repeat, Target, UserX } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
@@ -36,7 +35,7 @@ const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone 
 };
 
 async function DashboardContent({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
-  const viewer = await requireUserOrRedirect();
+  const { user: viewer, db } = await requireScope();
   const sp = await searchParams;
   if (!can(viewer.appRole, "dashboard.self")) {
     return <AccessDenied description="You do not have access to the KPI dashboard." />;
@@ -44,7 +43,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   const month = parseMonthParam(sp.month);
   // `user=` is honoured only for dashboard.team viewers; for everyone else it is ignored (own data).
   const subjectId = resolveSubject(viewer, parseUserParam(sp.user));
-  const subject = await prisma.user.findUnique({ where: { id: subjectId }, select: { id: true, name: true, jobRole: true } });
+  const subject = await db.user.findUnique({ where: { id: subjectId }, select: { id: true, name: true, jobRole: true } });
   if (!subject) {
     return (
       <EmptyState role="alert" titleAs="h1" icon={<UserX />} title="Person not found." className="mx-auto max-w-xl"
@@ -53,7 +52,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   }
 
   const months = trailingMonths(month, 6);
-  const [requests, targets] = await Promise.all([loadKpiRequests(prisma, months), loadTargets(prisma, months, subject.id)]);
+  const [requests, targets] = await Promise.all([loadKpiRequests(db, months), loadTargets(db, months, subject.id)]);
   const targetOf = (m: string) => targets.find((t) => t.month === m) ?? null;
   const resultOf = (m: string) => {
     const t = targetOf(m);

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { listBoardColumns, listCalendarRequests, listRequestsPage, listTimelineRequests } from "@/lib/requests";
 import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, rangeText, serializeMore } from "@/lib/paging";
@@ -29,11 +28,11 @@ import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./p
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
 async function TodayLoader() {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const now = new Date();
   const [me, overview] = await Promise.all([
-    prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }),
-    todayOverview(prisma, now),
+    db.user.findUnique({ where: { id: user.id }, select: { name: true } }),
+    todayOverview(db, now),
   ]);
   return <TodayOverview name={me?.name ?? ""} now={now} overview={overview} />;
 }
@@ -42,7 +41,7 @@ async function TodayLoader() {
 export const metadata: Metadata = { title: "Requests" };
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const parsed = parseParams(await searchParams);
   // The calendar and timeline show open work only: a closed status from the URL is ignored there (query, filter bar and "filtered" flag).
   const p = (parsed.view === "calendar" || parsed.view === "timeline") && (parsed.status === "DONE" || parsed.status === "CANCELLED") ? { ...parsed, status: undefined } : parsed;
@@ -51,13 +50,13 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   const grid = p.view === "calendar" ? buildMonthGrid(p.month, today) : null;
   const tlWindow = p.view === "timeline" ? buildWindow(p.week, today) : null;
   const [board, tablePage, calendarRows, timelineRows, brands, divisions, assignees] = await Promise.all([
-    p.view === "board" ? listBoardColumns(prisma, filter, { byStatus: p.more }) : null,
-    p.view === "table" ? listRequestsPage(prisma, filter, { sort: p.sort, dir: p.dir, page: p.page }) : null,
-    grid ? listCalendarRequests(prisma, filter, { from: grid.from, to: grid.to, today }) : null,
-    tlWindow ? listTimelineRequests(prisma, filter, { from: tlWindow.from, to: tlWindow.to, today }) : null,
-    prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    listCreativeTeam(prisma),
+    p.view === "board" ? listBoardColumns(db, filter, { byStatus: p.more }) : null,
+    p.view === "table" ? listRequestsPage(db, filter, { sort: p.sort, dir: p.dir, page: p.page }) : null,
+    grid ? listCalendarRequests(db, filter, { from: grid.from, to: grid.to, today }) : null,
+    tlWindow ? listTimelineRequests(db, filter, { from: tlWindow.from, to: tlWindow.to, today }) : null,
+    db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    listCreativeTeam(db),
   ]);
   const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {});
   const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);

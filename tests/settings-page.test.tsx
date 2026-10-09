@@ -2,11 +2,13 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
-vi.mock("@/lib/session", () => ({
-  requireUserOrRedirect: async () => ({ id: "u1", appRole: "CREATIVE", jobRole: "DESIGNER" }),
-}));
 const findUnique = vi.fn();
-vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique: (...a: unknown[]) => findUnique(...a) } } }));
+vi.mock("@/lib/session", () => ({
+  requireScope: async () => ({
+    user: { id: "u1", appRole: "CREATIVE", jobRole: "DESIGNER", workspaceId: "clogent" },
+    db: { user: { findUnique: (...a: unknown[]) => findUnique(...a) } },
+  }),
+}));
 vi.mock("@/app/(app)/settings/actions", () => ({ changePassword: vi.fn() }));
 const ME = { fullName: "Wira Budi", email: "wira@example.com", title: null, department: "Creative", passwordHash: null as string | null };
 vi.mock("@/components/ui/ThemeSwitch", () => ({ ThemeSwitch: () => <div>theme switch stub</div> }));

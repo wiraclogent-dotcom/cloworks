@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { AppRole, JobRole } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
 import { addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
 import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
@@ -17,9 +16,10 @@ const done = (r: NonNullable<AdminFormState>) => {
 /** Every action takes identity from the session only; the cores re-check `admin.manage`. */
 export async function saveUser(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await updateUser(prisma, actor, s(fd, "userId"), {
+        await updateUser(db, actor, s(fd, "userId"), {
           appRole: s(fd, "appRole") as AppRole,
           jobRole: s(fd, "jobRole") as JobRole,
           aliases: splitList(s(fd, "aliases")),
@@ -34,10 +34,11 @@ export async function saveUser(_prev: AdminFormState, fd: FormData): Promise<Adm
 
 export async function setUserActive(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     const active = s(fd, "active") === "true";
     return done(
       await adminResult(fd, async () => {
-        await updateUser(prisma, actor, s(fd, "userId"), { active });
+        await updateUser(db, actor, s(fd, "userId"), { active });
         return active ? "Reactivated." : "Deactivated. History is kept.";
       }),
     );
@@ -46,10 +47,11 @@ export async function setUserActive(_prev: AdminFormState, fd: FormData): Promis
 
 export async function saveLoginEmail(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
         const email = s(fd, "email").trim();
-        await setUserLoginEmail(prisma, actor, s(fd, "userId"), email === "" ? null : email);
+        await setUserLoginEmail(db, actor, s(fd, "userId"), email === "" ? null : email);
         return email === "" ? "Login email cleared; access ends on their next request." : "Login email saved.";
       }),
     );
@@ -60,10 +62,11 @@ export async function saveLoginEmail(_prev: AdminFormState, fd: FormData): Promi
 export async function savePassword(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   const scrub = (r: NonNullable<AdminFormState>) => ({ ...r, values: { ...r.values, password: "" } });
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return scrub(
       done(
         await adminResult(fd, async () => {
-          await setUserPassword(prisma, actor, s(fd, "userId"), s(fd, "password"));
+          await setUserPassword(db, actor, s(fd, "userId"), s(fd, "password"));
           return "Password saved. Share it with them privately; any open sessions of theirs have ended.";
         }),
       ),
@@ -73,9 +76,10 @@ export async function savePassword(_prev: AdminFormState, fd: FormData): Promise
 
 export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await createUser(prisma, actor, {
+        await createUser(db, actor, {
           name: s(fd, "name"),
           fullName: s(fd, "fullName"),
           title: s(fd, "title"),
@@ -92,9 +96,10 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
 
 export async function addAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await addAllowedEmail(prisma, actor, s(fd, "email"), s(fd, "note"));
+        await addAllowedEmail(db, actor, s(fd, "email"), s(fd, "note"));
         return "Email allowed.";
       }),
     );
@@ -103,9 +108,10 @@ export async function addAllowed(_prev: AdminFormState, fd: FormData): Promise<A
 
 export async function removeAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await removeAllowedEmail(prisma, actor, s(fd, "email"));
+        await removeAllowedEmail(db, actor, s(fd, "email"));
         return "Removed. Anyone relying on it loses access on their next request.";
       }),
     );

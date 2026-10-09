@@ -18,7 +18,8 @@ export class AdminError extends Error {
   }
 }
 
-export type Actor = { id: string; appRole: AppRole };
+/** The signed-in person acting. Callers pass `dbFor(actor)`; writes that name a workspace use `actor.workspaceId`. */
+export type Actor = { id: string; appRole: AppRole; workspaceId: string };
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
 
@@ -236,8 +237,8 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
         if (!stillUsed) await tx.allowedEmail.deleteMany({ where: { email: { equals: old, mode: "insensitive" } } });
       }
       if (next && !isAllowedEmail(next, companyDomain(), [])) {
-        if (!(await tx.allowedEmail.findFirst({ where: { email: next } })))
-          await tx.allowedEmail.create({ data: { email: next, note: `login for ${user.name}` } });
+        if (!(await tx.allowedEmail.findFirst({ where: { workspaceId: actor.workspaceId, email: next } })))
+          await tx.allowedEmail.create({ data: { workspaceId: actor.workspaceId, email: next, note: `login for ${user.name}` } });
       }
       if (capableBefore > 0 && (await countSignInCapableAdmins(tx)) === 0)
         throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
@@ -281,10 +282,11 @@ export async function addAllowedEmail(db: Db, actor: Actor, email: string, note?
   assertAdmin(actor);
   const e = normalizeEmail(email);
   const n = note?.trim() ? note.trim().slice(0, 200) : undefined;
-  const existing = await db.allowedEmail.findFirst({ where: { email: e }, select: { id: true } });
+  const { workspaceId } = actor;
+  const existing = await db.allowedEmail.findFirst({ where: { workspaceId, email: e }, select: { id: true } });
   return existing
     ? db.allowedEmail.update({ where: { id: existing.id }, data: n !== undefined ? { note: n } : {} })
-    : db.allowedEmail.create({ data: { email: e, note: n ?? null } });
+    : db.allowedEmail.create({ data: { workspaceId, email: e, note: n ?? null } });
 }
 
 /** Idempotent. Sessions of users relying on this row end on their next request (session-core). */

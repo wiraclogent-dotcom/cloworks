@@ -3,8 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import type { ProjectStatus } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { formatJakartaDate } from "@/lib/projects";
 import { PROJECT_STAGE_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER, jakartaIso } from "@/lib/projectTasks";
@@ -32,9 +31,9 @@ export default function ProjectDetailPage({ params }: { params: Params }) {
 }
 
 async function ProjectDetailContent({ params }: { params: Params }) {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const { id } = await params;
-  const project = await prisma.project.findUnique({
+  const project = await db.project.findUnique({
     where: { id },
     include: {
       brand: { select: { name: true } },

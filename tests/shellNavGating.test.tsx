@@ -5,11 +5,13 @@ import type { AppRole } from "@prisma/client";
 
 let role: AppRole = "REQUESTER";
 vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
-vi.mock("@/lib/session", () => ({ requireUserOrRedirect: async () => ({ id: "u1", appRole: role }) }));
+vi.mock("@/lib/session", () => ({ requireUserOrRedirect: async () => ({ id: "u1", appRole: role, workspaceId: "clogent" }) }));
 vi.mock("@/lib/auth", () => ({ signOut: vi.fn() }));
-vi.mock("@/lib/db", () => ({ prisma: {} }));
+const findWorkspace = vi.fn();
+vi.mock("@/lib/db", () => ({ prisma: { workspace: { findUnique: (...a: unknown[]) => findWorkspace(...a) } } }));
 
-import { AdminGroup, TeamKpiItem } from "@/components/AppShell";
+import { AdminGroup, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
+import { AppFrame } from "@/components/shell/AppFrame";
 import { UserChipView } from "@/components/shell/UserChipView";
 
 afterEach(cleanup);
@@ -52,5 +54,17 @@ describe("UserChipView", () => {
   it("an empty name renders no empty title", () => {
     const { container } = render(<UserChipView name="" roleLabel="Admin" />);
     expect(container.firstElementChild!.hasAttribute("title")).toBe(false);
+  });
+});
+
+describe("workspace name in the sidebar header", () => {
+  it("reads the signed-in user's workspace and shows its name under the app name", async () => {
+    findWorkspace.mockResolvedValueOnce({ name: "Clogent" });
+    const name = await WorkspaceName();
+    expect(findWorkspace).toHaveBeenCalledWith({ where: { id: "clogent" }, select: { name: true } });
+    render(<AppFrame nav={null} footer={null} workspace={name}><p>x</p></AppFrame>);
+    const label = screen.getByText("Clogent");
+    expect(label.previousElementSibling?.textContent).toBe("Cloworks");
+    expect(label.className).toContain("text-sidebar-foreground-secondary");
   });
 });

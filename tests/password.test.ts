@@ -40,7 +40,7 @@ describe("checkNewPassword", () => {
 
 describe("password sign-in (db)", () => {
   let db: TestDb;
-  let admin: { id: string; appRole: AppRole };
+  let admin: { id: string; appRole: AppRole; workspaceId: string };
   let n = 0;
   const uniq = (p: string) => `${p}${++n}`;
   const mk = async (over: Record<string, unknown> = {}, password: string | null = "initial-password-1") => {
@@ -69,7 +69,7 @@ describe("password sign-in (db)", () => {
   beforeAll(async () => {
     db = await createTestDb();
     const a = await mk({ appRole: "ADMIN" });
-    admin = { id: a.id, appRole: "ADMIN" };
+    admin = { id: a.id, appRole: "ADMIN", workspaceId: "clogent" };
   });
   afterAll(async () => {
     await db?.stop();
@@ -113,7 +113,7 @@ describe("password sign-in (db)", () => {
   it("setUserPassword: admin only, needs a login email, validates, bumps the version and clears a lock", async () => {
     const u = await mk();
     for (const role of ["REQUESTER", "CREATIVE", "LEAD"] as AppRole[])
-      expect(await code(setUserPassword(db.prisma, { id: "x", appRole: role }, u.id, "another-password-1"))).toBe("FORBIDDEN");
+      expect(await code(setUserPassword(db.prisma, { id: "x", appRole: role, workspaceId: "clogent" }, u.id, "another-password-1"))).toBe("FORBIDDEN");
     expect(await code(setUserPassword(db.prisma, admin, u.id, "short"))).toBe("VALIDATION");
     expect(await code(setUserPassword(db.prisma, admin, "missing", "another-password-1"))).toBe("NOT_FOUND");
     const noEmail = await mk({ email: null });

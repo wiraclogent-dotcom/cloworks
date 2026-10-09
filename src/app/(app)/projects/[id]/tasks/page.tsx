@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { jakartaIso } from "@/lib/projectTasks";
 import { taskMode } from "@/lib/projectProgress";
@@ -24,10 +23,10 @@ export default function ProjectTasksPage({ params }: { params: Promise<{ id: str
 }
 
 async function ProjectTasksContent({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const canManage = can(user.appRole, "project.manage");
   const { id } = await params;
-  const project = await prisma.project.findUnique({
+  const project = await db.project.findUnique({
     where: { id },
     include: {
       brand: { select: { name: true } },
@@ -41,7 +40,7 @@ async function ProjectTasksContent({ params }: { params: Promise<{ id: string }>
   const mode = taskMode(project.tasks);
   // Owners are designers only.
   const owners = canManage
-    ? await prisma.user.findMany({ where: { active: true, jobRole: "DESIGNER" }, orderBy: { name: "asc" }, select: { id: true, name: true } })
+    ? await db.user.findMany({ where: { active: true, jobRole: "DESIGNER" }, orderBy: { name: "asc" }, select: { id: true, name: true } })
     : [];
   const products = new Set(project.tasks.map((t) => t.title)).size;
 

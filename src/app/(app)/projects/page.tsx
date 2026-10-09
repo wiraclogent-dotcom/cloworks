@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ProjectTable } from "@/components/ProjectTable";
 import { ProjectTimeline } from "@/components/ProjectTimeline";
@@ -16,9 +15,9 @@ import { Plus } from "lucide-react";
 export const metadata: Metadata = { title: "Projects" };
 
 async function ProjectsContent() {
-  const user = await requireUserOrRedirect();
+  const { user, db } = await requireScope();
   const canManage = can(user.appRole, "project.manage");
-  const projects = await prisma.project.findMany({ include: { brand: { select: { name: true } }, owner: { select: { name: true } } } });
+  const projects = await db.project.findMany({ include: { brand: { select: { name: true } }, owner: { select: { name: true } } } });
   const rows = projects.map((p) => ({
     id: p.id, title: p.title, subTitle: p.subTitle, brandName: p.brand?.name ?? null, ownerName: p.owner.name,
     status: p.status, startDate: p.startDate, dueDate: p.dueDate, fileUrl: p.fileUrl,

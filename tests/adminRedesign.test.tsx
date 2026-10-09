@@ -7,12 +7,16 @@ vi.mock("@/app/(app)/admin/users/actions", () => ({
 }));
 vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn() }));
 const requireUser = vi.fn();
-vi.mock("@/lib/session", () => ({ requireUser: () => requireUser(), requireUserOrRedirect: () => requireUser() }));
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
-vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+// Pages read through the workspace-scoped client that requireScope hands them.
+vi.mock("@/lib/session", () => ({
+  requireUser: () => requireUser(),
+  requireUserOrRedirect: () => requireUser(),
+  requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
+}));
 
 import { activeChip, appRoleChip, enumLabel, jobRoleChip } from "@/lib/adminChips";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";

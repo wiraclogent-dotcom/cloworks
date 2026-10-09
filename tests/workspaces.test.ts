@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { makeScoped, scopedDb } from "@/lib/db";
+import { addAllowedEmail, createBrand, renameBrand, type Actor } from "@/lib/admin";
+import { resolveSignIn } from "@/lib/signin";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 // Every scoped model, by Prisma client key, with a harmless field change for update tests.
@@ -155,5 +157,35 @@ describe("workspace isolation", () => {
     expect((await db.prisma.user.findMany()).map((u) => u.id)).toEqual([clogent.user]);
     expect(scopedDb("clogent")).toBe(scopedDb("clogent"));
     expect(scopedDb("clogent")).not.toBe(scopedDb("other"));
+  });
+});
+
+describe("app cores through the scoped client", () => {
+  const admin = (): Actor => ({ id: clogent.user, appRole: "ADMIN", workspaceId: "clogent" });
+
+  it("renameBrand accepts a name another workspace already uses", async () => {
+    const s = makeScoped(db.raw, "clogent");
+    await renameBrand(s, admin(), clogent.brand, "Main Renamed");
+    const temp = await createBrand(s, admin(), "Temp Brand");
+    expect(temp).toMatchObject({ workspaceId: "clogent" });
+    expect(await renameBrand(s, admin(), temp.id, "Main")).toMatchObject({ name: "Main", workspaceId: "clogent" });
+    expect(await db.raw.brand.count({ where: { name: "Main" } })).toBe(2);
+  });
+
+  it("addAllowedEmail writes to the actor's workspace and lists only its rows", async () => {
+    const s = makeScoped(db.raw, "clogent");
+    await addAllowedEmail(s, admin(), "guest@partner.com", "guest");
+    // The actor's workspace is used even through the raw client.
+    expect(await addAllowedEmail(db.raw, admin(), "raw@partner.com")).toMatchObject({ workspaceId: "clogent" });
+    const listed = await s.allowedEmail.findMany();
+    expect(listed.every((r) => r.workspaceId === "clogent")).toBe(true);
+    expect(listed.map((r) => r.email)).toEqual(expect.arrayContaining(["shared@example.com", "guest@partner.com", "raw@partner.com"]));
+    expect(listed.map((r) => r.id)).not.toContain(other.allowedEmail);
+  });
+
+  it("first OAuth sign-in creates the user in the Clogent workspace", async () => {
+    const r = await resolveSignIn(db.raw, { email: "newcomer@clogent.co.id", name: "Newcomer" });
+    expect(r).toMatchObject({ ok: true, created: true });
+    if (r.ok) expect(r.user.workspaceId).toBe("clogent");
   });
 });

@@ -8,7 +8,7 @@ import { loadActiveUser, requireUserWith, refreshJwt } from "@/lib/session-core"
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 let db: TestDb;
-let admin: { id: string; appRole: AppRole };
+let admin: { id: string; appRole: AppRole; workspaceId: string };
 let n = 0;
 const uniq = (p: string) => `${p}${++n}`;
 const code = async (p: Promise<unknown>) => {
@@ -28,7 +28,7 @@ const mk = (over: Record<string, unknown> = {}) => {
 beforeAll(async () => {
   db = await createTestDb();
   const a = await mk({ appRole: "ADMIN" });
-  admin = { id: a.id, appRole: "ADMIN" };
+  admin = { id: a.id, appRole: "ADMIN", workspaceId: "clogent" };
 });
 afterAll(async () => {
   await db?.stop();
@@ -37,7 +37,7 @@ afterAll(async () => {
 describe("FORBIDDEN for non-admins on every core", () => {
   for (const role of ["REQUESTER", "CREATIVE", "LEAD"] as AppRole[]) {
     it(role, async () => {
-      const a = { id: "x", appRole: role };
+      const a = { id: "x", appRole: role, workspaceId: "clogent" };
       const p = db.prisma;
       const u = await mk();
       const calls: Promise<unknown>[] = [
@@ -103,7 +103,7 @@ describe("last admin protection", () => {
     try {
       const a = await d.prisma.user.create({ data: { name: "Solo", fullName: "Solo", email: "solo@clogent.co.id", appRole: "ADMIN" } });
       await d.prisma.user.create({ data: { name: "Inactive", fullName: "Inactive", email: "i@clogent.co.id", appRole: "ADMIN", active: false } });
-      const act = { id: a.id, appRole: "ADMIN" as const };
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
       expect(await code(updateUser(d.prisma, act, a.id, { active: false }))).toBe("LAST_ADMIN");
       expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD", active: false }))).toBe("LAST_ADMIN");
@@ -120,7 +120,7 @@ describe("last admin protection", () => {
     try {
       const a = await d.prisma.user.create({ data: { name: "A", fullName: "A", email: "a@clogent.co.id", appRole: "ADMIN" } });
       const b = await d.prisma.user.create({ data: { name: "B", fullName: "B", email: "b@clogent.co.id", appRole: "ADMIN" } });
-      const act = { id: a.id, appRole: "ADMIN" as const };
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       for (let i = 0; i < 3; i++) {
         const res = await Promise.allSettled([
           updateUser(d.prisma, act, a.id, { appRole: "LEAD" }),
@@ -306,7 +306,7 @@ describe("sign-in-capable admin guard (email path)", () => {
     try {
       const a = await mkA("Gm", "gm@gmail.com");
       await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
-      const act = { id: a.id, appRole: "ADMIN" as const };
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       const before = await snapshot(d, a.id);
       expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("LAST_ADMIN");
       expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("LAST_ADMIN");
@@ -322,7 +322,7 @@ describe("sign-in-capable admin guard (email path)", () => {
     try {
       const a = await mkA("Ok", "ok@clogent.co.id");
       await mkA("NoMail", null);
-      const act = { id: a.id, appRole: "ADMIN" as const };
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
       expect(await code(updateUser(d.prisma, act, a.id, { active: false }))).toBe("LAST_ADMIN");
     } finally {
@@ -334,7 +334,7 @@ describe("sign-in-capable admin guard (email path)", () => {
     try {
       const a = await mkA("Ok", "ok@clogent.co.id");
       await mkA("Orphan", "orphan@gmail.com");
-      expect(await code(updateUser(d.prisma, { id: a.id, appRole: "ADMIN" }, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
+      expect(await code(updateUser(d.prisma, { id: a.id, appRole: "ADMIN", workspaceId: "clogent" }, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
     } finally {
       await d.stop();
     }
@@ -345,7 +345,7 @@ describe("sign-in-capable admin guard (email path)", () => {
       const a = await mkA("Gm", "gm@gmail.com");
       await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
       await mkA("Co", "co@clogent.co.id");
-      const act = { id: a.id, appRole: "ADMIN" as const };
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("OK");
       expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("OK");
       expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("OK");
@@ -359,7 +359,7 @@ describe("sign-in-capable admin guard (email path)", () => {
       const g = await mkA("Gm", "gm@gmail.com");
       const c = await mkA("Co", "co@clogent.co.id");
       await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
-      const act = { id: g.id, appRole: "ADMIN" as const };
+      const act = { id: g.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
       await Promise.allSettled([removeAllowedEmail(d.prisma, act, "gm@gmail.com"), updateUser(d.prisma, act, c.id, { appRole: "LEAD" })]);
       const capable = await d.prisma.user.findMany({ where: { appRole: "ADMIN", active: true } });
       const rows = await d.prisma.allowedEmail.count();

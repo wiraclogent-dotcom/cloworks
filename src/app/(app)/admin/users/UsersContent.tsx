@@ -1,6 +1,5 @@
 import { ChevronRight, Mail } from "lucide-react";
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -19,18 +18,18 @@ function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<
 
 /** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
 export async function UsersContent() {
-  const viewer = await requireUserOrRedirect();
+  const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [users, allowed] = await Promise.all([
     // Explicit select: rows go to client forms, so secrets (passwordHash) must never be loaded here.
-    prisma.user
+    db.user
       .findMany({
         orderBy: [{ active: "desc" }, { name: "asc" }],
         select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
       })
       .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash }))),
-    prisma.allowedEmail.findMany({ orderBy: { email: "asc" } }),
+    db.allowedEmail.findMany({ orderBy: { email: "asc" } }),
   ]);
   const owners = new Map(users.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u.name]));
   const t = tableClass({ minWidth: "min-w-[60rem]" });

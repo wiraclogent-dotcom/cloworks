@@ -1,5 +1,4 @@
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { accountRows } from "@/lib/settings/account";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
@@ -7,8 +6,8 @@ import { ChangePasswordForm } from "./ChangePasswordForm";
 
 /** The General settings: the signed-in user's account (read-only) and appearance. Async, so it renders inside Suspense. */
 export async function SettingsContent() {
-  const user = await requireUserOrRedirect();
-  const me = await prisma.user.findUnique({
+  const { user, db } = await requireScope();
+  const me = await db.user.findUnique({
     where: { id: user.id },
     select: { fullName: true, email: true, title: true, department: true, passwordHash: true },
   });
