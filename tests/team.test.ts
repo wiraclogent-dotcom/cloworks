@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole, JobRole } from "@prisma/client";
-import { assigneeOptions, listCreativeTeam } from "@/lib/team";
+import { assigneeOptions, listCreativeTeam, listTeamKpiPeople } from "@/lib/team";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("listCreativeTeam", () => {
@@ -18,12 +18,24 @@ describe("listCreativeTeam", () => {
     await mk("Bayu", "CREATIVE", "OTHER");
   });
   afterAll(async () => { await db?.stop(); });
+  const idOf = async (name: string) => (await db.prisma.user.findFirstOrThrow({ where: { name } })).id;
 
   it("is the active designers who use the tracker as creative, lead or admin, by name", async () => {
     expect(await listCreativeTeam(db.prisma)).toEqual([
       { id: expect.any(String), name: "Irsyad" },
       { id: expect.any(String), name: "Wira" },
     ]);
+  });
+
+  it("Team KPI people: the creative team, plus anyone with a designer target that month (past members keep their history)", async () => {
+    const targets = [
+      { userId: await idOf("Daus"), role: "DESIGNER" as const }, // inactive designer with a target: kept
+      { userId: await idOf("Idzni"), role: "SOCIAL_MEDIA" as const }, // social media target: not the creative team
+    ];
+    const people = await listTeamKpiPeople(db.prisma, targets);
+    expect(people.map((p) => p.name)).toEqual(["Daus", "Irsyad", "Wira"]);
+    expect(people[0]).toMatchObject({ id: await idOf("Daus"), jobRole: "DESIGNER" });
+    expect((await listTeamKpiPeople(db.prisma, [])).map((p) => p.name)).toEqual(["Irsyad", "Wira"]);
   });
 });
 

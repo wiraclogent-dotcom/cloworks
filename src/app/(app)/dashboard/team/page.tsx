@@ -15,6 +15,7 @@ import { TeamKpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CircleCheckBig, Gauge, Users } from "lucide-react";
+import { listTeamKpiPeople } from "@/lib/team";
 import { parseMonthParam } from "../params";
 
 /** One cell of the summary scorecard: small label with its icon, the number, and an optional hint. */
@@ -42,11 +43,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
   }
   const month = parseMonthParam((await searchParams).month);
   const [targets, requests] = await Promise.all([loadTargets(prisma, [month]), loadKpiRequests(prisma, [month])]);
-  const people = await prisma.user.findMany({
-    where: { OR: [{ id: { in: targets.map((t) => t.userId) } }, { active: true, jobRole: { in: ["DESIGNER", "SOCIAL_MEDIA"] } }] },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, jobRole: true },
-  });
+  const people = await listTeamKpiPeople(prisma, targets);
   const rows: TeamRow[] = people.map((u) => {
     const t = targets.find((x) => x.userId === u.id) ?? null;
     return {
@@ -62,7 +59,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     <>
       <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} action="/dashboard/team" />} />
       {rows.length === 0 ? (
-        <EmptyState icon={<Users />} title="No team members to show" description="No designers or social media staff yet." />
+        <EmptyState icon={<Users />} title="No team members to show" description="No creative team members yet." />
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="team-summary">
