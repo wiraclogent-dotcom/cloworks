@@ -32,6 +32,11 @@ type Rec = Record<string, unknown>;
  * Wraps `base` so every query on a scoped model is confined to `workspaceId`: reads, updates and deletes get it
  * ANDed into `where`, creates get it stamped into `data`, and a `data.workspaceId` naming another workspace
  * throws. Nested writes inside `data` and `$queryRaw`/`$executeRaw` are NOT scoped.
+ *
+ * Limits: the `Workspace` model itself is not scoped (any scoped client can read or update it). Cross-workspace
+ * scalar foreign keys (e.g. a `brandId` belonging to another workspace) are blocked neither by this extension nor by
+ * the database, so callers must look referenced rows up through the scoped client first (as createRequest and
+ * projects do).
  */
 export function makeScoped(base: PrismaClient, workspaceId: string) {
   const check = (data: unknown) => {

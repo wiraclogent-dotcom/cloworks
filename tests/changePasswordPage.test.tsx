@@ -15,6 +15,7 @@ vi.mock("@/lib/auth", () => ({ signOut: (...a: unknown[]) => signOut(...a) }));
 vi.mock("@/lib/admin", async (orig) => ({ ...(await orig<typeof import("@/lib/admin")>()), changeOwnPassword: (...a: unknown[]) => changeOwnPassword(...a) }));
 
 import ChangePasswordPage from "@/app/change-password/page";
+import { SessionGate } from "@/app/change-password/SessionGate";
 import { changePasswordFirstTime } from "@/app/change-password/actions";
 
 const me = { id: "u1", appRole: "CREATIVE", jobRole: "DESIGNER", workspaceId: "clogent", mustChangePassword: true };
@@ -23,8 +24,8 @@ beforeEach(() => { vi.clearAllMocks(); requireUserForPasswordChange.mockResolved
 afterEach(cleanup);
 
 describe("/change-password page", () => {
-  it("renders the three password fields, the intro and a Sign out button", async () => {
-    render(await ChangePasswordPage());
+  it("renders the three password fields, the intro and a Sign out button", () => {
+    render(<ChangePasswordPage />);
     expect(screen.getByLabelText("Temporary password")).toBeTruthy();
     expect(screen.getByLabelText("New password (at least 10 characters)")).toBeTruthy();
     expect(screen.getByLabelText("Confirm new password")).toBeTruthy();
@@ -34,7 +35,14 @@ describe("/change-password page", () => {
   it("sends a visitor without a session to /signin", async () => {
     const { UnauthenticatedError } = await import("@/lib/session-core");
     requireUserForPasswordChange.mockRejectedValue(new UnauthenticatedError());
-    await expect(ChangePasswordPage()).rejects.toThrow("NEXT_REDIRECT:/signin");
+    await expect(SessionGate()).rejects.toThrow("NEXT_REDIRECT:/signin");
+  });
+  it("sends someone with no pending password change to /settings", async () => {
+    requireUserForPasswordChange.mockResolvedValue({ ...me, mustChangePassword: false });
+    await expect(SessionGate()).rejects.toThrow("NEXT_REDIRECT:/settings");
+  });
+  it("lets someone with a pending password change stay", async () => {
+    expect(await SessionGate()).toBeNull();
   });
 });
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
-import { AdminError, addAllowedEmail, createUser, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { AdminError, addAllowedEmail, createUser, normalizeEmail, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
 import { checkNewPassword } from "@/lib/password";
 import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
 
@@ -77,7 +77,8 @@ export async function savePassword(_prev: AdminFormState, fd: FormData): Promise
 
 /**
  * Adds a person, optionally with a login email and a temporary password (which they must change at first sign-in).
- * Everything is validated before anything is created. The typed password is never echoed back.
+ * The email (format and not already someone's login in this workspace) and the password are validated before anything
+ * is created; a concurrent claim of the same email can still fail later. The typed password is never echoed back.
  * Create, email and password are separate steps: if a later one fails the person already exists, and the message says
  * so; the admin finishes with that row's login email and password forms.
  */
@@ -88,8 +89,12 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
     return scrub(
       done(
         await adminResult(fd, async () => {
-          const email = s(fd, "email").trim();
+          const rawEmail = s(fd, "email").trim();
+          const email = rawEmail === "" ? "" : normalizeEmail(rawEmail);
           const password = s(fd, "password");
+          if (email !== "" && (await db.user.findFirst({ where: { email }, select: { id: true } }))) {
+            throw new AdminError("CONFLICT", "That email is already used as a login by someone else.");
+          }
           if (password !== "") {
             if (email === "") throw new AdminError("VALIDATION", "Add a login email to give them a password.");
             const problem = checkNewPassword(password);
@@ -110,7 +115,7 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
             if (password !== "") await setUserPassword(db, actor, person.id, password);
           } catch (e) {
             if (e instanceof AdminError) {
-              throw new AdminError(e.code, `${person.name} was added, but ${e.message.charAt(0).toLowerCase()}${e.message.slice(1)} Finish with Edit in their row.`, e.details);
+              throw new AdminError(e.code, `${person.name} was added, but ${e.message.charAt(0).toLowerCase()}${e.message.slice(1)}${/[.!?]$/.test(e.message) ? "" : "."} Finish with Edit in their row.`, e.details);
             }
             throw e;
           }

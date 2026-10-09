@@ -28,7 +28,7 @@ If you leave **Login email** and **Temporary password** empty, the person is add
 People sign in with their login email and a password.
 
 1. Open **Edit** on their row. Their login email must be set first.
-2. Type a password of at least 10 characters in **Password** and choose **Set password** (or **Reset password**).
+2. Type a password of at least 10 characters in the password field (**Password**, or **New password** if they already have one) and choose **Set password** (or **Reset password**).
 3. Give them the password privately. Cloworks does not send it to them.
 
 A password you set, whether in **Add person** or on their row, is temporary. The first time they sign in with it, Cloworks asks them to choose their own password before they can use anything else. Until they do, every page sends them to that screen. Afterwards they are signed out and sign in again with the new password.
