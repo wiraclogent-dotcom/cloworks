@@ -13,7 +13,7 @@ requiresPermission: dashboard.self
 - **Target**: the number of tasks you aim to finish. If no target is set, the page says so.
 - **Progress**: tasks done as a percentage of the target.
 - **On-time rate**: the share of finished tasks that were done by their original deadline. It only counts tasks with a deadline.
-- **Avg turnaround (working days)**: how long finished tasks took on average.
+- **Avg turnaround (working days)**: how long finished tasks took on average. Working days are Monday to Saturday; Sundays are not counted.
 - **Revision rounds**: how many revision rounds your work went through.
 - **Total outputs**: how many pieces of work you delivered.
 - **Active workload**: open requests assigned to you. Only shown for designers.
