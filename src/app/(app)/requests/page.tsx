@@ -22,7 +22,7 @@ import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
 import { todayOverview } from "@/lib/todayOverview";
-import { hrefWith, parseParams, parseView, toFilter } from "./params";
+import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./params";
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
 async function TodayLoader() {
@@ -114,7 +114,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   );
 }
 
-const VIEW_LABEL: Record<"board" | "table" | "calendar", string> = { board: "Board", table: "Table", calendar: "Calendar" };
+const VIEW_LABEL: Record<ViewParams["view"], string> = { board: "Board", table: "Table", calendar: "Calendar", timeline: "Timeline" };
 
 /** Top-bar icon button for a feature that does not exist yet: visible, labelled, and disabled (no fake action). */
 function ComingSoon({ label, icon }: { label: string; icon: ReactNode }) {

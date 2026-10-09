@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseParams, hrefWith, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
+import { parseParams, parseView, hrefWith, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
 
 describe("parseParams limits", () => {
   it("caps q at 200 characters and trims", () => {
@@ -52,5 +52,22 @@ describe("calendar params", () => {
     expect(hrefWith(cal, { view: undefined })).toBe("/requests");
     expect(hrefWith(parseParams({ view: "table", month: "2026-11" }, now), {})).not.toContain("month");
     expect(hrefWith(parseParams({}, now), { status: "DONE" })).not.toContain("month");
+  });
+});
+
+describe("timeline params", () => {
+  const now = new Date("2026-10-08T05:00:00Z");
+  it("parses view=timeline and week", () => {
+    expect(parseParams({ view: "timeline", week: "2026-10-14" }, now)).toMatchObject({ view: "timeline", week: "2026-10-12" });
+    expect(parseParams({}, now).week).toBe("2026-09-28");
+    expect(parseView("timeline")).toBe("timeline");
+  });
+  it("hrefWith emits week only for the timeline view", () => {
+    const tl = parseParams({ view: "timeline", week: "2026-10-12" }, now);
+    expect(hrefWith(tl, {})).toBe("/requests?view=timeline&week=2026-10-12");
+    expect(hrefWith(tl, { week: "2026-10-19" })).toBe("/requests?view=timeline&week=2026-10-19");
+    expect(hrefWith(tl, { week: undefined })).toBe("/requests?view=timeline");
+    expect(hrefWith(tl, { view: "table" })).not.toContain("week");
+    expect(hrefWith(parseParams({ view: "calendar", week: "2026-10-12" }, now), {})).not.toContain("week");
   });
 });
