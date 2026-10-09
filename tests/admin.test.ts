@@ -4,7 +4,7 @@ import {
   AdminError, updateUser, createUser, setUserLoginEmail, addAllowedEmail, removeAllowedEmail,
   createBrand, renameBrand, createDivision, renameDivision, upsertRequestType,
 } from "@/lib/admin";
-import { requireUserWith, refreshJwt } from "@/lib/session-core";
+import { loadActiveUser, requireUserWith, refreshJwt } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 let db: TestDb;
@@ -169,6 +169,12 @@ describe("setUserLoginEmail", () => {
     await setUserLoginEmail(db.prisma, admin, c.id, "Someone@CLOGENT.co.id");
     expect(await db.prisma.allowedEmail.count({ where: { email: "someone@clogent.co.id" } })).toBe(0);
     expect((await requireUserWith(sess(c.id, "someone@clogent.co.id"), db.prisma)).id).toBe(c.id);
+  });
+  it("loadActiveUser returns workspaceId and mustChangePassword", async () => {
+    const u = await mk({ email: "wf@clogent.co.id" });
+    expect(await loadActiveUser(db.prisma, u.id)).toMatchObject({ workspaceId: "clogent", mustChangePassword: false });
+    await db.raw.user.update({ where: { id: u.id }, data: { mustChangePassword: true } });
+    expect((await loadActiveUser(db.prisma, u.id))?.mustChangePassword).toBe(true);
   });
   it("lookalike domain is treated as outside (gets an allow-list row)", async () => {
     const u = await mk({ email: null });

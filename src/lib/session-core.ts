@@ -12,7 +12,15 @@ export class UnauthenticatedError extends Error {
 }
 export const isUnauthenticated = (e: unknown): boolean => e instanceof UnauthenticatedError || (e instanceof Error && e.message === "Unauthenticated");
 
-export type SessionUser = { id: string; appRole: AppRole; jobRole: JobRole };
+/** Signed in, but must set a new password before doing anything else. Extends UnauthenticatedError so `withUser` refuses the user. */
+export class PasswordChangeRequiredError extends UnauthenticatedError {
+  constructor() {
+    super();
+    this.name = "PasswordChangeRequiredError";
+  }
+}
+
+export type SessionUser = { id: string; appRole: AppRole; jobRole: JobRole; workspaceId: string; mustChangePassword: boolean };
 
 /**
  * Current, still-permitted user or null. Denies inactive users, users with no login email, and users whose
@@ -29,7 +37,7 @@ export async function loadActiveUser(
    */
   claim?: { loginEmail?: string | null; pwv?: number },
 ): Promise<SessionUser | null> {
-  const u = await db.user.findUnique({ where: { id }, select: { id: true, active: true, email: true, appRole: true, jobRole: true, passwordVersion: true } });
+  const u = await db.user.findUnique({ where: { id }, select: { id: true, active: true, email: true, appRole: true, jobRole: true, passwordVersion: true, workspaceId: true, mustChangePassword: true } });
   if (!u || !u.active || !u.email) return null;
   const email = u.email.trim().toLowerCase();
   if (claim && (!claim.loginEmail || claim.loginEmail.trim().toLowerCase() !== email)) return null;
@@ -38,7 +46,7 @@ export async function loadActiveUser(
     const row = await db.allowedEmail.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
     if (!row) return null;
   }
-  return { id: u.id, appRole: u.appRole, jobRole: u.jobRole };
+  return { id: u.id, appRole: u.appRole, jobRole: u.jobRole, workspaceId: u.workspaceId, mustChangePassword: u.mustChangePassword };
 }
 
 /** jwt-callback refresh for an existing token: re-reads the DB; null invalidates the session. */
