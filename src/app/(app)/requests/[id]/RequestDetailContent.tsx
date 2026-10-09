@@ -6,8 +6,8 @@ import { parseFieldSchema } from "@/lib/fieldSchema";
 import { assigneeOptions, listCreativeTeam } from "@/lib/team";
 import { RequestDetailView } from "./RequestDetailView";
 
-/** Loads one request and renders its detail view; shared by the full page and the intercepted side panel. */
-export async function DetailContent({ params }: { params: PageProps<"/requests/[id]">["params"] }) {
+/** Loads one request and renders its detail view; shared by the full page (`fullPage`) and the intercepted side panel. */
+export async function DetailContent({ params, fullPage = false }: { params: PageProps<"/requests/[id]">["params"]; fullPage?: boolean }) {
   const { user, db } = await requireScope();
   const { id } = await params;
   const req = await db.request.findUnique({
@@ -35,7 +35,7 @@ export async function DetailContent({ params }: { params: PageProps<"/requests/[
   const shown = schema.filter((f) => fields[f.key] !== undefined && fields[f.key] !== "");
 
   return (
-    <RequestDetailView req={req} daysLeft={left} userId={user.id} canAssign={canAssign} canMove={canMove} assignees={assignees}
+    <RequestDetailView req={req} daysLeft={left} userId={user.id} canAssign={canAssign} canMove={canMove} assignees={assignees} fullPage={fullPage}
       extra={shown.map((f) => ({ key: f.key, label: f.label, value: fields[f.key], url: f.type === "url" }))} />
   );
 }

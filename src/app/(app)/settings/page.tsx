@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Settings" };
 export default function SettingsPage() {
   return (
     <div className="mx-auto w-full max-w-3xl">
-      <PageHeader title="Settings" description="Your account and how Cloworks looks for you." />
+      <PageHeader breadcrumb={[{ label: "Settings" }]} title="Settings" description="Your account and how Cloworks looks for you." />
       <Suspense fallback={<SettingsSkeleton />}>
         <SettingsContent />
       </Suspense>

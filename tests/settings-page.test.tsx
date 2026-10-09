@@ -68,3 +68,11 @@ describe("settings: administration", () => {
     expect(screen.queryByRole("heading", { name: "Administration" })).toBeNull();
   });
 });
+
+describe("settings: top bar", () => {
+  it("has a Settings breadcrumb top bar (where the profile menu sits)", async () => {
+    const { default: SettingsPage } = await import("@/app/(app)/settings/page");
+    const { container } = render(<SettingsPage />);
+    expect(container.querySelector("[data-top-bar]")!.textContent).toBe("Settings");
+  });
+});

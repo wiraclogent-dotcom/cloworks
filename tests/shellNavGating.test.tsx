@@ -13,7 +13,6 @@ vi.mock("@/lib/db", () => ({ prisma: { workspace: { findUnique: (...a: unknown[]
 import * as Shell from "@/components/AppShell";
 import { BriefCalendarItem, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
 import { AppFrame } from "@/components/shell/AppFrame";
-import { UserChipView } from "@/components/shell/UserChipView";
 
 afterEach(cleanup);
 
@@ -45,19 +44,6 @@ describe("role-gated sidebar items (same can() checks as the pages)", () => {
   });
 });
 
-describe("UserChipView", () => {
-  it("shows name and role; the avatar is decorative", () => {
-    const { container } = render(<UserChipView name="Wira Budi" roleLabel="Admin" />);
-    expect(screen.getByText("Wira Budi")).toBeTruthy();
-    expect(screen.getByText("Admin")).toBeTruthy();
-    expect(container.querySelector('[aria-hidden="true"]')?.textContent).toBe("WB");
-    expect(container.firstElementChild!.getAttribute("title")).toBe("Wira Budi");
-  });
-  it("an empty name renders no empty title", () => {
-    const { container } = render(<UserChipView name="" roleLabel="Admin" />);
-    expect(container.firstElementChild!.hasAttribute("title")).toBe(false);
-  });
-});
 
 describe("workspace name in the sidebar header", () => {
   it("reads the signed-in user's workspace and shows its name under the app name", async () => {

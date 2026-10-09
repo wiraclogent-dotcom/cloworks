@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { ThemeSwitch, ThemeSync } from "@/components/ui/ThemeSwitch";
 import { THEME_INIT_SCRIPT, parseThemePref, resetThemeMemory, resolveTheme } from "@/lib/theme";
 
 function mockMatchMedia(dark: boolean) {
@@ -77,7 +77,8 @@ describe("ThemeSwitch (day / night toggle)", () => {
   it("a stored system choice still follows the OS, and flipping replaces it with light or dark", () => {
     mockMatchMedia(true);
     localStorage.setItem("ct-theme", "system");
-    render(<ThemeSwitch />);
+    // The app shell mounts ThemeSync once (it applies a "system" choice); the switch only reads and flips.
+    render(<><ThemeSync /><ThemeSwitch /></>);
     expect(html().getAttribute("data-theme")).toBe("dark");
     expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
     fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);

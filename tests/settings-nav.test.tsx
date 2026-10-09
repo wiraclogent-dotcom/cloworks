@@ -13,8 +13,8 @@ vi.mock("@/lib/auth", () => ({ signOut: async () => {} }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 
 import { AppShell } from "@/components/AppShell";
-import { SettingsLink } from "@/components/shell/SettingsLink";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { AppFrame } from "@/components/shell/AppFrame";
 
 afterEach(cleanup);
 
@@ -22,16 +22,10 @@ describe("Settings entry point", () => {
   it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("is not in the sidebar for %s", async (appRole) => {
     role = appRole as AppRole;
     render(<AppShell><p>page</p></AppShell>);
-    await screen.findByRole("link", { name: "Help center" });
+    await screen.findByRole("link", { name: "Requests" });
     expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 
-  it("the top-bar gear is a live link to /settings", () => {
-    render(<SettingsLink />);
-    const link = screen.getByRole("link", { name: "Settings" });
-    expect(link.getAttribute("href")).toBe("/settings");
-    expect(link.getAttribute("title")).toBe("Settings");
-  });
 });
 
 describe("sidebar Work group", () => {
@@ -45,14 +39,15 @@ describe("sidebar Work group", () => {
   });
 });
 
-describe("Settings gear in every page top bar", () => {
-  it("appears on any page with a breadcrumb, after the page's own top-bar actions", () => {
-    render(<PageHeader title="Projects" breadcrumb={[{ label: "Work" }, { label: "Projects" }]} topBarActions={<button type="button">Bell</button>} />);
-    const actions = document.querySelector("[data-top-bar-actions]")!;
-    expect(Array.from(actions.children).map((c) => c.textContent || c.getAttribute("aria-label"))).toEqual(["Bell", "Settings"]);
+describe("profile menu placement", () => {
+  it("the app frame pins the profile menu at the top right of the content", () => {
+    render(<AppFrame nav={null} profile={<button type="button">WI</button>}><p>page</p></AppFrame>);
+    const slot = document.querySelector("main [data-profile-slot]")!;
+    expect(slot.textContent).toBe("WI");
+    expect(slot.className).toContain("right-0");
   });
-  it("appears even when the page has no top-bar actions of its own", () => {
+  it("every page top bar leaves room for it", () => {
     render(<PageHeader title="Team KPI" breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} />);
-    expect(screen.getByRole("link", { name: "Settings" }).getAttribute("href")).toBe("/settings");
+    expect(document.querySelector("[data-top-bar]")!.className).toContain("pr-12");
   });
 });

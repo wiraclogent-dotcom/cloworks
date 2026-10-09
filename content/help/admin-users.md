@@ -9,7 +9,7 @@ The **People and access** page lists everyone who uses Cloworks. Admins use it t
 
 ## Add a person
 
-1. Open **Settings** with the gear at the top right, then choose **Users** under **Administration**.
+1. Select your profile picture at the top right, choose **Account settings**, then choose **Users** under **Administration**.
 2. Select **Add person**.
 3. Fill in the fields:
    - **Name (as used in the team)**

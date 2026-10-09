@@ -81,3 +81,18 @@ describe("help article page", () => {
     expect(metadata).toEqual({ title: "Help" });
   });
 });
+
+describe("help top bar", () => {
+  it("an article has the Help center › title top bar", async () => {
+    render(await ArticleContent({ params: params("open") }));
+    const nav = screen.getByRole("navigation", { name: "Breadcrumb" });
+    expect(nav.querySelector("a")!.getAttribute("href")).toBe("/help");
+    expect(nav.textContent).toContain("Help center");
+    expect(document.querySelector("[data-top-bar]")).toBeTruthy();
+  });
+  it("the help index has the top bar too", async () => {
+    const { default: HelpPage } = await import("@/app/(app)/help/page");
+    const { container } = render(<HelpPage />);
+    expect(container.querySelector("[data-top-bar]")!.textContent).toContain("Help center");
+  });
+});

@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { cn } from "./cn";
-import { SettingsLink } from "../shell/SettingsLink";
 
 export type Crumb = { label: string; href?: string };
 
@@ -13,14 +12,15 @@ export type Crumb = { label: string; href?: string };
 export function PageHeader({ title, count, description, switcher, actions, breadcrumb, topBarActions, className }: {
   title: ReactNode; count?: number; description?: ReactNode; switcher?: ReactNode; actions?: ReactNode;
   /** Top bar: the trail to this page (the last crumb is the current page). Shown above the title with a hairline under it. */
-  breadcrumb?: Crumb[]; /** Right side of the top bar (avatars, icon buttons), before the Settings gear. Only with `breadcrumb`. */ topBarActions?: ReactNode;
+  breadcrumb?: Crumb[]; /** Right side of the top bar (avatars, icon buttons), left of the profile menu. Only with `breadcrumb`. */ topBarActions?: ReactNode;
   className?: string;
 }) {
   const last = (breadcrumb?.length ?? 0) - 1;
   return (
     <>
       {breadcrumb ? (
-        <div data-top-bar="" className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+        // min-h-12 + pr-12: the app layout pins the profile menu (36px) in this row's top-right corner (AppFrame).
+        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-12 pb-3">
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-foreground-secondary">
               {breadcrumb.map((c, i) => (
@@ -35,8 +35,7 @@ export function PageHeader({ title, count, description, switcher, actions, bread
               ))}
             </ol>
           </nav>
-          {/* The gear is the way into Settings (the sidebar does not list it), so every page with a top bar has it. */}
-          <div data-top-bar-actions="" className="flex items-center gap-2">{topBarActions}<SettingsLink /></div>
+          {topBarActions ? <div data-top-bar-actions="" className="flex items-center gap-2">{topBarActions}</div> : null}
         </div>
       ) : null}
     <div className={cn("mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 pb-4", !breadcrumb && "border-b border-border", className)}>

@@ -22,15 +22,22 @@ function isDark(): boolean {
   return pref === "system" && typeof window.matchMedia === "function" && window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
-/**
- * Day / night toggle: a pill with a sun (day) or moon (night) knob that slides across. Light and Dark only; a
- * "system" choice made earlier still follows the OS until the user flips the switch. Writes localStorage `ct-theme`
- * and updates `<html data-theme>` at once. In the collapsed rail (`.sb-collapsed-only`) it is a round icon button.
- */
-export function ThemeSwitch({ className }: { tone?: "surface" | "sidebar"; className?: string }) {
-  const pref = useSyncExternalStore(subscribe, readThemePref, () => "light" as const);
+/** The current day/night state and a flip, shared by the Settings switch and the profile menu (they stay in step). */
+export function useDarkMode(): { dark: boolean; flip: () => void } {
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
+  const flip = () => {
+    setThemePref(dark ? "light" : "dark");
+    window.dispatchEvent(new Event(CHANGE));
+  };
+  return { dark, flip };
+}
 
+/**
+ * Keeps `<html data-theme>` applied and, for a "system" choice, following the OS. Mounted once in the app shell so it
+ * runs on every page, whether or not a switch is on screen.
+ */
+export function ThemeSync() {
+  const pref = useSyncExternalStore(subscribe, readThemePref, () => "light" as const);
   useEffect(() => {
     applyTheme(pref);
     if (pref !== "system" || typeof window.matchMedia !== "function") return;
@@ -39,11 +46,16 @@ export function ThemeSwitch({ className }: { tone?: "surface" | "sidebar"; class
     mq.addEventListener?.("change", on);
     return () => mq.removeEventListener?.("change", on);
   }, [pref]);
+  return null;
+}
 
-  const flip = () => {
-    setThemePref(dark ? "light" : "dark");
-    window.dispatchEvent(new Event(CHANGE));
-  };
+/**
+ * Day / night toggle: a pill with a sun (day) or moon (night) knob that slides across. Light and Dark only; a
+ * "system" choice made earlier still follows the OS until the user flips the switch. Writes localStorage `ct-theme`
+ * and updates `<html data-theme>` at once. In the collapsed rail (`.sb-collapsed-only`) it is a round icon button.
+ */
+export function ThemeSwitch({ className }: { tone?: "surface" | "sidebar"; className?: string }) {
+  const { dark, flip } = useDarkMode();
 
   return (
     <>

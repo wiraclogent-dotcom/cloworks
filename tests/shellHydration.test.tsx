@@ -17,7 +17,6 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/admin/users" }));
 import { AppFrame } from "@/components/shell/AppFrame";
 import { NavItem } from "@/components/shell/NavItem";
 import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
-import { UserChipView } from "@/components/shell/UserChipView";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 /**
@@ -52,7 +51,7 @@ function Shell() {
       }
       footer={
         <>
-          <Suspense fallback={null}><Streamed><UserChipView name="Wira Budi" roleLabel="Admin" /></Streamed></Suspense>
+          <Suspense fallback={null}><Streamed><p title="Wira Budi">Wira Budi</p></Streamed></Suspense>
           <Suspense fallback={null}><Streamed><ThemeSwitch tone="sidebar" /></Streamed></Suspense>
         </>
       }>

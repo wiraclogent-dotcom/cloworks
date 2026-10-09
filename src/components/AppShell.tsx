@@ -1,20 +1,16 @@
 import { Suspense } from "react";
-import type { AppRole } from "@prisma/client";
-import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, SquareKanban, Users } from "lucide-react";
+import { Bell, CalendarDays, ChartColumn, FolderKanban, Inbox, Plug, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
-import { requireScope, requireUserOrRedirect } from "@/lib/session";
-import { signOut } from "@/lib/auth";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { Skeleton } from "./ui/Skeleton";
-import { ThemeSwitch } from "./ui/ThemeSwitch";
+import { ThemeSync } from "./ui/ThemeSwitch";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
+import { ProfileMenu } from "./shell/ProfileMenu";
+import { Skeleton } from "./ui/Skeleton";
 import { DisabledNavItem } from "./shell/DisabledNavItem";
-import { UserChipView } from "./shell/UserChipView";
-import { sidebarRowClass } from "./shell/classes";
 
-const ROLE_LABEL: Record<AppRole, string> = { REQUESTER: "Requester", CREATIVE: "Creative", LEAD: "Lead", ADMIN: "Admin" };
 
 /**
  * A titled group of sidebar links. The title stays the list's accessible name when the rail hides it.
@@ -48,23 +44,9 @@ export async function WorkspaceName() {
   return ws?.name ?? null;
 }
 
-async function UserChip() {
-  const { user: { id, appRole }, db } = await requireScope();
-  const me = await db.user.findUnique({ where: { id }, select: { name: true } });
-  return <UserChipView name={me?.name ?? ""} roleLabel={ROLE_LABEL[appRole]} />;
-}
-
-function UserChipFallback() {
-  return (
-    <div className="sb-item flex items-center gap-2.5 px-1.5 py-1">
-      <Skeleton rounded="full" className="size-7 bg-sidebar-hover" />
-      <Skeleton className="sb-expanded-only h-3.5 w-24 bg-sidebar-hover" />
-    </div>
-  );
-}
-
 /**
- * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools; admin pages open from Settings), user chip, theme switch, sign out.
+ * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools). Account settings, Help center, Dark mode
+ * and Sign out live in the profile menu at the top right of every page (PageHeader); admin pages open from Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -72,6 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppFrame
       workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
+      profile={<Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>}
       nav={
         <nav aria-label="Main">
           <NavGroup id="nav-work" label="Work">
@@ -90,21 +73,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </NavGroup>
         </nav>
       }
-      footer={
-        <>
-          <ul className="space-y-0.5">
-            <NavItem href="/help" label="Help center" icon={<CircleHelp aria-hidden="true" />} />
-          </ul>
-          <Suspense fallback={<UserChipFallback />}><UserChip /></Suspense>
-          <ThemeSwitch tone="sidebar" />
-          <form action={async () => { "use server"; await signOut({ redirectTo: "/signin" }); }}>
-            <button title="Sign out" className={sidebarRowClass}>
-              <LogOut aria-hidden="true" />
-              <span className="sb-label">Sign out</span>
-            </button>
-          </form>
-        </>
-      }>
+>
+      <ThemeSync />
       {children}
     </AppFrame>
   );
