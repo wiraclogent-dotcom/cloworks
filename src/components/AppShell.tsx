@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { Bell, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users, Workflow } from "lucide-react";
+import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users, Workflow } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireScope, requireUserOrRedirect } from "@/lib/session";
@@ -33,6 +33,12 @@ function NavGroup({ id, label, divided = false, children }: { id: string; label:
 export async function TeamKpiItem() {
   const { appRole } = await requireUserOrRedirect();
   return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/team" label="Team KPI" icon={<Users aria-hidden="true" />} /> : null;
+}
+
+/** Brief Calendar follows the Team KPI rule (the page re-checks on the server). */
+export async function BriefCalendarItem() {
+  const { appRole } = await requireUserOrRedirect();
+  return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
 }
 
 /** Admin pages are only offered to users who may open them (the pages re-check on the server). */
@@ -86,6 +92,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavGroup id="nav-insights" label="Insights" divided>
             <NavItem href="/dashboard" label="My KPI" icon={<ChartColumn aria-hidden="true" />} />
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
+            <Suspense fallback={null}><BriefCalendarItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-tools" label="Tools" divided>
             <DisabledNavItem label="Notifications" icon={<Bell aria-hidden="true" />} />

@@ -10,7 +10,7 @@ vi.mock("@/lib/auth", () => ({ signOut: vi.fn() }));
 const findWorkspace = vi.fn();
 vi.mock("@/lib/db", () => ({ prisma: { workspace: { findUnique: (...a: unknown[]) => findWorkspace(...a) } } }));
 
-import { AdminGroup, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
+import { AdminGroup, BriefCalendarItem, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
 import { AppFrame } from "@/components/shell/AppFrame";
 import { UserChipView } from "@/components/shell/UserChipView";
 
@@ -18,15 +18,21 @@ afterEach(cleanup);
 
 async function renderGated(r: AppRole) {
   role = r;
-  const [team, admin] = await Promise.all([TeamKpiItem(), AdminGroup()]);
-  return render(<nav aria-label="Main"><ul>{team}</ul>{admin}</nav>);
+  const [team, briefs, admin] = await Promise.all([TeamKpiItem(), BriefCalendarItem(), AdminGroup()]);
+  return render(<nav aria-label="Main"><ul>{team}{briefs}</ul>{admin}</nav>);
 }
 
 describe("role-gated sidebar items (same can() checks as the pages)", () => {
   it.each(["REQUESTER", "CREATIVE"] as const)("%s sees neither Team KPI nor Admin", async (r) => {
     await renderGated(r);
     expect(screen.queryByRole("link", { name: "Team KPI" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Brief Calendar" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
+  });
+
+  it.each(["LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
+    await renderGated(r);
+    expect(screen.getByRole("link", { name: "Brief Calendar" }).getAttribute("href")).toBe("/dashboard/briefs");
   });
 
   it("LEAD sees Team KPI but not Admin", async () => {
