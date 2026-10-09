@@ -7,7 +7,7 @@ import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
-import { monthLabel, trailingMonths } from "@/lib/kpi/months";
+import { jakartaMonth, monthLabel, trailingMonths } from "@/lib/kpi/months";
 import { myKpiTiles, type KpiTileData } from "@/lib/kpi/presentation";
 import { ProgressBar } from "@/components/kpi/ProgressBar";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
@@ -75,7 +75,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
       <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]} title={own ? "My KPI" : `KPI: ${subject.name}`} description={monthLabel(month)}
         actions={<>
           {!own && canTeam ? <Link href={`/dashboard/team?month=${month}`} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null}
-          <MonthPicker month={month} userId={own ? undefined : subject.id} action="/dashboard" />
+          <MonthPicker month={month} current={jakartaMonth(new Date())} userId={own ? undefined : subject.id} action="/dashboard" />
         </>} />
 
       {isEmpty ? (
