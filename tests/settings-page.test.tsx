@@ -3,9 +3,10 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 
 const findUnique = vi.fn();
+let appRole = "CREATIVE";
 vi.mock("@/lib/session", () => ({
   requireScope: async () => ({
-    user: { id: "u1", appRole: "CREATIVE", jobRole: "DESIGNER", workspaceId: "clogent" },
+    user: { id: "u1", appRole, jobRole: "DESIGNER", workspaceId: "clogent" },
     db: { user: { findUnique: (...a: unknown[]) => findUnique(...a) } },
   }),
 }));
@@ -16,7 +17,7 @@ vi.mock("@/components/ui/ThemeSwitch", () => ({ ThemeSwitch: () => <div>theme sw
 import { SettingsContent } from "@/app/(app)/settings/SettingsContent";
 
 beforeEach(() => findUnique.mockResolvedValue({ ...ME }));
-afterEach(cleanup);
+afterEach(() => { cleanup(); appRole = "CREATIVE"; });
 
 describe("settings: general", () => {
   it("shows the signed-in user's account details read-only", async () => {
@@ -49,5 +50,21 @@ describe("settings: general", () => {
     expect(screen.getByLabelText(/^New password/)).toBeTruthy();
     expect(screen.getByLabelText("Confirm new password")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Change password" })).toBeTruthy();
+  });
+});
+
+describe("settings: administration", () => {
+  it("admins get an Administration section linking to Users and Lists", async () => {
+    appRole = "ADMIN";
+    render(await SettingsContent());
+    expect(screen.getByRole("heading", { name: "Administration" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: /Users/ }).getAttribute("href")).toBe("/admin/users");
+    expect(screen.getByRole("link", { name: /Lists/ }).getAttribute("href")).toBe("/admin/lists");
+  });
+
+  it.each(["REQUESTER", "CREATIVE", "LEAD"])("%s does not see it", async (r) => {
+    appRole = r;
+    render(await SettingsContent());
+    expect(screen.queryByRole("heading", { name: "Administration" })).toBeNull();
   });
 });

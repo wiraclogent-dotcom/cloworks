@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, ShieldCheck, SquareKanban, Users } from "lucide-react";
+import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireScope, requireUserOrRedirect } from "@/lib/session";
@@ -41,16 +41,6 @@ export async function BriefCalendarItem() {
   return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
 }
 
-/** Admin pages are only offered to users who may open them (the pages re-check on the server). */
-export async function AdminGroup() {
-  const { appRole } = await requireUserOrRedirect();
-  return can(appRole, "admin.manage") ? (
-    <NavGroup id="nav-admin" label="Admin" divided>
-      <NavItem href="/admin/users" label="Admin" icon={<ShieldCheck aria-hidden="true" />} />
-    </NavGroup>
-  ) : null;
-}
-
 /** The signed-in person's workspace name, under the app name in the sidebar header. `Workspace` is not scoped. */
 export async function WorkspaceName() {
   const { workspaceId } = await requireUserOrRedirect();
@@ -74,7 +64,7 @@ function UserChipFallback() {
 }
 
 /**
- * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools / Admin), user chip, theme switch, sign out.
+ * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools; admin pages open from Settings), user chip, theme switch, sign out.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -98,7 +88,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <DisabledNavItem label="Inbox" icon={<Inbox aria-hidden="true" />} />
             <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
-          <Suspense fallback={null}><AdminGroup /></Suspense>
         </nav>
       }
       footer={

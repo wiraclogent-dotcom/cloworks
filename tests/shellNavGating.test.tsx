@@ -10,7 +10,8 @@ vi.mock("@/lib/auth", () => ({ signOut: vi.fn() }));
 const findWorkspace = vi.fn();
 vi.mock("@/lib/db", () => ({ prisma: { workspace: { findUnique: (...a: unknown[]) => findWorkspace(...a) } } }));
 
-import { AdminGroup, BriefCalendarItem, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
+import * as Shell from "@/components/AppShell";
+import { BriefCalendarItem, TeamKpiItem, WorkspaceName } from "@/components/AppShell";
 import { AppFrame } from "@/components/shell/AppFrame";
 import { UserChipView } from "@/components/shell/UserChipView";
 
@@ -18,16 +19,15 @@ afterEach(cleanup);
 
 async function renderGated(r: AppRole) {
   role = r;
-  const [team, briefs, admin] = await Promise.all([TeamKpiItem(), BriefCalendarItem(), AdminGroup()]);
-  return render(<nav aria-label="Main"><ul>{team}{briefs}</ul>{admin}</nav>);
+  const [team, briefs] = await Promise.all([TeamKpiItem(), BriefCalendarItem()]);
+  return render(<nav aria-label="Main"><ul>{team}{briefs}</ul></nav>);
 }
 
 describe("role-gated sidebar items (same can() checks as the pages)", () => {
-  it.each(["REQUESTER", "CREATIVE"] as const)("%s sees neither Team KPI nor Admin", async (r) => {
+  it.each(["REQUESTER", "CREATIVE"] as const)("%s sees neither Team KPI nor Brief Calendar", async (r) => {
     await renderGated(r);
     expect(screen.queryByRole("link", { name: "Team KPI" })).toBeNull();
     expect(screen.queryByRole("link", { name: "Brief Calendar" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
   });
 
   it.each(["LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
@@ -35,17 +35,13 @@ describe("role-gated sidebar items (same can() checks as the pages)", () => {
     expect(screen.getByRole("link", { name: "Brief Calendar" }).getAttribute("href")).toBe("/dashboard/briefs");
   });
 
-  it("LEAD sees Team KPI but not Admin", async () => {
-    await renderGated("LEAD");
+  it.each(["LEAD", "ADMIN"] as const)("%s sees Team KPI", async (r) => {
+    await renderGated(r);
     expect(screen.getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
-    expect(screen.queryByRole("link", { name: "Admin" })).toBeNull();
   });
 
-  it("ADMIN sees Team KPI and the Admin group", async () => {
-    await renderGated("ADMIN");
-    expect(screen.getByRole("link", { name: "Team KPI" })).toBeTruthy();
-    expect(screen.getByRole("list", { name: "Admin" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Admin" }).getAttribute("href")).toBe("/admin/users");
+  it("there is no Admin group in the sidebar any more (admins reach it from Settings)", () => {
+    expect("AdminGroup" in Shell).toBe(false);
   });
 });
 
