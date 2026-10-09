@@ -107,3 +107,16 @@ export function layoutRows(
     return { ...p, count: mine.length, lanes };
   });
 }
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "2026-10-01" -> "1 Oct". */
+export function shortDay(day: string): string {
+  return `${Number(day.slice(8))} ${MONTHS[Number(day.slice(5, 7)) - 1]}`;
+}
+
+/** "28 Sep – 11 Oct 2026"; both years when they differ. */
+export function rangeLabel(from: string, to: string): string {
+  const fy = from.slice(0, 4), ty = to.slice(0, 4);
+  return `${shortDay(from)}${fy !== ty ? ` ${fy}` : ""} – ${shortDay(to)} ${ty}`;
+}
