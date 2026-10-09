@@ -33,10 +33,17 @@ describe("BriefCalendar", () => {
     render(<BriefCalendar people={PEOPLE} model={OCT} />);
     const legend = screen.getByRole("list", { name: "Legend" });
     expect(within(legend).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["r", "f", "s"]);
-    expect(tile("f").textContent).toContain("2 / 6 weekdays");
+    expect(tile("f").textContent).toContain("3 / 7 work days");
     expect(tile("f").textContent).toContain("4 briefs");
-    expect(tile("r").textContent).toContain("0 / 6 weekdays");
+    expect(tile("r").textContent).toContain("0 / 7 work days");
     expect(tile("r").textContent).toContain("0 briefs");
+  });
+
+  it("the legend sits below the calendar", () => {
+    render(<BriefCalendar people={PEOPLE} model={OCT} />);
+    const legend = screen.getByRole("list", { name: "Legend" });
+    const lastDay = screen.getByRole("button", { name: /^Saturday 31 October/ });
+    expect(lastDay.compareDocumentPosition(legend) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("a future month shows a dash instead of 0 / 0", () => {
@@ -63,21 +70,22 @@ describe("BriefCalendar", () => {
     expect(tips[0].querySelectorAll("li")).toHaveLength(0);
   });
 
-  it("an empty weekend shows no missed dot; a weekend brief shows a sent dot", () => {
+  it("an empty Sunday shows no missed dot; Saturday is a work day", () => {
     render(<BriefCalendar people={PEOPLE} model={OCT} />);
     const sun = screen.getByRole("button", { name: /^Sunday 4 October/ });
     expect(sun.querySelectorAll("[data-state]")).toHaveLength(0);
     const sat = screen.getByRole("button", { name: /^Saturday 3 October/ });
     expect(sat.querySelectorAll('[data-state="sent"]')).toHaveLength(1);
-    expect(sat.querySelectorAll('[data-state="missed"]')).toHaveLength(0);
+    expect(sat.querySelectorAll('[data-state="missed"]')).toHaveLength(2);
   });
 
-  it("each person keeps a fixed slot, so a lone weekend dot stays in its owner's position", () => {
-    render(<BriefCalendar people={PEOPLE} model={OCT} />);
-    const sat = screen.getByRole("button", { name: /^Saturday 3 October/ });
-    const slots = Array.from(sat.querySelectorAll("[data-slot]"));
+  it("each person keeps a fixed slot, so a lone Sunday dot stays in its owner's position", () => {
+    const model = buildBriefMonth("2026-10", "2026-10-08", PEOPLE, [item("s", "2026-10-04")]);
+    render(<BriefCalendar people={PEOPLE} model={model} />);
+    const sun = screen.getByRole("button", { name: /^Sunday 4 October/ });
+    const slots = Array.from(sun.querySelectorAll("[data-slot]"));
     expect(slots.map((el) => el.getAttribute("data-slot"))).toEqual(["r", "f", "s"]);
-    expect(slots[1].querySelector('[data-state="sent"]')).toBeTruthy();
+    expect(slots[2].querySelector('[data-state="sent"]')).toBeTruthy();
     expect(slots[0].querySelector("[data-state]")).toBeNull();
   });
 

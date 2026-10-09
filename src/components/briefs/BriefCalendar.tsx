@@ -13,7 +13,7 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const dayAria = (d: BriefDay, people: BriefPerson[]) =>
   `${dayLabel(d.day)}: ${people.map((p, i) => `${p.name} ${d.perPerson[i].count}`).join(", ")}`;
 
-/** One person's mark: filled in their colour when they briefed (count shown above 1), hollow when a weekday was missed. */
+/** One person's mark: filled in their colour when they briefed (count shown above 1), hollow when a work day was missed. */
 function Dot({ person, count, state }: { person: BriefPerson; count: number; state: DotState }) {
   if (state === "none") return null;
   const c = avatarColor(person.name);
@@ -61,8 +61,8 @@ function Dots({ day, people, items, align }: { day: BriefDay; people: BriefPerso
 }
 
 /**
- * Brief calendar (spec 2026-10-10): legend, one summary tile per person, then a Monday-first month grid (a day list on
- * narrow screens). Every in-month day is a button that opens that day's requests.
+ * Brief calendar (spec 2026-10-10): one summary tile per person, a Monday-first month grid (a day list on narrow
+ * screens), then the legend. Every in-month day is a button that opens that day's requests.
  */
 export function BriefCalendar({ people, model }: { people: BriefPerson[]; model: BriefMonth }) {
   const narrow = useNarrow();
@@ -71,22 +71,6 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
 
   return (
     <div className="space-y-5">
-      <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground-secondary">
-        {people.map((p) => {
-          const c = avatarColor(p.name);
-          return (
-            <li key={p.id} className="flex items-center gap-1.5">
-              <span aria-hidden="true" className="size-3 rounded-full border-2" style={{ backgroundColor: c.tint, borderColor: c.text }} />
-              {p.name}
-            </li>
-          );
-        })}
-      </ul>
-      <p className="-mt-3 flex items-center gap-1.5 text-xs text-foreground-secondary">
-        <span aria-hidden="true" className="size-3 shrink-0 rounded-full border-2 border-foreground-muted" />
-        Hollow circle: no brief that weekday. Weekends are never counted as missed.
-      </p>
-
       <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card sm:grid-cols-3">
         {people.map((p, i) => {
           const s = model.summary[i];
@@ -94,7 +78,7 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
             <li key={p.id} aria-label={`${p.name} summary`} className="flex min-w-0 flex-col gap-1 bg-card p-4">
               <span className="text-[13px] text-foreground-secondary">{p.name}</span>
               <span className="text-2xl leading-8 font-semibold text-foreground tabular-nums">
-                {s.weekdaysElapsed === 0 ? "—" : `${s.weekdaysBriefed} / ${s.weekdaysElapsed} weekdays`}
+                {s.workdaysElapsed === 0 ? "—" : `${s.workdaysBriefed} / ${s.workdaysElapsed} work days`}
               </span>
               <span className="text-xs text-foreground-secondary tabular-nums">{s.briefs === 1 ? "1 brief" : `${s.briefs} briefs`}</span>
             </li>
@@ -107,7 +91,7 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
           {days.map((d) => (
             <li key={d.day} aria-current={d.isToday ? "date" : undefined}>
               <button type="button" aria-haspopup="dialog" aria-label={dayAria(d, people)} onClick={() => setOpen(d.day)}
-                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isWeekend || d.isFuture) && "text-foreground-secondary", d.isWeekend && "bg-surface-muted", focusRing)}>
+                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isDayOff || d.isFuture) && "text-foreground-secondary", d.isDayOff && "bg-surface-muted", focusRing)}>
                 <span>{dayLabel(d.day)}{d.isToday && <span className="ml-1.5 font-medium text-link">Today</span>}</span>
                 <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align="end" />
               </button>
@@ -127,14 +111,14 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
                     onClick={() => setOpen(d.day)}
                     className={cn(
                       "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-accent",
-                      d.isWeekend ? "bg-surface-muted" : "bg-surface",
+                      d.isDayOff ? "bg-surface-muted" : "bg-surface",
                       d.isToday ? "border-ring" : "border-border",
                       d.isFuture && "opacity-60",
                       focusRing,
                     )}>
                     <span aria-hidden="true" className={cn(
                       "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
-                      d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isWeekend ? "text-foreground-secondary" : "text-foreground",
+                      d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-foreground-secondary" : "text-foreground",
                     )}>{Number(d.day.slice(8))}</span>
                     <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>
@@ -146,6 +130,24 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
           </div>
         </div>
       )}
+
+      <div className="space-y-2">
+        <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground-secondary">
+          {people.map((p) => {
+            const c = avatarColor(p.name);
+            return (
+              <li key={p.id} className="flex items-center gap-1.5">
+                <span aria-hidden="true" className="size-3 rounded-full border-2" style={{ backgroundColor: c.tint, borderColor: c.text }} />
+                {p.name}
+              </li>
+            );
+          })}
+        </ul>
+        <p className="flex items-center gap-1.5 text-xs text-foreground-secondary">
+          <span aria-hidden="true" className="size-3 shrink-0 rounded-full border-2 border-foreground-muted" />
+          Hollow circle: no brief that work day (Monday to Saturday). Sundays are never counted as missed.
+        </p>
+      </div>
 
       {open && (
         <BriefDayDialog day={open} people={people} items={model.itemsByDay[open] ?? []} onClose={() => setOpen(null)} />

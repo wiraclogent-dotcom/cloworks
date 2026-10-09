@@ -12,19 +12,19 @@ const ITEMS: BriefItem[] = [
 const cell = (m: ReturnType<typeof buildBriefMonth>, day: string) => m.weeks.flat().find((d) => d.day === day)!;
 
 describe("dotState", () => {
-  const weekday = { inMonth: true, isWeekend: false, isFuture: false };
-  it("a past weekday with nothing is missed; with briefs is sent", () => {
-    expect(dotState(weekday, 0)).toBe("missed");
-    expect(dotState(weekday, 2)).toBe("sent");
+  const workday = { inMonth: true, isDayOff: false, isFuture: false };
+  it("a past work day with nothing is missed; with briefs is sent", () => {
+    expect(dotState(workday, 0)).toBe("missed");
+    expect(dotState(workday, 2)).toBe("sent");
   });
-  it("weekends are never missed but still show briefs", () => {
-    expect(dotState({ ...weekday, isWeekend: true }, 0)).toBe("none");
-    expect(dotState({ ...weekday, isWeekend: true }, 1)).toBe("sent");
+  it("Sundays (days off) are never missed but still show briefs", () => {
+    expect(dotState({ ...workday, isDayOff: true }, 0)).toBe("none");
+    expect(dotState({ ...workday, isDayOff: true }, 1)).toBe("sent");
   });
   it("future days and out-of-month days show nothing", () => {
-    expect(dotState({ ...weekday, isFuture: true }, 0)).toBe("none");
-    expect(dotState({ ...weekday, inMonth: false }, 0)).toBe("none");
-    expect(dotState({ ...weekday, inMonth: false }, 3)).toBe("none");
+    expect(dotState({ ...workday, isFuture: true }, 0)).toBe("none");
+    expect(dotState({ ...workday, inMonth: false }, 0)).toBe("none");
+    expect(dotState({ ...workday, inMonth: false }, 3)).toBe("none");
   });
 });
 
@@ -33,10 +33,16 @@ describe("buildBriefMonth", () => {
 
   it("lays out a Monday-first grid with weekend and future flags", () => {
     expect(m.weeks[0][0].day).toBe("2026-09-28");
-    expect(cell(m, "2026-10-10").isWeekend).toBe(true);
+    expect(cell(m, "2026-10-04").isDayOff).toBe(true);
+    expect(cell(m, "2026-10-03").isDayOff).toBe(false);
+    expect(cell(m, "2026-10-10").isDayOff).toBe(false);
     expect(cell(m, "2026-10-09").isFuture).toBe(true);
     expect(cell(m, "2026-10-08").isFuture).toBe(false);
     for (const d of m.weeks.flat()) expect(d.perPerson.map((p) => p.personId)).toEqual(["r", "f", "s"]);
+  });
+
+  it("an empty Saturday is a missed work day", () => {
+    expect(cell(m, "2026-10-03").perPerson.map((p) => p.state)).toEqual(["missed", "sent", "missed"]);
   });
 
   it("counts briefs per person per day", () => {
@@ -46,16 +52,16 @@ describe("buildBriefMonth", () => {
     expect(m.itemsByDay["2026-10-08"]).toHaveLength(3);
   });
 
-  it("summarises weekdays briefed against weekdays elapsed; weekend briefs count as briefs only", () => {
+  it("summarises work days (Mon–Sat) briefed against work days elapsed", () => {
     const by = Object.fromEntries(m.summary.map((s) => [s.personId, s]));
-    expect(by.f).toEqual({ personId: "f", weekdaysBriefed: 2, weekdaysElapsed: 6, briefs: 4 });
-    expect(by.r).toEqual({ personId: "r", weekdaysBriefed: 0, weekdaysElapsed: 6, briefs: 0 });
+    expect(by.f).toEqual({ personId: "f", workdaysBriefed: 3, workdaysElapsed: 7, briefs: 4 });
+    expect(by.r).toEqual({ personId: "r", workdaysBriefed: 0, workdaysElapsed: 7, briefs: 0 });
   });
 
-  it("a past month has all its weekdays elapsed; a future month none, and nothing missed", () => {
-    expect(buildBriefMonth("2026-09", "2026-10-08", PEOPLE, []).summary[0].weekdaysElapsed).toBe(22);
+  it("a past month has all its work days elapsed; a future month none, and nothing missed", () => {
+    expect(buildBriefMonth("2026-09", "2026-10-08", PEOPLE, []).summary[0].workdaysElapsed).toBe(26);
     const future = buildBriefMonth("2026-11", "2026-10-08", PEOPLE, []);
-    expect(future.summary[0].weekdaysElapsed).toBe(0);
+    expect(future.summary[0].workdaysElapsed).toBe(0);
     expect(future.weeks.flat().some((d) => d.perPerson.some((p) => p.state === "missed"))).toBe(false);
   });
 

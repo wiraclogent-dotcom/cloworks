@@ -18,7 +18,7 @@ missed a day?" at a glance.
 | Status | All statuses count, including CANCELLED — the brief was still sent. |
 | People | Active users with `jobRole = SOCIAL_MEDIA` and `appRole` in (REQUESTER, CREATIVE). Today: Rifqy, Fafa, Syahda. Leads/admins (e.g. Idzni) are excluded automatically. Sorted by name. |
 | Access | Same rule as Team KPI: `can(appRole, "dashboard.team")` (LEAD, ADMIN). Others get `AccessDenied`. |
-| Weekends | Shown greyed. Never flagged as missed; dots appear only if something was sent. |
+| Work week | Monday to Saturday (updated 2026-10-10: the team works Saturdays). Sunday is the day off: shown greyed, never flagged as missed; dots appear only if something was sent. |
 | Future days | Dimmed, no "missed" dots. |
 | Holidays | Not modelled; treated as weekdays. |
 | Schema | No changes, no migrations. |

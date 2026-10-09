@@ -11,12 +11,13 @@ A brief counts when the person submitted a request that day, by its request date
 
 ## Reading the calendar
 
-- Each day has one circle per person, always in the same order as the legend.
+- Each day has one circle per person, always in the same position and order as the legend.
+- Hover a circle to see that person's brief titles for the day. Select the day to open them.
 - A **filled circle** means that person sent at least one brief that day. A number inside shows how many, when it is more than one.
-- A **hollow circle** means a weekday passed with no brief from that person.
-- **Weekends** are greyed and never marked as missed. A brief sent on a weekend still shows.
+- A **hollow circle** means a work day (Monday to Saturday) passed with no brief from that person.
+- **Sundays** are greyed and never marked as missed. A brief sent on a Sunday still shows.
 - **Future days** are dimmed and show nothing yet.
-- The tiles above the calendar show, for each person, how many weekdays so far had a brief and how many briefs they sent this month.
+- The tiles above the calendar show, for each person, how many work days so far had a brief and how many briefs they sent this month.
 
 ## Using the Brief Calendar
 
