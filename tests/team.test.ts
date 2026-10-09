@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole, JobRole } from "@prisma/client";
-import { listCreativeTeam } from "@/lib/team";
+import { assigneeOptions, listCreativeTeam } from "@/lib/team";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("listCreativeTeam", () => {
@@ -24,5 +24,18 @@ describe("listCreativeTeam", () => {
       { id: expect.any(String), name: "Irsyad" },
       { id: expect.any(String), name: "Wira" },
     ]);
+  });
+});
+
+describe("assigneeOptions", () => {
+  const team = [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }];
+  it("is the team when nobody or a team member is assigned", () => {
+    expect(assigneeOptions(team, null)).toEqual(team);
+    expect(assigneeOptions(team, { id: "b", name: "Bea", active: true })).toEqual(team);
+  });
+  it("keeps a current assignee who is off the team at the top, saying why", () => {
+    expect(assigneeOptions(team, { id: "x", name: "Idzni", active: true })[0]).toEqual({ id: "x", name: "Idzni (not on creative team)" });
+    expect(assigneeOptions(team, { id: "d", name: "Daus", active: false })[0]).toEqual({ id: "d", name: "Daus (inactive)" });
+    expect(assigneeOptions(team, { id: "d", name: "Daus", active: false })).toHaveLength(3);
   });
 });
