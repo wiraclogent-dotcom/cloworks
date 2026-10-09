@@ -39,7 +39,13 @@ export const authConfig = {
   callbacks: {
     // Edge role comes from the cookie token and may be stale up to 24h; requireUser() is the authoritative gate.
     authorized({ auth, request }) {
-      if (request.nextUrl.pathname === "/signin") return true;
+      const { pathname } = request.nextUrl;
+      if (pathname === "/signin") return true;
+      // "/" is the public landing page; signed-in people skip it and land on the board unless they ask for `/?preview`.
+      if (pathname === "/") {
+        const skip = auth?.user?.appRole && !request.nextUrl.searchParams.has("preview");
+        return skip ? Response.redirect(new URL("/requests", request.nextUrl)) : true;
+      }
       return !!auth?.user?.appRole;
     },
     session({ session, token }) {
