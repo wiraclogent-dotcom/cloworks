@@ -70,9 +70,9 @@ This applies to the local database and to Neon in the same way.
 
 ## 2. Isolation
 
-**Session.** The JWT carries `wid` (the user's workspaceId), set at sign-in. `loadActiveUser` re-reads the user
-on every request (as it does today) and returns `workspaceId`. A user whose workspace no longer matches the
-token is signed out. `SessionUser` becomes `{ id, appRole, jobRole, workspaceId }`.
+**Session.** `loadActiveUser` already re-reads the user from the database on every request. It now also returns
+`workspaceId` and `mustChangePassword`, so the token does not need to carry the workspace. `SessionUser` becomes
+`{ id, appRole, jobRole, workspaceId, mustChangePassword }`.
 
 **Scoped client.** `src/lib/db.ts` exports:
 
@@ -106,8 +106,9 @@ pass the scoped client and tests can pass either.
   Both are needed for someone to sign in; without them it is a roster-only record, as today.
 - **Enforcement** is server-side and authoritative:
   - `requireUserOrRedirect()` sends anyone with the flag set to `/change-password`. That page is itself exempt.
-  - `requireUser()` and server actions refuse with a "Change your password first" result. The only exception is
-    the change-password action.
+  - `requireUser()` throws `PasswordChangeRequiredError` (a kind of `UnauthenticatedError`), so every server
+    action refuses through the existing `withUser` path. The only exception is the change-password action, which
+    uses `requireUserForPasswordChange()`.
   - The edge proxy does not need to know about the flag.
 - **`/change-password`** is a standalone page in the sign-in style. It has three fields: temporary (current)
   password, new password and confirm. It explains why the change is needed and offers a sign-out link. On
