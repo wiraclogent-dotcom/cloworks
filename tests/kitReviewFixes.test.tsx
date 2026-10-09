@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { fieldClass } from "@/components/ui/Field";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
+import { useDarkMode } from "@/components/ui/darkMode";
 import { readThemePref, resetThemeMemory, setThemePref } from "@/lib/theme";
 
 beforeEach(() => { localStorage.clear(); resetThemeMemory(); document.documentElement.removeAttribute("data-theme"); });
@@ -42,13 +42,18 @@ describe("placeholders use the AA placeholder token", () => {
   });
 });
 
-describe("ThemeSwitch when storage is blocked", () => {
-  it("keeps an in-memory preference so aria-pressed matches the applied theme", () => {
+function DarkProbe() {
+  const { dark, flip } = useDarkMode();
+  return <button type="button" role="switch" aria-checked={dark} onClick={flip}>Dark mode</button>;
+}
+
+describe("dark mode when storage is blocked", () => {
+  it("keeps an in-memory preference so the switch state matches the applied theme", () => {
     vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
-    render(<ThemeSwitch />);
-    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    render(<DarkProbe />);
+    fireEvent.click(screen.getByRole("switch", { name: "Dark mode" }));
     expect(document.documentElement.getAttribute("data-theme")).toBe("dark");
-    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("switch", { name: "Dark mode" }).getAttribute("aria-checked")).toBe("true");
     expect(readThemePref()).toBe("dark");
   });
   it("storage working again: the stored value is the truth", () => {
@@ -75,11 +80,9 @@ describe("Avatar / touch targets", () => {
     render(<Avatar name="Rina" />);
     expect(screen.getByRole("img", { name: "Rina" })).toBeTruthy();
   });
-  it("sm buttons and icon buttons extend their hit area to 36px; theme options are 36px", () => {
-    render(<><Button size="sm">Go</Button><IconButton size="sm" aria-label="More" icon={<svg />} /><ThemeSwitch tone="sidebar" /></>);
+  it("sm buttons and icon buttons extend their hit area to 36px", () => {
+    render(<><Button size="sm">Go</Button><IconButton size="sm" aria-label="More" icon={<svg />} /></>);
     expect(screen.getByRole("button", { name: "Go" }).className).toMatch(/after:-inset-y-0\.5/);
     expect(screen.getByRole("button", { name: "More" }).className).toMatch(/after:-inset-0\.5/);
-    // The day/night switch sits in a 36px row (the track itself is 32px).
-    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].parentElement!.className).toMatch(/\bh-9\b/);
   });
 });

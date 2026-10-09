@@ -4,7 +4,7 @@ import { Bell, CalendarDays, ChartColumn, FolderKanban, Inbox, Plug, SquareKanba
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { ThemeSync } from "./ui/ThemeSwitch";
+import { ThemeSync } from "./ui/darkMode";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
 import { ProfileMenu } from "./shell/ProfileMenu";

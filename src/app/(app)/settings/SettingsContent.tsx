@@ -4,12 +4,11 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { accountRows } from "@/lib/settings/account";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ChangePasswordForm } from "./ChangePasswordForm";
 
 /**
- * The General settings: the signed-in user's account (read-only), password, appearance and, for admins, the way into
+ * The General settings: the signed-in user's account (read-only), password and, for admins, the way into
  * the admin pages (the sidebar no longer lists them). Async, so it renders inside Suspense.
  */
 export async function SettingsContent() {
@@ -48,12 +47,6 @@ export async function SettingsContent() {
         ) : (
           <p className="text-sm text-foreground-secondary">You sign in without a password. Ask an admin if you want one.</p>
         )}
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle as="h2">Appearance</CardTitle>
-        </CardHeader>
-        <ThemeSwitch />
       </Card>
       {can(user.appRole, "admin.manage") ? (
         <Card>

@@ -12,7 +12,6 @@ vi.mock("@/lib/session", () => ({
 }));
 vi.mock("@/app/(app)/settings/actions", () => ({ changePassword: vi.fn() }));
 const ME = { fullName: "Wira Budi", email: "wira@example.com", title: null, department: "Creative", passwordHash: null as string | null };
-vi.mock("@/components/ui/ThemeSwitch", () => ({ ThemeSwitch: () => <div>theme switch stub</div> }));
 
 import { SettingsContent } from "@/app/(app)/settings/SettingsContent";
 
@@ -30,10 +29,10 @@ describe("settings: general", () => {
     expect(screen.queryByRole("textbox")).toBeNull(); // account details are read-only
   });
 
-  it("shows the appearance section with the theme switch", async () => {
+  it("has no Appearance section (Dark mode lives in the profile menu)", async () => {
     render(await SettingsContent());
-    expect(screen.getByRole("heading", { name: "Appearance" })).toBeTruthy();
-    expect(screen.getByText("theme switch stub")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Appearance" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Dark mode" })).toBeNull();
   });
 
   it("offers a password change only to people who have a password, and never renders the hash", async () => {

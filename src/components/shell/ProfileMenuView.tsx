@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DropdownMenu } from "radix-ui";
 import { CircleHelp, LogOut, Moon, Settings } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
-import { useDarkMode } from "../ui/ThemeSwitch";
+import { useDarkMode } from "../ui/darkMode";
 import { cn, focusRing } from "../ui/cn";
 
 const itemClass =
