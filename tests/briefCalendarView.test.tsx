@@ -62,6 +62,15 @@ describe("BriefCalendar", () => {
     expect(sat.querySelectorAll('[data-state="missed"]')).toHaveLength(0);
   });
 
+  it("each person keeps a fixed slot, so a lone weekend dot stays in its owner's position", () => {
+    render(<BriefCalendar people={PEOPLE} model={OCT} />);
+    const sat = screen.getByRole("button", { name: /^Saturday 3 October/ });
+    const slots = Array.from(sat.querySelectorAll("[data-slot]"));
+    expect(slots.map((el) => el.getAttribute("data-slot"))).toEqual(["r", "f", "s"]);
+    expect(slots[1].querySelector('[data-state="sent"]')).toBeTruthy();
+    expect(slots[0].querySelector("[data-state]")).toBeNull();
+  });
+
   it("clicking a day opens a dialog of its requests grouped by person", () => {
     render(<BriefCalendar people={PEOPLE} model={OCT} />);
     fireEvent.click(screen.getByRole("button", { name: DAY8 }));

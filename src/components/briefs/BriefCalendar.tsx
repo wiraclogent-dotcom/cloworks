@@ -32,7 +32,12 @@ function Dot({ person, count, state }: { person: BriefPerson; count: number; sta
 function Dots({ day, people }: { day: BriefDay; people: BriefPerson[] }) {
   return (
     <span className="flex flex-wrap gap-1">
-      {people.map((p, i) => <Dot key={p.id} person={p} count={day.perPerson[i].count} state={day.perPerson[i].state} />)}
+      {/* Fixed slots: an empty slot keeps its width, so a dot's position always says whose it is (not colour alone). */}
+      {people.map((p, i) => (
+        <span key={p.id} data-slot={p.id} className="inline-flex size-5">
+          <Dot person={p} count={day.perPerson[i].count} state={day.perPerson[i].state} />
+        </span>
+      ))}
     </span>
   );
 }

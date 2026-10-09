@@ -11,6 +11,7 @@ describe("activeNavHref", () => {
     ["/projects/p1/edit", "/projects"],
     ["/dashboard", "/dashboard"],
     ["/dashboard/team", "/dashboard/team"],
+    ["/dashboard/briefs", "/dashboard/briefs"],
     ["/admin/users", "/admin/users"],
     ["/admin/lists", "/admin/users"],
   ])("%s → %s", (path, want) => {

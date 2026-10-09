@@ -1,5 +1,5 @@
 /** Every sidebar destination (whether or not the current user sees it). Order does not matter. */
-export const NAV_HREFS = ["/requests", "/projects", "/dashboard", "/dashboard/team", "/admin/users"] as const;
+export const NAV_HREFS = ["/requests", "/projects", "/dashboard", "/dashboard/team", "/dashboard/briefs", "/admin/users"] as const;
 
 /** Section roots that should stay active for their sub-pages even though the link points deeper (e.g. Admin). */
 const SECTION_OF: Record<string, string> = { "/admin/users": "/admin" };
