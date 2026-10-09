@@ -51,7 +51,7 @@ export const WORKBOOK_TYPES = ["General Design", "Social Media", "Motion Support
  * Parses everything first (any header/format problem throws here, before any write), prints the report,
  * then applies only with --apply. Workbook mode reads the three tabs of the master .xlsx; CSV mode is the legacy path.
  */
-export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps = {}) {
+export async function runImport(db: PrismaClient, workspaceId: string, args: CliArgs, deps: RunDeps = {}) {
   const apply = deps.apply ?? applyImport;
   const readFile = deps.readFile ?? ((p: string) => fs.readFileSync(p, "utf8"));
   const exists = deps.exists ?? fs.existsSync;
@@ -89,7 +89,7 @@ export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps =
   }
 
   log(args.apply ? "MODE: APPLY (writing to DB after this report)" : "MODE: DRY-RUN (nothing is written; pass --apply to import)");
-  const keys = new Set((await db.$queryRaw<{ k: string }[]>`SELECT fields->>'importKey' AS k FROM "Request" WHERE fields->>'importKey' IS NOT NULL`).map((r) => r.k));
+  const keys = new Set((await db.$queryRaw<{ k: string }[]>`SELECT fields->>'importKey' AS k FROM "Request" WHERE fields->>'importKey' IS NOT NULL AND "workspaceId" = ${workspaceId}`).map((r) => r.k));
   for (const rep of reports) {
     for (const l of formatReport(rep, records.filter((r) => r.source === rep.source && keys.has(r.fields.importKey)).length)) log(l);
   }
@@ -97,7 +97,7 @@ export async function runImport(db: PrismaClient, args: CliArgs, deps: RunDeps =
   log(`NOTE: ${DUPLICATE_NOTE}`);
 
   if (!args.apply) return null;
-  const res = await apply(db, records);
+  const res = await apply(db, workspaceId, records);
   log(`\nApplied: inserted ${res.inserted}, already imported ${JSON.stringify(res.alreadyImported)}`);
   return res;
 }

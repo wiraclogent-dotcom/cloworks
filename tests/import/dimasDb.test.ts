@@ -17,7 +17,7 @@ beforeAll(async () => {
 afterAll(async () => { fx?.cleanup(); await db?.stop(); });
 beforeEach(async () => { await db.prisma.request.deleteMany(); });
 
-const run = (apply: boolean, log: (l: string) => void = () => {}) => runImport(db.prisma, { workbookPath: fx.file, apply }, { log });
+const run = (apply: boolean, log: (l: string) => void = () => {}) => runImport(db.prisma, db.workspaceId, { workbookPath: fx.file, apply }, { log });
 
 describe("workbook import into a real database", () => {
   it("dry-run writes nothing and reports each source", async () => {
@@ -115,13 +115,13 @@ describe("CLI wiring for workbook mode", () => {
   });
   it("runImport(workbook): never applies without --apply; applies once with it", async () => {
     const apply = vi.fn(async () => ({ inserted: 0, alreadyImported: {} }));
-    await runImport(db.prisma, { workbookPath: fx.file, apply: false }, { apply, log: () => {} });
+    await runImport(db.prisma, db.workspaceId, { workbookPath: fx.file, apply: false }, { apply, log: () => {} });
     expect(apply).not.toHaveBeenCalled();
-    await runImport(db.prisma, { workbookPath: fx.file, apply: true }, { apply, log: () => {} });
+    await runImport(db.prisma, db.workspaceId, { workbookPath: fx.file, apply: true }, { apply, log: () => {} });
     expect(apply).toHaveBeenCalledTimes(1);
-    expect((apply.mock.calls[0] as unknown as [unknown, unknown[]])[1]).toHaveLength(6 + 4 + DIMAS_LOG.length);
+    expect((apply.mock.calls[0] as unknown as [unknown, string, unknown[]])[2]).toHaveLength(6 + 4 + DIMAS_LOG.length);
   });
   it("missing workbook file: clear error", async () => {
-    await expect(runImport(db.prisma, { workbookPath: "/nope/missing.xlsx", apply: false }, { log: () => {} })).rejects.toThrow(/File not found/);
+    await expect(runImport(db.prisma, db.workspaceId, { workbookPath: "/nope/missing.xlsx", apply: false }, { log: () => {} })).rejects.toThrow(/File not found/);
   });
 });

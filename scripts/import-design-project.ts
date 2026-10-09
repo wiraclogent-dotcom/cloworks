@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { PrismaClient } from "@prisma/client";
 import { parseTasks, planTaskSync, type Row } from "@/lib/designProjectSheet";
+import { resolveWorkspace } from "./lib/workspaceArg";
 
 // Imports one design-project sheet tab (columns A-H only) into Project + ProjectTask.
 // Dry-run by default; --apply writes in one transaction. Re-running with --apply syncs this project's tasks, matched
@@ -9,7 +9,7 @@ import { parseTasks, planTaskSync, type Row } from "@/lib/designProjectSheet";
 // but keep the stage set in the app, and rows no longer in the sheet are left alone (reported only). The Project row
 // (matched by `code`) keeps its owner and status; its title, brand and start/due dates follow the sheet.
 //
-// Usage: npm run import:design-project -- "<tab>.csv" --code REDESIGN --title "Redesign Project" [--links-xlsx "<workbook>.xlsx" --tab "Redesign Project"] [--apply]
+// Usage: npm run import:design-project -- "<tab>.csv" --code REDESIGN --title "Redesign Project" [--links-xlsx "<workbook>.xlsx" --tab "Redesign Project"] [--apply] [--workspace <slug>]
 // CSV exports drop cell hyperlinks, so pass the .xlsx export of the same workbook to keep the File Document links.
 
 const XML_NS_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
@@ -63,14 +63,15 @@ async function main() {
   const code = arg("--code");
   const title = arg("--title");
   const apply = process.argv.includes("--apply");
-  if (!path || !code || !title) throw new Error('Usage: import:design-project -- "<tab>.csv" --code <CODE> --title "<Title>" [--apply]');
+  if (!path || !code || !title) throw new Error('Usage: import:design-project -- "<tab>.csv" --code <CODE> --title "<Title>" [--apply] [--workspace <slug>]');
 
   const linksXlsx = arg("--links-xlsx");
   const linksTab = arg("--tab") ?? title;
   const links = linksXlsx ? readFileLinks(linksXlsx, linksTab) : new Map<number, string>();
   const rows = parseTasks(readFileSync(path, "utf8"), links);
   console.log(`File links from ${linksXlsx ?? "(none)"}: ${links.size}`);
-  const db = new PrismaClient();
+  const ws = await resolveWorkspace();
+  const db = ws.db;
   try {
     const brand = await db.brand.findFirst({ where: { name: SECTION_OWNER_BRAND } });
     const projectOwner = await db.user.findFirst({ where: { name: PROJECT_OWNER, active: true } });
@@ -156,7 +157,7 @@ async function main() {
     });
     console.log(`\nApplied: project ${project.id} (${project.code}): ${plan.create.length} created, ${plan.update.length} updated.`);
   } finally {
-    await db.$disconnect();
+    await ws.disconnect();
   }
 }
 

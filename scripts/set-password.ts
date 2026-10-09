@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { checkNewPassword, hashPassword } from "../src/lib/password";
 
 // Sets a person's sign-in password straight in the database (for the first admin, before anyone can sign in).
+// The login email is unique across workspaces, so this uses the raw client.
 // Usage: npm run set-password -- <login email>   (uses DATABASE_URL; the password is typed hidden, twice, or piped on stdin).
 function askHidden(question: string): Promise<string> {
   return new Promise((resolve) => {

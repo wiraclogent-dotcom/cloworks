@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
-import { PrismaClient, type ProjectStatus } from "@prisma/client";
+import type { ProjectStatus } from "@prisma/client";
 import { parseCsv, planTaskSync, type SyncPlan } from "@/lib/designProjectSheet";
 import { jakartaDay } from "@/lib/projectTasks";
+import { resolveWorkspace } from "./lib/workspaceArg";
 
 // Imports the normalized Project Tracker CSV: one Project per item (by code) and one ProjectTask per sub-row.
 // Dry-run by default; --apply writes. Missing brands are created on --apply. Re-running syncs the tasks of the
@@ -9,7 +10,7 @@ import { jakartaDay } from "@/lib/projectTasks";
 // the file's owner, dates, file and order but keep the status set in the app, and tasks no longer in the file are
 // left alone (reported only). Projects not in the file are untouched.
 //
-// Usage: npm run import:tracker -- "<normalized>.csv" [--apply]
+// Usage: npm run import:tracker -- "<normalized>.csv" [--apply] [--workspace <slug>]
 
 const STATUSES: ProjectStatus[] = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD"];
 
@@ -25,7 +26,7 @@ type Line = {
 async function main() {
   const path = process.argv.slice(2).find((a, i, all) => !a.startsWith("--") && !(all[i - 1] ?? "").startsWith("--"));
   const apply = process.argv.includes("--apply");
-  if (!path) throw new Error('Usage: import:tracker -- "<normalized>.csv" [--apply]');
+  if (!path) throw new Error('Usage: import:tracker -- "<normalized>.csv" [--apply] [--workspace <slug>]');
 
   const [header, ...body] = parseCsv(readFileSync(path, "utf8"));
   const lines: Line[] = body.map((cells) => Object.fromEntries(header.map((h, i) => [h, cells[i] ?? ""])) as unknown as Line);
@@ -34,7 +35,8 @@ async function main() {
   for (const l of lines) if (!STATUSES.includes(l.project_status as ProjectStatus) || (l.task_status && !STATUSES.includes(l.task_status as ProjectStatus)))
     throw new Error(`Unknown status on ${l.project_code} "${l.task_title}"`);
 
-  const db = new PrismaClient();
+  const ws = await resolveWorkspace();
+  const db = ws.db;
   try {
     const brandNames = [...new Set(lines.map((l) => l.brand))];
     const brands = await db.brand.findMany({ where: { name: { in: brandNames } }, select: { id: true, name: true } });
@@ -117,7 +119,7 @@ async function main() {
     const updated = [...plans.values()].reduce((n, p) => n + p.update.length, 0);
     console.log(`\nApplied: ${byCode.size} projects, ${created} tasks created, ${updated} updated, ${missingBrands.length} brands created.`);
   } finally {
-    await db.$disconnect();
+    await ws.disconnect();
   }
 }
 

@@ -38,8 +38,8 @@ export const SOCIAL_FIELDS: FieldSchema = [
 ];
 
 /**
- * Idempotent. Rows are only written on create (empty `update`), so later admin edits
- * (email, appRole, active, ...) are never overwritten by a re-run.
+ * Idempotent. Pass a client scoped to the target workspace. Rows are only written when missing (find-or-create),
+ * so later admin edits (email, appRole, active, ...) are never overwritten by a re-run.
  */
 export async function seed(db: PrismaClient): Promise<void> {
   // Names are unique per workspace, so find-or-create by name (the client decides the workspace).
