@@ -21,7 +21,7 @@ A brief counts when the person submitted a request that day, by its request date
 
 ## Using the Brief Calendar
 
-1. Open **Brief Calendar** from the sidebar, under Insights.
+1. Open **Brief Calendar** from the sidebar, under Work.
 2. Use the month picker to choose the month.
 3. Select a day to see that day's requests for each person, and open any request from there.
 

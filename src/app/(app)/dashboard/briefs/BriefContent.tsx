@@ -25,7 +25,7 @@ export async function BriefContent({ searchParams }: { searchParams: Promise<Rec
   const model = buildBriefMonth(month, jakartaDate(now), people, items);
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Brief Calendar" }]} title="Brief Calendar" description={monthLabel(month)}
+      <PageHeader breadcrumb={[{ label: "Work" }, { label: "Brief Calendar" }]} title="Brief Calendar" description={monthLabel(month)}
         actions={<MonthPicker month={month} current={jakartaMonth(now)} action="/dashboard/briefs" />} />
       {people.length === 0 ? (
         <EmptyState icon={<CalendarDays />} title="No social media team members" description="Active social media requesters will appear here." />

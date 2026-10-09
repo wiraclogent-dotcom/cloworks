@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { AppRole } from "@prisma/client";
-import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users, Workflow } from "lucide-react";
+import { Bell, CalendarDays, ChartColumn, CircleHelp, FolderKanban, Inbox, LogOut, Plug, Settings, ShieldCheck, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireScope, requireUserOrRedirect } from "@/lib/session";
@@ -74,7 +74,7 @@ function UserChipFallback() {
 }
 
 /**
- * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Admin), user chip, theme switch, sign out.
+ * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools / Admin), user chip, theme switch, sign out.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -87,12 +87,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <NavGroup id="nav-work" label="Work">
             <NavItem href="/requests" label="Requests" icon={<SquareKanban aria-hidden="true" />} />
             <NavItem href="/projects" label="Projects" icon={<FolderKanban aria-hidden="true" />} />
-            <DisabledNavItem label="Workflow" icon={<Workflow aria-hidden="true" />} />
+            <Suspense fallback={null}><BriefCalendarItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-insights" label="Insights" divided>
             <NavItem href="/dashboard" label="My KPI" icon={<ChartColumn aria-hidden="true" />} />
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
-            <Suspense fallback={null}><BriefCalendarItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-tools" label="Tools" divided>
             <DisabledNavItem label="Notifications" icon={<Bell aria-hidden="true" />} />
