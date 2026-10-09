@@ -53,6 +53,13 @@ describe("BriefCalendar", () => {
     expect(day.querySelector('[data-person="f"]')!.textContent).toBe("2");
   });
 
+  it("each circle has a hover tooltip with the person's name and count", () => {
+    render(<BriefCalendar people={PEOPLE} model={OCT} />);
+    const day = screen.getByRole("button", { name: DAY8 });
+    const tips = Array.from(day.querySelectorAll("[data-tooltip]")).map((t) => t.textContent);
+    expect(tips).toEqual(["r · no brief", "f · 2 briefs", "s · 1 brief"]);
+  });
+
   it("an empty weekend shows no missed dot; a weekend brief shows a sent dot", () => {
     render(<BriefCalendar people={PEOPLE} model={OCT} />);
     const sun = screen.getByRole("button", { name: /^Sunday 4 October/ });

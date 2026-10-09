@@ -33,11 +33,21 @@ function Dots({ day, people }: { day: BriefDay; people: BriefPerson[] }) {
   return (
     <span className="flex flex-wrap gap-1">
       {/* Fixed slots: an empty slot keeps its width, so a dot's position always says whose it is (not colour alone). */}
-      {people.map((p, i) => (
-        <span key={p.id} data-slot={p.id} className="inline-flex size-5">
-          <Dot person={p} count={day.perPerson[i].count} state={day.perPerson[i].state} />
-        </span>
-      ))}
+      {people.map((p, i) => {
+        const { count, state } = day.perPerson[i];
+        return (
+          <span key={p.id} data-slot={p.id} className="group/dot relative inline-flex size-5">
+            <Dot person={p} count={count} state={state} />
+            {/* Pointer-only hint; the day button's aria-label already carries the same counts for screen readers. */}
+            {state !== "none" && (
+              <span aria-hidden="true" data-tooltip=""
+                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs whitespace-nowrap text-background shadow-raised group-hover/dot:block">
+                {`${p.name} · ${count === 0 ? "no brief" : count === 1 ? "1 brief" : `${count} briefs`}`}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </span>
   );
 }
