@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { BriefDay, BriefMonth, BriefPerson, DotState } from "@/lib/briefCalendar";
+import type { BriefDay, BriefItem, BriefMonth, BriefPerson, DotState } from "@/lib/briefCalendar";
 import { dayLabel } from "@/lib/calendar";
 import { avatarColor } from "@/lib/palette";
 import { useNarrow } from "../useNarrow";
@@ -29,7 +29,8 @@ function Dot({ person, count, state }: { person: BriefPerson; count: number; sta
   );
 }
 
-function Dots({ day, people }: { day: BriefDay; people: BriefPerson[] }) {
+/** `align` keeps the tooltip on screen: grow rightwards from the dot early in the week, leftwards late in the week. */
+function Dots({ day, people, items, align }: { day: BriefDay; people: BriefPerson[]; items: BriefItem[]; align: "start" | "end" }) {
   return (
     <span className="flex flex-wrap gap-1">
       {/* Fixed slots: an empty slot keeps its width, so a dot's position always says whose it is (not colour alone). */}
@@ -41,8 +42,15 @@ function Dots({ day, people }: { day: BriefDay; people: BriefPerson[] }) {
             {/* Pointer-only hint; the day button's aria-label already carries the same counts for screen readers. */}
             {state !== "none" && (
               <span aria-hidden="true" data-tooltip=""
-                className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 hidden -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs whitespace-nowrap text-background shadow-raised group-hover/dot:block">
-                {`${p.name} · ${count === 0 ? "no brief" : count === 1 ? "1 brief" : `${count} briefs`}`}
+                className={cn("pointer-events-none absolute top-full z-20 mt-1.5 hidden w-max max-w-72 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs text-background shadow-raised group-hover/dot:block", align === "start" ? "left-0" : "right-0")}>
+                <span data-tooltip-head="" className="block font-semibold">
+                  {`${p.name} · ${count === 0 ? "no brief" : count === 1 ? "1 brief" : `${count} briefs`}`}
+                </span>
+                {count > 0 && (
+                  <ul className="mt-1 space-y-0.5">
+                    {items.filter((it) => it.requesterId === p.id).map((it) => <li key={it.id} className="truncate">{it.title}</li>)}
+                  </ul>
+                )}
               </span>
             )}
           </span>
@@ -101,7 +109,7 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
               <button type="button" aria-haspopup="dialog" aria-label={dayAria(d, people)} onClick={() => setOpen(d.day)}
                 className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isWeekend || d.isFuture) && "text-foreground-secondary", d.isWeekend && "bg-surface-muted", focusRing)}>
                 <span>{dayLabel(d.day)}{d.isToday && <span className="ml-1.5 font-medium text-link">Today</span>}</span>
-                <Dots day={d} people={people} />
+                <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align="end" />
               </button>
             </li>
           ))}
@@ -128,7 +136,7 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
                       "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
                       d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isWeekend ? "text-foreground-secondary" : "text-foreground",
                     )}>{Number(d.day.slice(8))}</span>
-                    <Dots day={d} people={people} />
+                    <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>
                 ) : (
                   <div key={d.day} aria-hidden="true" className="min-h-20 rounded-lg border border-border bg-surface-muted opacity-50" />

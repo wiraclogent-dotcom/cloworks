@@ -53,11 +53,14 @@ describe("BriefCalendar", () => {
     expect(day.querySelector('[data-person="f"]')!.textContent).toBe("2");
   });
 
-  it("each circle has a hover tooltip with the person's name and count", () => {
+  it("each circle has a hover tooltip with the person's name, count and that day's brief titles", () => {
     render(<BriefCalendar people={PEOPLE} model={OCT} />);
     const day = screen.getByRole("button", { name: DAY8 });
-    const tips = Array.from(day.querySelectorAll("[data-tooltip]")).map((t) => t.textContent);
-    expect(tips).toEqual(["r · no brief", "f · 2 briefs", "s · 1 brief"]);
+    const tips = Array.from(day.querySelectorAll("[data-tooltip]"));
+    expect(tips.map((t) => t.querySelector("[data-tooltip-head]")!.textContent)).toEqual(["r · no brief", "f · 2 briefs", "s · 1 brief"]);
+    expect(Array.from(tips[1].querySelectorAll("li")).map((li) => li.textContent)).toEqual(["title 3", "title 4"]);
+    expect(Array.from(tips[2].querySelectorAll("li")).map((li) => li.textContent)).toEqual(["title 5"]);
+    expect(tips[0].querySelectorAll("li")).toHaveLength(0);
   });
 
   it("an empty weekend shows no missed dot; a weekend brief shows a sent dot", () => {
