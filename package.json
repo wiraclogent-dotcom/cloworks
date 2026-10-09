@@ -15,14 +15,18 @@
     "typecheck": "tsc --noEmit",
     "db:seed": "tsx prisma/seed.ts",
     "import:sheet": "tsx scripts/import-sheet.ts",
+    "import:design-project": "tsx scripts/import-design-project.ts",
+    "import:tracker": "tsx scripts/import-tracker.ts",
     "dev:session": "tsx scripts/dev-session.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
     "@prisma/client": "^6.19.3",
+    "class-variance-authority": "^0.7.1",
     "lucide-react": "1.53.0",
     "next": "16.4.0",
     "next-auth": "^5.0.0-beta.32",
+    "radix-ui": "^1.7.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-markdown": "10.1.0",

@@ -71,7 +71,7 @@ export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; can
                     return (
                       <tr key={p.id} className={t.tr}>
                         <th scope="row" className={t.rowHeader}>
-                          <span className="line-clamp-2">{p.title}</span>
+                          <Link href={`/projects/${p.id}`} className="line-clamp-2 underline-offset-2 hover:underline">{p.title}</Link>
                           {p.subTitle && <span className="block truncate text-xs font-normal text-foreground-secondary">{p.subTitle}</span>}
                         </th>
                         <td className={t.td}>

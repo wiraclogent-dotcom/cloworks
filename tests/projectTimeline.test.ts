@@ -55,4 +55,22 @@ describe("timelineLayout", () => {
     const l = timelineLayout([p("a", "2026-12-23", "2027-01-08")], today); // Monday 21 Dec
     expect(l.weeks.map((w) => w.label)).toEqual(["21 Dec 2026", "28 Dec", "4 Jan 2027"]);
   });
+  it("starts two weeks before today when the projects began much earlier, so today is on screen", () => {
+    // Today Thu 8 Oct 2026, this week's Monday is 5 Oct; two weeks before is Mon 21 Sep.
+    const l = timelineLayout([p("a", "2026-06-10", "2026-11-27")], today);
+    expect(l.weeks[0].label).toBe("21 Sep 2026");
+    // Today is 17 days into a 70-day span, so it is about a quarter of the way across.
+    expect(l.todayPct!).toBeLessThan(30);
+    expect(l.bars[0]).toMatchObject({ leftPct: 0, clippedStart: true, clipped: false });
+  });
+  it("keeps the earliest project start when it is within the lead window", () => {
+    const l = timelineLayout([p("a", "2026-09-28", "2026-11-27")], today);
+    expect(l.weeks[0].label).toBe("28 Sep 2026");
+    expect(l.bars[0].clippedStart).toBe(false);
+  });
+  it("lists projects that finished before the window instead of drawing them", () => {
+    const l = timelineLayout([p("old", "2026-06-01", "2026-08-01"), p("live", "2026-06-10", "2026-11-27")], today);
+    expect(l.dueBefore).toEqual(["old"]);
+    expect(l.bars.map((b) => b.id)).toEqual(["live"]);
+  });
 });

@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ProjectStatus } from "@prisma/client";
 import { timelineLayout, type TimelineProject } from "@/lib/timeline";
 import { PROJECT_STATUS_LABEL, formatJakartaDate } from "@/lib/projects";
@@ -27,9 +27,10 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
   return (
     <div>
       <p className="mb-3 text-[13px] text-foreground-secondary">
-        Weeks start on Monday. The same details are in the tables above.
+        Weeks start on Monday. Each bar is labelled with its dates and status.
         {layout.truncated && " Showing the first 26 weeks only; later parts of longer projects are cut off."}
         {layout.omitted.length > 0 && ` Not drawn because they start after this range: ${layout.omitted.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
+        {layout.dueBefore.length > 0 && ` Due before this range, not drawn: ${layout.dueBefore.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
       </p>
       <div className="relative overflow-x-auto rounded-lg border border-border">
         <div style={{ minWidth: `${Math.max(40, cols * 4.5 + LABEL_REM)}rem`, "--label-w": `${LABEL_REM}rem` } as React.CSSProperties} className="relative">
@@ -43,7 +44,7 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
             {layout.bars.map((b) => {
               const p = byId.get(b.id)!;
               const status = p.status ? ` · ${PROJECT_STATUS_LABEL[p.status]}` : "";
-              const range = `${formatJakartaDate(p.startDate!)} to ${formatJakartaDate(p.dueDate!)}${b.clipped ? " (continues past the range shown)" : ""}`;
+              const range = `${formatJakartaDate(p.startDate!)} to ${formatJakartaDate(p.dueDate!)}${b.clippedStart ? " (started before the range shown)" : ""}${b.clipped ? " (continues past the range shown)" : ""}`;
               return (
                 <li key={b.id} className="flex items-center border-t border-border text-[13px] first:border-t-0">
                   <div className="w-(--label-w) shrink-0 truncate px-3 py-2 font-medium" title={p.title}>
@@ -57,6 +58,7 @@ export function ProjectTimeline({ projects, today }: { projects: Item[]; today: 
                       className="absolute top-2 h-5 rounded-md bg-tone-text shadow-card"
                       style={{ left: `${b.leftPct}%`, width: `${b.widthPct}%` }}
                     >
+                      {b.clippedStart && <ChevronLeft aria-hidden="true" strokeWidth={2} className="absolute top-0.5 left-0.5 size-4 text-tone-tint" />}
                       {b.clipped && <ChevronRight aria-hidden="true" strokeWidth={2} className="absolute top-0.5 right-0.5 size-4 text-tone-tint" />}
                     </div>
                   </div>

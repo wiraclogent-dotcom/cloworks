@@ -32,9 +32,8 @@ async function ProjectsContent() {
             <Plus aria-hidden="true" />New project
           </Link>
         )} />
-      <ProjectTable rows={rows} canManage={canManage} now={now} />
       {rows.length > 0 && (
-        <Card className="mt-6">
+        <Card className="mb-6">
           <section aria-labelledby="timeline-h">
             <CardHeader>
               <CardTitle id="timeline-h">Timeline</CardTitle>
@@ -43,6 +42,7 @@ async function ProjectsContent() {
           </section>
         </Card>
       )}
+      <ProjectTable rows={rows} canManage={canManage} now={now} />
     </>
   );
 }
