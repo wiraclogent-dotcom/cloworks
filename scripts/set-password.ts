@@ -4,7 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { checkNewPassword, hashPassword } from "../src/lib/password";
 
 // Sets a person's sign-in password straight in the database (for the first admin, before anyone can sign in).
-// Usage: npm run set-password -- <login email>   (uses DATABASE_URL; the password is typed hidden, twice).
+// Usage: npm run set-password -- <login email>   (uses DATABASE_URL; the password is typed hidden, twice, or piped on stdin).
 function askHidden(question: string): Promise<string> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
@@ -24,6 +24,12 @@ function askHidden(question: string): Promise<string> {
   });
 }
 
+async function readStdin(): Promise<string> {
+  let data = "";
+  for await (const chunk of process.stdin) data += chunk;
+  return data;
+}
+
 async function main() {
   if (fs.existsSync(".env")) process.loadEnvFile(".env"); // does not override variables already in the environment
   const raw = process.argv.slice(2).filter((a) => a !== "--");
@@ -36,10 +42,12 @@ async function main() {
     if (!user) throw new Error(`No person has the login email ${email}.`);
     if (!user.active) throw new Error(`${user.name} is inactive.`);
 
-    const password = await askHidden(`New password for ${user.name}: `);
+    // Piped input (e.g. from a shell `read -s`) is used as-is; otherwise ask twice on the terminal.
+    const piped = !process.stdin.isTTY;
+    const password = piped ? (await readStdin()).replace(/\r?\n$/, "") : await askHidden(`New password for ${user.name}: `);
     const problem = checkNewPassword(password);
     if (problem) throw new Error(problem);
-    if ((await askHidden("Type it again: ")) !== password) throw new Error("The passwords don't match.");
+    if (!piped && (await askHidden("Type it again: ")) !== password) throw new Error("The passwords don't match.");
 
     await db.user.update({
       where: { id: user.id },
