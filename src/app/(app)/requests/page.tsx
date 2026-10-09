@@ -24,6 +24,7 @@ import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { buildWindow, shiftWeek } from "@/lib/workload";
 import { jakartaDate } from "@/lib/createRequest";
 import { todayOverview } from "@/lib/todayOverview";
+import { listCreativeTeam } from "@/lib/team";
 import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./params";
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
@@ -56,7 +57,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     tlWindow ? listTimelineRequests(prisma, filter, { from: tlWindow.from, to: tlWindow.to, today }) : null,
     prisma.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     prisma.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.user.findMany({ where: { active: true, appRole: { not: "REQUESTER" } }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    listCreativeTeam(prisma),
   ]);
   const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {});
   const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);
