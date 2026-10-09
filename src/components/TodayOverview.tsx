@@ -20,13 +20,14 @@ function Tile({ href, icon, label, value, emphasis }: { href: string; icon: Reac
 }
 
 /**
- * Welcome card and today's numbers above the board. Server-rendered: the greeting and date are computed for
- * Jakarta, so they do not depend on the viewer's machine. Each number links to the list it counts.
+ * Welcome card across the full width, today's numbers in a row below it, above the board. Server-rendered: the
+ * greeting and date are computed for Jakarta, so they do not depend on the viewer's machine. Each number links to the
+ * list it counts.
  */
 export function TodayOverview({ name, now, overview }: { name: string; now: Date; overview: Overview }) {
   const firstName = name.trim().split(/\s+/)[0] ?? "";
   return (
-    <section aria-label="Today" className="mb-4 grid min-w-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+    <section aria-label="Today" className="mb-4 grid min-w-0 gap-3">
       <div className="flex min-w-0 flex-col justify-center rounded-xl border border-border bg-card p-5 text-card-foreground shadow-card">
         <p className="text-[13px] text-foreground-secondary">{DATE_FORMAT.format(now)}</p>
         <h2 className="mt-1 text-2xl leading-8 font-semibold text-heading">{greetingFor(now)}{firstName ? `, ${firstName}` : ""}</h2>
