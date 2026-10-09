@@ -54,13 +54,13 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
     <section ref={setNodeRef} role="region" aria-labelledby={id} data-tone={REQUEST_STATUS_TONE[status]}
       data-drop={legal ? (isOver ? "over" : "valid") : dragging ? "invalid" : undefined}
       className={cn(
-        "board-column flex min-w-0 flex-col rounded-xl border border-border p-2 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
-        legal && isOver ? "bg-accent" : "bg-surface-muted",
+        "board-column flex min-w-0 flex-col rounded-2xl p-1 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
+        legal && isOver ? "bg-accent" : "bg-transparent",
         legal ? (isOver ? "outline-ring outline-solid" : "outline-ring outline-dashed") : "outline-transparent",
         dragging && !legal && "opacity-60",
       )}>
       <h2 id={id} data-column-header=""
-        className="mb-2 flex flex-none items-center gap-2 rounded-lg border-t-[3px] border-tone-accent bg-tone-tint px-3 py-2 text-sm font-semibold text-tone-text">
+        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-[13px] font-semibold text-tone-text">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
         <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-xs leading-4 font-medium text-foreground-secondary tabular-nums shadow-card">{total}</span>
@@ -70,7 +70,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
           {legal ? <><ArrowDownToLine aria-hidden="true" strokeWidth={1.75} className="size-3.5" />{`Drop to move to ${STATUS_LABEL[status]}`}</> : <><Ban aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Not a valid move</>}
         </p>
       )}
-      <div data-column-body className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+      <div data-column-body className="relative min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1">
         {children}
       </div>
       {total > 0 && (
@@ -189,7 +189,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
       {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="relative grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
+        <div className="relative grid gap-4 overflow-x-auto rounded-2xl bg-[var(--board-canvas)] bg-[image:radial-gradient(var(--board-dot)_1px,transparent_1px)] p-3 pb-4 [background-size:18px_18px]" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (
@@ -201,7 +201,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
                     <p>No requests here</p>
                   </div>
                 ) : (
-                  <ul className="space-y-2">
+                  <ul className="space-y-3">
                     {inCol.map((c) => <BoardCard key={c.id} card={c} canMove={canMove} busy={busyId === c.id} dragging={activeId === c.id} />)}
                   </ul>
                 )}
@@ -212,7 +212,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
         {/* Rendered in a portal-like fixed layer so the dragged card is never clipped by the scrolling columns. */}
         <DragOverlay>
           {activeCard ? (
-            <div aria-hidden="true" data-drag-overlay="" className={cn(CARD_OVERLAY, "cursor-grabbing rotate-2 motion-reduce:rotate-0")}>
+            <div aria-hidden="true" data-drag-overlay="" className={cn(CARD_OVERLAY, "cursor-grabbing rotate-3 motion-reduce:rotate-0")}>
               <CardFace card={activeCard} interactive={false} />
             </div>
           ) : null}

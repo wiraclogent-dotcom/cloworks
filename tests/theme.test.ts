@@ -52,25 +52,25 @@ describe("brand theme", () => {
 
   it("light is the default with no OS dependence; dark only under data-theme", () => {
     expect(css).not.toMatch(/prefers-color-scheme/);
-    expect(token("--background")).toBe("#f4f6fa");
+    expect(token("--background")).toBe("#f5f3ee");
     expect(token("--surface")).toBe("#ffffff");
-    expect(token("--background", "dark")).toBe("#0e1b29");
-    expect(token("--surface", "dark")).toBe("#14263a");
+    expect(token("--background", "dark")).toBe("#111113");
+    expect(token("--surface", "dark")).toBe("#1a1a1d");
   });
 
   it("maps the shadcn semantic tokens onto the spec tokens", () => {
-    expect(token("--foreground")).toBe("#1b2a3a");
+    expect(token("--foreground")).toBe("#17181c");
     expect(token("--card")).toBe(token("--surface"));
     expect(token("--muted")).toBe(token("--surface-muted"));
     expect(token("--muted-foreground")).toBe(token("--foreground-secondary"));
-    expect(token("--border")).toBe("#e4e8ef");
-    expect(token("--border-strong")).toBe("#d0d7e2");
-    expect(token("--primary").toLowerCase()).toBe("#09426d");
+    expect(token("--border")).toBe("#e6e3dc");
+    expect(token("--border-strong")).toBe("#d3cfc5");
+    expect(token("--primary").toLowerCase()).toBe("#17181c");
     expect(token("--primary-foreground")).toBe("#ffffff");
-    expect(token("--sidebar").toLowerCase()).toBe("#09426d");
-    expect(token("--primary", "dark")).toBe("#11aa9f");
-    expect(token("--primary-foreground", "dark")).toBe("#062b47");
-    expect(token("--sidebar", "dark")).toBe("#0a2f4e");
+    expect(token("--sidebar").toLowerCase()).toBe("#f5f3ee");
+    expect(token("--primary", "dark")).toBe("#f2f1ee");
+    expect(token("--primary-foreground", "dark")).toBe("#111113");
+    expect(token("--sidebar", "dark")).toBe("#111113");
   });
 
   it("contrast helper matches known values", () => {

@@ -8,6 +8,7 @@ import { createTestDb, type TestDb } from "./helpers/testDb";
 const ALL: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED"];
 const ALLOWED: [RequestStatus, RequestStatus][] = [
   ["REQUESTED", "ON_PROGRESS"],
+  ["ON_PROGRESS", "REQUESTED"],
   ["ON_PROGRESS", "FIRST_LOOK"],
   ["FIRST_LOOK", "DONE"],
   ["FIRST_LOOK", "ON_PROGRESS"],

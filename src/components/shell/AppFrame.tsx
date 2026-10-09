@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { Menu, PanelLeftClose, PanelLeftOpen, X } from "lucide-react";
+import { ChevronsUpDown, Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";
@@ -88,21 +88,39 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
         <aside id={SIDEBAR_ID} aria-label="Sidebar" data-open={open || undefined}
           onClick={(e) => { if (open && (e.target as HTMLElement).closest("a[href]")) close(false); }}
           className={cn(
-            "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col bg-sidebar text-sidebar-foreground",
+            "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
             "transition-[transform,width,visibility] duration-200 ease-out",
             "md:visible md:sticky md:top-0 md:z-auto md:h-dvh md:max-w-none md:flex-none md:translate-x-0",
             open ? "visible translate-x-0 shadow-raised" : "invisible -translate-x-full",
           )}>
-          <div className="sb-item flex h-14 flex-none items-center gap-2.5 px-4">
-            <LogoMark />
-            <span className="sb-label text-[15px] font-semibold tracking-tight">Cloworks</span>
-            <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
-              className="ml-auto inline-flex size-9 items-center justify-center rounded-lg text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring md:hidden">
-              <X aria-hidden="true" className="size-[18px]" />
-            </button>
+          {/* Workspace switcher (reference): the chevron is decorative until there is more than one workspace. */}
+          <div className="flex-none px-3 pt-3">
+            <div className="sb-item flex items-center gap-2.5 rounded-xl border border-border bg-surface p-2 shadow-card">
+              <LogoMark size={32} />
+              <div className="sb-label min-w-0 flex-1 leading-tight">
+                <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
+                <p className="truncate text-xs text-sidebar-foreground-secondary">Creative team</p>
+              </div>
+              <ChevronsUpDown aria-hidden="true" className="sb-label size-4 shrink-0 text-sidebar-foreground-secondary" />
+              <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring md:hidden">
+                <X aria-hidden="true" className="size-[18px]" />
+              </button>
+            </div>
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-y-auto px-3 pb-3">{nav}</div>
+          {/* Search is shown for the reference layout only: it is disabled until search exists. */}
+          <div className="sb-expanded-only flex-none px-3 pt-3">
+            <label className="relative block">
+              <span className="sr-only">Search (coming soon)</span>
+              <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-sidebar-foreground-secondary" />
+              <input type="search" disabled placeholder="Search" title="Search: coming soon"
+                className="h-9 w-full rounded-lg border border-border bg-surface pr-9 pl-8 text-sm text-foreground placeholder:text-foreground-secondary disabled:cursor-not-allowed disabled:opacity-70" />
+              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-[11px] text-foreground-secondary">/</kbd>
+            </label>
+          </div>
+
+          <div className="relative min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-3">{nav}</div>
 
           <div className="hidden flex-none px-3 pb-2 md:block">
             <button type="button" onClick={() => setSidebarCollapsed(!collapsed)} aria-expanded={!collapsed} aria-controls={SIDEBAR_ID}

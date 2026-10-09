@@ -48,14 +48,14 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
         <caption className="sr-only">KPI per person for the selected month</caption>
         <thead>
           <tr>
-            <th scope="col" className={t.th}>Name</th>
-            <th scope="col" className={cn(t.th, t.numeric)}>Tasks done</th>
-            <th scope="col" className={cn(t.th, t.numeric)}>Target</th>
-            <th scope="col" className={t.th}>Progress</th>
-            <th scope="col" className={cn(t.th, t.numeric)}>On-time</th>
-            <th scope="col" className={cn(t.th, t.numeric, xlOnly)}>Turnaround (days)</th>
-            <th scope="col" className={cn(t.th, t.numeric, xlOnly)}>Workload</th>
-            {canEdit ? <th scope="col" className={cn(t.th, "w-48")}>Set target</th> : null}
+            <th scope="col" className={cn(t.th, "w-full")}>Name</th>
+            <th scope="col" className={cn(t.th, t.numeric, "w-24")}>Tasks done</th>
+            <th scope="col" className={cn(t.th, t.numeric, "w-20")}>Target</th>
+            <th scope="col" className={cn(t.th, "w-40")}>Progress</th>
+            <th scope="col" className={cn(t.th, t.numeric, "w-24")}>On-time</th>
+            <th scope="col" className={cn(t.th, t.numeric, xlOnly, "w-32")}>Turnaround (days)</th>
+            <th scope="col" className={cn(t.th, t.numeric, xlOnly, "w-24")}>Workload</th>
+            {canEdit ? <th scope="col" className={cn(t.th, "w-44")}>Set target</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -80,7 +80,7 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
                 <td className={cn(t.td, t.numeric, xlOnly)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
                 {canEdit ? (
                   <td className={t.td}>
-                    <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} initialNote={r.note ?? null} />
+                    <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} />
                   </td>
                 ) : null}
               </tr>

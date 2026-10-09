@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -9,6 +9,7 @@ import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, rangeText, serializeMore } from 
 import { Board, type BoardColumnView } from "@/components/Board";
 import { Pagination } from "@/components/Pagination";
 import { RequestCalendar } from "@/components/RequestCalendar";
+import { TodayOverview } from "@/components/TodayOverview";
 import { RequestTable } from "@/components/RequestTable";
 import { FilterBar } from "@/components/FilterBar";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -16,10 +17,23 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton } from "@/components/RequestSkeletons";
-import { CalendarDays, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
+import { Bell, CalendarDays, Plus, SearchX, Settings, SquareKanban, Table2 } from "lucide-react";
+import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { jakartaDate } from "@/lib/createRequest";
+import { todayOverview } from "@/lib/todayOverview";
 import { hrefWith, parseParams, parseView, toFilter } from "./params";
+
+/** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
+async function TodayLoader() {
+  const user = await requireUserOrRedirect();
+  const now = new Date();
+  const [me, overview] = await Promise.all([
+    prisma.user.findUnique({ where: { id: user.id }, select: { name: true } }),
+    todayOverview(prisma, now),
+  ]);
+  return <TodayOverview name={me?.name ?? ""} now={now} overview={overview} />;
+}
 
 /** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Requests" };
@@ -45,16 +59,28 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   return (
     <>
       <PageHeader title="Requests"
-        switcher={<SegmentedControl label="View" value={p.view} items={[
+        breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: VIEW_LABEL[p.view] }]}
+        topBarActions={<>
+          <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
+          <ComingSoon label="Notifications" icon={<Bell aria-hidden="true" />} />
+          <ComingSoon label="Settings" icon={<Settings aria-hidden="true" />} />
+        </>}
+        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
+      {p.view === "board" ? (
+        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-surface-muted" />}><TodayLoader /></Suspense>
+      ) : null}
+      {/* One toolbar row: the view switcher, then the filters (they wrap under it on narrow screens). */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+        <SegmentedControl label="View" value={p.view} items={[
           { value: "board", label: "Board", icon: <SquareKanban aria-hidden="true" />, href: hrefWith(p, { view: undefined }) },
           { value: "table", label: "Table", icon: <Table2 aria-hidden="true" />, href: hrefWith(p, { view: "table" }) },
           { value: "calendar", label: "Calendar", icon: <CalendarDays aria-hidden="true" />, href: hrefWith(p, { view: "calendar" }) },
-        ]} />}
-        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
-      <div className="mb-4">
-        <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
-          mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
-          clearHref={clearHref} />
+        ]} />
+        <div className="ml-auto">
+          <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
+            mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
+            clearHref={clearHref} />
+        </div>
       </div>
       {board ? (
         board.every((c) => c.total === 0) && filtered ? (
@@ -85,6 +111,18 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           todayHref={hrefWith(p, { month: today.slice(0, 7) })} />
       ) : null}
     </>
+  );
+}
+
+const VIEW_LABEL: Record<"board" | "table" | "calendar", string> = { board: "Board", table: "Table", calendar: "Calendar" };
+
+/** Top-bar icon button for a feature that does not exist yet: visible, labelled, and disabled (no fake action). */
+function ComingSoon({ label, icon }: { label: string; icon: ReactNode }) {
+  return (
+    <button type="button" disabled aria-label={`${label} (coming soon)`} title={`${label}: coming soon`}
+      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground-secondary disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:size-4">
+      {icon}
+    </button>
   );
 }
 

@@ -1,0 +1,16 @@
+---
+title: Team KPI
+section: KPI
+order: 2
+requiresPermission: dashboard.team
+---
+
+**Team KPI** shows the same numbers as [My KPI](/help/my-kpi) for every designer and social media team member. Only leads and admins can open it.
+
+## Using Team KPI
+
+1. Open **Team KPI** from the sidebar.
+2. Use the month picker to choose the month.
+3. Select a person to open their KPI page.
+
+If no team members are listed, no designers or social media staff have been added yet. Ask an admin to check the people list.

@@ -58,7 +58,7 @@ describe("D4 Team KPI table fits at ≥ 1024px", () => {
       expect(th.className).toContain("hidden");
       expect(th.className).toContain("xl:table-cell");
     }
-    expect(screen.getByRole("columnheader", { name: "Set target" }).className).toContain("w-48");
+    expect(screen.getByRole("columnheader", { name: "Set target" }).className).toContain("w-44");
     const hint = container.querySelector("[data-scroll-hint]")!;
     expect(hint.textContent).toBe("Scroll sideways to see every column.");
     expect(hint.className).toContain("lg:hidden");
@@ -70,8 +70,7 @@ describe("D4 Team KPI table fits at ≥ 1024px", () => {
     expect(save.querySelector("svg")).not.toBeNull();
     expect(screen.getByRole("button", { name: "Save target for Sari" })).toBeTruthy();
     expect(screen.getByLabelText("Target tasks for Fadli")).toBeTruthy();
-    expect(screen.getByLabelText(/Note for Fadli/)).toBeTruthy();
-    expect(container.querySelector("[data-target-editor]")!.className).toContain("max-w-48");
+    expect(container.querySelector("[data-target-editor]")!.className).toContain("min-w-40");
   });
 });
 

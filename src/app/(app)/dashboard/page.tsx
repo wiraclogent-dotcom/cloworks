@@ -15,7 +15,6 @@ import { TrendChart, type TrendPoint } from "@/components/kpi/TrendChart";
 import { AccessDenied } from "@/components/AccessDenied";
 import { KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { KpiTile } from "@/components/ui/KpiTile";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
@@ -73,7 +72,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
 
   return (
     <>
-      <PageHeader title={own ? "My KPI" : `KPI: ${subject.name}`} description={monthLabel(month)}
+      <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]} title={own ? "My KPI" : `KPI: ${subject.name}`} description={monthLabel(month)}
         actions={<>
           {!own && canTeam ? <Link href={`/dashboard/team?month=${month}`} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null}
           <MonthPicker month={month} userId={own ? undefined : subject.id} action="/dashboard" />
@@ -83,13 +82,19 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
         <EmptyState icon={<ChartColumn />} title={`No KPI data for ${monthLabel(month)}`}
           description={`No target and no finished work for ${monthLabel(month)} yet. ${canTeam ? "Set a target on the Team KPI page." : "Ask your lead to set a monthly target."}`} />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <section aria-labelledby="kpi-numbers">
             <h2 id="kpi-numbers" className="sr-only">Key numbers</h2>
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {/* One scorecard: the hairlines come from the grid gap showing the card's border colour between cells. */}
+            <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card lg:grid-cols-4">
               {myKpiTiles(kpi, basisRole).map((tile) => (
-                <li key={tile.key} data-kpi={tile.key}>
-                  <KpiTile icon={TILE_LOOK[tile.key].icon} tone={TILE_LOOK[tile.key].tone} label={tile.label} value={tile.value} sub={tile.hint} className="h-full" />
+                <li key={tile.key} data-kpi={tile.key} className="flex min-w-0 flex-col gap-2 bg-card p-4">
+                  <span className="flex items-center gap-1.5 text-[13px] text-foreground-secondary">
+                    <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{TILE_LOOK[tile.key].icon}</span>
+                    {tile.label}
+                  </span>
+                  <span className="text-2xl leading-8 font-semibold text-foreground tabular-nums">{tile.value}</span>
+                  {tile.hint ? <span className="text-xs leading-4 text-foreground-secondary">{tile.hint}</span> : null}
                 </li>
               ))}
             </ul>

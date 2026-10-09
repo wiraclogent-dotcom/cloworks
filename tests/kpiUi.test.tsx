@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 
 const setTarget = vi.fn();
 vi.mock("@/app/(app)/dashboard/targets/actions", () => ({ setTarget: (...a: unknown[]) => setTarget(...a) }));
@@ -83,26 +83,14 @@ describe("TeamTable editor", () => {
     expect(await screen.findByText("Enter a whole number.")).toBeTruthy();
     expect(setTarget).not.toHaveBeenCalled();
   });
-  it("does not pass a note when the note field is untouched, but prefills it", async () => {
+  it("has no note field and saves the target alone", async () => {
     setTarget.mockResolvedValue({ ok: true });
     render(<TeamTable rows={[{ ...rows[0], note: "Leave in Nov" }]} month="2026-10" canEdit />);
-    expect((screen.getByLabelText(/Note for Fadli/) as HTMLInputElement).value).toBe("Leave in Nov");
-    expect((screen.getByLabelText(/Note for Fadli/) as HTMLInputElement).maxLength).toBe(200);
+    expect(screen.queryByLabelText(/Note for/)).toBeNull();
     fireEvent.change(screen.getByLabelText("Target tasks for Fadli"), { target: { value: "12" } });
     fireEvent.click(screen.getByRole("button", { name: "Save target for Fadli" }));
     await screen.findByText("Saved.");
     expect(setTarget).toHaveBeenCalledWith("u1", "2026-10", "DESIGNER", 12);
-  });
-  it("passes the edited note, and an empty string when it was cleared", async () => {
-    setTarget.mockResolvedValue({ ok: true });
-    render(<TeamTable rows={[{ ...rows[0], note: "Leave in Nov" }]} month="2026-10" canEdit />);
-    fireEvent.change(screen.getByLabelText(/Note for Fadli/), { target: { value: "New note" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save target for Fadli" }));
-    await screen.findByText("Saved.");
-    expect(setTarget).toHaveBeenLastCalledWith("u1", "2026-10", "DESIGNER", 50, "New note");
-    fireEvent.change(screen.getByLabelText(/Note for Fadli/), { target: { value: "" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save target for Fadli" }));
-    await waitFor(() => expect(setTarget).toHaveBeenLastCalledWith("u1", "2026-10", "DESIGNER", 50, ""));
   });
   it("hides editors when canEdit is false", () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit={false} />);

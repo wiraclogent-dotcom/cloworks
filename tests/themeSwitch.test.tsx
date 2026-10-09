@@ -50,47 +50,55 @@ describe("boot script (runs before first paint)", () => {
   });
 });
 
-describe("ThemeSwitch", () => {
-  it("is a labelled group of three toggle buttons; Light is pressed by default", () => {
+describe("ThemeSwitch (day / night toggle)", () => {
+  it("is a switch labelled Dark mode; it starts off (day) with no stored choice", () => {
     render(<ThemeSwitch />);
-    const group = screen.getByRole("group", { name: "Theme" });
-    expect(group).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Light" }).getAttribute("aria-pressed")).toBe("true");
-    expect(screen.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByRole("button", { name: "System" }).getAttribute("aria-pressed")).toBe("false");
+    const sw = screen.getAllByRole("switch", { name: "Dark mode" })[0];
+    expect(sw.getAttribute("aria-checked")).toBe("false");
   });
 
-  it("choosing Dark stores ct-theme and switches <html data-theme> immediately", () => {
+  it("flipping to night stores dark and switches <html data-theme>; flipping back stores light", () => {
     render(<ThemeSwitch />);
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
     expect(localStorage.getItem("ct-theme")).toBe("dark");
     expect(html().getAttribute("data-theme")).toBe("dark");
-    expect(screen.getByRole("button", { name: "Dark" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Light" }));
+    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    expect(localStorage.getItem("ct-theme")).toBe("light");
     expect(html().getAttribute("data-theme")).toBe("light");
   });
 
-  it("System follows the OS setting and the attribute stays light|dark", () => {
-    mockMatchMedia(true);
+  it("never offers a System option", () => {
     render(<ThemeSwitch />);
-    fireEvent.click(screen.getByRole("button", { name: "System" }));
-    expect(localStorage.getItem("ct-theme")).toBe("system");
+    expect(screen.queryByRole("button", { name: "System" })).toBeNull();
+    expect(screen.queryByRole("group", { name: "Theme" })).toBeNull();
+  });
+
+  it("a stored system choice still follows the OS, and flipping replaces it with light or dark", () => {
+    mockMatchMedia(true);
+    localStorage.setItem("ct-theme", "system");
+    render(<ThemeSwitch />);
     expect(html().getAttribute("data-theme")).toBe("dark");
+    expect(screen.getAllByRole("switch", { name: "Dark mode" })[0].getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
+    expect(localStorage.getItem("ct-theme")).toBe("light");
+    expect(html().getAttribute("data-theme")).toBe("light");
   });
 
   it("still switches when localStorage throws", () => {
     const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
     render(<ThemeSwitch />);
-    fireEvent.click(screen.getByRole("button", { name: "Dark" }));
+    fireEvent.click(screen.getAllByRole("switch", { name: "Dark mode" })[0]);
     expect(html().getAttribute("data-theme")).toBe("dark");
     spy.mockRestore();
   });
 
-  it("buttons are native <button>s (keyboard operable) and the sidebar variant adds a cycle button for the rail", () => {
+  it("the collapsed rail has a round icon switch that flips the same way", () => {
     render(<ThemeSwitch tone="sidebar" />);
-    for (const b of screen.getAllByRole("button")) expect(b.tagName).toBe("BUTTON");
-    const cycle = screen.getByRole("button", { name: /^Theme: Light\. Switch to Dark$/ });
-    fireEvent.click(cycle);
+    const switches = screen.getAllByRole("switch", { name: "Dark mode" });
+    expect(switches).toHaveLength(2);
+    for (const b of switches) expect(b.tagName).toBe("BUTTON");
+    fireEvent.click(switches[1]);
     expect(html().getAttribute("data-theme")).toBe("dark");
   });
 });
