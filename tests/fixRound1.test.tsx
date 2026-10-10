@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
 vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
-vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }) }));
+vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }), Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 vi.mock("@/lib/session", () => ({ requireUserOrRedirect: vi.fn(), requireUser: vi.fn() }));
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -114,15 +114,16 @@ describe("D11 per-page titles", () => {
   });
 });
 
-describe("D10 sign-in brand band", () => {
-  it("Deep Blue band with the logo, name and tagline above the unchanged form card", async () => {
+describe("D10 sign-in brand panel", () => {
+  it("Deep Blue panel with an Aqua edge showing finished work, next to the form and a link home", async () => {
     await act(async () => { render(<SignInPage searchParams={Promise.resolve({})} />); });
-    const band = document.querySelector("[data-brand-band]")!;
-    expect(band.className).toContain("bg-sidebar");
-    expect(band.className).toContain("border-brand-aqua");
-    expect(band.textContent).toContain("Cloworks");
+    const panel = document.querySelector("[data-brand-panel]")!;
+    expect(panel.className).toContain("bg-brand-deep-blue");
+    expect(panel.className).toContain("border-brand-aqua");
+    expect(panel.querySelectorAll("img").length).toBe(6);
+    expect(screen.getByRole("link", { name: "Back to home" }).getAttribute("href")).toBe("/");
     expect(screen.getByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /continue with microsoft/i })).toBeNull(); // hidden until set up
   });
 });
