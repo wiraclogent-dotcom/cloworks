@@ -111,6 +111,16 @@ describe("notifications", () => {
       expect(sent[0].subject.length).toBeLessThanOrEqual(160);
       expect(sent[0].text.split("\n")[0]).not.toMatch(/\r/);
     });
+
+    it("email: false stores the row and sends no mail", async () => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ type: "ATTACHMENT", email: false }));
+      const r = await rows();
+      expect(r).toHaveLength(1);
+      expect(r[0]).toMatchObject({ userId: ids.dimas, type: "ATTACHMENT" });
+      expect(r[0].emailedAt).toBeNull();
+      expect(sent).toHaveLength(0);
+    });
   });
 
   describe("notifyWith deadline and parallelism", () => {
@@ -270,5 +280,14 @@ describe("buildMessage DEADLINE", () => {
   it("describes a move and a first-time set", () => {
     expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "10 Oct", to: "14 Oct" })).toBe("Wira moved the deadline of “Banner” from 10 Oct to 14 Oct");
     expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "", to: "14 Oct" })).toBe("Wira set the deadline of “Banner” to 14 Oct");
+  });
+});
+
+describe("buildMessage DESIGN_SENT and ATTACHMENT", () => {
+  it("says the design was sent for review", () => {
+    expect(buildMessage("DESIGN_SENT", "Dimas", "Banner")).toBe("Dimas sent the design for “Banner” for review");
+  });
+  it("names the added design link", () => {
+    expect(buildMessage("ATTACHMENT", "Dimas", "Banner", undefined, { name: "Final v2" })).toBe("Dimas added a design link “Final v2” to “Banner”");
   });
 });
