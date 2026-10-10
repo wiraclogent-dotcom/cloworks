@@ -28,6 +28,8 @@ const ROSTER: RosterEntry[] = [
   { name: "Rahmat", fullName: "Syavia Rahmat", title: "Ecommerce Manager", jobRole: "OTHER", appRole: "REQUESTER" },
 ];
 
+export const STARTER_CATEGORIES: readonly string[] = ["Product Knowledge", "Brand Guidelines (NG)", "Master Box Size", "Latest Updates"];
+
 export const SOCIAL_FIELDS: FieldSchema = [
   { key: "platform", label: "Platform", type: "select", options: ["TikTok", "Instagram"], required: true },
   { key: "contentType", label: "Content type", type: "select", options: ["Campaign", "Daily", "Story", "Urgent"], required: true },
@@ -47,6 +49,8 @@ export async function seed(db: PrismaClient): Promise<void> {
     if (!(await db.brand.findFirst({ where: { name } }))) await db.brand.create({ data: { name } });
   for (const name of ["Creative", "Digital Ads", "Social Media", "Ecommerce", "Brand"])
     if (!(await db.division.findFirst({ where: { name } }))) await db.division.create({ data: { name } });
+  for (const [sortOrder, name] of STARTER_CATEGORIES.entries())
+    if (!(await db.libraryCategory.findFirst({ where: { name } }))) await db.libraryCategory.create({ data: { name, sortOrder } });
   const types: { name: string; fieldSchema: object[] }[] = [
     { name: "General Design", fieldSchema: [] },
     // Video/motion edit work logged by the video editor (imported from the "Dimas Tracker" tab).

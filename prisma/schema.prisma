@@ -66,6 +66,8 @@ model Workspace {
   projects          Project[]
   projectTasks      ProjectTask[]
   projectMilestones ProjectMilestone[]
+  libraryCategories LibraryCategory[]
+  libraryItems      LibraryItem[]
 }
 
 model User {
@@ -88,17 +90,19 @@ model User {
   /// Set when an admin sets or resets the password; cleared when the person changes it.
   mustChangePassword Boolean   @default(false)
 
-  requested      Request[]       @relation("RequestRequester")
-  assigned       Request[]       @relation("RequestAssignee")
-  statusEvents   StatusEvent[]
-  deadlineEvents DeadlineEvent[]
-  comments       Comment[]
-  attachments    Attachment[]
-  kpiTargets     KpiTarget[]
-  notifications  Notification[]
-  chatReads      ChatRead[]
-  ownedProjects  Project[]
-  projectTasks   ProjectTask[]
+  requested           Request[]       @relation("RequestRequester")
+  assigned            Request[]       @relation("RequestAssignee")
+  statusEvents        StatusEvent[]
+  deadlineEvents      DeadlineEvent[]
+  comments            Comment[]
+  attachments         Attachment[]
+  kpiTargets          KpiTarget[]
+  notifications       Notification[]
+  chatReads           ChatRead[]
+  ownedProjects       Project[]
+  libraryItemsCreated LibraryItem[]   @relation("LibraryItemCreatedBy")
+  libraryItemsUpdated LibraryItem[]   @relation("LibraryItemUpdatedBy")
+  projectTasks        ProjectTask[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -119,10 +123,11 @@ model AllowedEmail {
 }
 
 model Brand {
-  id       String    @id @default(cuid())
-  name     String
-  requests Request[]
-  projects Project[]
+  id           String        @id @default(cuid())
+  name         String
+  requests     Request[]
+  projects     Project[]
+  libraryItems LibraryItem[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -409,4 +414,46 @@ model ProjectMilestone {
 
   @@index([projectId, date])
   @@index([workspaceId])
+}
+
+/// A named group of Library links (e.g. "Product Knowledge"). `icon` is a key from a small fixed lucide set.
+model LibraryCategory {
+  id        String        @id @default(cuid())
+  name      String
+  icon      String?
+  sortOrder Int           @default(0)
+  items     LibraryItem[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+/// A shared link in the Library.
+model LibraryItem {
+  id               String          @id @default(cuid())
+  title            String
+  url              String
+  description      String?
+  categoryId       String
+  category         LibraryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brandId          String?
+  brand            Brand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  pinned           Boolean         @default(false)
+  sortOrder        Int             @default(0)
+  createdById      String
+  createdBy        User            @relation("LibraryItemCreatedBy", fields: [createdById], references: [id])
+  updatedById      String
+  updatedBy        User            @relation("LibraryItemUpdatedBy", fields: [updatedById], references: [id])
+  createdAt        DateTime        @default(now())
+  /// Set only by create/edit (not @updatedAt): pinning and reordering leave it alone, so they don't trigger the badge.
+  contentUpdatedAt DateTime        @default(now())
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([categoryId])
 }

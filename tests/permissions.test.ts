@@ -11,6 +11,7 @@ const ACTIONS: Action[] = [
   "briefs.view",
   "project.manage",
   "admin.manage",
+  "library.manage",
 ];
 
 const EXPECTED = {
@@ -25,6 +26,7 @@ const EXPECTED = {
     "project.manage",
     "request.assign",
     "dashboard.team",
+    "library.manage",
   ],
   ADMIN: ACTIONS,
 } as const;
