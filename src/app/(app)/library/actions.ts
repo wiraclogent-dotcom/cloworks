@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { bestEffort } from "@/lib/notify";
+import { notifyLibraryWith } from "@/lib/libraryNotify";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import {
@@ -32,11 +35,23 @@ function run<T extends object>(fn: (db: ScopedDb, user: Actor) => Promise<T | vo
   }, unauthResult);
 }
 
+/** Tells the team after the response is sent, so a save never waits on the bell rows; failures are only logged. */
+const tellTeam = (db: ScopedDb, actorId: string, kind: "added" | "updated", title: string) =>
+  after(() => bestEffort(() => notifyLibraryWith(db, actorId, kind, title.trim())));
+
 export async function createItem(input: LibraryItemInput): Promise<LibraryActionResult<{ id: string }>> {
-  return run((db, u) => createItemWith(db, u, input));
+  return run(async (db, u) => {
+    const r = await createItemWith(db, u, input);
+    tellTeam(db, u.id, "added", input.title);
+    return r;
+  });
 }
+/** Only a change to the title, link, description or files notifies (not pinning or a no-op save). */
 export async function updateItem(id: string, input: LibraryItemInput): Promise<LibraryActionResult> {
-  return run((db, u) => updateItemWith(db, u, id, input));
+  return run(async (db, u) => {
+    const { contentChanged } = await updateItemWith(db, u, id, input);
+    if (contentChanged) tellTeam(db, u.id, "updated", input.title);
+  });
 }
 export async function deleteItem(id: string): Promise<LibraryActionResult> {
   return run((db, u) => deleteItemWith(db, u, id));

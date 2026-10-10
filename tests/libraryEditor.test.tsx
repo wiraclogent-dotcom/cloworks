@@ -61,7 +61,7 @@ describe("Library editor", () => {
     fireEvent.change(within(d).getByLabelText("Category"), { target: { value: "c2" } });
     fireEvent.click(within(d).getByRole("button", { name: "Add link" }));
     await waitFor(() => expect(A.createItem).toHaveBeenCalledWith({
-      title: "New one", url: "https://a.test/z", description: null, categoryId: "c2", brandId: null, pinned: false,
+      title: "New one", url: "https://a.test/z", description: null, categoryId: "c2", brandId: null, pinned: false, files: [],
     }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
@@ -80,6 +80,33 @@ describe("Library editor", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it("edits extra files: pre-filled, add one, remove one, trimmed on save", async () => {
+    view({ rows: [row({ id: "r9", title: "Box", files: [{ label: "AI", url: "https://d.test/ai" }, { label: "Mockup", url: "https://d.test/m" }] })] });
+    menu("Box", "Edit");
+    const d = screen.getByRole("dialog", { name: "Edit link" });
+    const files = within(d).getByRole("group", { name: "Extra files" });
+    expect((within(files).getAllByLabelText("File label") as HTMLInputElement[]).map((i) => i.value)).toEqual(["AI", "Mockup"]);
+    fireEvent.click(within(files).getByRole("button", { name: "Remove file Mockup" }));
+    fireEvent.click(within(files).getByRole("button", { name: "Add file" }));
+    const labels = within(files).getAllByLabelText("File label");
+    const links = within(files).getAllByLabelText("File link");
+    fireEvent.change(labels[1], { target: { value: " PDF " } });
+    fireEvent.change(links[1], { target: { value: " https://d.test/pdf " } });
+    fireEvent.click(within(d).getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(A.updateItem).toHaveBeenCalledWith("r9", expect.objectContaining({
+      files: [{ label: "AI", url: "https://d.test/ai" }, { label: "PDF", url: "https://d.test/pdf" }],
+    })));
+  });
+
+  it("drops fully empty file rows and caps the list at 6", () => {
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    const files = within(screen.getByRole("dialog", { name: "Add link" })).getByRole("group", { name: "Extra files" });
+    for (let i = 0; i < 6; i++) fireEvent.click(within(files).getByRole("button", { name: "Add file" }));
+    expect(within(files).getAllByLabelText("File label")).toHaveLength(6);
+    expect((within(files).getByRole("button", { name: "Add file" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("Edit pre-fills and calls updateItem", async () => {
     view();
     menu("Beta sheet", "Edit");
@@ -89,7 +116,7 @@ describe("Library editor", () => {
     fireEvent.change(within(d).getByLabelText("Title"), { target: { value: "Beta 2" } });
     fireEvent.click(within(d).getByRole("button", { name: "Save changes" }));
     await waitFor(() => expect(A.updateItem).toHaveBeenCalledWith("r2", {
-      title: "Beta 2", url: "https://example.com/x", description: null, categoryId: "c1", brandId: "b1", pinned: false,
+      title: "Beta 2", url: "https://example.com/x", description: null, categoryId: "c1", brandId: "b1", pinned: false, files: [],
     }));
   });
 

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
 import { Bell } from "lucide-react";
 import type { InboxItem } from "@/lib/inbox";
+import { notificationHref } from "@/lib/notificationLinks";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 import { NotificationItem, unreadRow } from "../notifications/NotificationItem";
 import { Skeleton } from "../ui/Skeleton";
@@ -50,7 +51,8 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
   async function select(n: InboxItem) {
     const wasUnread = n.readAt === null;
     if (wasUnread) { setRead(n.id, new Date()); setCount((c) => Math.max(0, c - 1)); }
-    if (n.requestId) router.push(`/requests/${encodeURIComponent(n.requestId)}`);
+    const href = notificationHref(n);
+    if (href) router.push(href);
     const r = await actions.markRead(n.id).catch(() => ({ ok: false as const }));
     if (!r.ok && wasUnread) { setRead(n.id, null); setCount((c) => c + 1); }
   }

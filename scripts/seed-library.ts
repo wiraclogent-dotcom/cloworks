@@ -1,15 +1,21 @@
 import { createCategoryWith, createItemWith, type Actor } from "@/lib/library";
 import type { CategoryIconKey } from "@/lib/libraryIcons";
+import { readLibraryDirectories } from "@/lib/import/libraryDirectories";
 import { resolveWorkspace } from "./lib/workspaceArg";
 
 // Seeds the first Library links, taken from the "Directory" tab of the Creative Worksheet (rows with a hyperlink).
-// Idempotent: categories are matched by name, items by URL; existing rows are left alone. Goes through the library
+// Idempotent: categories are matched by name, items by title within their category (two sheet rows may share one
+// file); existing rows are left alone. Goes through the library
 // cores (same validation as the app), acting as the ADMIN given by --as <email> (default: the first active ADMIN).
 // Dry-run by default; --apply writes.
 //
-// Usage: npm run seed:library -- [--as <admin email>] [--apply] [--workspace <slug>]
+// With --xlsx <workbook>, also imports the "MasterBox Directory" tab (into Master Box Size) and the "Packaging
+// Directory" tab (into Packaging): one item per row, the PDF as the link and the other files (AI, Mockup, New design)
+// as file chips. Imports never notify the team (only edits made in the app do).
+//
+// Usage: npm run seed:library -- [--xlsx "<Creative Worksheet>.xlsx"] [--as <admin email>] [--apply] [--workspace <slug>]
 
-type Seed = { title: string; url: string; description?: string; brand?: string; pinned?: boolean };
+type Seed = { title: string; url: string; description?: string; brand?: string; pinned?: boolean; files?: { label: string; url: string }[] };
 type Group = { category: string; icon: CategoryIconKey | null; items: Seed[] };
 
 const GROUPS: Group[] = [
@@ -48,6 +54,15 @@ const GROUPS: Group[] = [
 
 async function main() {
   const apply = process.argv.includes("--apply");
+  const x = process.argv.indexOf("--xlsx");
+  const groups = [...GROUPS];
+  if (x >= 0) {
+    const file = process.argv[x + 1];
+    if (!file || file.startsWith("--")) throw new Error("--xlsx needs a path to the .xlsx export.");
+    const dirs = await readLibraryDirectories(file);
+    groups.push({ category: "Master Box Size", icon: null, items: dirs.masterBox }, { category: "Packaging", icon: "box", items: dirs.packaging });
+    console.log(`Workbook: ${dirs.masterBox.length} master boxes, ${dirs.packaging.length} packaging rows with links`);
+  }
   const ws = await resolveWorkspace();
   const db = ws.db;
   try {
@@ -61,25 +76,26 @@ async function main() {
     console.log(`Acting as ${admin.name}`);
 
     let made = 0, skipped = 0;
-    for (const g of GROUPS) {
+    for (const g of groups) {
       let cat = await db.libraryCategory.findFirst({ where: { name: g.category }, select: { id: true } });
       if (!cat) {
         console.log(`+ category "${g.category}"`);
         if (apply) cat = await createCategoryWith(db, actor, { name: g.category, icon: g.icon });
       }
       for (const it of g.items) {
-        if (await db.libraryItem.findFirst({ where: { url: it.url }, select: { id: true } })) {
+        if (cat && (await db.libraryItem.findFirst({ where: { categoryId: cat.id, title: it.title }, select: { id: true } }))) {
           skipped++;
           console.log(`= ${g.category} / ${it.title} (already there)`);
           continue;
         }
         const brand = it.brand ? await db.brand.findFirst({ where: { name: it.brand }, select: { id: true } }) : null;
         if (it.brand && !brand) console.log(`  ! brand "${it.brand}" not found; leaving the item untagged`);
-        console.log(`+ ${g.category} / ${it.title}${it.pinned ? " (pinned)" : ""}`);
+        const extra = it.files?.length ? ` [+ ${it.files.map((f) => f.label).join(", ")}]` : "";
+        console.log(`+ ${g.category} / ${it.title}${it.pinned ? " (pinned)" : ""}${extra}`);
         made++;
         if (apply && cat)
           await createItemWith(db, actor, {
-            title: it.title, url: it.url, description: it.description ?? null, categoryId: cat.id, brandId: brand?.id ?? null, pinned: it.pinned ?? false,
+            title: it.title, url: it.url, description: it.description ?? null, categoryId: cat.id, brandId: brand?.id ?? null, pinned: it.pinned ?? false, files: it.files ?? [],
           });
       }
     }
