@@ -16,6 +16,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "import:sheet": "tsx scripts/import-sheet.ts",
     "import:design-project": "tsx scripts/import-design-project.ts",
+    "seed:library": "tsx scripts/seed-library.ts",
     "import:tracker": "tsx scripts/import-tracker.ts",
     "dev:session": "tsx scripts/dev-session.ts",
     "set-password": "tsx scripts/set-password.ts"

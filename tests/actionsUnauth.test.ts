@@ -11,6 +11,9 @@ import { setTarget } from "@/app/(app)/dashboard/targets/actions";
 import { saveUser } from "@/app/(app)/admin/users/actions";
 import { saveBrand } from "@/app/(app)/admin/lists/actions";
 import { submitProject, createProject } from "@/app/(app)/projects/actions";
+import {
+  createItem, updateItem, deleteItem, setPinned, moveItem, createCategory, updateCategory, moveCategory, deleteCategory,
+} from "@/app/(app)/library/actions";
 import { addComment, setIncludeKpi } from "@/app/(app)/requests/[id]/actions";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage } from "@/app/(app)/chat/actions";
@@ -37,6 +40,13 @@ describe("server actions return a result object when the session ended", () => {
     expect(await createProject({ title: "x", ownerId: "o", status: "NOT_STARTED" })).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
     expect(await addComment("r", "hi")).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
     expect(await setIncludeKpi("r", false)).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
+  });
+  it("library actions", async () => {
+    const item = { title: "t", url: "https://x.test", categoryId: "c" };
+    for (const r of [
+      await createItem(item), await updateItem("i", item), await deleteItem("i"), await setPinned("i", true), await moveItem("i", "up"),
+      await createCategory({ name: "n" }), await updateCategory("c", { name: "n" }), await moveCategory("c", "down"), await deleteCategory("c"),
+    ]) expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
   it("notification actions", async () => {
     for (const r of [await listNotifications(), await markNotificationRead("n"), await markAllNotificationsRead()])

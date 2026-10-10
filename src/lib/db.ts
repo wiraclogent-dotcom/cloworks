@@ -16,6 +16,7 @@ export { CLOGENT_WORKSPACE_ID } from "./workspace";
 const SCOPED_MODELS = new Set([
   "User", "AllowedEmail", "Brand", "Division", "RequestType", "Request", "StatusEvent", "DeadlineEvent", "Comment",
   "Attachment", "KpiTarget", "Notification", "ChatRead", "Project", "ProjectTask", "ProjectMilestone",
+  "LibraryCategory", "LibraryItem",
 ]);
 
 const WHERE_OPS = new Set([
