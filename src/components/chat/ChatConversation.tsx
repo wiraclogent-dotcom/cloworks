@@ -89,7 +89,7 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onL
 
       {conv.error ? (
         <div className="flex flex-1 items-center justify-center px-6 text-center">
-          <p className="text-sm text-foreground-secondary">{conv.error}</p>
+          <p role="alert" className="text-sm text-foreground-secondary">{conv.error}</p>
         </div>
       ) : (
         <>

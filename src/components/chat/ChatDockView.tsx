@@ -229,7 +229,7 @@ export function ChatDockView({ unread, userId, actions = serverActions }: { unre
                 </div>
               ) : (
                 <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-foreground-secondary">
-                  Choose a chat to read and reply.
+                  Pick a chat to start messaging.
                 </div>
               )}
             </section>

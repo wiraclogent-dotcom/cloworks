@@ -87,6 +87,7 @@ describe("ChatDockView", () => {
     expect(screen.getByText("Banner")).toBeTruthy();
     expect(screen.getByText(/Poster draft is up/)).toBeTruthy();
     expect(screen.getByText(/Need the logo/)).toBeTruthy();
+    expect(screen.getByText("Pick a chat to start messaging.")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Poster/ }));
     expect(a.listMessages).toHaveBeenCalledWith("r1");
@@ -146,7 +147,7 @@ describe("ChatDockView", () => {
     await openConversation(a);
     a.listMessages.mockResolvedValueOnce({ ok: false, code: "NOT_FOUND", message: "Request not found." });
     await firePoll();
-    expect(await screen.findByText("Request not found.")).toBeTruthy();
+    expect((await screen.findByRole("alert")).textContent).toBe("Request not found.");
     expect(screen.queryByText("Poster draft is up", { selector: "p" })).toBeNull();
   });
 
