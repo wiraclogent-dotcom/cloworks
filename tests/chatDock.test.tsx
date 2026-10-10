@@ -182,6 +182,19 @@ describe("ChatDockView", () => {
     expect(a.markRead).not.toHaveBeenCalledWith("r1", expect.anything());
   });
 
+  it("a late poll result for a chat switched away from does not zero another chat's unread", async () => {
+    const a = fakeActions([chat(), chat({ requestId: "r2", title: "Banner", unread: 4, lastMessage: { body: "Need the logo", authorId: "u3", authorName: "Sari", createdAt: at("2026-10-09T03:00:00Z") } })]);
+    await openConversation(a);
+    let answer!: (v: { ok: true; messages: ChatMessage[]; hasOlder: boolean }) => void;
+    a.listMessages.mockImplementationOnce(() => new Promise((res) => { answer = res; }));
+    await firePoll();
+    fireEvent.click(screen.getByRole("button", { name: "Back to chats" }));
+    await act(async () => { answer({ ok: true, messages: [msg({ id: "m3", body: "Late", createdAt: at("2026-10-10T05:00:00Z") })], hasOlder: false }); });
+    const list = await chatList();
+    expect(list.getByText("Banner")).toBeTruthy();
+    expect(list.getByRole("button", { name: /Banner.*4\s*unread/ })).toBeTruthy();
+  });
+
   it("reopening the dock on a conversation refreshes the chat list", async () => {
     const a = fakeActions([chat()]);
     await openConversation(a, 0);
@@ -262,6 +275,68 @@ describe("ChatDockView", () => {
   });
 });
 
+describe("ChatDockView collapse and minimize", () => {
+  const dock = () => JSON.parse(window.sessionStorage.getItem("chat-dock") ?? "{}");
+
+  it("Minimize closes the popup, keeps the launcher and focuses it; there is no Close button", async () => {
+    render(<ChatDockView unread={0} userId="me" actions={fakeActions([])} />);
+    fireEvent.click(launcher());
+    await screen.findByRole("dialog", { name: "Messages" });
+    expect(screen.queryByRole("button", { name: "Close messages" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Minimize messages" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(launcher()).toBeTruthy();
+    expect(document.activeElement).toBe(launcher());
+    expect(dock().open).toBe(false);
+  });
+
+  it("Collapse hides the conversation pane and the button becomes Expand", async () => {
+    render(<ChatDockView unread={0} userId="me" actions={fakeActions([chat()])} />);
+    fireEvent.click(launcher());
+    await screen.findByText("Pick a chat to start messaging.");
+    fireEvent.click(screen.getByRole("button", { name: "Collapse to chat list" }));
+    // Hidden from md up by class (below md `collapsed` has no effect, so the pane stays rendered).
+    expect(screen.getByRole("region", { name: "Conversation" }).className).toContain("md:hidden");
+    expect(screen.getByRole("dialog").className).toContain("md:w-[300px]");
+    fireEvent.click(screen.getByRole("button", { name: "Expand messages" }));
+    expect(screen.getByRole("region", { name: "Conversation" }).className).not.toContain("md:hidden");
+    expect(screen.getByRole("button", { name: "Collapse to chat list" })).toBeTruthy();
+  });
+
+  it("the Collapse button is hidden below md", async () => {
+    render(<ChatDockView unread={0} userId="me" actions={fakeActions([])} />);
+    fireEvent.click(launcher());
+    const btn = await screen.findByRole("button", { name: "Collapse to chat list" });
+    expect(btn.className).toContain("hidden");
+    expect(btn.className).toContain("md:inline-flex");
+  });
+
+  it("selecting a chat while collapsed expands and loads that conversation", async () => {
+    const a = fakeActions([chat()]);
+    render(<ChatDockView unread={0} userId="me" actions={a} />);
+    fireEvent.click(launcher());
+    fireEvent.click(await screen.findByRole("button", { name: "Collapse to chat list" }));
+    fireEvent.click(await (await chatList()).findByRole("button", { name: /Poster/ }));
+    expect(screen.getByRole("button", { name: "Collapse to chat list" })).toBeTruthy();
+    await waitFor(() => expect(a.listMessages).toHaveBeenCalledWith("r1"));
+    expect(await screen.findByText("Poster draft is up", { selector: "p" })).toBeTruthy();
+  });
+
+  it("collapsed survives a remount; old stored values mean expanded", async () => {
+    const first = render(<ChatDockView unread={0} userId="me" actions={fakeActions([])} />);
+    fireEvent.click(launcher());
+    fireEvent.click(await screen.findByRole("button", { name: "Collapse to chat list" }));
+    expect(dock().collapsed).toBe(true);
+    first.unmount();
+    render(<ChatDockView unread={0} userId="me" actions={fakeActions([])} />);
+    expect(await screen.findByRole("button", { name: "Expand messages" })).toBeTruthy();
+    cleanup();
+    window.sessionStorage.setItem("chat-dock", JSON.stringify({ open: true, selectedId: null }));
+    render(<ChatDockView unread={0} userId="me" actions={fakeActions([])} />);
+    expect(await screen.findByRole("button", { name: "Collapse to chat list" })).toBeTruthy();
+  });
+});
+
 describe("ChatDockView idle backoff", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -327,5 +402,17 @@ describe("ChatDockView idle backoff", () => {
     expect(a.listChats).not.toHaveBeenCalled();
     await tick(5_000);
     expect(a.listChats).toHaveBeenCalledTimes(1);
+  });
+
+  it("returning to the tab after the polls stopped resumes them", async () => {
+    const a = await mountOpenConversation();
+    await tick(IDLE_STOP_MS);
+    a.listMessages.mockClear();
+    await tick(60_000);
+    expect(a.listMessages).not.toHaveBeenCalled();
+    await act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
+    expect(a.listMessages).toHaveBeenCalled();
+    await tick(5_000);
+    expect(a.listMessages.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });

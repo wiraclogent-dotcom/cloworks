@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
-import { MessagesSquare, X } from "lucide-react";
+import { ChevronDown, MessagesSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
 import type { ChatMessage, ChatSummary } from "@/lib/chat";
 import type { CollabFail } from "@/lib/collab";
 import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage } from "@/app/(app)/chat/actions";
@@ -28,7 +28,7 @@ const serverActions: ChatActions = {
 // A store (not state) so hydration uses the closed server snapshot and the saved value applies right after.
 const KEY = "chat-dock";
 const CHANGE = "chat-dock-change";
-type DockState = { open: boolean; selectedId: string | null };
+type DockState = { open: boolean; selectedId: string | null; collapsed: boolean };
 let memory: string | null = null; // used when sessionStorage is unavailable
 function readRaw(): string | null {
   try { return window.sessionStorage.getItem(KEY); } catch { return memory; }
@@ -45,8 +45,8 @@ function subscribe(cb: () => void) {
 function parseDock(raw: string | null): DockState {
   try {
     const v = raw ? (JSON.parse(raw) as Partial<DockState>) : null;
-    return { open: v?.open === true, selectedId: typeof v?.selectedId === "string" && v.selectedId ? v.selectedId : null };
-  } catch { return { open: false, selectedId: null }; }
+    return { open: v?.open === true, selectedId: typeof v?.selectedId === "string" && v.selectedId ? v.selectedId : null, collapsed: v?.collapsed === true };
+  } catch { return { open: false, selectedId: null, collapsed: false }; }
 }
 
 const failed = (message: string): CollabFail => ({ ok: false, code: "INVALID", message });
@@ -120,7 +120,7 @@ function RunningText({ text }: { text: string }) {
 export function ChatDockView({ unread, latestUnread = null, userId, actions = serverActions }: {
   unread: number; latestUnread?: LatestUnread | null; userId: string; actions?: ChatActions;
 }) {
-  const { open, selectedId } = parseDock(useSyncExternalStore(subscribe, readRaw, () => null));
+  const { open, selectedId, collapsed } = parseDock(useSyncExternalStore(subscribe, readRaw, () => null));
   const [count, setCount] = useState(unread);
   const [latest, setLatest] = useState<LatestUnread | null>(latestUnread);
   // Follow fresh server values after a refresh or navigation (same as the bell).
@@ -133,6 +133,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
   const [conv, setConv] = useState<ConversationState | null>(null);
   const [now, setNow] = useState(() => new Date());
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const minimizeRef = useRef<() => void>(() => {});
 
   const convRef = useRef(conv);
   const selectedRef = useRef(selectedId);
@@ -168,10 +169,13 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     const opts = { passive: true } as const;
     window.addEventListener("pointerdown", onActivity, opts);
     window.addEventListener("keydown", onActivity, opts);
+    const onVisible = () => { if (document.visibilityState === "visible") onActivity(); };
+    document.addEventListener("visibilitychange", onVisible);
     const timer = setInterval(() => setClock(Date.now()), IDLE_CLOCK_MS);
     return () => {
       window.removeEventListener("pointerdown", onActivity);
       window.removeEventListener("keydown", onActivity);
+      document.removeEventListener("visibilitychange", onVisible);
       clearInterval(timer);
     };
   }, []);
@@ -223,11 +227,11 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     // The after-window overlaps what we already have (late commits); only unseen ids are news.
     const have = new Set(c.messages.map((m) => m.id));
     if (!r.messages.some((m) => !have.has(m.id))) return;
+    if (selectedRef.current !== c.id) return; // switched away meanwhile: nothing here is shown or read
     const last = r.messages.at(-1)!;
     patchConv(c.id, (x) => ({ ...x, messages: merge(x.messages, r.messages), hasOlder: newest ? x.hasOlder : r.hasOlder }));
     bumpChat(c.id, last);
     noteActivityRef.current();
-    if (selectedRef.current !== c.id) return; // switched away meanwhile: that chat was not seen
     void actions.markRead(c.id, last.createdAt).catch(() => undefined);
   }
 
@@ -274,17 +278,24 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" || e.defaultPrevented) return;
-      writeDock({ open: false, selectedId });
-      launcherRef.current?.focus();
+      minimizeRef.current();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, selectedId]);
+  }, [open]);
 
   function toggle() {
     if (!open) setNow(new Date());
-    writeDock({ open: !open, selectedId });
+    writeDock({ open: !open, selectedId, collapsed });
   }
+
+  /** Hides the popup (back to the launcher pill) and returns focus to the launcher. */
+  function minimize() {
+    writeDock({ open: false, selectedId, collapsed });
+    launcherRef.current?.focus();
+  }
+
+  useEffect(() => { minimizeRef.current = minimize; });
 
   /** Opens straight into the newest unread chat when there is one; otherwise opens or closes the dock. */
   function launch() {
@@ -302,7 +313,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
         setCount((c) => Math.max(0, c - n));
       }
     }
-    writeDock({ open: true, selectedId: id });
+    writeDock({ open: true, selectedId: id, collapsed: id ? false : collapsed });
   }
 
   async function loadOlder() {
@@ -327,6 +338,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     return null;
   }
 
+  const setCollapsed = (c: boolean) => writeDock({ open, selectedId, collapsed: c });
   const selected = chats?.find((c) => c.requestId === selectedId) ?? null;
   const pillTitle = count > 0 && latest ? latest.title : null;
   const label = count > 0 ? `Messages, ${count} unread${pillTitle ? `, latest: ${pillTitle}` : ""}` : "Messages";
@@ -352,18 +364,23 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
 
       {open && (
         <div id="chat-dock" role="dialog" aria-label="Messages"
-          className="fixed inset-0 z-50 flex flex-col overflow-hidden bg-surface text-foreground md:inset-auto md:right-4 md:bottom-20 md:h-[520px] md:max-h-[calc(100vh-6rem)] md:w-[720px] md:max-w-[calc(100vw-2rem)] md:rounded-xl md:border md:border-border md:shadow-raised">
+          className={cn("fixed inset-0 z-50 flex flex-col overflow-hidden bg-surface text-foreground md:inset-auto md:right-4 md:bottom-20 md:h-[520px] md:max-h-[calc(100vh-6rem)] md:max-w-[calc(100vw-2rem)] md:rounded-xl md:border md:border-border md:shadow-raised md:transition-[width] md:duration-200 motion-reduce:transition-none",
+            collapsed ? "md:w-[300px]" : "md:w-[720px]")}>
           <div className="flex items-center justify-between gap-2 border-b border-border py-2 pr-2 pl-4">
             <p className="text-sm font-semibold">Messages</p>
-            <IconButton aria-label="Close messages" size="sm" icon={<X />} onClick={toggle} />
+            <div className="flex items-center gap-1">
+              <IconButton aria-label={collapsed ? "Expand messages" : "Collapse to chat list"} size="sm" className="hidden md:inline-flex"
+                icon={collapsed ? <PanelRightOpen /> : <PanelRightClose />} onClick={() => setCollapsed(!collapsed)} />
+              <IconButton aria-label="Minimize messages" size="sm" icon={<ChevronDown />} onClick={minimize} />
+            </div>
           </div>
           <div className="flex min-h-0 flex-1">
             <section aria-label="Chats"
-              className={cn("min-h-0 w-full flex-col overflow-y-auto border-border bg-background md:flex md:w-64 md:shrink-0 md:border-r", selectedId ? "hidden" : "flex")}>
+              className={cn("min-h-0 w-full flex-col overflow-y-auto border-border bg-background md:flex md:shrink-0 md:border-r", collapsed ? "md:w-full md:border-r-0" : "md:w-64", selectedId ? "hidden" : "flex")}>
               <ChatList chats={chats} error={listError} onRetry={() => { setListError(null); void refreshChats(); }}
                 selectedId={selectedId} userId={userId} now={now} onSelect={select} />
             </section>
-            <section aria-label="Conversation" className={cn("min-h-0 min-w-0 flex-1 flex-col md:flex", selectedId ? "flex" : "hidden")}>
+            <section aria-label="Conversation" className={cn("min-h-0 min-w-0 flex-1 flex-col", collapsed ? "md:hidden" : "md:flex", selectedId ? "flex" : "hidden")}>
               {selectedId && conv && conv.id === selectedId ? (
                 <div className="min-h-0 flex-1">
                   <ChatConversation key={conv.id} conv={conv} title={selected?.title ?? null} status={selected?.status ?? null}
