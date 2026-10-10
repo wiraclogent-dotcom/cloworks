@@ -4,11 +4,13 @@ import { useState, useTransition } from "react";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { safeAction } from "@/lib/safeAction";
 import { setTaskDate } from "./actions";
 import { formatJakartaDay } from "@/lib/projectTasks";
 
 /**
- * A start or due date. Click it to open a small floating panel with a date input; picking a day saves and closes.
+ * A start or due date. Click it to open a small floating panel with a date input; Save (or Enter) saves and closes.
+ * It does not save on change: typing a date fires a change per digit ("2" of "25" is already a valid date).
  * The panel floats over the table, so the row keeps its width.
  */
 export function DateEdit({ projectId, taskId, field, iso, text, label }: {
@@ -17,6 +19,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
   const [current, setCurrent] = useState<string | null>(iso);
   const [display, setDisplay] = useState(text);
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(iso ?? "");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const what = field === "start" ? "Start date" : "Due date";
@@ -24,7 +27,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
   function save(value: string) {
     setError(null);
     startTransition(async () => {
-      const r = await setTaskDate(projectId, taskId, field, value);
+      const r = await safeAction(() => setTaskDate(projectId, taskId, field, value));
       if (r.ok) {
         const next = field === "start" ? r.startDate : r.dueDate;
         setCurrent(next);
@@ -37,7 +40,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
   }
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) setError(null); }}>
+    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) { setError(null); setDraft(current ?? ""); } }}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -53,17 +56,23 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
             {what}
             <Input
               type="date"
-              defaultValue={current ?? ""}
+              value={draft}
               aria-label={`${what} for ${label}`}
               disabled={pending}
               autoFocus
-              onChange={(e) => { if (e.target.value) save(e.target.value); }}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && draft) { e.preventDefault(); save(draft); } }}
               className="h-9"
             />
           </label>
           <div className="flex items-center justify-between">
             <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
-            <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
+            <div className="flex gap-1.5">
+              <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
+              <Button type="button" size="sm" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
+                {pending ? "Saving…" : "Save"}
+              </Button>
+            </div>
           </div>
           {error && <p role="alert" className="text-xs text-danger">{error}</p>}
         </div>

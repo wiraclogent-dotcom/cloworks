@@ -1,5 +1,6 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -70,7 +71,7 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
   function remove() {
     setError(null);
     startTransition(async () => {
-      const r = await deleteMilestone(projectId, m.id);
+      const r = await safeAction(() => deleteMilestone(projectId, m.id));
       if (!r.ok) { setError(r.message); setConfirming(false); }
     });
   }
@@ -120,7 +121,7 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const r = await onSubmit(form);
+      const r = await safeAction(() => onSubmit(form));
       if (r.ok) onDone();
       else setError(r.message);
     });

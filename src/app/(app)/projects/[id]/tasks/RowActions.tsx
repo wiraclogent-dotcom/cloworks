@@ -1,5 +1,6 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -16,7 +17,7 @@ export function RowActions({ projectId, taskId, label, isFirst, isLast }: {
   function run(action: () => Promise<{ ok: true } | { ok: false; message: string }>) {
     setError(null);
     startTransition(async () => {
-      const r = await action();
+      const r = await safeAction(action);
       if (!r.ok) setError(r.message);
       setConfirming(false);
     });

@@ -1,5 +1,6 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import type { ProjectStatus } from "@prisma/client";
 import { TASK_STATUS_ORDER } from "@/lib/projectTasks";
@@ -19,7 +20,7 @@ export function StatusSelect({ projectId, taskId, value, label }: { projectId: s
     setStage(nextStatus);
     setError(null);
     startTransition(async () => {
-      const r = await setTaskStatus(projectId, taskId, nextStatus);
+      const r = await safeAction(() => setTaskStatus(projectId, taskId, nextStatus));
       if (!r.ok) {
         setStage(prev);
         setError(r.message);
