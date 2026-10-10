@@ -82,7 +82,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
       )}
       <PageHeader title={<span className="break-words">{req.title}</span>} className="mb-2"
         breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
-      <div className="mb-6 flex flex-wrap items-center gap-2" data-detail-chips="">
+      <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
         <StatusChip status={req.status} />
         {req.needsMotion && <NeedsMotionChip />}
         {req.includeKpi

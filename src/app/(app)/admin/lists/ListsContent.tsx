@@ -45,7 +45,7 @@ export async function ListsContent() {
         </Card>
       </div>
 
-      <Card className="mt-4">
+      <Card className="mt-5">
         <section aria-labelledby="types-h">
           <CardHeader><CardTitle id="types-h">Request types</CardTitle></CardHeader>
           <ul className="mb-6 space-y-2">

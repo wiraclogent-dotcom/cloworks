@@ -99,7 +99,7 @@ const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: 
 export function HowItWorks() {
   return (
     <section id="how" aria-labelledby="how-title" className="relative isolate scroll-mt-16 overflow-hidden border-y border-border bg-surface">
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(50%_40%_at_50%_0%,rgba(17,170,159,0.10),transparent_70%)]" />
+      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(50%_40%_at_50%_0%,color-mix(in_srgb,var(--brand-aqua)_10%,transparent),transparent_70%)]" />
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="how-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>How a request moves</h2>

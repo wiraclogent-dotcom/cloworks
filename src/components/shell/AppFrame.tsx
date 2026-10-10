@@ -100,7 +100,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
           )}>
           {/* Workspace switcher (reference): the chevron is decorative until there is more than one workspace. */}
           <div className="flex-none px-3 pt-3">
-            <div className="sb-item flex items-center gap-2.5 rounded-xl border border-border bg-surface p-2 shadow-card">
+            <div className="sb-item sb-frame flex items-center gap-2.5 rounded-xl border border-border bg-surface p-2 shadow-card">
               <LogoMark size={32} />
               <div className="sb-label min-w-0 flex-1 leading-tight">
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>

@@ -8,7 +8,7 @@ const ITEMS = [{ id: "i1", title: "Poster", requesterId: "f", requesterName: "Fa
 let items = ITEMS;
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/briefs", useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/session", () => ({ requireScope: async () => ({ user: { id: "u1", appRole: role }, db: {} }) }));
-vi.mock("@/lib/briefCalendarQueries", () => ({ loadBriefItems: async () => items }));
+vi.mock("@/lib/briefCalendarQueries", () => ({ loadBriefItems: async () => items, loadTypeOrder: async () => [] }));
 
 import { BriefContent } from "@/app/(app)/dashboard/briefs/BriefContent";
 

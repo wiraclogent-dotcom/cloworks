@@ -46,7 +46,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   const subject = await db.user.findUnique({ where: { id: subjectId }, select: { id: true, name: true, jobRole: true } });
   if (!subject) {
     return (
-      <EmptyState role="alert" titleAs="h1" icon={<UserX />} title="Person not found." className="mx-auto max-w-xl"
+      <EmptyState role="alert" titleAs="h1" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
         action={<Link href="/dashboard/team" className={buttonClass({ variant: "secondary" })}><ArrowLeft aria-hidden="true" />Back to team</Link>} />
     );
   }

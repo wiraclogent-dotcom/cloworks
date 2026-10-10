@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: "Notifications" };
 
 export default function NotificationsPage({ searchParams }: PageProps<"/notifications">) {
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div data-page-width="narrow">
       <PageHeader breadcrumb={[{ label: "Notifications" }]} title="Notifications" description="Comments, mentions, assignments and design updates on your requests." />
       <Suspense fallback={<NotificationsSkeleton />}>
         <NotificationsContent searchParams={searchParams} />

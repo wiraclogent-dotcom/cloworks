@@ -8,8 +8,7 @@ import { taskMode } from "@/lib/projectProgress";
 import { TaskRow } from "./TaskRow";
 import { AddDetailForm } from "./AddDetailForm";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card } from "@/components/ui/Card";
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import { tableClass } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/Skeleton";
 
 export const metadata: Metadata = { title: "Project details" };
@@ -43,6 +42,7 @@ async function ProjectTasksContent({ params }: { params: Promise<{ id: string }>
     ? await db.user.findMany({ where: { active: true, jobRole: "DESIGNER" }, orderBy: { name: "asc" }, select: { id: true, name: true } })
     : [];
   const products = new Set(project.tasks.map((t) => t.title)).size;
+  const tbl = tableClass();
 
   return (
     <div>
@@ -53,20 +53,16 @@ async function ProjectTasksContent({ params }: { params: Promise<{ id: string }>
         description={`${products} ${products === 1 ? "item" : "items"} · ${project.brand?.name ?? "No brand"} · ${project.code ?? "no code"}`}
       />
       {canManage && <div className="mb-4"><AddDetailForm projectId={project.id} mode={mode} owners={owners} /></div>}
-      <Card padded={false}>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Item</TableHead>
-              <TableHead>Detail</TableHead>
-              <TableHead>Owner</TableHead>
-              <TableHead>{mode === "status" ? "Status" : "Stage"}</TableHead>
-              <TableHead>Start</TableHead>
-              <TableHead>Due</TableHead>
-              <TableHead>File</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      <div className={tbl.wrapper}>
+        <table className={tbl.table}>
+          <thead className={tbl.thead}>
+            <tr>
+              {["Item", "Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
+                <th key={h} scope="col" className={tbl.th}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
             {project.tasks.map((t, i) => (
               <TaskRow
                 key={t.id}
@@ -93,9 +89,9 @@ async function ProjectTasksContent({ params }: { params: Promise<{ id: string }>
                 }}
               />
             ))}
-          </TableBody>
-        </Table>
-      </Card>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

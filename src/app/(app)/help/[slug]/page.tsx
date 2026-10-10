@@ -11,9 +11,11 @@ export const metadata: Metadata = { title: "Help" };
 
 export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   return (
-    <Suspense fallback={<ArticleSkeleton />}>
-      <ArticleContent params={params} />
-    </Suspense>
+    <div data-page-width="medium">
+      <Suspense fallback={<ArticleSkeleton />}>
+        <ArticleContent params={params} />
+      </Suspense>
+    </div>
   );
 }
 

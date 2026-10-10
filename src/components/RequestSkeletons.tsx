@@ -54,7 +54,7 @@ export function BoardSkeleton() {
 /** Requests table fallback: header row + 8 row placeholders inside the table card. */
 export function TableSkeleton() {
   return (
-    <Busy label="Loading requests…">
+    <Busy label="Loading requests…" wide className="w-full">
       <HeaderSkeleton />
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
         <div className="flex h-10 items-center gap-6 border-b border-border bg-surface-muted px-3">
@@ -134,7 +134,7 @@ export function DetailSkeleton() {
     <Busy label="Loading request…">
       <Skeleton className="mb-3 h-4 w-24" />
       <Skeleton className="mb-3 h-7 w-2/3" />
-      <div className="mb-6 flex gap-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-5 w-28" /></div>
+      <div className="mb-5 flex gap-2"><Skeleton className="h-5 w-24" /><Skeleton className="h-5 w-28" /></div>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-skeleton-detail="">
         <div className="space-y-5">
           {[0, 1, 2].map((i) => (

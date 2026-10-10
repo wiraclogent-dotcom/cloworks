@@ -22,6 +22,13 @@
   /* Darker Aqua: aqua text and links on white (AA). */
   --brand-aqua-strong: #0b756d;
   --brand-deep-blue-night: #062b47;
+  /* Landing and sign-in only: Deep Blue button hover, white button hover, CTA glow, headline gradient (dark override below) */
+  --brand-deep-blue-hover: #0b5185;
+  --brand-aqua-tint: #e6f6f4;
+  --elevation-brand: 0 6px 16px -4px color-mix(in srgb, var(--brand-deep-blue) 45%, transparent);
+  --brand-gradient-from: var(--brand-deep-blue);
+  --brand-gradient-via: #1f7fa8;
+  --brand-gradient-to: var(--brand-aqua);
 
   /* Surfaces and text */
   --background: #f5f3ee;
@@ -79,6 +86,14 @@
   --chart-done: var(--brand-aqua-strong);
   --chart-target: var(--brand-deep-blue);
   --chart-grid: var(--border);
+  /* Categories (e.g. request types), never statuses: one fixed slot per category, never cycled; past 5 -> "other".
+     Validated with the dataviz palette checks (CVD + normal vision) against the card in each theme. */
+  --chart-cat-1: #2a78d6;
+  --chart-cat-2: #eb6834;
+  --chart-cat-3: #1baf7a;
+  --chart-cat-4: #eda100;
+  --chart-cat-5: #e87ba4;
+  --chart-cat-other: var(--foreground-muted);
   /* KPI progress fills by threshold (graphics: ≥ 3:1 against the card and the muted track; the % is always printed). */
   --progress-low: #ba7517;
   --progress-mid: var(--chart-done);
@@ -146,6 +161,10 @@
 :root[data-theme="dark"] {
   color-scheme: dark;
 
+  /* Headline gradient: lighter blues so it reads on the dark canvas */
+  --brand-gradient-from: #7cc4f0;
+  --brand-gradient-via: #4fd1c5;
+
   --background: #111113;
   --surface: #1a1a1d;
   --surface-muted: #232327;
@@ -180,6 +199,11 @@
 
   --chart-done: var(--brand-aqua);
   --chart-target: #a9bbcd;
+  --chart-cat-1: #3987e5;
+  --chart-cat-2: #d95926;
+  --chart-cat-3: #199e70;
+  --chart-cat-4: #c98500;
+  --chart-cat-5: #d55181;
   --progress-low: #ef9f27;
   --progress-complete: #97c459;
 
@@ -261,6 +285,11 @@
   --color-brand-aqua-strong: var(--brand-aqua-strong);
   --color-brand-grey: var(--brand-grey);
   --color-brand-white: var(--brand-white);
+  --color-brand-deep-blue-hover: var(--brand-deep-blue-hover);
+  --color-brand-aqua-tint: var(--brand-aqua-tint);
+  --color-brand-gradient-from: var(--brand-gradient-from);
+  --color-brand-gradient-via: var(--brand-gradient-via);
+  --color-brand-gradient-to: var(--brand-gradient-to);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-foreground-secondary: var(--foreground-secondary);
@@ -315,11 +344,18 @@
   --color-chart-done: var(--chart-done);
   --color-chart-target: var(--chart-target);
   --color-chart-grid: var(--chart-grid);
+  --color-chart-cat-1: var(--chart-cat-1);
+  --color-chart-cat-2: var(--chart-cat-2);
+  --color-chart-cat-3: var(--chart-cat-3);
+  --color-chart-cat-4: var(--chart-cat-4);
+  --color-chart-cat-5: var(--chart-cat-5);
+  --color-chart-cat-other: var(--chart-cat-other);
   --color-progress-low: var(--progress-low);
   --color-progress-mid: var(--progress-mid);
   --color-progress-complete: var(--progress-complete);
   --shadow-card: var(--elevation-card);
   --shadow-raised: var(--elevation-raised);
+  --shadow-brand: var(--elevation-brand);
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -384,6 +420,13 @@
     justify-content: center;
     padding-inline: 0;
   }
+  /* The workspace tile's frame only holds the name and chevron; in the rail the logo stands alone, centred like the nav icons. */
+  :root[data-sidebar="collapsed"] .app-sidebar .sb-frame {
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
   :root[data-sidebar="collapsed"] .app-sidebar .sb-expanded-only {
     display: none;
   }
@@ -408,6 +451,13 @@
     justify-content: center;
     padding-inline: 0;
   }
+  /* The workspace tile's frame only holds the name and chevron; in the rail the logo stands alone, like the nav icons. */
+  :root:not([data-sidebar]) .app-sidebar .sb-frame {
+    padding: 0;
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+  }
   :root:not([data-sidebar]) .app-sidebar .sb-expanded-only {
     display: none;
   }
@@ -424,9 +474,22 @@
   }
 }
 
-/* Pages can opt out of the 1440px content cap (the board uses the full width). */
+/*
+ * Page widths. The cap lives on `.app-content` (not on a wrapper inside the page) so the bell and profile menu, pinned
+ * to its top-right corner, always line up with the page's PageHeader top bar.
+ * Default 1440px (lists, dashboards, admin). A page opts into another width with an attribute anywhere inside it:
+ *   data-page-wide              no cap (board, calendar, timeline, table)
+ *   data-page-width="medium"    72rem: two-column details and forms, help articles
+ *   data-page-width="narrow"    48rem: single-column forms and lists
+ */
 .app-content:has([data-page-wide]) {
   max-width: none;
+}
+.app-content:has([data-page-width="medium"]) {
+  max-width: 72rem;
+}
+.app-content:has([data-page-width="narrow"]) {
+  max-width: 48rem;
 }
 
 /* Board columns fill the viewport and scroll their cards independently, so the page height never depends on the card count. */

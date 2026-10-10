@@ -95,7 +95,7 @@ export async function UsersContent() {
         </table>
       </div>
 
-      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
+      <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <section aria-labelledby="add-person-h">
             <CardHeader><CardTitle id="add-person-h">Add person</CardTitle></CardHeader>

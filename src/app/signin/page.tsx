@@ -78,7 +78,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
     <div className={cn(displayFont.variable, "grid flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]")}>
       {/* Form side: the landing hero's Aqua and Deep Blue wash with its faint grid. */}
       <div className="relative isolate flex min-h-dvh flex-col overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(70%_45%_at_20%_0%,rgba(17,170,159,0.16),transparent_70%),radial-gradient(50%_40%_at_90%_15%,rgba(9,66,109,0.12),transparent_70%)]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(70%_45%_at_20%_0%,color-mix(in_srgb,var(--brand-aqua)_16%,transparent),transparent_70%),radial-gradient(50%_40%_at_90%_15%,color-mix(in_srgb,var(--brand-deep-blue)_12%,transparent),transparent_70%)]" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40 [mask-image:radial-gradient(60%_50%_at_20%_0%,black,transparent)]" />
 
         <header className="flex h-16 items-center justify-between px-4 sm:px-8">
@@ -144,7 +144,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
                   <label htmlFor="signin-password" className={labelClass}>Password</label>
                   <input id="signin-password" name="password" type="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
                 </div>
-                <SubmitButton variant="primary" block className="h-11 bg-brand-deep-blue text-[15px] font-semibold text-white shadow-[0_6px_16px_-4px_rgba(9,66,109,0.45)] hover:bg-[#0b5185]" pendingLabel="Signing in…">
+                <SubmitButton variant="primary" block className="h-11 bg-brand-deep-blue text-[15px] font-semibold text-white shadow-brand hover:bg-brand-deep-blue-hover" pendingLabel="Signing in…">
                   Sign in
                 </SubmitButton>
               </form>
@@ -156,7 +156,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
 
       {/* Brand panel (wide screens): Deep Blue with an Aqua edge, and the work that came through Cloworks. */}
       <aside data-brand-panel="" aria-label="Work made with Cloworks" className="relative isolate hidden overflow-hidden border-l-4 border-brand-aqua bg-brand-deep-blue text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_80%_0%,rgba(17,170,159,0.35),transparent_70%)]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_80%_0%,color-mix(in_srgb,var(--brand-aqua)_35%,transparent),transparent_70%)]" />
         <div className="grid min-h-0 flex-1 grid-cols-2 gap-4 overflow-hidden px-10 pt-10 xl:px-14">
           {WORK.map((col, c) => (
             <ul key={c} className={cn("space-y-4", c === 1 && "-mt-24")}>

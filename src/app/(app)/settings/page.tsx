@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: "Settings" };
 /** The per-user content streams in a Suspense boundary (cacheComponents), like the other app pages. */
 export default function SettingsPage() {
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div data-page-width="narrow">
       <PageHeader breadcrumb={[{ label: "Settings" }]} title="Settings" description="Your account and password." />
       <Suspense fallback={<SettingsSkeleton />}>
         <SettingsContent />

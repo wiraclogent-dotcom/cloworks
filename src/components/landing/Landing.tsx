@@ -13,11 +13,11 @@ import { HowItWorks } from "./HowItWorks";
 const display = "font-[family-name:var(--font-display)] tracking-[-0.02em]";
 const signInLight =
   "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-[15px] font-semibold text-brand-deep-blue " +
-  "shadow-card transition-colors hover:bg-[#e6f6f4] focus-visible:outline-white";
+  "shadow-card transition-colors hover:bg-brand-aqua-tint focus-visible:outline-white";
 /** Brand Deep Blue button (both themes); the page's main call to action. */
 const ctaPrimary =
   "inline-flex items-center justify-center rounded-lg bg-brand-deep-blue font-semibold text-white " +
-  "shadow-[0_6px_16px_-4px_rgba(9,66,109,0.45)] transition-colors hover:bg-[#0b5185]";
+  "shadow-brand transition-colors hover:bg-brand-deep-blue-hover";
 
 /** Sections the top bar links to. */
 const NAV = [
@@ -202,7 +202,7 @@ export function Landing() {
       <main id="main">
       {/* Hero: centred, on a soft Aqua and Deep Blue wash, with the app window as the product shot. */}
       <div className="relative isolate overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,rgba(17,170,159,0.18),transparent_70%),radial-gradient(40%_40%_at_85%_30%,rgba(9,66,109,0.14),transparent_70%),radial-gradient(35%_35%_at_10%_40%,rgba(47,127,193,0.12),transparent_70%)]" />
+        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--brand-aqua)_18%,transparent),transparent_70%),radial-gradient(40%_40%_at_85%_30%,color-mix(in_srgb,var(--brand-deep-blue)_14%,transparent),transparent_70%),radial-gradient(35%_35%_at_10%_40%,color-mix(in_srgb,var(--status-in-progress-accent)_12%,transparent),transparent_70%)]" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-50 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
 
         <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-14 sm:px-6 sm:pt-20">
@@ -210,7 +210,7 @@ export function Landing() {
             <h1 id="hero-title" className={cn(display, "text-[2.5rem] leading-[1.08] font-bold text-heading sm:text-6xl lg:text-[4.25rem]")}>
               Every creative request,
               <span className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-                <span className="bg-gradient-to-r from-brand-deep-blue via-[#1f7fa8] to-brand-aqua bg-clip-text text-transparent dark:from-[#7cc4f0] dark:via-[#4fd1c5] dark:to-brand-aqua">from brief to done.</span>
+                <span className="bg-gradient-to-r from-brand-gradient-from via-brand-gradient-via to-brand-gradient-to bg-clip-text text-transparent">from brief to done.</span>
                 <span aria-hidden="true" className="inline-flex -space-x-2.5 align-middle">
                   {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-10 text-sm sm:size-12" />)}
                 </span>

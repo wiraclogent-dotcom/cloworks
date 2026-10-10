@@ -32,6 +32,13 @@ Shape: 8px controls (`rounded-lg`), 12px cards (`rounded-xl`), 6px chips (`round
 Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle); table 13px; chips 12px/500. Use
 `tabular-nums` for counts, dates and KPI values. Spacing on the 4px grid; card padding 16px.
 
+Layout: page padding comes from AppFrame only (never add it in a page). Page width is set on the shell, never with
+`mx-auto max-w-*` in a page (that would pull the PageHeader top bar away from the pinned bell/profile menu): default
+1440px; `data-page-width="medium"` (72rem: two-column details and forms, help articles); `data-page-width="narrow"`
+(48rem: single-column forms and lists); `data-page-wide` (no cap: board, table, calendar, timeline). PageHeader owns
+the header spacing (don't put it in a `gap-*`/`space-y-*` parent). Sections below it are 20px apart (`space-y-5`,
+`mt-5`/`mb-5`); a toolbar sits 16px above its content (`mb-4`); full-page error/denied panels use `mx-auto mt-6 max-w-xl`.
+
 ## Components
 
 | Component | File | Props (summary) | Use for |
