@@ -19,8 +19,8 @@ export function PageHeader({ title, count, description, switcher, actions, bread
   return (
     <>
       {breadcrumb ? (
-        // min-h-12 + pr-12: the app layout pins the profile menu (36px) in this row's top-right corner (AppFrame).
-        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-12 pb-3">
+        // min-h-12 + pr-24: the app layout pins the bell and the profile menu (36 + 8 + 36px) in this row's top-right corner (AppFrame).
+        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-24 pb-3">
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-foreground-secondary">
               {breadcrumb.map((c, i) => (

@@ -68,8 +68,10 @@ export async function transitionRequestWith(
 
   await bestEffort(async () => {
     const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
-    const message = buildMessage("STATUS", actor?.name ?? "Someone", change.title, { from: change.from, to: change.to });
+    // Moving to First Look is the designer sending the design for review; it gets its own wording.
+    const type = change.to === "FIRST_LOOK" ? "DESIGN_SENT" : "STATUS";
+    const message = buildMessage(type, actor?.name ?? "Someone", change.title, { from: change.from, to: change.to });
     const userIds = [...new Set([change.requesterId, change.assigneeId])].filter((id): id is string => !!id && id !== user.id);
-    await notifier({ actorId: user.id, userIds, requestId, type: "STATUS", message });
+    await notifier({ actorId: user.id, userIds, requestId, type, message });
   });
 }
