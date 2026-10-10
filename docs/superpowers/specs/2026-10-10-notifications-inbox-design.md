@@ -4,7 +4,8 @@
 
 People involved in a request see, inside the app, when something happens on it — a comment, a mention, an
 assignment, the designer sending the design — and one click takes them to that request's page. Simple: no
-real-time push, no settings, no separate inbox page.
+real-time push, no settings. The bell at the top right is the only entry point; the full list lives on a
+`/notifications` page opened from the bottom of the dropdown.
 
 ## What already exists
 
@@ -37,8 +38,9 @@ cases (the attachment name goes through `cleanLine(…, 80)`).
 All functions take the workspace-scoped db and the signed-in user id, and only ever touch rows where
 `userId = me`.
 
-- `listNotificationsWith(db, userId, limit = 20)` → newest first:
+- `listNotificationsWith(db, userId, { limit = 20, offset = 0 })` → newest first:
   `{ id, type, message, requestId, readAt, createdAt }[]`.
+- `countNotificationsWith(db, userId)` → total rows (for the page's pagination).
 - `unreadCountWith(db, userId)` → number of rows with `readAt = null`.
 - `markReadWith(db, userId, id)` → `updateMany({ where: { id, userId, readAt: null }, data: { readAt: now } })`;
   someone else's id silently matches 0 rows.
@@ -59,8 +61,19 @@ pattern (unauthenticated → result object, not a throw).
   date). Loading: skeleton rows. Empty: "You're all caught up."
 - Selecting an item: optimistic mark read, call `markRead`, `router.push(/requests/{requestId})`. An item without a
   `requestId` just marks read.
+- Footer: a "See all notifications" link to `/notifications` (closes the dropdown).
 - Count refresh: on page load (server render) and after opening/marking (local state). No polling.
-- The disabled "Notifications" placeholder in the sidebar Tools group is removed.
+- The disabled "Notifications" placeholder in the sidebar Tools group is removed; the bell is the only way in.
+
+### `/notifications` page
+
+- `src/app/(app)/notifications/page.tsx`, under the normal app shell, title "Notifications".
+- Header action: "Mark all as read" (disabled when nothing is unread).
+- The full list, newest first, 50 per page (`TABLE_PAGE_SIZE`) with the existing `Pagination` component and
+  `?page=N` (invalid/out-of-range values clamp to the nearest valid page). Same item rendering as the dropdown
+  (shared `NotificationItem` component) but with room for the full message; selecting marks read and opens the
+  request.
+- Empty state: "No notifications yet." with a short line on what triggers them.
 
 ## Errors
 
@@ -73,11 +86,14 @@ leave the UI state unchanged (revert the optimistic read) and show nothing alarm
   `email: false`.
 - transition tests: → FIRST_LOOK sends DESIGN_SENT with the new message; other moves still send STATUS.
 - `notify` tests: `email: false` stores the row and does not call the mailer; the two new `buildMessage` cases.
-- `inbox.test.ts`: list order/limit, unread count, mark one / mark all, cannot read or mark another user's rows.
+- `inbox.test.ts`: list order/limit/offset, total and unread count, mark one / mark all, cannot read or mark another user's rows.
 - `notificationBell.test.tsx`: badge (0 hidden, 3, 9+), empty state, select marks read and navigates,
-  mark all clears the badge.
+  mark all clears the badge, footer links to `/notifications`.
+- `notificationsPage.test.tsx`: renders the list, pagination clamps `?page`, empty state.
+- Sidebar test: no "Notifications" item in the nav.
 - Manual check in the browser preview.
 
 ## Out of scope
 
-Real-time updates/polling, per-user notification settings, a full inbox page, notifications for projects.
+Real-time updates/polling, per-user notification settings, filters on the page (unread only, by type), deleting
+notifications, notifications for projects.
