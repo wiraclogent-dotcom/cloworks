@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { notifyWith, buildMessage, type Mailer, type NotifyInput } from "@/lib/notify";
 import { createMailerFromEnv } from "@/lib/mailer";
-import { addCommentWith, assignRequestWith } from "@/lib/collab";
+import { addAttachmentWith, addCommentWith, assignRequestWith } from "@/lib/collab";
 import { transitionRequestWith } from "@/lib/transition";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
@@ -271,6 +271,28 @@ describe("notifications", () => {
         transitionRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "FIRST_LOOK", {}, async () => { throw new Error("x"); }),
       ).resolves.toBeUndefined();
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))!.status).toBe("FIRST_LOOK");
+      vi.restoreAllMocks();
+    });
+    it("moving to First Look sends DESIGN_SENT to the requester, not the actor", async () => {
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas, status: "ON_PROGRESS" } });
+      await transitionRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "FIRST_LOOK", {}, notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "DESIGN_SENT", userIds: [ids.rina], actorId: ids.dimas });
+      expect(calls[0].message).toBe("Dimas sent the design for “Poster” for review");
+    });
+    it("adding a link sends ATTACHMENT in-app only to requester, not the actor", async () => {
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas } });
+      const r = await addAttachmentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, { name: "Final v2", url: "https://drive.google.com/x" }, notifier);
+      expect(r.ok).toBe(true);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "ATTACHMENT", userIds: [ids.rina], email: false, requestId: reqId });
+      expect(calls[0].message).toBe("Dimas added a design link “Final v2” to “Poster”");
+    });
+    it("adding a link: a throwing notifier does not fail it", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas } });
+      const r = await addAttachmentWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, { name: "Ref", url: "https://x.example.com" }, async () => { throw new Error("x"); });
+      expect(r.ok).toBe(true);
       vi.restoreAllMocks();
     });
   });

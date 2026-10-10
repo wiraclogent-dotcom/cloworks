@@ -122,7 +122,8 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
     expect(toFadli.map((x) => x.type)).toEqual(["ASSIGNED"]);
     expect(toFadli[0].message).toBe("Idzni assigned you to “October TikTok campaign”");
     // Fadli made 5 transitions; the requester is told about each (the assignee is the actor, so is skipped).
-    expect(toFafa.map((x) => x.type)).toEqual(["STATUS", "STATUS", "STATUS", "STATUS", "STATUS"]);
+    // Both moves to First Look read as the design being sent for review.
+    expect(toFafa.map((x) => x.type)).toEqual(["STATUS", "DESIGN_SENT", "STATUS", "DESIGN_SENT", "STATUS"]);
     expect(toFafa[0].message).toBe("Fadli moved “October TikTok campaign” from Requested to On progress");
     expect(toFafa.at(-1)!.message).toMatch(/to Done$/);
     expect(n).toHaveLength(6);
