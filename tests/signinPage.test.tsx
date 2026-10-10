@@ -5,6 +5,7 @@ import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
 vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
+vi.mock("next/font/google", () => ({ Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 import SignInPage from "@/app/signin/page";
 import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE } from "@/lib/signinError";
 
@@ -51,8 +52,14 @@ describe("SignInPage", () => {
     vi.stubEnv("AUTH_GOOGLE_ID", "");
     vi.stubEnv("AUTH_MICROSOFT_ENTRA_ID_ID", "eid");
     await show(undefined);
-    expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /continue with google/i })).toBeNull();
+    // Microsoft's button is hidden until its sign-in is set up, even with its env vars present.
+    expect(screen.queryByRole("button", { name: /continue with/i })).toBeNull();
+    cleanup();
+    vi.stubEnv("AUTH_GOOGLE_ID", "gid");
+    await show(undefined);
+    expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /continue with microsoft/i })).toBeNull();
   });
   it("explains a refused password sign-in, and confirms a password change", async () => {
     await show("CredentialsSignin");
