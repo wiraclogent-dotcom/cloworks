@@ -11,6 +11,8 @@ describe("request chat", () => {
   beforeAll(async () => {
     db = await createTestDb();
     const p = db.prisma;
+    // These fixtures predate "start fresh": put chat launch before every fixture comment so "no row" means unread.
+    await db.raw.workspace.update({ where: { id: db.workspaceId }, data: { chatSince: new Date(0) } });
     const mk = async (k: string) =>
       (await p.user.create({ data: { email: `${k}@clogent.co.id`, name: k, fullName: k, appRole: "REQUESTER", jobRole: "OTHER" } })).id;
     [R, D, C, M, X] = [await mk("r"), await mk("d"), await mk("c"), await mk("m"), await mk("x")];
@@ -86,13 +88,13 @@ describe("request chat", () => {
       await say(A, C, "a-old", day(1));
       await say(A, C, "a-last", day(5));
       await say(B, C, "b-last", day(9));
-      const list = await listChatsWith(db.prisma, Q);
+      const list = await listChatsWith(db.prisma, { id: Q, workspaceId: db.workspaceId });
       expect(list.map((c) => c.requestId)).toEqual([B, A]);
       expect(list.map((c) => c.requestId)).not.toContain(E);
       expect(list[1].lastMessage.body).toBe("a-last");
       expect(list[1].title).toBe("A");
-      expect(await listChatsWith(db.prisma, X)).toEqual([]);
-      const page = await listChatsWith(db.prisma, Q, { limit: 1, offset: 1 });
+      expect(await listChatsWith(db.prisma, { id: X, workspaceId: db.workspaceId })).toEqual([]);
+      const page = await listChatsWith(db.prisma, { id: Q, workspaceId: db.workspaceId }, { limit: 1, offset: 1 });
       expect(page.map((c) => c.requestId)).toEqual([A]);
     });
 
@@ -100,7 +102,7 @@ describe("request chat", () => {
       const Q = await mkUser("q");
       const A = await mkReq(Q);
       await say(A, C, "z".repeat(300), day(2));
-      const [chat] = await listChatsWith(db.prisma, Q);
+      const [chat] = await listChatsWith(db.prisma, { id: Q, workspaceId: db.workspaceId });
       expect(chat.lastMessage.body.length).toBe(120);
       expect(chat.lastMessage.authorName).toBe("c");
       expect(chat.lastMessage.authorId).toBe(C);
@@ -112,7 +114,7 @@ describe("request chat", () => {
       await say(A, C, "1", day(1)); await say(A, C, "2", day(2)); await say(A, Q, "mine", day(3));
       await say(B, C, "3", day(4)); await say(B, C, "4", day(5));
       await markChatReadWith(db.prisma, Q, B, day(4));
-      const list = await listChatsWith(db.prisma, Q);
+      const list = await listChatsWith(db.prisma, { id: Q, workspaceId: db.workspaceId });
       const byId = Object.fromEntries(list.map((c) => [c.requestId, c.unread]));
       expect(byId[A]).toBe(2);
       expect(byId[B]).toBe(1);
@@ -258,6 +260,27 @@ describe("request chat", () => {
       const r2 = await raw.request.create({ data: { ...w, title: "Away", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: Q } });
       await raw.comment.create({ data: { ...w, requestId: r2.id, authorId: u.id, body: "other", createdAt: day(20) } });
       expect(await latestUnreadChatWith(db.prisma, { id: Q, workspaceId: db.workspaceId })).toEqual({ requestId: A, title: "Home" });
+    });
+
+    it("start fresh: without a ChatRead row, comments before chatSince count as read and later ones do not", async () => {
+      const Q = await mkUser("q");
+      const me = { id: Q, workspaceId: db.workspaceId };
+      const launch = new Date(Date.UTC(2026, 10, 2));
+      await db.raw.workspace.update({ where: { id: db.workspaceId }, data: { chatSince: launch } });
+      try {
+        const A = await mkReq(Q, "Before"), B = await mkReq(Q, "After");
+        await say(A, C, "pre-launch", new Date(Date.UTC(2026, 10, 1)));
+        expect(await chatUnreadCountWith(db.prisma, me)).toBe(0);
+        expect(await latestUnreadChatWith(db.prisma, me)).toBeNull();
+        expect((await listChatsWith(db.prisma, me)).map((c) => [c.requestId, c.unread])).toEqual([[A, 0]]);
+
+        await say(B, C, "post-launch", new Date(Date.UTC(2026, 10, 3)));
+        expect(await chatUnreadCountWith(db.prisma, me)).toBe(1);
+        expect(await latestUnreadChatWith(db.prisma, me)).toEqual({ requestId: B, title: "After" });
+        expect((await listChatsWith(db.prisma, me)).map((c) => [c.requestId, c.unread])).toEqual([[B, 1], [A, 0]]);
+      } finally {
+        await db.raw.workspace.update({ where: { id: db.workspaceId }, data: { chatSince: new Date(0) } });
+      }
     });
 
     it("rejects non-participants and unknown requests", async () => {

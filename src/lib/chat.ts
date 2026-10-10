@@ -57,17 +57,20 @@ export async function markChatReadWith(db: Db, userId: string, requestId: string
 }
 
 /**
- * FROM/WHERE for messages from others, in chats I belong to, newer than my read position. Raw SQL is not
- * workspace-scoped, so the workspace is filtered explicitly on both tables. Aliases: `c` comment, `r` request.
+ * FROM/WHERE for messages from others, in chats I belong to, newer than my read position. Without a ChatRead row the
+ * read position is the workspace's `chatSince` ("start fresh": comments from before chat launched count as read).
+ * Raw SQL is not workspace-scoped, so the workspace is filtered explicitly on both tables.
+ * Aliases: `c` comment, `r` request, `w` workspace.
  */
 function unreadFrom(me: { id: string; workspaceId: string }): Prisma.Sql {
   return Prisma.sql`
     FROM "Comment" c
     JOIN "Request" r ON r.id = c."requestId"
+    JOIN "Workspace" w ON w.id = ${me.workspaceId}
     LEFT JOIN "ChatRead" cr ON cr."requestId" = c."requestId" AND cr."userId" = ${me.id}
     WHERE c."workspaceId" = ${me.workspaceId} AND r."workspaceId" = ${me.workspaceId}
       AND c."authorId" <> ${me.id}
-      AND (cr."lastReadAt" IS NULL OR c."createdAt" > cr."lastReadAt")
+      AND c."createdAt" > COALESCE(cr."lastReadAt", w."chatSince")
       AND (r."requesterId" = ${me.id} OR r."assigneeId" = ${me.id}
            OR EXISTS (SELECT 1 FROM "Comment" c2 WHERE c2."requestId" = r.id
                       AND (c2."authorId" = ${me.id} OR ${me.id} = ANY(c2.mentions))))`;
@@ -87,8 +90,19 @@ export async function latestUnreadChatWith(db: Db, me: { id: string; workspaceId
   return rows[0] ? { requestId: rows[0].requestId, title: rows[0].title } : null;
 }
 
-/** The user's chats, most recently active first. Five queries, all bounded by the page size. */
-export async function listChatsWith(db: Db, userId: string, opts: { limit?: number; offset?: number } = {}): Promise<ChatSummary[]> {
+/** The workspace's chat launch moment (one primary-key lookup; `Workspace` is not a scoped model, hence raw SQL). */
+async function chatSinceWith(db: Db, workspaceId: string): Promise<Date> {
+  const rows = await db.$queryRaw<{ chatSince: Date }[]>`SELECT "chatSince" FROM "Workspace" WHERE id = ${workspaceId}`;
+  return rows[0]?.chatSince ?? new Date(0);
+}
+
+/** The user's chats, most recently active first. Six small queries, all bounded by the page size. */
+export async function listChatsWith(
+  db: Db,
+  me: { id: string; workspaceId: string },
+  opts: { limit?: number; offset?: number } = {},
+): Promise<ChatSummary[]> {
+  const userId = me.id;
   const groups = await db.comment.groupBy({
     by: ["requestId"],
     where: { request: participantWhere(userId) },
@@ -100,7 +114,7 @@ export async function listChatsWith(db: Db, userId: string, opts: { limit?: numb
   if (groups.length === 0) return [];
   const ids = groups.map((g) => g.requestId);
 
-  const [requests, lastRows, reads] = await Promise.all([
+  const [requests, lastRows, reads, since] = await Promise.all([
     db.request.findMany({ where: { id: { in: ids } }, select: { id: true, title: true, status: true } }),
     db.comment.findMany({
       where: { OR: groups.map((g) => ({ requestId: g.requestId, createdAt: g._max.createdAt! })) },
@@ -108,13 +122,14 @@ export async function listChatsWith(db: Db, userId: string, opts: { limit?: numb
       include: { author: { select: { id: true, name: true } } },
     }),
     db.chatRead.findMany({ where: { userId, requestId: { in: ids } }, select: { requestId: true, lastReadAt: true } }),
+    chatSinceWith(db, me.workspaceId),
   ]);
   const readAt = new Map(reads.map((r) => [r.requestId, r.lastReadAt]));
   const unreadRows = await db.comment.groupBy({
     by: ["requestId"],
     where: {
       authorId: { not: userId },
-      OR: ids.map((id) => ({ requestId: id, createdAt: { gt: readAt.get(id) ?? new Date(0) } })),
+      OR: ids.map((id) => ({ requestId: id, createdAt: { gt: readAt.get(id) ?? since } })),
     },
     _count: { _all: true },
   });

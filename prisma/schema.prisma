@@ -44,6 +44,8 @@ model Workspace {
   name      String
   slug      String   @unique
   createdAt DateTime @default(now())
+  /// Chat launch moment: comments before it count as read for anyone without a ChatRead row ("start fresh").
+  chatSince DateTime @default(now())
 
   users             User[]
   allowedEmails     AllowedEmail[]

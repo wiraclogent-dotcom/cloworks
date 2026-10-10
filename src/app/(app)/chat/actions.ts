@@ -36,7 +36,7 @@ export async function chatUnreadCount(): Promise<
 export async function listChats(offset?: number): Promise<{ ok: true; chats: ChatSummary[] } | CollabFail> {
   return run(async (u, db) => {
     const off = typeof offset === "number" && Number.isSafeInteger(offset) && offset > 0 ? offset : 0;
-    return { ok: true as const, chats: await listChatsWith(db, u.id, { offset: off }) };
+    return { ok: true as const, chats: await listChatsWith(db, { id: u.id, workspaceId: u.workspaceId }, { offset: off }) };
   });
 }
 
