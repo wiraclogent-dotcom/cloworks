@@ -4,14 +4,15 @@ import { render, screen, cleanup } from "@testing-library/react";
 import type { AppRole } from "@prisma/client";
 
 let role: AppRole = "LEAD";
-let people = [{ id: "f", name: "Fafa" }, { id: "r", name: "Rifqy" }];
+const ITEMS = [{ id: "i1", title: "Poster", requesterId: "f", requesterName: "Fafa", requestDay: "2026-10-01", typeName: "Social Media", status: "DONE" as const }];
+let items = ITEMS;
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/briefs", useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/lib/session", () => ({ requireScope: async () => ({ user: { id: "u1", appRole: role }, db: {} }) }));
-vi.mock("@/lib/briefCalendarQueries", () => ({ listBriefPeople: async () => people, loadBriefItems: async () => [] }));
+vi.mock("@/lib/briefCalendarQueries", () => ({ loadBriefItems: async () => items }));
 
 import { BriefContent } from "@/app/(app)/dashboard/briefs/BriefContent";
 
-afterEach(() => { cleanup(); role = "LEAD"; people = [{ id: "f", name: "Fafa" }, { id: "r", name: "Rifqy" }]; });
+afterEach(() => { cleanup(); role = "LEAD"; items = ITEMS; });
 
 const show = async (month?: string) => render(await BriefContent({ searchParams: Promise.resolve({ month }) }));
 
@@ -20,19 +21,21 @@ describe("Brief Calendar page", () => {
     role = "REQUESTER";
     await show("2026-10");
     expect(screen.getByText("The brief calendar is only available to leads and admins.")).toBeTruthy();
-    expect(screen.queryByRole("list", { name: "Legend" })).toBeNull();
+    expect(screen.queryByRole("region", { name: "Month summary" })).toBeNull();
   });
 
-  it("a lead sees the month and the social media team", async () => {
+  it("a lead sees the month, the summary and everyone's briefs per week", async () => {
     await show("2026-10");
     expect(screen.getByRole("heading", { level: 1, name: "Brief Calendar" })).toBeTruthy();
     expect(document.querySelector("[data-page-title]")!.textContent).toContain("October 2026");
-    expect(screen.getByRole("list", { name: "Legend" }).textContent).toContain("Rifqy");
+    expect(screen.getByRole("region", { name: "Month summary" })).toBeTruthy();
+    expect(screen.getByRole("table", { name: "Briefs per requester per week" }).textContent).toContain("Fafa");
   });
 
-  it("with nobody on the social media team shows an empty state", async () => {
-    people = [];
+  it("a month without briefs still shows the calendar", async () => {
+    items = [];
     await show("2026-10");
-    expect(screen.getByText("No social media team members")).toBeTruthy();
+    expect(screen.getByText("No briefs this month yet.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Thursday 1 October: no briefs" })).toBeTruthy();
   });
 });
