@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole, JobRole, RequestStatus } from "@prisma/client";
-import { listBriefPeople, loadBriefItems } from "@/lib/briefCalendarQueries";
+import { loadBriefItems } from "@/lib/briefCalendarQueries";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("brief calendar queries", () => {
@@ -33,27 +33,17 @@ describe("brief calendar queries", () => {
       data: { title: `${requester} ${requestedAt}`, ...base, typeId: types[type], requesterId: ids[requester], requestedAt: new Date(requestedAt), status },
     })).id;
 
-  it("lists active social media requesters and creatives by name, not leads, inactive people or designers", async () => {
-    const people = await listBriefPeople(db.prisma);
-    expect(people.map((p) => p.name)).toEqual(["fafa", "rifqy"]);
-    expect(people[0]).toEqual({ id: ids.fafa, name: "fafa" });
-  });
-
-  it("loads a Jakarta month of requests from those people, any type and status", async () => {
+  it("loads a Jakarta month of requests from everyone, any type and status, with the requester's name", async () => {
     const first = await mkReq("fafa", "2026-09-30T17:00:00Z", "gd", "CANCELLED");
-    const last = await mkReq("fafa", "2026-10-31T16:59:00Z");
+    const des = await mkReq("des", "2026-10-10T03:00:00Z");
+    const last = await mkReq("idzni", "2026-10-31T16:59:00Z");
     await mkReq("fafa", "2026-10-31T17:00:00Z");
-    await mkReq("des", "2026-10-10T03:00:00Z");
+    await mkReq("rifqy", "2026-09-30T16:59:00Z");
 
-    const people = await listBriefPeople(db.prisma);
-    const items = await loadBriefItems(db.prisma, "2026-10", people);
-    expect(items).toEqual([
-      { id: first, title: "fafa 2026-09-30T17:00:00Z", requesterId: ids.fafa, requestDay: "2026-10-01", typeName: "General Design", status: "CANCELLED" },
-      { id: last, title: "fafa 2026-10-31T16:59:00Z", requesterId: ids.fafa, requestDay: "2026-10-31", typeName: "Social Media", status: "DONE" },
+    expect(await loadBriefItems(db.prisma, "2026-10")).toEqual([
+      { id: first, title: "fafa 2026-09-30T17:00:00Z", requesterId: ids.fafa, requesterName: "fafa", requestDay: "2026-10-01", typeName: "General Design", status: "CANCELLED" },
+      { id: des, title: "des 2026-10-10T03:00:00Z", requesterId: ids.des, requesterName: "des", requestDay: "2026-10-10", typeName: "Social Media", status: "DONE" },
+      { id: last, title: "idzni 2026-10-31T16:59:00Z", requesterId: ids.idzni, requesterName: "idzni", requestDay: "2026-10-31", typeName: "Social Media", status: "DONE" },
     ]);
-  });
-
-  it("returns nothing when there are no people", async () => {
-    expect(await loadBriefItems(db.prisma, "2026-10", [])).toEqual([]);
   });
 });
