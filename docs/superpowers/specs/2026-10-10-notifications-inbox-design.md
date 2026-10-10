@@ -52,8 +52,8 @@ pattern (unauthenticated → result object, not a throw).
 ## UI
 
 - `src/components/shell/NotificationBell.tsx` (server wrapper, reads `unreadCount`) +
-  `NotificationBellView.tsx` (client), rendered in the top bar to the left of the profile menu through a new
-  `notifications` slot on `AppFrame`, inside its own `Suspense` (fallback: a static bell, no badge).
+  `NotificationBellView.tsx` (client), rendered in the top bar to the left of the profile menu: `AppShell` passes both, in a flex row, through
+  `AppFrame`'s existing `profile` slot; the bell has its own `Suspense` (fallback: a size-9 skeleton).
 - Bell button: `aria-label="Notifications, N unread"`; red badge with the count, `9+` above nine, hidden at zero.
 - Radix `DropdownMenu` (same pattern as `ProfileMenuView`), `align="end"`, ~w-80. Opening it calls
   `listNotifications`. Header: "Notifications" + "Mark all as read" (disabled when nothing is unread).
