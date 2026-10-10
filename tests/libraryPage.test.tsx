@@ -42,6 +42,14 @@ describe("LibraryView", () => {
     view({ canManage: true });
     expect(screen.getByRole("heading", { name: "Master Box Size" })).toBeTruthy();
   });
+  it("shows category chips for empty categories only to managers", () => {
+    view();
+    expect(screen.queryByRole("button", { name: "Master Box Size" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Product Knowledge" })).toBeTruthy();
+    cleanup();
+    view({ canManage: true });
+    expect(screen.getByRole("button", { name: "Master Box Size" })).toBeTruthy();
+  });
   it("lists sections in category order", () => {
     view();
     const h = screen.getAllByRole("heading", { level: 2 }).map((e) => e.textContent);

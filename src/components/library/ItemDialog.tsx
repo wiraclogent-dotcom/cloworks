@@ -103,7 +103,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
           </div>
         </div>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-[var(--accent)]" />
+          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-primary" />
           Pinned
         </label>
         <div className="flex justify-end gap-2 pt-2">

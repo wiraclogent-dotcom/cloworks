@@ -55,22 +55,26 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
   });
   async function act(p: Promise<LibraryActionResult>) {
     setError(null);
-    const r = await p;
+    let r: LibraryActionResult;
+    try { r = await p; } catch { setError("Something went wrong. Try again."); return; }
     if (!r.ok) setError(r.message);
     else router.refresh();
   }
-  const actionsFor = (r: LibraryRow) => {
+  const actionsFor = (r: LibraryRow, inPinnedStrip = false) => {
     const peers = rows.filter((x) => x.categoryId === r.categoryId);
     const i = peers.findIndex((x) => x.id === r.id);
     return {
-      canUp: i > 0, canDown: i < peers.length - 1,
+      // Move reorders within the category, so it is hidden in the Pinned strip (where it would look arbitrary).
+      canMove: !inPinnedStrip, canUp: i > 0, canDown: i < peers.length - 1,
       onEdit: () => setItemDraft(editItem(r)),
       onDelete: () => setDeleting(r),
       onPin: () => void act(setPinned(r.id, !r.pinned)),
       onMove: (dir: "up" | "down") => void act(moveItem(r.id, dir)),
     };
   };
-  const renderRow = (r: LibraryRow) => <LibraryRowItem key={r.id} row={r} now={now} actions={canManage ? actionsFor(r) : undefined} />;
+  const renderRow = (r: LibraryRow, inPinnedStrip = false) => (
+    <LibraryRowItem key={r.id} row={r} now={now} actions={canManage ? actionsFor(r, inPinnedStrip) : undefined} />
+  );
 
   const filtered = useMemo(() => filterRows(rows, { q, categoryId, brandId }), [rows, q, categoryId, brandId]);
   const pinned = filtered.filter((r) => r.pinned);
@@ -118,7 +122,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
       </div>
       <div className="-mt-1 flex flex-wrap gap-2">
         <button type="button" aria-pressed={categoryId === null} onClick={() => setCategoryId(null)} className={chipClass(categoryId === null)}>All</button>
-        {categories.map((c) => (
+        {categories.filter((c) => canManage || rows.some((r) => r.categoryId === c.id)).map((c) => (
           <button key={c.id} type="button" aria-pressed={categoryId === c.id} onClick={() => setCategoryId(c.id)} className={chipClass(categoryId === c.id)}>
             {c.name}
           </button>
@@ -151,7 +155,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                 <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />Pinned</CardTitle>
               </CardHeader>
               <div className="space-y-0.5">
-                {pinned.map(renderRow)}
+                {pinned.map((r) => renderRow(r, true))}
               </div>
             </Card>
           ) : null}
@@ -167,7 +171,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                 </CardHeader>
                 {items.length > 0 ? (
                   <div className="space-y-0.5">
-                    {items.map(renderRow)}
+                    {items.map((r) => renderRow(r))}
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">

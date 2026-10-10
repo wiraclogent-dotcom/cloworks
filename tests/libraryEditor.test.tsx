@@ -103,6 +103,28 @@ describe("Library editor", () => {
     await waitFor(() => expect(A.moveItem).toHaveBeenCalledWith("r1", "down"));
   });
 
+  it("shows Something went wrong when a pin action rejects", async () => {
+    A.setPinned.mockRejectedValueOnce(new Error("boom"));
+    view();
+    menu("Alpha deck", "Pin");
+    expect(await screen.findByText("Something went wrong. Try again.")).toBeTruthy();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("rows in the Pinned strip have no Move up/down", () => {
+    view({ rows: [row({ id: "r1", title: "Alpha deck", pinned: true }), row({ id: "r3", title: "Gamma", sortOrder: 1 })] });
+    const trigger = screen.getAllByRole("button", { name: "Actions for Alpha deck" });
+    expect(trigger).toHaveLength(2);
+    fireEvent.click(trigger[0]);
+    expect(screen.queryByRole("menuitem", { name: "Move up" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Move down" })).toBeNull();
+    expect(screen.getByRole("menuitem", { name: "Edit" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Unpin" })).toBeTruthy();
+    expect(screen.getByRole("menuitem", { name: "Delete" })).toBeTruthy();
+    fireEvent.click(trigger[1]);
+    expect(screen.getAllByRole("menuitem", { name: "Move down" })).toHaveLength(1);
+  });
+
   it("Delete asks first and only deletes after confirming", async () => {
     view();
     menu("Alpha deck", "Delete");

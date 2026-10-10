@@ -4,6 +4,7 @@ import type { ScopedDb } from "./db";
 import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
 import type { LibraryRow } from "./libraryView";
+import { CATEGORY_ICON_KEYS } from "./libraryIcons";
 
 export type LibraryErrorCode = "FORBIDDEN" | "VALIDATION" | "NOT_FOUND" | "CATEGORY_NOT_EMPTY";
 export class LibraryError extends Error {
@@ -30,10 +31,16 @@ const itemShape = z.object({
   description: z.string().trim().max(300, "Description must be at most 300 characters").nullable().optional(),
   categoryId: z.string().min(1, "Pick a category"),
   brandId: z.string().nullable().optional(),
+  pinned: z.boolean().optional(),
 });
+const dirShape = z.enum(["up", "down"]);
+const pinnedShape = z.boolean();
+function assertValid(r: { success: boolean; error?: z.ZodError }, field: string, message: string) {
+  if (!r.success) throwFields({ [field]: message });
+}
 const categoryShape = z.object({
   name: z.string().trim().min(1, "Name is required").max(60, "Name must be at most 60 characters"),
-  icon: z.string().trim().max(40, "Icon must be at most 40 characters").nullable().optional(),
+  icon: z.enum(CATEGORY_ICON_KEYS, { message: "Pick an icon from the list" }).nullable().optional(),
 });
 
 function assertEditor(user: Actor) {
@@ -57,7 +64,7 @@ async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
   const title = (input.title ?? "").trim();
   const url = (input.url ?? "").trim();
   if (!errors.url && !isHttpUrl(url)) errors.url = "Link must be an http(s) link";
-  const brandId = blankToNull(input.brandId);
+  const brandId = errors.brandId ? null : blankToNull(input.brandId);
   if (!errors.categoryId && !(await db.libraryCategory.findUnique({ where: { id: input.categoryId }, select: { id: true } })))
     errors.categoryId = "That category does not exist";
   if (brandId && !(await db.brand.findUnique({ where: { id: brandId }, select: { id: true } })))
@@ -94,7 +101,8 @@ export async function updateItemWith(db: ScopedDb, user: Actor, id: string, inpu
   assertEditor(user);
   const existing = await requireItem(db, id);
   const c = await cleanItem(db, input);
-  const data: Record<string, unknown> = { ...c, updatedById: user.id, contentUpdatedAt: new Date() };
+  const data: Record<string, unknown> = { ...c, updatedById: user.id };
+  if (c.title !== existing.title || c.url !== existing.url || c.description !== existing.description) data.contentUpdatedAt = new Date();
   if (input.pinned !== undefined) data.pinned = input.pinned;
   if (c.categoryId !== existing.categoryId) {
     const max = await db.libraryItem.aggregate({ where: { categoryId: c.categoryId }, _max: { sortOrder: true } });
@@ -111,12 +119,14 @@ export async function deleteItemWith(db: ScopedDb, user: Actor, id: string): Pro
 
 export async function setPinnedWith(db: ScopedDb, user: Actor, id: string, pinned: boolean): Promise<void> {
   assertEditor(user);
+  assertValid(pinnedShape.safeParse(pinned), "pinned", "Pinned must be true or false");
   await requireItem(db, id);
   await db.libraryItem.update({ where: { id }, data: { pinned } });
 }
 
 export async function moveItemWith(db: ScopedDb, user: Actor, id: string, dir: "up" | "down"): Promise<void> {
   assertEditor(user);
+  assertValid(dirShape.safeParse(dir), "dir", "Direction must be up or down");
   const item = await requireItem(db, id);
   const siblings = await db.libraryItem.findMany({
     where: { categoryId: item.categoryId }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }, { id: "asc" }], select: { id: true },
@@ -168,6 +178,7 @@ export async function updateCategoryWith(db: ScopedDb, user: Actor, id: string, 
 
 export async function moveCategoryWith(db: ScopedDb, user: Actor, id: string, dir: "up" | "down"): Promise<void> {
   assertEditor(user);
+  assertValid(dirShape.safeParse(dir), "dir", "Direction must be up or down");
   await requireCategory(db, id);
   const all = await db.libraryCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { id: "asc" }], select: { id: true } });
   await swapWithNeighbour(all.map((s) => s.id), id, dir, (ids) =>

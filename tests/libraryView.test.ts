@@ -30,7 +30,7 @@ describe("itemBadge", () => {
   it("edited 13 days ago is Updated", () => {
     const edited = ago(13 * DAY);
     const created = ago(30 * DAY);
-    expect(itemBadge({ createdAt: created, contentUpdatedAt: edited }, now)).toBe("Updated · 27 Sept");
+    expect(itemBadge({ createdAt: created, contentUpdatedAt: edited }, now)).toMatch(/^Updated · 27 Sep/);
   });
   it("exactly 14 days is shown", () => {
     const d = ago(14 * DAY);

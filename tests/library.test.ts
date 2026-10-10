@@ -118,10 +118,16 @@ describe("library cores", () => {
 
   it("pin and move leave contentUpdatedAt alone; edit bumps it", async () => {
     const { id } = await createItemWith(db.prisma, lead(), { ...base(), categoryId: catB });
+    const other = (await createItemWith(db.prisma, lead(), { ...base(), title: "Other", categoryId: catB })).id;
     const before = (await getItem(id)).contentUpdatedAt;
+    const otherBefore = (await getItem(other)).contentUpdatedAt;
     await new Promise((r) => setTimeout(r, 15));
     await setPinnedWith(db.prisma, lead(), id, true);
-    await moveItemWith(db.prisma, lead(), id, "up");
+    const orderB = async () => (await db.prisma.libraryItem.findMany({ where: { categoryId: catB, id: { in: [id, other] } }, orderBy: { sortOrder: "asc" } })).map((i) => i.id);
+    expect(await orderB()).toEqual([id, other]);
+    await moveItemWith(db.prisma, lead(), id, "down");
+    expect(await orderB()).toEqual([other, id]);
+    expect((await getItem(other)).contentUpdatedAt.getTime()).toBe(otherBefore.getTime());
     const pinned = await getItem(id);
     expect(pinned.pinned).toBe(true);
     expect(pinned.contentUpdatedAt.getTime()).toBe(before.getTime());
@@ -129,6 +135,40 @@ describe("library cores", () => {
     const edited = await getItem(id);
     expect(edited.title).toBe("Renamed");
     expect(edited.contentUpdatedAt.getTime()).toBeGreaterThan(before.getTime());
+  });
+
+  it("saving with only Pinned toggled or nothing changed leaves contentUpdatedAt alone", async () => {
+    const { id } = await createItemWith(db.prisma, lead(), { ...base(), description: "d" });
+    const before = (await getItem(id)).contentUpdatedAt;
+    await new Promise((r) => setTimeout(r, 15));
+    await updateItemWith(db.prisma, lead(), id, { ...base(), title: " Doc ", description: " d ", pinned: true });
+    const toggled = await getItem(id);
+    expect(toggled.pinned).toBe(true);
+    expect(toggled.contentUpdatedAt.getTime()).toBe(before.getTime());
+    await updateItemWith(db.prisma, lead(), id, { ...base(), description: "d", pinned: true });
+    expect((await getItem(id)).contentUpdatedAt.getTime()).toBe(before.getTime());
+    await updateItemWith(db.prisma, lead(), id, { ...base(), title: "Doc 2", description: "d", pinned: true });
+    expect((await getItem(id)).contentUpdatedAt.getTime()).toBeGreaterThan(before.getTime());
+  });
+
+  it("rejects an unknown category icon", async () => {
+    const err = await createCategoryWith(db.prisma, lead(), { name: "Bad icon", icon: "nope" }).catch((e) => e);
+    expect(err.code).toBe("VALIDATION");
+    expect(err.fieldErrors).toHaveProperty("icon");
+  });
+
+  it("validates brandId, pinned and dir without raw throws", async () => {
+    const bad = (v: unknown) => v as never;
+    const e1 = await createItemWith(db.prisma, lead(), { ...base(), brandId: bad(5) }).catch((e) => e);
+    expect(e1).toBeInstanceOf(LibraryError);
+    expect(e1.fieldErrors).toHaveProperty("brandId");
+    const e2 = await createItemWith(db.prisma, lead(), { ...base(), pinned: bad("yes") }).catch((e) => e);
+    expect(e2.code).toBe("VALIDATION");
+    expect(e2.fieldErrors).toHaveProperty("pinned");
+    const { id } = await createItemWith(db.prisma, lead(), base());
+    expect(await code(setPinnedWith(db.prisma, lead(), id, bad("true")))).toBe("VALIDATION");
+    expect(await code(moveItemWith(db.prisma, lead(), id, bad("sideways")))).toBe("VALIDATION");
+    expect(await code(moveCategoryWith(db.prisma, lead(), catA, bad("left")))).toBe("VALIDATION");
   });
 
   it("move is a no-op at the ends and swaps neighbours", async () => {
@@ -147,7 +187,7 @@ describe("library cores", () => {
   });
 
   it("moves categories", async () => {
-    const x = (await createCategoryWith(db.prisma, lead(), { name: "Move X", icon: "star" })).id;
+    const x = (await createCategoryWith(db.prisma, lead(), { name: "Move X", icon: "palette" })).id;
     const y = (await createCategoryWith(db.prisma, lead(), { name: "Move Y" })).id;
     const order = async () => (await db.prisma.libraryCategory.findMany({ orderBy: { sortOrder: "asc" } })).map((c) => c.id);
     await moveCategoryWith(db.prisma, lead(), y, "down");
@@ -178,7 +218,7 @@ describe("library cores", () => {
     const other = (await createCategoryWith(db.prisma, lead(), { name: "Dupe2" })).id;
     const err2 = await updateCategoryWith(db.prisma, lead(), other, { name: "Dupe" }).catch((e) => e);
     expect(err2.fieldErrors).toHaveProperty("name");
-    expect(await code(updateCategoryWith(db.prisma, lead(), other, { name: "Dupe2", icon: "x" }))).toBe("ok");
+    expect(await code(updateCategoryWith(db.prisma, lead(), other, { name: "Dupe2", icon: "folder" }))).toBe("ok");
   });
 
   it("returns NOT_FOUND for unknown ids", async () => {

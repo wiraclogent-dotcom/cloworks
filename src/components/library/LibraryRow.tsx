@@ -19,6 +19,8 @@ const KIND_ICON: Record<LinkKind, LucideIcon> = {
 };
 
 export type RowActions = {
+  /** false hides Move up/down (e.g. in the Pinned strip, where moving reorders within the category). */
+  canMove?: boolean;
   canUp: boolean;
   canDown: boolean;
   onEdit: () => void;
@@ -53,8 +55,8 @@ function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
         <div role="menu" aria-label={`Actions for ${row.title}`} className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-surface p-1 shadow-raised [&_svg]:size-4 [&_svg]:text-foreground-secondary">
           {item("Edit", <Pencil />, actions.onEdit)}
           {item(row.pinned ? "Unpin" : "Pin", row.pinned ? <PinOff /> : <Pin />, actions.onPin)}
-          {item("Move up", <ArrowUp />, () => actions.onMove("up"), !actions.canUp)}
-          {item("Move down", <ArrowDown />, () => actions.onMove("down"), !actions.canDown)}
+          {actions.canMove === false ? null : item("Move up", <ArrowUp />, () => actions.onMove("up"), !actions.canUp)}
+          {actions.canMove === false ? null : item("Move down", <ArrowDown />, () => actions.onMove("down"), !actions.canDown)}
           {item("Delete", <Trash2 />, actions.onDelete)}
         </div>
       ) : null}
