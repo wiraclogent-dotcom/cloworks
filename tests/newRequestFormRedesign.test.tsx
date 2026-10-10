@@ -11,35 +11,30 @@ import { RadioCards } from "@/components/ui/RadioCards";
 
 const brands = [{ id: "b1", name: "Clogent" }];
 const divisions = [{ id: "d1", name: "Creative" }];
-const values = { title: "Poster", briefUrl: "", notes: "", brandId: "b1", divisionId: "", deadline: "", needsMotion: true };
+const values = { title: "Poster", briefUrl: "", notes: "", brandId: "b1", divisionId: "", deadline: "", workKind: "motion" as const };
 
 beforeEach(() => submit.mockReset());
 afterEach(cleanup);
 
 describe("New request form layout", () => {
-  it("groups the fields in 'Request details' and 'Motion' cards with the help card beside them", () => {
+  it("reads as four numbered steps, with the help card beside them", () => {
     render(<NewRequestForm brands={brands} divisions={divisions} />);
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Request details", "Motion", "What happens next"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual([
+      "1What do you need?", "2Which brand & team?", "3Describe it", "4When do you need it?", "What happens next",
+    ]);
     const help = screen.getByRole("complementary", { name: "What happens next" });
     expect(within(help).getAllByRole("listitem")).toHaveLength(3);
-    expect(help.textContent).toContain("A lead assigns a designer");
     expect(help.textContent).toContain("Follow progress on the board");
     expect(help.textContent).toMatch(/email only/i);
     expect(help.querySelector("form")).toBeNull();
   });
 
-  it("radio cards: named by title, described by their short text, No checked by default", () => {
+  it("kind cards: named by title, described by an example line", () => {
     render(<NewRequestForm brands={brands} divisions={divisions} />);
-    const no = screen.getByRole("radio", { name: "No" }) as HTMLInputElement;
-    const yes = screen.getByRole("radio", { name: "Yes, needs motion" }) as HTMLInputElement;
-    expect(no.checked).toBe(true);
-    expect(yes.checked).toBe(false);
-    expect([no.value, yes.value]).toEqual(["no", "yes"]);
-    expect(document.getElementById(no.getAttribute("aria-describedby")!)!.textContent).toBe("Design only");
-    expect(document.getElementById(yes.getAttribute("aria-describedby")!)!.textContent).toBe("A motion/video editor will also work on this");
-    const group = screen.getByRole("group", { name: "Does this task need motion?" });
-    expect(group.getAttribute("aria-describedby")).toBe("needsMotion-help");
-    expect(document.getElementById("needsMotion-help")!.textContent).toMatch(/^Motion work is done/);
+    const video = screen.getByRole("radio", { name: "Video edit only" }) as HTMLInputElement;
+    expect(document.getElementById(video.getAttribute("aria-describedby")!)!.textContent).toBe("Cut, edit or subtitle existing footage");
+    const stat = screen.getByRole("radio", { name: "Static design" }) as HTMLInputElement;
+    expect(document.getElementById(stat.getAttribute("aria-describedby")!)!.textContent).toBe("Feed post, banner, packaging, PDP image");
   });
 
   it("primary Create request button and a Cancel link back to the requests", () => {
@@ -50,7 +45,7 @@ describe("New request form layout", () => {
     expect(screen.getByRole("link", { name: "Cancel" }).getAttribute("href")).toBe("/requests");
   });
 
-  it("after a failed submit: inline error with icon, kit invalid style, and the Yes card restored", async () => {
+  it("after a failed submit: inline error with icon, kit invalid style, and the picked card restored", async () => {
     submit.mockResolvedValue({ ok: false, message: "bad", nonce: "x1", fieldErrors: { divisionId: "Choose a division" }, values });
     render(<NewRequestForm brands={brands} divisions={divisions} />);
     await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
@@ -61,7 +56,7 @@ describe("New request form layout", () => {
     const err = document.getElementById("divisionId-error")!;
     expect(sel.getAttribute("aria-describedby")).toBe("divisionId-error");
     expect(err.querySelector("svg[aria-hidden]")).toBeTruthy();
-    expect((screen.getByRole("radio", { name: "Yes, needs motion" }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: "Design + motion" }) as HTMLInputElement).checked).toBe(true);
     expect(document.activeElement).toBe(sel);
     expect(screen.queryByRole("alert")).toBeNull();
   });
