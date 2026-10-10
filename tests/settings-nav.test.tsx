@@ -46,8 +46,8 @@ describe("profile menu placement", () => {
     expect(slot.textContent).toBe("WI");
     expect(slot.className).toContain("right-0");
   });
-  it("every page top bar leaves room for it", () => {
+  it("every page top bar leaves room for the bell and the profile menu (36 + 8 + 36px)", () => {
     render(<PageHeader title="Team KPI" breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} />);
-    expect(document.querySelector("[data-top-bar]")!.className).toContain("pr-12");
+    expect(document.querySelector("[data-top-bar]")!.className).toContain("pr-24");
   });
 });

@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { Bell, CalendarDays, ChartColumn, FolderKanban, Inbox, Plug, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, FolderKanban, Inbox, Plug, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -8,6 +8,7 @@ import { ThemeSync } from "./ui/darkMode";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
 import { ProfileMenu } from "./shell/ProfileMenu";
+import { NotificationBell } from "./shell/NotificationBell";
 import { Skeleton } from "./ui/Skeleton";
 import { DisabledNavItem } from "./shell/DisabledNavItem";
 
@@ -45,8 +46,8 @@ export async function WorkspaceName() {
 }
 
 /**
- * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools). Account settings, Help center, Dark mode
- * and Sign out live in the profile menu at the top right of every page (PageHeader); admin pages open from Settings.
+ * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools). The notification bell and the profile menu
+ * (Account settings, Help center, Dark mode, Sign out) sit at the top right of every page; admin pages open from Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -54,7 +55,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppFrame
       workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
-      profile={<Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>}
+      profile={
+        <div className="flex items-center gap-2">
+          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><NotificationBell /></Suspense>
+          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>
+        </div>
+      }
       nav={
         <nav aria-label="Main">
           <NavGroup id="nav-work" label="Work">
@@ -67,7 +73,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-tools" label="Tools" divided>
-            <DisabledNavItem label="Notifications" icon={<Bell aria-hidden="true" />} />
             <DisabledNavItem label="Inbox" icon={<Inbox aria-hidden="true" />} />
             <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
