@@ -1,5 +1,6 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -18,7 +19,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const r = await setTaskFileUrl(projectId, taskId, draft);
+      const r = await safeAction(() => setTaskFileUrl(projectId, taskId, draft));
       if (r.ok) {
         setUrl(r.fileUrl);
         setDraft(r.fileUrl ?? "");

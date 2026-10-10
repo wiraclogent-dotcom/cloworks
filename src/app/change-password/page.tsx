@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Button } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ChangePasswordPageForm } from "./ChangePasswordPageForm";
 import { SessionGate } from "./SessionGate";
@@ -32,7 +32,7 @@ export default function ChangePasswordPage() {
           </div>
           <ChangePasswordPageForm />
           <form action={signOutFromPasswordChange} className="mt-4 text-center">
-            <Button type="submit" variant="ghost" size="sm">Sign out</Button>
+            <SubmitButton variant="ghost" size="sm" pendingLabel="Signing out…">Sign out</SubmitButton>
           </form>
         </div>
       </div>

@@ -1,28 +1,36 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
+import { safeAction } from "@/lib/safeAction";
 import { setTaskDetail, type TaskDetailField } from "./actions";
 
-/** A text cell for product or variant. Saves when the field loses focus or on Enter; Escape puts back the saved value. */
-export function EditableName({ projectId, taskId, field, value, label }: {
-  projectId: string; taskId: string; field: "title" | "subTitle"; value: string; label: string;
+/**
+ * A text cell for product or variant. Saves when the field loses focus or on Enter; Escape puts back the saved value.
+ * `onFail` gets a refused save's message when the row owns the error display: the cell may already be gone by then
+ * (the row's Done button blurs the field, which saves, and closes editing in the same click).
+ */
+export function EditableName({ projectId, taskId, field, value, label, onFail }: {
+  projectId: string; taskId: string; field: "title" | "subTitle"; value: string; label: string; onFail?: (message: string) => void;
 }) {
   const [draft, setDraft] = useState(value);
   const [saved, setSaved] = useState(value);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const what = field === "title" ? "Item" : "Detail";
+  // Escape blurs the field, and blur saves; the blur handler still sees the edited draft, so it must skip that save.
+  const discarding = useRef(false);
 
   function commit() {
+    if (discarding.current) { discarding.current = false; return; }
     const next = draft.trim();
     if (next === saved.trim()) return;
     setError(null);
     startTransition(async () => {
-      const r = await setTaskDetail(projectId, taskId, field as TaskDetailField, next);
+      const r = await safeAction(() => setTaskDetail(projectId, taskId, field as TaskDetailField, next));
       if (r.ok) setSaved(next);
-      else { setError(r.message); setDraft(saved); }
+      else { setDraft(saved); if (onFail) onFail(r.message); else setError(r.message); }
     });
   }
 
@@ -34,7 +42,7 @@ export function EditableName({ projectId, taskId, field, value, label }: {
         onBlur={commit}
         onKeyDown={(e) => {
           if (e.key === "Enter") e.currentTarget.blur();
-          if (e.key === "Escape") { setDraft(saved); e.currentTarget.blur(); }
+          if (e.key === "Escape") { discarding.current = true; setDraft(saved); e.currentTarget.blur(); }
         }}
         aria-label={`${what} name for ${label}`}
         placeholder={field === "subTitle" ? "No detail" : undefined}
@@ -61,7 +69,7 @@ export function OwnerSelect({ projectId, taskId, value, owners, label }: {
     setOwner(next);
     setError(null);
     startTransition(async () => {
-      const r = await setTaskDetail(projectId, taskId, "owner", next === UNASSIGNED ? "" : next);
+      const r = await safeAction(() => setTaskDetail(projectId, taskId, "owner", next === UNASSIGNED ? "" : next));
       if (!r.ok) { setOwner(prev); setError(r.message); }
     });
   }

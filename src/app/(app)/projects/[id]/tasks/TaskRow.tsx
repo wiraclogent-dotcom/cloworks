@@ -41,6 +41,9 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
   isFirst: boolean; isLast: boolean;
 }) {
   const [editing, setEditing] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+  // A refused name save can land after Done closed editing: reopen the row so the message has somewhere to show.
+  const nameFailed = (message: string) => { setEditing(true); setNameError(message); };
   const label = `${task.title} ${task.subTitle ?? ""}`.trim();
   const canceled = task.stage === "CANCELLED";
   const startText = task.startIso ? formatJakartaDay(task.startIso) : "—";
@@ -60,17 +63,18 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
               aria-label={editing ? `Done editing ${label}` : `Edit ${label}`}
               aria-pressed={editing}
               title={editing ? "Done editing" : "Edit this row"}
-              onClick={() => setEditing((e) => !e)}
+              onClick={() => { setNameError(null); setEditing((e) => !e); }}
             >
               {editing ? <Check aria-hidden="true" className="size-3.5" /> : <Pencil aria-hidden="true" className="size-3.5" />}
             </Button>
           )}
           {editing ? (
-            <EditableName projectId={projectId} taskId={task.id} field="title" value={task.title} label={label} />
+            <EditableName projectId={projectId} taskId={task.id} field="title" value={task.title} label={label} onFail={nameFailed} />
           ) : (
             <span>{task.title}</span>
           )}
         </div>
+        {nameError && <p role="alert" className="mt-1 pl-9 text-xs text-danger">{nameError}</p>}
         {editing && (
           <div className="mt-1.5 pl-9">
             <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />
@@ -79,7 +83,7 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
       </TableCell>
       <TableCell>
         {editing ? (
-          <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} />
+          <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} onFail={nameFailed} />
         ) : task.subTitle ?? "—"}
       </TableCell>
       <TableCell>

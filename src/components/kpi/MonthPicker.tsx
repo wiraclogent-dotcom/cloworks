@@ -20,6 +20,8 @@ export function MonthPicker({ month, current, userId, action }: { month: string;
   const ref = useRef<HTMLDetailsElement>(null);
   const href = (m: string) => `${action}?${new URLSearchParams({ month: m, ...(userId ? { user: userId } : {}) })}`;
   const maxYear = Number(current.slice(0, 4));
+  // Month links are soft navigations on this same page, so nothing else would close the popover after a pick.
+  const close = () => { if (ref.current) ref.current.open = false; };
 
   // Close on Escape (focus back on the trigger) and on a click outside, like a menu.
   useEffect(() => {
@@ -69,7 +71,7 @@ export function MonthPicker({ month, current, userId, action }: { month: string;
               const selected = m === month;
               return (
                 <li key={m}>
-                  <Link href={href(m)} aria-label={label(m)} aria-current={selected ? "true" : undefined} data-this-month={m === current ? "" : undefined}
+                  <Link href={href(m)} onClick={close} aria-label={label(m)} aria-current={selected ? "true" : undefined} data-this-month={m === current ? "" : undefined}
                     className={cn(
                       cell, "w-full font-medium transition-colors duration-150", focusRing,
                       selected ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-surface-muted",
@@ -82,7 +84,7 @@ export function MonthPicker({ month, current, userId, action }: { month: string;
             })}
           </ul>
           <div className="mt-2 flex justify-end border-t border-border pt-2">
-            <Link href={href(current)} className={cn("rounded-md px-2 py-1 text-[13px] font-medium text-link hover:underline", focusRing)}>This month</Link>
+            <Link href={href(current)} onClick={close} className={cn("rounded-md px-2 py-1 text-[13px] font-medium text-link hover:underline", focusRing)}>This month</Link>
           </div>
         </div>
       </details>

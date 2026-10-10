@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, act } from "@testing-library/react";
 import { ProfileMenuView } from "@/components/shell/ProfileMenuView";
 
 // jsdom lacks these; Radix's menu positioning and focus handling call them.
@@ -48,10 +48,17 @@ describe("ProfileMenuView", () => {
     expect(window.localStorage.getItem("ct-theme")).toBe("dark");
   });
 
-  it("Sign out submits the sign-out form", () => {
+  // Regression: the item used to be a submit button inside a <form>; choosing it closed the menu, which unmounted the
+  // form before the browser submitted it ("Form submission canceled because the form is not connected").
+  it("choosing Sign out calls the sign-out action and shows it is working", async () => {
+    signOut.mockClear();
+    let finish = () => {};
+    signOut.mockImplementationOnce(() => new Promise<void>((r) => { finish = r; }));
     open();
-    const item = screen.getByRole("menuitem", { name: "Sign out" });
-    expect(item.closest("form")).toBeTruthy();
-    expect(item.getAttribute("type")).toBe("submit");
+    fireEvent.click(screen.getByRole("menuitem", { name: "Sign out" }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+    const busy = await screen.findByRole("menuitem", { name: "Signing out…" });
+    expect(busy.getAttribute("aria-disabled")).toBe("true");
+    await act(async () => finish());
   });
 });

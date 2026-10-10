@@ -51,6 +51,21 @@ describe("NotificationBellView", () => {
     expect(a.list).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("menuitem", { name: "Mark all as read" }).getAttribute("aria-disabled")).toBe("true");
   });
+  // Regression: a thrown list() left `items` null, so the dropdown showed the loading skeleton forever; a refused one
+  // showed "You're all caught up." while there were unread notifications.
+  it("a list that fails to load says so (not a forever skeleton, not 'all caught up') and reopening retries", async () => {
+    const a = fakeActions([item()]);
+    a.list.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    render(<NotificationBellView unread={1} actions={a} />);
+    await open();
+    expect(await screen.findByText(/Couldn't load notifications/)).toBeTruthy();
+    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryByText("You're all caught up.")).toBeNull();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
+    await open();
+    expect(await screen.findByRole("menuitem", { name: /Dimas commented/ })).toBeTruthy();
+  });
   it("selecting an item marks it read, opens the request and drops the badge", async () => {
     const a = fakeActions([item()]);
     render(<NotificationBellView unread={1} actions={a} />);

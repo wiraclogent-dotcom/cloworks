@@ -142,7 +142,7 @@ describe("admin denied, skeletons, error and not-found", () => {
     expect(container.querySelectorAll("[data-skeleton]").length).toBeGreaterThan(5);
   });
   it("error page: EmptyState alert with h1, Try again, back to Requests and sign in", () => {
-    render(<AppError error={new Error("x")} reset={() => {}} />);
+    render(<AppError error={new Error("x")} reset={() => {}} retry={() => {}} />);
     expect(within(screen.getByRole("alert")).getByRole("heading", { level: 1, name: "Something went wrong" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Back to requests" }).getAttribute("href")).toBe("/requests");
     expect(screen.getByRole("button", { name: "Try again" }).className).toContain("bg-primary");

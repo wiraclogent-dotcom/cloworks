@@ -31,9 +31,9 @@ export type ConversationState = {
  * dividers and "Load older", and the composer (Enter sends, Shift+Enter is a new line). `onSend` resolves to an error
  * message, or null when sent. Mount it keyed by request id so the draft and scroll state reset per chat.
  */
-export function ChatConversation({ conv, title, status, userId, now, onBack, onLoadOlder, onSend }: {
+export function ChatConversation({ conv, title, status, userId, now, onBack, onOpenRequest, onLoadOlder, onSend }: {
   conv: ConversationState; title: string | null; status: RequestStatus | null; userId: string; now: Date;
-  onBack: () => void; onLoadOlder: () => void; onSend: (body: string) => Promise<string | null>;
+  onBack: () => void; onOpenRequest?: () => void; onLoadOlder: () => void; onSend: (body: string) => Promise<string | null>;
 }) {
   const [body, setBody] = useState("");
   const [pending, setPending] = useState(false);
@@ -81,7 +81,7 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onL
           <p className="truncate text-sm font-semibold text-foreground">{title ?? "Chat"}</p>
           {status && <StatusChip status={status} className="mt-0.5" />}
         </div>
-        <Link href={`/requests/${encodeURIComponent(conv.id)}`}
+        <Link href={`/requests/${encodeURIComponent(conv.id)}`} onClick={onOpenRequest}
           className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-link hover:bg-surface-muted", focusRing)}>
           Open request<ExternalLink aria-hidden="true" className="size-3.5" />
         </Link>

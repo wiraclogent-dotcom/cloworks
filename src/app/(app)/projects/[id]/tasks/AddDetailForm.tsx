@@ -1,5 +1,6 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
@@ -35,11 +36,11 @@ export function AddDetailForm({ projectId, mode, owners }: {
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const r = await createTaskDetail(projectId, {
+      const r = await safeAction(() => createTaskDetail(projectId, {
         ...form,
         ownerId: form.ownerId === NONE ? "" : form.ownerId,
         value: form.value === NONE ? "" : form.value,
-      });
+      }));
       if (r.ok) {
         setForm(EMPTY);
         setOpen(false);

@@ -116,6 +116,19 @@ describe("Trend chart card", () => {
 });
 
 describe("month picker, skeletons, access denied", () => {
+  // Regression: month links are soft navigations on the same page, so the popover stayed open over the new month.
+  it("choosing a month (or This month) closes the picker", () => {
+    const { container } = render(<MonthPicker month="2026-03" current="2026-10" action="/dashboard" />);
+    const details = container.querySelector("details")!;
+    for (const name of ["May 2026", "This month"]) {
+      details.open = true;
+      const link = screen.getByRole("link", { name });
+      link.addEventListener("click", (e) => e.preventDefault()); // no real navigation in jsdom
+      fireEvent.click(link);
+      expect(details.open).toBe(false);
+    }
+  });
+
   it("month picker: design-system popover of month links that keep user=", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" action="/dashboard" />);
     const trigger = screen.getByText("March 2026").closest("summary")!;

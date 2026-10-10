@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useTransition } from "react";
 import { DropdownMenu } from "radix-ui";
-import { CircleHelp, LogOut, Moon, Settings } from "lucide-react";
+import { CircleHelp, LoaderCircle, LogOut, Moon, Settings } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { useDarkMode } from "../ui/darkMode";
 import { cn, focusRing } from "../ui/cn";
@@ -17,6 +18,7 @@ const itemClass =
  */
 export function ProfileMenuView({ name, roleLabel, signOut }: { name: string; roleLabel: string; signOut: () => Promise<void> }) {
   const { dark, flip } = useDarkMode();
+  const [signingOut, startSignOut] = useTransition();
   return (
     <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger aria-label={`Account menu for ${name}`} title={name}
@@ -49,11 +51,13 @@ export function ProfileMenuView({ name, roleLabel, signOut }: { name: string; ro
             </span>
           </DropdownMenu.CheckboxItem>
           <DropdownMenu.Separator className="my-1 h-px bg-border" />
-          <form action={signOut}>
-            <DropdownMenu.Item asChild className={itemClass}>
-              <button type="submit"><LogOut aria-hidden="true" />Sign out</button>
-            </DropdownMenu.Item>
-          </form>
+          {/* Not a <form>: choosing an item closes the menu, which unmounted the form before the browser could submit it.
+              The menu stays open showing progress until the redirect lands. */}
+          <DropdownMenu.Item disabled={signingOut} className={cn(itemClass, "data-[disabled]:opacity-60")}
+            onSelect={(e) => { e.preventDefault(); startSignOut(() => signOut()); }}>
+            {signingOut ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <LogOut aria-hidden="true" />}
+            {signingOut ? "Signing out…" : "Sign out"}
+          </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

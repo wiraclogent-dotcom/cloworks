@@ -1,7 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { FormSkeleton } from "@/components/PageSkeletons";
 import { EditProjectContent } from "../../ProjectFormContent";
+
+/** Tab title: "Edit project · Cloworks" (root layout template). */
+export const metadata: Metadata = { title: "Edit project" };
 
 export default function EditProjectPage({ params }: { params: Promise<{ id: string }> }) {
   return (
