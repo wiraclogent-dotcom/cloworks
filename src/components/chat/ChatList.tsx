@@ -4,6 +4,7 @@ import { MessagesSquare } from "lucide-react";
 import type { ChatSummary } from "@/lib/chat";
 import { relativeTime } from "@/lib/relativeTime";
 import { Skeleton } from "../ui/Skeleton";
+import { buttonClass } from "../ui/Button";
 import { cn, focusRing } from "../ui/cn";
 
 /** "You: …" for your own last message, otherwise "Name: …". */
@@ -11,10 +12,24 @@ function preview(c: ChatSummary, userId: string): string {
   return `${c.lastMessage.authorId === userId ? "You" : c.lastMessage.authorName}: ${c.lastMessage.body}`;
 }
 
-/** The dock's chat list: one row per request chat, newest first (server order), or the empty and loading states. */
-export function ChatList({ chats, selectedId, userId, now, onSelect }: {
-  chats: ChatSummary[] | null; selectedId: string | null; userId: string; now: Date; onSelect: (id: string) => void;
+/**
+ * The dock's chat list: one row per request chat, newest first (server order), or the empty, loading and error states.
+ * `error` shows only while nothing has loaded yet; a later failed refresh keeps the last list.
+ */
+export function ChatList({ chats, error = null, onRetry, selectedId, userId, now, onSelect }: {
+  chats: ChatSummary[] | null; error?: string | null; onRetry?: () => void;
+  selectedId: string | null; userId: string; now: Date; onSelect: (id: string) => void;
 }) {
+  if (chats === null && error) {
+    return (
+      <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-sm text-foreground-secondary">{error}</p>
+        {onRetry && (
+          <button type="button" onClick={onRetry} className={buttonClass({ size: "sm" })}>Retry</button>
+        )}
+      </div>
+    );
+  }
   if (chats === null) {
     return (
       <div role="status" aria-busy="true" className="grid gap-3 p-3">

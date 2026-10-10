@@ -6,6 +6,11 @@ type Db = Pick<PrismaClient, "request" | "chatRead" | "comment" | "$queryRaw">;
 export const PREVIEW_LEN = 120;
 export const CHAT_PAGE = 20;
 export const MESSAGE_PAGE = 30;
+/**
+ * How far before the `after` cursor a poll looks again. A comment can commit after a later one was already polled
+ * (its `createdAt` is set before the commit), so the overlap re-reads that window; the client de-dups by id.
+ */
+export const AFTER_OVERLAP_MS = 30_000;
 
 export type ChatMessage = { id: string; body: string; createdAt: Date; author: { id: string; name: string } };
 export type ChatSummary = {
@@ -30,10 +35,11 @@ export function participantWhere(userId: string): Prisma.RequestWhereInput {
 
 /** "missing" means no such request in the caller's workspace; "no" means it exists but the user is not in its chat. */
 export async function isParticipantWith(db: Db, userId: string, requestId: string): Promise<"yes" | "no" | "missing"> {
-  const row = await db.request.findFirst({ where: { id: requestId }, select: { id: true } });
-  if (!row) return "missing";
+  // The common case (a participant) costs one query; only a miss checks whether the request exists.
   const hit = await db.request.findFirst({ where: { AND: [{ id: requestId }, participantWhere(userId)] }, select: { id: true } });
-  return hit ? "yes" : "no";
+  if (hit) return "yes";
+  const row = await db.request.findFirst({ where: { id: requestId }, select: { id: true } });
+  return row ? "no" : "missing";
 }
 
 /** Moves the user's read position forward to `at`, never back. Non-participants get no row. */
@@ -135,8 +141,10 @@ export async function listChatsWith(db: Db, userId: string, opts: { limit?: numb
 
 /**
  * Messages of one chat, ascending. Default: the newest page. `before`: the page older than that time.
- * `after`: everything newer (capped at 100), where `hasOlder` is always false (the client keeps its own value).
- * Cursors are compound `(createdAt, id)` positions so comments sharing a timestamp are never dropped or repeated.
+ * `after`: everything newer than `after.at - AFTER_OVERLAP_MS` (capped at 100), so a comment that committed late with an
+ * earlier timestamp is still picked up; rows the client already has come back too and are de-duplicated by id there.
+ * `hasOlder` is always false in this mode (the client keeps its own value).
+ * The `before` cursor is a compound `(createdAt, id)` position so comments sharing a timestamp are never dropped or repeated.
  */
 export async function listMessagesWith(
   db: Db,
@@ -151,7 +159,7 @@ export async function listMessagesWith(
   const select = { id: true, body: true, createdAt: true, author: { select: { id: true, name: true } } } as const;
   if (opts.after) {
     const rows = await db.comment.findMany({
-      where: { requestId, OR: [{ createdAt: { gt: opts.after.at } }, { createdAt: opts.after.at, id: { gt: opts.after.id } }] },
+      where: { requestId, createdAt: { gt: new Date(opts.after.at.getTime() - AFTER_OVERLAP_MS) } },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take: 100,
       select,

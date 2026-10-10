@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { isParticipantWith, markChatReadWith, chatUnreadCountWith, latestUnreadChatWith, participantWhere, listChatsWith, listMessagesWith } from "@/lib/chat";
+import { AFTER_OVERLAP_MS, isParticipantWith, markChatReadWith, chatUnreadCountWith, latestUnreadChatWith, participantWhere, listChatsWith, listMessagesWith } from "@/lib/chat";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("request chat", () => {
@@ -136,7 +136,7 @@ describe("request chat", () => {
       expect(older.hasOlder).toBe(false);
     });
 
-    it("after returns only newer messages ascending; equal timestamps come back in id order", async () => {
+    it("after returns newer messages ascending; equal timestamps come back in id order", async () => {
       const Q = await mkUser("q");
       const A = await mkReq(Q);
       for (let i = 0; i < 3; i++) await say(A, C, `m${i}`, day(i + 1));
@@ -144,7 +144,8 @@ describe("request chat", () => {
       if (!first.ok) throw new Error("expected ok");
       const r = await listMessagesWith(db.prisma, Q, A, { after: { at: first.messages[0].createdAt, id: first.messages[0].id } });
       if (!r.ok) throw new Error("expected ok");
-      expect(r.messages.map((m) => m.body)).toEqual(["m1", "m2"]);
+      // The cursor row is inside the overlap window and may come back too (the client de-dups by id).
+      expect(r.messages.map((m) => m.body).filter((b) => b !== "m0")).toEqual(["m1", "m2"]);
       expect(r.hasOlder).toBe(false);
 
       const B = await mkReq(Q);
@@ -191,7 +192,7 @@ describe("request chat", () => {
       expect([...p2.messages, ...p1.messages].map((m) => m.id).sort()).toEqual([...ids].sort());
     });
 
-    it("after cursor returns tied rows with a higher id but not the cursor", async () => {
+    it("after cursor returns tied rows with a higher id", async () => {
       const Q = await mkUser("q");
       const A = await mkReq(Q);
       const t = day(11);
@@ -199,7 +200,23 @@ describe("request chat", () => {
       await db.prisma.comment.create({ data: { id: "af-b", requestId: A, authorId: C, body: "b", createdAt: t } });
       const r = await listMessagesWith(db.prisma, Q, A, { after: { at: t, id: "af-a" } });
       if (!r.ok) throw new Error("expected ok");
-      expect(r.messages.map((m) => m.id)).toEqual(["af-b"]);
+      expect(r.messages.map((m) => m.id)).toContain("af-b");
+    });
+
+    it("after cursor picks up a comment that committed late with an earlier timestamp", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q);
+      const t = day(12);
+      await db.prisma.comment.create({ data: { id: "late-cur", requestId: A, authorId: C, body: "seen", createdAt: t } });
+      // Committed after the client polled up to `late-cur`, but stamped 10 s earlier.
+      await db.prisma.comment.create({ data: { id: "late-z", requestId: A, authorId: C, body: "late", createdAt: new Date(t.getTime() - 10_000) } });
+      const old = await db.prisma.comment.create({ data: { requestId: A, authorId: C, body: "old", createdAt: new Date(t.getTime() - AFTER_OVERLAP_MS - 1) } });
+      const r = await listMessagesWith(db.prisma, Q, A, { after: { at: t, id: "late-cur" } });
+      if (!r.ok) throw new Error("expected ok");
+      const ids = r.messages.map((m) => m.id);
+      expect(ids).toContain("late-z");
+      expect(ids).not.toContain(old.id);
+      expect(r.messages.map((m) => m.createdAt.getTime())).toEqual([...r.messages.map((m) => m.createdAt.getTime())].sort((a, b) => a - b));
     });
 
     it("latestUnreadChatWith returns the request of the newest unread message from others", async () => {

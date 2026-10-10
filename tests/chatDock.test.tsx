@@ -8,7 +8,7 @@ vi.mock("@/app/(app)/chat/actions", () => ({
   chatUnreadCount: vi.fn(), listChats: vi.fn(), listMessages: vi.fn(), markChatRead: vi.fn(), sendChatMessage: vi.fn(),
 }));
 
-import { ChatDockView, type ChatActions } from "@/components/chat/ChatDockView";
+import { ACTIVE_WINDOW_MS, ChatDockView, IDLE_STOP_MS, SLOW_CONVERSATION_MS, type ChatActions } from "@/components/chat/ChatDockView";
 
 beforeEach(() => {
   window.HTMLElement.prototype.scrollIntoView = () => {};
@@ -128,7 +128,7 @@ describe("ChatDockView", () => {
 
     fireEvent.click(list.getByRole("button", { name: /Poster/ }));
     expect(a.listMessages).toHaveBeenCalledWith("r1");
-    await waitFor(() => expect(a.markRead).toHaveBeenCalledWith("r1"));
+    await waitFor(() => expect(a.markRead).toHaveBeenCalledWith("r1", msg().createdAt));
     expect(await screen.findByText("Poster draft is up", { selector: "p" })).toBeTruthy();
     expect(badge()?.textContent).toBe("1");
     expect(screen.getByRole("link", { name: "Open request" }).getAttribute("href")).toBe("/requests/r1");
@@ -157,7 +157,52 @@ describe("ChatDockView", () => {
     a.listMessages.mockResolvedValueOnce({ ok: true, messages: [msg({ id: "m3", body: "New one", createdAt: at("2026-10-10T05:00:00Z") })], hasOlder: false });
     await firePoll();
     expect(await screen.findByText("New one", { selector: "p" })).toBeTruthy();
-    expect(a.markRead).toHaveBeenCalledWith("r1");
+    expect(a.markRead).toHaveBeenCalledWith("r1", at("2026-10-10T05:00:00Z"));
+  });
+
+  it("a poll that only repeats known messages (the overlap window) does not mark read again", async () => {
+    const a = fakeActions([chat()]);
+    await openConversation(a);
+    a.markRead.mockClear();
+    await firePoll();
+    await waitFor(() => expect(a.listMessages).toHaveBeenLastCalledWith("r1", { after: { at: msg().createdAt, id: "m1" } }));
+    expect(a.markRead).not.toHaveBeenCalled();
+    expect(screen.getAllByText("Poster draft is up", { selector: "p" })).toHaveLength(1);
+  });
+
+  it("a poll result for a chat no longer selected is not marked read", async () => {
+    const a = fakeActions([chat()]);
+    await openConversation(a);
+    a.markRead.mockClear();
+    let answer!: (v: { ok: true; messages: ChatMessage[]; hasOlder: boolean }) => void;
+    a.listMessages.mockImplementationOnce(() => new Promise((res) => { answer = res; }));
+    await firePoll();
+    fireEvent.click(screen.getByRole("button", { name: "Back to chats" }));
+    await act(async () => { answer({ ok: true, messages: [msg({ id: "m3", body: "Late", createdAt: at("2026-10-10T05:00:00Z") })], hasOlder: false }); });
+    expect(a.markRead).not.toHaveBeenCalledWith("r1", expect.anything());
+  });
+
+  it("reopening the dock on a conversation refreshes the chat list", async () => {
+    const a = fakeActions([chat()]);
+    await openConversation(a, 0);
+    const before = a.listChats.mock.calls.length;
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    fireEvent.click(launcher());
+    await waitFor(() => expect(a.listChats.mock.calls.length).toBe(before + 1));
+  });
+
+  it("a failed first list load shows an alert with Retry instead of the empty state", async () => {
+    const a = fakeActions([chat()]);
+    a.listChats.mockResolvedValueOnce({ ok: false, code: "INVALID", message: "Couldn't load chats." } as never);
+    render(<ChatDockView unread={0} userId="me" actions={a} />);
+    fireEvent.click(launcher());
+    const list = await chatList();
+    expect((await list.findByRole("alert")).textContent).toContain("Couldn't load chats.");
+    expect(screen.queryByText("No chats yet. Comment on a request to start one.")).toBeNull();
+    fireEvent.click(list.getByRole("button", { name: "Retry" }));
+    expect(await list.findByRole("button", { name: /Poster/ })).toBeTruthy();
+    expect(list.queryByRole("alert")).toBeNull();
   });
 
   it("a failed send keeps the text and shows the error in an alert", async () => {
@@ -214,5 +259,73 @@ describe("ChatDockView", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(JSON.parse(window.sessionStorage.getItem("chat-dock") ?? "{}").open).toBe(false);
+  });
+});
+
+describe("ChatDockView idle backoff", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    window.sessionStorage.setItem("chat-dock", JSON.stringify({ open: true, selectedId: "r1" }));
+  });
+  afterEach(() => { vi.useRealTimers(); });
+
+  /** Advances fake time in act, in steps no longer than the idle clock so each re-evaluation renders. */
+  const tick = async (ms: number) => {
+    for (let left = ms; left > 0; left -= 30_000)
+      await act(async () => { await vi.advanceTimersByTimeAsync(Math.min(left, 30_000)); });
+  };
+  const mountOpenConversation = async () => {
+    const a = fakeActions([chat()]);
+    render(<ChatDockView unread={0} userId="me" actions={a} />);
+    await tick(0.001);
+    expect(screen.getByText("Poster draft is up", { selector: "p" })).toBeTruthy();
+    return a;
+  };
+
+  it("polls the open conversation every 5 s while active, every 30 s after 2 minutes idle", async () => {
+    const a = await mountOpenConversation();
+    a.listMessages.mockClear();
+    await tick(10_000);
+    expect(a.listMessages).toHaveBeenCalledTimes(2);
+    await tick(ACTIVE_WINDOW_MS - 10_000);
+    a.listMessages.mockClear();
+    await tick(SLOW_CONVERSATION_MS - 1_000);
+    expect(a.listMessages).not.toHaveBeenCalled();
+    await tick(1_000);
+    expect(a.listMessages).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops every poll after 15 minutes idle; a keydown resumes with an immediate call", async () => {
+    const a = await mountOpenConversation();
+    await tick(IDLE_STOP_MS);
+    a.listMessages.mockClear(); a.listChats.mockClear(); a.unreadCount.mockClear();
+    await tick(600_000);
+    expect(a.listMessages).not.toHaveBeenCalled();
+    expect(a.listChats).not.toHaveBeenCalled();
+    expect(a.unreadCount).not.toHaveBeenCalled();
+
+    await act(async () => { fireEvent.keyDown(window, { key: "a" }); });
+    expect(a.listMessages).toHaveBeenCalledTimes(1);
+    await tick(5_000);
+    expect(a.listMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it("activity keeps the conversation poll fast", async () => {
+    const a = await mountOpenConversation();
+    await tick(90_000);
+    fireEvent.pointerDown(window);
+    await tick(60_000); // 150 s since mount, 60 s since activity
+    a.listMessages.mockClear();
+    await tick(10_000);
+    expect(a.listMessages).toHaveBeenCalledTimes(2);
+  });
+
+  it("refreshes the chat list on every 6th conversation poll", async () => {
+    const a = await mountOpenConversation();
+    a.listChats.mockClear();
+    await tick(25_000);
+    expect(a.listChats).not.toHaveBeenCalled();
+    await tick(5_000);
+    expect(a.listChats).toHaveBeenCalledTimes(1);
   });
 });

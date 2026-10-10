@@ -17,7 +17,7 @@ export type ChatActions = {
   unreadCount: () => Promise<{ ok: true; unread: number; latestUnread: LatestUnread | null } | CollabFail>;
   listChats: (offset?: number) => Promise<{ ok: true; chats: ChatSummary[] } | CollabFail>;
   listMessages: (requestId: string, opts?: { after?: Cursor; before?: Cursor }) => Promise<{ ok: true; messages: ChatMessage[]; hasOlder: boolean } | CollabFail>;
-  markRead: (requestId: string) => Promise<{ ok: true } | CollabFail>;
+  markRead: (requestId: string, at?: Date) => Promise<{ ok: true } | CollabFail>;
   send: (requestId: string, body: string) => Promise<{ ok: true; message: ChatMessage } | CollabFail>;
 };
 const serverActions: ChatActions = {
@@ -60,6 +60,19 @@ function merge(cur: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
 const cursorOf = (m: ChatMessage): Cursor => ({ at: m.createdAt, id: m.id });
 const latestKey = (l: LatestUnread | null) => (l ? `${l.requestId}\u0000${l.title}` : "");
 
+/** Conversation poll while someone is around, and after `ACTIVE_WINDOW_MS` without activity. */
+const CONVERSATION_MS = 5_000;
+export const SLOW_CONVERSATION_MS = 30_000;
+/** Activity (pointer, key, send, new messages) within this window keeps the conversation poll fast. */
+export const ACTIVE_WINDOW_MS = 120_000;
+/** After this long without activity every poll stops; the next activity restarts them with an immediate call. */
+export const IDLE_STOP_MS = 900_000;
+/** Activity updates state at most this often; the idle clock re-evaluates on this coarse tick. */
+const ACTIVITY_THROTTLE_MS = 10_000;
+const IDLE_CLOCK_MS = 30_000;
+/** While a conversation is open the chat list is refreshed on every Nth conversation poll. */
+const LIST_EVERY_N_TICKS = 6;
+
 /** Running-text speed, and the share of each loop spent moving (the rest is the pause at both ends). */
 const MARQUEE_PX_PER_S = 40;
 const MARQUEE_MOVING = 0.7;
@@ -100,7 +113,9 @@ function RunningText({ text }: { text: string }) {
  * Bottom-right chat dock: a pill launcher (unread badge, newest unread request title as running text; a click opens
  * straight into that chat), and a popup with the chat list beside the open conversation (one or the other below `md`).
  * Near-live through polling, one poll at a time: the unread count every 60 s while closed, the list every 30 s while
- * open on it, the open conversation every 5 s. `actions` defaults to the server actions and is injectable for tests.
+ * open on it (and on every open), the open conversation every 5 s (30 s after 2 minutes without activity, with the list
+ * refreshed every 6th tick). After 15 minutes without activity every poll stops until the next pointer or key press.
+ * `actions` defaults to the server actions and is injectable for tests.
  */
 export function ChatDockView({ unread, latestUnread = null, userId, actions = serverActions }: {
   unread: number; latestUnread?: LatestUnread | null; userId: string; actions?: ChatActions;
@@ -114,12 +129,53 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
   const [seenLatest, setSeenLatest] = useState(latestKey(latestUnread));
   if (latestKey(latestUnread) !== seenLatest) { setSeenLatest(latestKey(latestUnread)); setLatest(latestUnread); }
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
   const [conv, setConv] = useState<ConversationState | null>(null);
   const [now, setNow] = useState(() => new Date());
   const launcherRef = useRef<HTMLButtonElement>(null);
 
   const convRef = useRef(conv);
-  useEffect(() => { convRef.current = conv; });
+  const selectedRef = useRef(selectedId);
+  useEffect(() => { convRef.current = conv; selectedRef.current = selectedId; });
+
+  // ---- Idle backoff: `lastActivity` (throttled) against a coarse clock decides how fast, or whether, to poll ----
+  const [lastActivity, setLastActivity] = useState(() => Date.now());
+  const [clock, setClock] = useState(() => Date.now());
+  const activityRef = useRef(lastActivity);
+  const idleFor = Math.max(0, clock - lastActivity);
+  const stopped = idleFor >= IDLE_STOP_MS;
+  const conversationMs = idleFor >= ACTIVE_WINDOW_MS ? SLOW_CONVERSATION_MS : CONVERSATION_MS;
+  const stoppedRef = useRef(stopped);
+  const resumeRef = useRef<() => void>(() => {});
+  useEffect(() => { stoppedRef.current = stopped; });
+
+  /** Records activity; when the polls had stopped, restarts them with an immediate call. */
+  function noteActivity() {
+    const t = Date.now();
+    if (t - activityRef.current < ACTIVITY_THROTTLE_MS && !stoppedRef.current) return;
+    activityRef.current = t;
+    setLastActivity(t);
+    if (stoppedRef.current) {
+      stoppedRef.current = false;
+      resumeRef.current();
+    }
+  }
+  const noteActivityRef = useRef(noteActivity);
+  useEffect(() => { noteActivityRef.current = noteActivity; });
+
+  useEffect(() => {
+    const onActivity = () => noteActivityRef.current();
+    const opts = { passive: true } as const;
+    window.addEventListener("pointerdown", onActivity, opts);
+    window.addEventListener("keydown", onActivity, opts);
+    const timer = setInterval(() => setClock(Date.now()), IDLE_CLOCK_MS);
+    return () => {
+      window.removeEventListener("pointerdown", onActivity);
+      window.removeEventListener("keydown", onActivity);
+      clearInterval(timer);
+    };
+  }, []);
+  const listTicks = useRef(0);
 
   /** Applies `fn` to the conversation only if it is still the one for `id` (results can land after a switch). */
   const patchConv = (id: string, fn: (c: ConversationState) => ConversationState) =>
@@ -141,21 +197,22 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
       // The open conversation is being read (and marked read) right now, even if the list answered first.
       const list = r.chats.map((c) => (c.requestId === selectedId && c.unread > 0 ? { ...c, unread: 0 } : c));
       setChats(list);
+      setListError(null);
       setCount(list.reduce((n, c) => n + c.unread, 0));
       const first = list.find((c) => c.unread > 0); // the list is newest first
       setLatest(first ? { requestId: first.requestId, title: first.title } : null);
-    } else setChats((cur) => cur ?? []);
+    } else setListError(r.message); // shown only while nothing has loaded yet
   }
 
-  // Polls: exactly one is enabled at a time.
-  usePoll(async () => {
+  async function pollUnread() {
     const r = await actions.unreadCount();
     if (r.ok) { setCount(r.unread); setLatest(r.latestUnread); }
-  }, 60_000, { enabled: !open });
-  usePoll(refreshChats, 30_000, { enabled: open && !selectedId, immediate: true });
-  usePoll(async () => {
+  }
+
+  async function pollConversation() {
     const c = convRef.current;
-    if (!c || c.id !== selectedId || c.loading || c.error) return;
+    if (!c || c.id !== selectedRef.current || c.loading || c.error) return;
+    if (++listTicks.current % LIST_EVERY_N_TICKS === 0) void refreshChats();
     const newest = c.messages.at(-1);
     const r = await actions.listMessages(c.id, newest ? { after: cursorOf(newest) } : undefined);
     setNow(new Date());
@@ -163,11 +220,34 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
       if (r.code === "FORBIDDEN" || r.code === "NOT_FOUND") patchConv(c.id, (x) => ({ ...x, error: r.message }));
       return;
     }
-    if (r.messages.length === 0) return;
+    // The after-window overlaps what we already have (late commits); only unseen ids are news.
+    const have = new Set(c.messages.map((m) => m.id));
+    if (!r.messages.some((m) => !have.has(m.id))) return;
+    const last = r.messages.at(-1)!;
     patchConv(c.id, (x) => ({ ...x, messages: merge(x.messages, r.messages), hasOlder: newest ? x.hasOlder : r.hasOlder }));
-    bumpChat(c.id, r.messages.at(-1)!);
-    void actions.markRead(c.id).catch(() => undefined);
-  }, 5_000, { enabled: open && !!selectedId && !conv?.error });
+    bumpChat(c.id, last);
+    noteActivityRef.current();
+    if (selectedRef.current !== c.id) return; // switched away meanwhile: that chat was not seen
+    void actions.markRead(c.id, last.createdAt).catch(() => undefined);
+  }
+
+  // Polls: exactly one is enabled at a time, and none while idle.
+  usePoll(pollUnread, 60_000, { enabled: !open && !stopped });
+  usePoll(refreshChats, 30_000, { enabled: open && !selectedId && !stopped, immediate: true });
+  usePoll(pollConversation, conversationMs, { enabled: open && !!selectedId && !conv?.error && !stopped });
+  // Coming back from idle: the list poll runs immediately on its own; the other two need a nudge.
+  useEffect(() => {
+    resumeRef.current = () => {
+      if (!open) void pollUnread().catch(() => undefined);
+      else if (selectedId) void pollConversation().catch(() => undefined);
+    };
+  });
+
+  // Refresh the list every time the dock opens onto a conversation (the list poll covers opening onto the list).
+  useEffect(() => {
+    if (open && selectedId) void (async () => { await refreshChats(); })(); // async: state is set after the fetch
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on open
+  }, [open]);
 
   // Load the selected conversation whenever it is (re)shown: a click, or a restored sessionStorage selection.
   useEffect(() => {
@@ -178,13 +258,12 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
       setConv((c) => (c && c.id === id
         ? { ...c, error: null }
         : { id, messages: [], hasOlder: false, loading: true, loadingOlder: false, error: null }));
-      if (chats === null) void refreshChats(); // the header needs the title after a restore
       const r = await actions.listMessages(id).catch(() => failed("Couldn't load messages."));
       if (cancelled) return;
       setNow(new Date());
       if (!r.ok) { patchConv(id, (x) => ({ ...x, loading: false, error: r.message })); return; }
       patchConv(id, (x) => ({ ...x, loading: false, messages: r.messages, hasOlder: r.hasOlder }));
-      void actions.markRead(id).catch(() => undefined);
+      void actions.markRead(id, r.messages.at(-1)?.createdAt).catch(() => undefined);
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- reload only when the dock opens or the selection changes
@@ -242,6 +321,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     if (!id) return "Choose a chat first.";
     const r = await actions.send(id, body).catch(() => failed("Couldn't send. Check your connection and try again."));
     if (!r.ok) return r.message;
+    noteActivity();
     patchConv(id, (x) => ({ ...x, messages: merge(x.messages, [r.message]) }));
     bumpChat(id, r.message);
     return null;
@@ -256,13 +336,13 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
       <button ref={launcherRef} type="button" aria-label={label} title={pillTitle ?? "Messages"} aria-expanded={open} aria-controls={open ? "chat-dock" : undefined}
         onClick={launch}
         className={cn(
-          "fixed right-4 bottom-4 z-40 inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-background px-3 shadow-raised transition-colors hover:bg-surface-muted",
+          "fixed right-4 bottom-4 z-40 inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-surface px-3 shadow-raised transition-colors hover:bg-surface-muted",
           focusRing,
         )}>
         <span className="relative inline-flex shrink-0 text-link">
           <MessagesSquare aria-hidden="true" strokeWidth={1.75} className="size-5.5" />
           {count > 0 && (
-            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
+            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-surface">
               {count > 9 ? "9+" : count}
             </span>
           )}
@@ -280,7 +360,8 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
           <div className="flex min-h-0 flex-1">
             <section aria-label="Chats"
               className={cn("min-h-0 w-full flex-col overflow-y-auto border-border bg-background md:flex md:w-64 md:shrink-0 md:border-r", selectedId ? "hidden" : "flex")}>
-              <ChatList chats={chats} selectedId={selectedId} userId={userId} now={now} onSelect={select} />
+              <ChatList chats={chats} error={listError} onRetry={() => { setListError(null); void refreshChats(); }}
+                selectedId={selectedId} userId={userId} now={now} onSelect={select} />
             </section>
             <section aria-label="Conversation" className={cn("min-h-0 min-w-0 flex-1 flex-col md:flex", selectedId ? "flex" : "hidden")}>
               {selectedId && conv && conv.id === selectedId ? (

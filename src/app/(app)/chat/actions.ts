@@ -35,7 +35,7 @@ export async function chatUnreadCount(): Promise<
 
 export async function listChats(offset?: number): Promise<{ ok: true; chats: ChatSummary[] } | CollabFail> {
   return run(async (u, db) => {
-    const off = typeof offset === "number" && Number.isInteger(offset) && offset > 0 ? offset : 0;
+    const off = typeof offset === "number" && Number.isSafeInteger(offset) && offset > 0 ? offset : 0;
     return { ok: true as const, chats: await listChatsWith(db, u.id, { offset: off }) };
   });
 }
@@ -50,10 +50,15 @@ export async function listMessages(
   });
 }
 
-export async function markChatRead(requestId: string): Promise<{ ok: true } | CollabFail> {
+/**
+ * Marks the chat read up to `at` (the newest message the client has seen), or up to now without a valid `at`.
+ * A future `at` is clamped to now, so a client cannot pre-read messages that do not exist yet.
+ */
+export async function markChatRead(requestId: string, at?: Date): Promise<{ ok: true } | CollabFail> {
   return run(async (u, db) => {
     if (typeof requestId !== "string" || !requestId) return invalid("Unknown request.");
-    await markChatReadWith(db, u.id, requestId);
+    const upTo = at instanceof Date && !Number.isNaN(at.getTime()) ? new Date(Math.min(at.getTime(), Date.now())) : undefined;
+    await markChatReadWith(db, u.id, requestId, upTo);
     return { ok: true as const };
   });
 }
