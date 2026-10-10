@@ -81,7 +81,7 @@ const SIDEBAR: { icon: ReactNode; label: string; active?: boolean }[] = [
  */
 export function HeroBoard() {
   return (
-    <div aria-hidden="true" className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_64px_-12px_rgba(9,66,109,0.28)]">
+    <div aria-hidden="true" className="overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_64px_-12px_color-mix(in_srgb,var(--brand-deep-blue)_28%,transparent)]">
       {/* Browser bar */}
       <div className="flex items-center gap-3 border-b border-border bg-surface-muted px-4 py-2.5">
         <span className="flex gap-1.5">

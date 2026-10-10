@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
+import { Button } from "@/components/ui/Button";
+import { fieldClass } from "@/components/ui/Field";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { safeAction } from "@/lib/safeAction";
 import { setTaskDate } from "./actions";
@@ -54,7 +54,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
         <div className="grid gap-3">
           <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
             {what}
-            <Input
+            <input
               type="date"
               value={draft}
               aria-label={`${what} for ${label}`}
@@ -62,14 +62,14 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
               autoFocus
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && draft) { e.preventDefault(); save(draft); } }}
-              className="h-9"
+              className={fieldClass()}
             />
           </label>
           <div className="flex items-center justify-between">
-            <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
+            <Button size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
             <div className="flex gap-1.5">
-              <Button type="button" size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
-              <Button type="button" size="sm" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
+              <Button size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
+              <Button size="sm" variant="primary" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
                 {pending ? "Saving…" : "Save"}
               </Button>
             </div>

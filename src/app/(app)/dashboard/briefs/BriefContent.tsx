@@ -3,7 +3,7 @@ import { can } from "@/lib/permissions";
 import { jakartaMonth, monthLabel } from "@/lib/kpi/months";
 import { jakartaDate } from "@/lib/createRequest";
 import { buildBriefMonth } from "@/lib/briefCalendar";
-import { loadBriefItems } from "@/lib/briefCalendarQueries";
+import { loadBriefItems, loadTypeOrder } from "@/lib/briefCalendarQueries";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { BriefCalendar } from "@/components/briefs/BriefCalendar";
 import { AccessDenied } from "@/components/AccessDenied";
@@ -18,12 +18,13 @@ export async function BriefContent({ searchParams }: { searchParams: Promise<Rec
   }
   const month = parseMonthParam((await searchParams).month);
   const now = new Date();
-  const model = buildBriefMonth(month, jakartaDate(now), await loadBriefItems(db, month));
+  const [items, typeOrder] = await Promise.all([loadBriefItems(db, month), loadTypeOrder(db)]);
+  const model = buildBriefMonth(month, jakartaDate(now), items);
   return (
     <>
       <PageHeader breadcrumb={[{ label: "Work" }, { label: "Brief Calendar" }]} title="Brief Calendar" description={monthLabel(month)}
         actions={<MonthPicker month={month} current={jakartaMonth(now)} action="/dashboard/briefs" />} />
-      <BriefCalendar model={model} />
+      <BriefCalendar model={model} typeOrder={typeOrder} />
     </>
   );
 }

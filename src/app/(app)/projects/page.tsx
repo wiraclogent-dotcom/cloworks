@@ -32,7 +32,7 @@ async function ProjectsContent() {
           </Link>
         )} />
       {rows.length > 0 && (
-        <Card className="mb-6">
+        <Card className="mb-5">
           <section aria-labelledby="timeline-h">
             <CardHeader>
               <CardTitle id="timeline-h">Timeline</CardTitle>

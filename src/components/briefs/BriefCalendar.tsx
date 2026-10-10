@@ -12,9 +12,15 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 const MAX_DOTS = 4;
-const TYPE_TONES = ["first-look", "done", "needs-motion", "in-progress", "due-soon"] as const;
+/** Category colours by the type's fixed slot (its place in the workspace's type list), so a type keeps its colour every month. */
+const TYPE_FILLS = ["bg-chart-cat-1", "bg-chart-cat-2", "bg-chart-cat-3", "bg-chart-cat-4", "bg-chart-cat-5"];
+function typeFill(order: string[], name: string): string {
+  const i = order.indexOf(name);
+  return i >= 0 && i < TYPE_FILLS.length ? TYPE_FILLS[i] : "bg-chart-cat-other";
+}
 /** Heat-map tint per level (1–4) on the first-look accent; 0 stays plain. */
-const HEAT = ["", "bg-tone-accent/15", "bg-tone-accent/30", "bg-tone-accent/50", "bg-tone-accent/70"];
+// Capped at 55% so the tone text on the darkest cell stays AA (4.5:1) in both themes.
+const HEAT = ["", "bg-tone-accent/15", "bg-tone-accent/28", "bg-tone-accent/42", "bg-tone-accent/55"];
 
 const briefs = (n: number) => (n === 1 ? "1 brief" : `${n} briefs`);
 const dayAria = (d: BriefDay) =>
@@ -52,7 +58,7 @@ function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["su
           );
         })}
       </div>
-      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-foreground-muted">
+      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-foreground-secondary">
         <span>{shortDay(days[0].day).slice(4)}</span><span>{shortDay(days[days.length - 1].day).slice(4)}</span>
       </div>
     </div>
@@ -102,7 +108,12 @@ function Dots({ day, items, align }: { day: BriefDay; items: BriefItem[]; align:
  * Brief calendar (spec 2026-10-10, updated): a month summary, each requester's briefs per week, then a Monday-first
  * month grid (a day list on narrow screens) with each day's brief count. Every in-month day opens that day's briefs.
  */
-export function BriefCalendar({ model }: { model: BriefMonth }) {
+export function BriefCalendar({ model, typeOrder }: {
+  model: BriefMonth;
+  /** Every request type's name in its fixed order (loadTypeOrder). Without it, the month's own types sorted by name. */
+  typeOrder?: string[];
+}) {
+  const order = typeOrder ?? model.summary.byType.map((t) => t.name).sort((a, b) => a.localeCompare(b));
   const narrow = useNarrow();
   const [open, setOpen] = useState<string | null>(null);
   const days = model.weeks.flat().filter((d) => d.inMonth);
@@ -126,15 +137,15 @@ export function BriefCalendar({ model }: { model: BriefMonth }) {
             </ul>
             {s.byType.length > 0 && (
               <div className="mt-3">
-                <div aria-hidden="true" className="flex h-2 overflow-hidden rounded-full bg-border">
-                  {s.byType.map((t, i) => (
-                    <span key={t.name} data-tone={TYPE_TONES[i % TYPE_TONES.length]} className="bg-tone-accent" style={{ width: `${(t.count / s.total) * 100}%` }} />
+                <div aria-hidden="true" className="flex h-2 gap-0.5 overflow-hidden rounded-full">
+                  {s.byType.map((t) => (
+                    <span key={t.name} className={typeFill(order, t.name)} style={{ width: `${(t.count / s.total) * 100}%` }} />
                   ))}
                 </div>
                 <p aria-label="Briefs by type" className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-foreground-secondary tabular-nums">
-                  {s.byType.map((t, i) => (
-                    <span key={t.name} data-tone={TYPE_TONES[i % TYPE_TONES.length]} className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true" className="size-2 rounded-full bg-tone-accent" />{`${t.name} ${t.count}`}
+                  {s.byType.map((t) => (
+                    <span key={t.name} className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true" className={cn("size-2 rounded-full", typeFill(order, t.name))} />{`${t.name} ${t.count}`}
                     </span>
                   ))}
                 </p>
@@ -170,8 +181,8 @@ export function BriefCalendar({ model }: { model: BriefMonth }) {
                       return (
                         <td key={model.weekCols[i].label} data-level={started ? level : undefined} className="px-2 py-1.5 text-center">
                           {started ? (
-                            <span className={cn("inline-flex h-7 min-w-10 items-center justify-center rounded-md px-1.5", level === 0 ? "text-foreground-muted" : "font-medium text-tone-text", HEAT[level])}>{c}</span>
-                          ) : <span className="text-foreground-muted">–</span>}
+                            <span className={cn("inline-flex h-7 min-w-10 items-center justify-center rounded-md px-1.5", level === 0 ? "text-foreground-secondary" : "font-medium text-tone-text", HEAT[level])}>{c}</span>
+                          ) : <span className="text-foreground-secondary">–</span>}
                         </td>
                       );
                     })}
@@ -208,9 +219,9 @@ export function BriefCalendar({ model }: { model: BriefMonth }) {
                   <button key={d.day} type="button" aria-haspopup="dialog" aria-label={dayAria(d)} aria-current={d.isToday ? "date" : undefined}
                     onClick={() => setOpen(d.day)}
                     className={cn(
-                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-accent",
+                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-surface-muted",
                       d.isDayOff ? "bg-surface-muted" : "bg-surface",
-                      d.isToday ? "border-ring" : "border-border",
+                      d.isToday ? "border-ring" : "border-border hover:border-border-strong",
                       d.isFuture && "opacity-60",
                       focusRing,
                     )}>
@@ -219,7 +230,7 @@ export function BriefCalendar({ model }: { model: BriefMonth }) {
                         "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
                         d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-foreground-secondary" : "text-foreground",
                       )}>{Number(d.day.slice(8))}</span>
-                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-[11px] text-foreground-muted tabular-nums">{d.count}</span>}
+                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-[11px] text-foreground-secondary tabular-nums">{d.count}</span>}
                     </span>
                     <Dots day={d} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>

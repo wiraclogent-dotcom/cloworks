@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
-import { Badge } from "@/components/shadcn/badge";
-import { TableCell, TableRow } from "@/components/shadcn/table";
+import { IconButton } from "@/components/ui/IconButton";
+import { Chip } from "@/components/ui/Chip";
+import { StatusIcon } from "@/components/ui/StatusIcon";
+import { cn } from "@/components/ui/cn";
+import { tableClass } from "@/components/ui/table";
+import { PROJECT_STATUS_TONE } from "@/lib/palette";
 import { PROJECT_STAGE_LABEL, TASK_STATUS_LABEL, formatJakartaDay } from "@/lib/projectTasks";
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
 import { StageSelect } from "./StageSelect";
@@ -14,6 +17,10 @@ import { DateEdit } from "./DateEdit";
 import { EditableName, OwnerSelect } from "./DetailEdit";
 import { RowActions } from "./RowActions";
 import type { TaskMode } from "@/lib/projectProgress";
+
+const tbl = tableClass();
+// Cells keep one line (the inline editors sit beside their buttons); the wrapper scrolls sideways when needed.
+const cell = (className?: string) => cn(tbl.td, "whitespace-nowrap", className);
 
 export type TaskRowData = {
   id: string;
@@ -51,22 +58,19 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
   const fileText = task.fileName ?? task.notes?.replace(/^Sheet file column: /, "") ?? (task.fileUrl ? "Open file" : "No file");
 
   return (
-    <TableRow className={canceled ? "text-foreground-muted line-through opacity-60" : undefined} data-editing={editing || undefined}>
-      <TableCell className="font-medium">
+    <tr className={cn(tbl.tr, canceled && "text-foreground-muted line-through opacity-60")} data-editing={editing || undefined}>
+      <td className={cell("font-medium")}>
         <div className="flex items-center gap-2">
           {canManage && (
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="size-7 shrink-0"
+            <IconButton
+              size="sm"
+              className="size-7 [&_svg]:size-3.5"
               aria-label={editing ? `Done editing ${label}` : `Edit ${label}`}
               aria-pressed={editing}
               title={editing ? "Done editing" : "Edit this row"}
+              icon={editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
               onClick={() => { setNameError(null); setEditing((e) => !e); }}
-            >
-              {editing ? <Check aria-hidden="true" className="size-3.5" /> : <Pencil aria-hidden="true" className="size-3.5" />}
-            </Button>
+            />
           )}
           {editing ? (
             <EditableName projectId={projectId} taskId={task.id} field="title" value={task.title} label={label} onFail={nameFailed} />
@@ -80,47 +84,47 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
             <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />
           </div>
         )}
-      </TableCell>
-      <TableCell>
+      </td>
+      <td className={cell()}>
         {editing ? (
           <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} onFail={nameFailed} />
         ) : task.subTitle ?? "—"}
-      </TableCell>
-      <TableCell>
+      </td>
+      <td className={cell()}>
         {editing ? (
           <OwnerSelect projectId={projectId} taskId={task.id} value={task.ownerId} owners={owners} label={label} />
         ) : task.ownerName ?? "—"}
-      </TableCell>
-      <TableCell>
+      </td>
+      <td className={cell()}>
         {mode === "status" ? (
           editing ? (
             <StatusSelect projectId={projectId} taskId={task.id} value={task.status} label={label} />
           ) : task.status ? (
-            <Badge variant="secondary">{TASK_STATUS_LABEL[task.status]}</Badge>
+            <Chip tone={PROJECT_STATUS_TONE[task.status]} icon={<StatusIcon status={task.status} />}>{TASK_STATUS_LABEL[task.status]}</Chip>
           ) : "—"
         ) : editing ? (
           <StageSelect projectId={projectId} taskId={task.id} value={task.stage} label={label} />
         ) : task.stage ? (
-          <Badge variant="secondary">{PROJECT_STAGE_LABEL[task.stage]}</Badge>
+          <Chip>{PROJECT_STAGE_LABEL[task.stage]}</Chip>
         ) : "—"}
-      </TableCell>
-      <TableCell className="tabular-nums">
+      </td>
+      <td className={cell("tabular-nums")}>
         {editing ? (
           <DateEdit projectId={projectId} taskId={task.id} field="start" iso={task.startIso} text={startText} label={label} />
         ) : startText}
-      </TableCell>
-      <TableCell className="tabular-nums">
+      </td>
+      <td className={cell("tabular-nums")}>
         {editing ? (
           <DateEdit projectId={projectId} taskId={task.id} field="due" iso={task.dueIso} text={dueText} label={label} />
         ) : dueText}
-      </TableCell>
-      <TableCell className="text-foreground-secondary">
+      </td>
+      <td className={cell("text-foreground-secondary")}>
         {editing ? (
           <FileLinkEdit projectId={projectId} taskId={task.id} fileUrl={task.fileUrl} text={fileText} label={label} />
         ) : task.fileUrl ? (
           <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{fileText}</a>
         ) : fileText}
-      </TableCell>
-    </TableRow>
+      </td>
+    </tr>
   );
 }

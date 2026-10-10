@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
-import { Input } from "@/components/shadcn/input";
+import { fieldClass } from "@/components/ui/Field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { safeAction } from "@/lib/safeAction";
 import { setTaskDetail, type TaskDetailField } from "./actions";
@@ -36,7 +36,7 @@ export function EditableName({ projectId, taskId, field, value, label, onFail }:
 
   return (
     <div className="grid gap-1">
-      <Input
+      <input
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
@@ -47,7 +47,7 @@ export function EditableName({ projectId, taskId, field, value, label, onFail }:
         aria-label={`${what} name for ${label}`}
         placeholder={field === "subTitle" ? "No detail" : undefined}
         disabled={pending}
-        className="h-8 min-w-36"
+        className={fieldClass({ size: "sm", className: "min-w-36" })}
       />
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
     </div>

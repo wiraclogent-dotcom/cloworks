@@ -3,9 +3,10 @@
 import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/shadcn/button";
-import { Input } from "@/components/shadcn/input";
-import { Badge } from "@/components/shadcn/badge";
+import { Button } from "@/components/ui/Button";
+import { IconButton } from "@/components/ui/IconButton";
+import { Chip } from "@/components/ui/Chip";
+import { fieldClass } from "@/components/ui/Field";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
 
@@ -52,8 +53,8 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
         />
       ) : (
         <div>
-          <Button type="button" size="sm" variant="secondary" onClick={() => setAdding(true)}>
-            <Plus aria-hidden="true" />Add milestone
+          <Button size="sm" variant="secondary" icon={<Plus aria-hidden="true" />} onClick={() => setAdding(true)}>
+            Add milestone
           </Button>
         </div>
       ))}
@@ -82,16 +83,12 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
         <span>{m.title}</span>
         <span className="flex items-center gap-2 tabular-nums text-foreground-secondary">
           {formatJakartaDay(m.dateIso)}
-          <Badge variant={m.done ? "secondary" : "outline"}>{m.done ? "Done" : "Upcoming"}</Badge>
+          <Chip tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Chip>
           {canManage && !confirming && (
             <>
-              <Button type="button" size="icon" variant="ghost" className="size-7" title="Edit" aria-label={`Edit ${m.title}`} onClick={onEdit}>
-                <Pencil aria-hidden="true" className="size-3.5" />
-              </Button>
-              <Button type="button" size="icon" variant="ghost" className="size-7 text-danger" title="Delete" aria-label={`Delete ${m.title}`}
-                onClick={() => { setError(null); setConfirming(true); }}>
-                <Trash2 aria-hidden="true" className="size-3.5" />
-              </Button>
+              <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title="Edit" aria-label={`Edit ${m.title}`} icon={<Pencil aria-hidden="true" />} onClick={onEdit} />
+              <IconButton size="sm" title="Delete" aria-label={`Delete ${m.title}`} icon={<Trash2 aria-hidden="true" />}
+                className="size-7 text-danger hover:text-danger [&_svg]:size-3.5" onClick={() => { setError(null); setConfirming(true); }} />
             </>
           )}
         </span>
@@ -99,8 +96,8 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
       {confirming && (
         <div role="group" aria-label={`Confirm deleting ${m.title}`} className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
           <span>Delete this milestone?</span>
-          <Button type="button" size="sm" variant="destructive" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)} autoFocus>Cancel</Button>
+          <Button size="sm" variant="danger" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
+          <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)} autoFocus>Cancel</Button>
         </div>
       )}
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
@@ -130,10 +127,10 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
   return (
     <form onSubmit={submit} className="grid gap-2 rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
-          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className="h-8 min-w-48 flex-1" autoFocus />
-        <Input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required disabled={pending}
-          aria-label={`Date for ${label}`} className="h-8 w-40" />
+        <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
+          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className={fieldClass({ size: "sm", className: "min-w-48 flex-1" })} autoFocus />
+        <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required disabled={pending}
+          aria-label={`Date for ${label}`} className={fieldClass({ size: "sm", className: "w-40" })} />
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={form.done} onChange={(e) => setForm((f) => ({ ...f, done: e.target.checked }))} disabled={pending} />
           Done
@@ -141,8 +138,8 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
       </div>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
-        <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="sm" disabled={pending}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
+        <Button type="submit" size="sm" variant="primary" disabled={pending}>{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );

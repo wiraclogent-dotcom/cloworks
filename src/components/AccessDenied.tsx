@@ -11,7 +11,7 @@ export function AccessDenied({ description, backHref = "/requests", backLabel = 
   description: string; backHref?: string; backLabel?: string;
 }) {
   return (
-    <EmptyState role="alert" titleAs="h1" icon={<Lock />} title="403 · Access denied" description={description} className="mx-auto max-w-xl"
+    <EmptyState role="alert" titleAs="h1" icon={<Lock />} title="403 · Access denied" description={description} className="mx-auto mt-6 max-w-xl"
       action={<Link href={backHref} className={buttonClass({ variant: "secondary" })}><ArrowLeft aria-hidden="true" />{backLabel}</Link>} />
   );
 }

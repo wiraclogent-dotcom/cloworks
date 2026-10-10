@@ -22,7 +22,7 @@ export async function ArticleContent({ params }: { params: Promise<{ slug: strin
   return (
     <>
       <PageHeader breadcrumb={[{ label: "Help center", href: "/help" }, { label: article.title }]} title={article.title} description={article.section} />
-      <div className="grid gap-6 lg:grid-cols-[1fr_200px]">
+      <div className="grid gap-5 lg:grid-cols-[1fr_200px]">
         <article>
           <ArticleBody body={article.body} />
           <nav aria-label="Guide navigation" className="mt-8 flex justify-between gap-4 border-t border-border pt-4 text-sm">
