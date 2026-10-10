@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  // relationJoins makes "join" the default relationLoadStrategy: a query with nested includes is ONE SQL statement
+  // instead of one per relation (each a round trip to the database).
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -194,6 +197,8 @@ model Request {
   @@index([assigneeId])
   @@index([requestedAt])
   @@index([workspaceId])
+  @@index([requesterId])
+  @@index([status, deadline])
 }
 
 model StatusEvent {
@@ -212,6 +217,7 @@ model StatusEvent {
 
   @@index([requestId])
   @@index([workspaceId])
+  @@index([to, at])
 }
 
 model DeadlineEvent {
@@ -246,9 +252,10 @@ model Comment {
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-  @@index([requestId])
   @@index([requestId, createdAt])
   @@index([workspaceId])
+  @@index([authorId])
+  @@index([createdAt])
 }
 
 model ChatRead {
@@ -322,6 +329,7 @@ model Notification {
 
   @@index([userId, readAt])
   @@index([workspaceId])
+  @@index([userId, createdAt])
 }
 
 enum ProjectStage {

@@ -30,11 +30,8 @@ import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./p
 async function TodayLoader() {
   const { user, db } = await requireScope();
   const now = new Date();
-  const [me, overview] = await Promise.all([
-    db.user.findUnique({ where: { id: user.id }, select: { name: true } }),
-    todayOverview(db, now),
-  ]);
-  return <TodayOverview name={me?.name ?? ""} now={now} overview={overview} />;
+  const overview = await todayOverview(db, now);
+  return <TodayOverview name={user.name} now={now} overview={overview} />;
 }
 
 /** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */

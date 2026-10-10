@@ -62,7 +62,7 @@ describe("withUser", () => {
     expect(r).toEqual({ ok: false, custom: true });
   });
   it("runs fn for a valid user and lets fn's own errors through", async () => {
-    const u = { id: "u", appRole: "ADMIN" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false };
+    const u = { id: "u", name: "U", appRole: "ADMIN" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false };
     expect(await withUser(async () => u, async (x) => x.id)).toBe("u");
     await expect(withUser(async () => u, async () => { throw new Error("boom"); })).rejects.toThrow("boom");
   });
@@ -91,6 +91,6 @@ describe("password-change flag", () => {
     await expect(requireScope()).rejects.toThrow("NEXT_REDIRECT:/change-password");
   });
   it("dbFor scopes to the user's workspace", () => {
-    expect(dbFor({ id: "u", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w2", mustChangePassword: false })).toEqual({ scopedTo: "w2" });
+    expect(dbFor({ id: "u", name: "U", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w2", mustChangePassword: false })).toEqual({ scopedTo: "w2" });
   });
 });

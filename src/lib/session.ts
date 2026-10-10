@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma, scopedDb, type ScopedDb } from "./db";
 import { isUnauthenticated, PasswordChangeRequiredError, requireUserWith, type SessionUser } from "./session-core";
+import { loadActiveUserOnce } from "./activeUser";
 
 /**
  * Current user without the password-change check, for the /change-password flow itself. Memoised per request.
  * Throws when unauthenticated.
  */
-export const requireUserForPasswordChange: () => Promise<SessionUser> = cache(() => requireUserWith(() => auth(), prisma));
+export const requireUserForPasswordChange: () => Promise<SessionUser> = cache(() => requireUserWith(() => auth(), prisma, loadActiveUserOnce));
 
 /**
  * Authoritative current user. Memoised per request by React `cache()` (the layout shell and the page share one lookup);

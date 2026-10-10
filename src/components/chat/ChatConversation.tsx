@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, ExternalLink, LoaderCircle, SendHorizontal } from "lucide-react";
 import type { RequestStatus } from "@prisma/client";
 import type { ChatMessage } from "@/lib/chat";
-import { splitMentions } from "@/lib/collab";
+import { splitMentions } from "@/lib/mentions";
 import { StatusChip } from "../ui/StatusChip";
 import { Skeleton } from "../ui/Skeleton";
 import { IconButton } from "../ui/IconButton";

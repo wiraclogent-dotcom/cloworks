@@ -49,8 +49,7 @@ export async function setIncludeKpi(requestId: string, value: boolean): Promise<
 
 export async function setNeedsMotion(requestId: string, value: boolean): Promise<{ ok: true } | CollabFail> {
   return run(async (u, db) => {
-    const r = await setNeedsMotionWith(db, u, requestId, value);
-    if (r.ok) revalidatePath("/requests");
-    return r;
+    // The toggle calls router.refresh() on success, so no revalidatePath (it would render the page twice).
+    return setNeedsMotionWith(db, u, requestId, value);
   });
 }

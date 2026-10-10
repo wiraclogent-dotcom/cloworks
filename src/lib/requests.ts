@@ -91,7 +91,7 @@ const BOARD_COLUMN_ORDER: readonly RequestStatus[] = ["REQUESTED", "ON_PROGRESS"
 /**
  * Board data: per column the TOTAL matching the filters plus only the first `limit` rows (never the whole table).
  * Active columns: deadline asc (nulls last), then requestedAt desc. DONE and CANCELLED: newest request first.
- * One grouped count + one bounded query per non-empty column. A status filter keeps the four columns and
+ * One grouped count plus one bounded query per column, all in parallel. A status filter keeps the four columns and
  * empties the others; CANCELLED gets a fifth column only when it is the status filter.
  */
 export async function listBoardColumns(
@@ -102,26 +102,32 @@ export async function listBoardColumns(
 ): Promise<BoardColumn[]> {
   const statuses: RequestStatus[] = filter.status === "CANCELLED" ? [...BOARD_COLUMN_ORDER, "CANCELLED"] : [...BOARD_COLUMN_ORDER];
   const clauses = filterClauses(filter);
-  const grouped = await db.request.groupBy({
-    by: ["status"],
-    where: { AND: clauses },
-    _count: { _all: true },
-    orderBy: { status: "asc" },
-  });
+  // The grouped count and the column queries run together (one round trip, not two): a column whose count turns
+  // out to be 0 simply returns no rows.
+  const [grouped, columnRows] = await Promise.all([
+    db.request.groupBy({
+      by: ["status"],
+      where: { AND: clauses },
+      _count: { _all: true },
+      orderBy: { status: "asc" },
+    }),
+    Promise.all(statuses.map((status) => {
+      if (filter.status && filter.status !== status) return [];
+      const take = Math.min(BOARD_MAX_PER_COLUMN, Math.max(1, limits.byStatus?.[status] ?? limits.limit ?? BOARD_PAGE_SIZE));
+      const terminal = status === "DONE" || status === "CANCELLED";
+      return db.request.findMany({
+        where: { AND: [{ status }, ...clauses] },
+        orderBy: terminal ? [{ requestedAt: "desc" }, { id: "asc" }] : [DEADLINE_ASC, { requestedAt: "desc" }, { id: "asc" }],
+        take,
+        select: ROW_SELECT,
+      });
+    })),
+  ]);
   const counts = new Map(grouped.map((g) => [g.status, g._count._all]));
-  return Promise.all(statuses.map(async (status): Promise<BoardColumn> => {
+  return statuses.map((status, i): BoardColumn => {
     const total = filter.status && filter.status !== status ? 0 : counts.get(status) ?? 0;
-    const take = Math.min(BOARD_MAX_PER_COLUMN, Math.max(1, limits.byStatus?.[status] ?? limits.limit ?? BOARD_PAGE_SIZE));
-    if (total === 0) return { status, total, rows: [] };
-    const terminal = status === "DONE" || status === "CANCELLED";
-    const rows = await db.request.findMany({
-      where: { AND: [{ status }, ...clauses] },
-      orderBy: terminal ? [{ requestedAt: "desc" }, { id: "asc" }] : [DEADLINE_ASC, { requestedAt: "desc" }, { id: "asc" }],
-      take,
-      select: ROW_SELECT,
-    });
-    return { status, total, rows: rows.map((r) => toRow(r, now)) };
-  }));
+    return { status, total, rows: total === 0 ? [] : columnRows[i].map((r) => toRow(r, now)) };
+  });
 }
 
 export type SortKey = "title" | "brand" | "division" | "requester" | "assignee" | "status" | "requested" | "deadline";

@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
@@ -106,9 +107,20 @@ export async function notifyWith(
 let mailer: Mailer | undefined;
 const realMailer = () => (mailer ??= createMailerFromEnv());
 
-/** Default notifier for a given db handle, using the env-configured mailer. */
+/**
+ * Default notifier for a given db handle, using the env-configured mailer. Inside a request it runs after the
+ * response (`after()`), so a status change or comment never waits on the bell rows or the email send; outside a
+ * request (scripts, tests) `after()` throws and it runs inline instead.
+ */
 export function notifierFor(db: PrismaClient): Notifier {
-  return (input) => notifyWith(db, realMailer(), input);
+  return async (input) => {
+    const run = () => notifyWith(db, realMailer(), input);
+    try {
+      after(run);
+    } catch {
+      await run();
+    }
+  };
 }
 
 /** Runs a post-commit notification step; any failure is logged and swallowed. */
