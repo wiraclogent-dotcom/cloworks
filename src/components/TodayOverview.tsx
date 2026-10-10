@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { ArrowUpRight, CircleCheckBig, Clock, Inbox, TriangleAlert } from "lucide-react";
-import { greetingFor, summarySentence, type TodayOverview as Overview } from "@/lib/todayOverview";
+import { ArrowUpRight, CircleCheckBig, Clock, Inbox, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
+import { dayPeriodFor, greetingFor, summarySentence, type DayPeriod, type TodayOverview as Overview } from "@/lib/todayOverview";
+import { WelcomeIllustration } from "./WelcomeIllustration";
 import { cn, focusRing } from "./ui/cn";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+const PERIOD_ICON: Record<DayPeriod, React.ReactNode> = { morning: <Sunrise />, afternoon: <Sun />, evening: <Moon /> };
 
 /** One number that opens the list it counts. `emphasis` colours the number only when there is something to act on. */
 function Tile({ href, icon, label, value, emphasis }: { href: string; icon: React.ReactNode; label: string; value: number; emphasis?: string }) {
@@ -26,12 +29,23 @@ function Tile({ href, icon, label, value, emphasis }: { href: string; icon: Reac
  */
 export function TodayOverview({ name, now, overview }: { name: string; now: Date; overview: Overview }) {
   const firstName = name.trim().split(/\s+/)[0] ?? "";
+  const period = dayPeriodFor(now);
   return (
     <section aria-label="Today" className="mb-4 grid min-w-0 gap-3">
-      <div className="flex min-w-0 flex-col justify-center rounded-xl border border-border bg-card p-5 text-card-foreground shadow-card">
-        <p className="text-[13px] text-foreground-secondary">{DATE_FORMAT.format(now)}</p>
-        <h2 className="mt-1 text-2xl leading-8 font-semibold text-heading">{greetingFor(now)}{firstName ? `, ${firstName}` : ""}</h2>
-        <p className="mt-1 text-sm text-foreground-secondary">{summarySentence(overview)}</p>
+      <div className="relative flex min-w-0 items-center gap-6 overflow-hidden rounded-xl border border-border bg-card p-5 text-card-foreground shadow-card">
+        {/* Soft Aqua wash from the illustration side */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_100%_50%,var(--accent),transparent_70%)] opacity-60" />
+        <div className="relative min-w-0 flex-1">
+          <p className="inline-flex items-center gap-1.5 text-[13px] text-foreground-secondary">
+            <span aria-hidden="true" className="text-[var(--status-due-soon-accent)] [&_svg]:size-4">{PERIOD_ICON[period]}</span>
+            {DATE_FORMAT.format(now)}
+          </p>
+          <h2 className="mt-1 text-2xl leading-8 font-semibold text-heading">{greetingFor(now)}{firstName ? `, ${firstName}` : ""}</h2>
+          <p className="mt-1 text-sm text-foreground-secondary">{summarySentence(overview)}</p>
+        </div>
+        <div className="relative hidden h-[7.5rem] w-[234px] shrink-0 sm:block">
+          <WelcomeIllustration period={period} />
+        </div>
       </div>
       <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
         <li className="min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>

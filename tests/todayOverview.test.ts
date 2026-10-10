@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { jakartaDayStart, greetingFor, summarySentence, todayOverview } from "@/lib/todayOverview";
+import { jakartaDayStart, dayPeriodFor, greetingFor, summarySentence, todayOverview } from "@/lib/todayOverview";
 
 describe("jakartaDayStart", () => {
   it("is midnight in Jakarta, which is 17:00 UTC the day before", () => {
@@ -9,6 +9,14 @@ describe("jakartaDayStart", () => {
   it("keeps a late-UTC instant on the Jakarta day it falls in", () => {
     // 2026-10-08 18:00 UTC = 2026-10-09 01:00 Jakarta.
     expect(jakartaDayStart(new Date("2026-10-08T18:00:00Z")).toISOString()).toBe("2026-10-08T17:00:00.000Z");
+  });
+});
+
+describe("dayPeriodFor", () => {
+  it("follows the Jakarta greeting boundaries", () => {
+    expect(dayPeriodFor(new Date("2026-10-08T04:59:00Z"))).toBe("morning");   // 11:59 Jakarta
+    expect(dayPeriodFor(new Date("2026-10-08T05:00:00Z"))).toBe("afternoon"); // 12:00 Jakarta
+    expect(dayPeriodFor(new Date("2026-10-08T11:00:00Z"))).toBe("evening");   // 18:00 Jakarta
   });
 });
 

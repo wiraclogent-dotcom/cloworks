@@ -19,6 +19,14 @@ export function greetingFor(now: Date): "Good morning" | "Good afternoon" | "Goo
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 }
 
+export type DayPeriod = "morning" | "afternoon" | "evening";
+
+/** Time of day for the welcome card's icon and illustration; same boundaries as greetingFor. */
+export function dayPeriodFor(now: Date): DayPeriod {
+  const g = greetingFor(now);
+  return g === "Good morning" ? "morning" : g === "Good afternoon" ? "afternoon" : "evening";
+}
+
 /** "1 request" / "3 requests". */
 function requests(n: number): string {
   return `${n} ${n === 1 ? "request" : "requests"}`;

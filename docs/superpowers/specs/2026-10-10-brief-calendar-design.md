@@ -80,3 +80,30 @@ requestedAt, status, type name.
 ## Out of scope
 
 Daily targets, public holidays, notifications/reminders for missed days, editing from this page.
+
+## Update 2026-10-10: everyone's briefs, a month summary and a weekly table
+
+Anyone can give a brief now, not only the social media team, so the per-person "X / Y work days" tiles, the
+coloured per-person circles and the "missed day" idea are gone.
+
+- **People:** every requester with at least one request in the month (no job-role filter). `listBriefPeople`
+  is removed; `loadBriefItems(db, month)` loads all requests in the Jakarta month with the requester's name.
+- **Month summary** (replaces the tiles): Briefs this month · Today (— outside the current month) · Per work day
+  (briefs up to today ÷ elapsed Mon–Sat days, one decimal; — before the first work day) · Busiest day (earliest
+  on a tie). Under it: briefs by request type, most first.
+- **Briefs per requester, per week:** one row per requester, most briefs first then by name; one column per
+  calendar row, labelled by its in-month days (e.g. "5–11 Oct", Sunday included); weeks not started show "–";
+  a Total column. Empty month: "No briefs this month yet."
+- **Grid:** each day shows its brief count ("3 briefs"), nothing on a day without briefs; Sunday and future
+  styling unchanged. The day dialog groups that day's briefs by who sent them ("No briefs this day." if none).
+- The legend is removed.
+
+### Visual refresh (2026-10-10)
+
+- Summary is one card: the month total with a bar per day underneath (busiest day solid, future days flat),
+  and Today / Per work day / Busiest day beside it, plus a stacked bar of briefs by type.
+- The weekly table is a heat map: each cell is tinted in four steps relative to the busiest cell; each row
+  starts with the person's circle.
+- The calendar's per-person circles are back (avatar colour, count inside above 1), only for people who briefed
+  that day, at most four then "+N", with the day's total in the corner and the hover tooltip as before. A legend
+  lists the month's requesters.

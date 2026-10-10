@@ -138,6 +138,7 @@ export async function addAttachmentWith(
   user: Actor,
   requestId: string,
   input: { name: string; url: string },
+  notifier: Notifier = notifierFor(db),
 ): Promise<{ ok: true; id: string } | CollabFail> {
   const name = typeof input?.name === "string" ? input.name.trim() : "";
   const url = typeof input?.url === "string" ? input.url.trim() : "";
@@ -146,9 +147,16 @@ export async function addAttachmentWith(
   if (url.length > MAX_ATTACHMENT_URL) return fail("INVALID", `Links can be at most ${MAX_ATTACHMENT_URL} characters.`);
   if (!isHttpUrl(url)) return fail("INVALID", "Enter a full http(s) link, for example https://drive.google.com/…");
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { title: true, requesterId: true, assigneeId: true } });
   if (!req) return fail("NOT_FOUND", "Request not found.");
   const a = await db.attachment.create({ data: { requestId, uploaderId: user.id, name, url } });
+  // In-app only: a burst of links should not flood anyone's email.
+  const userIds = [...new Set([req.requesterId, req.assigneeId])].filter((id): id is string => !!id && id !== user.id);
+  if (userIds.length)
+    await bestEffort(async () => {
+      const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
+      await notifier({ actorId: user.id, userIds, requestId, type: "ATTACHMENT", email: false, message: buildMessage("ATTACHMENT", actor?.name ?? "Someone", req.title, undefined, { name }) });
+    });
   return { ok: true, id: a.id };
 }
 

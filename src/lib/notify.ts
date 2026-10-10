@@ -3,8 +3,9 @@ import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
 
 export type { Mailer } from "./mailer";
-export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE";
-export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string };
+export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE" | "DESIGN_SENT" | "ATTACHMENT";
+/** `email: false` stores the in-app row only (default: email it too when a mailer is configured). */
+export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string; email?: boolean };
 export type Notifier = (input: NotifyInput) => Promise<void>;
 
 
@@ -17,6 +18,8 @@ const SUBJECTS: Record<NotificationType, string> = {
   MENTION: "You were mentioned",
   STATUS: "Status changed",
   DEADLINE: "Deadline changed",
+  DESIGN_SENT: "Design sent for review",
+  ATTACHMENT: "New design link",
 };
 
 /** Strips control characters (incl. CR/LF), collapses whitespace, caps length. */
@@ -30,6 +33,7 @@ export function buildMessage(
   actorName: string,
   title: string,
   change?: { from: string; to: string },
+  extra?: { name?: string },
 ): string {
   const a = cleanLine(actorName, 80);
   const t = cleanLine(title, 120);
@@ -37,6 +41,8 @@ export function buildMessage(
     case "ASSIGNED": return `${a} assigned you to “${t}”`;
     case "COMMENT": return `${a} commented on “${t}”`;
     case "MENTION": return `${a} mentioned you in “${t}”`;
+    case "DESIGN_SENT": return `${a} sent the design for “${t}” for review`;
+    case "ATTACHMENT": return `${a} added a design link “${cleanLine(extra?.name ?? "", 80)}” to “${t}”`;
     case "DEADLINE": return change?.from
       ? `${a} moved the deadline of “${t}” from ${cleanLine(change.from, 40)} to ${cleanLine(change.to, 40)}`
       : `${a} set the deadline of “${t}” to ${cleanLine(change?.to ?? "", 40)}`;
@@ -55,7 +61,7 @@ function safeBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-/** Best-effort: never throws. Stores a notification row for every recipient (for a future inbox) and emails those with an address when email is configured. */
+/** Best-effort: never throws. Stores a notification row for every recipient (the in-app bell) and emails those with an address when email is configured, unless `email: false`. */
 export async function notifyWith(
   db: PrismaClient,
   mailer: Mailer,
@@ -78,7 +84,7 @@ export async function notifyWith(
       users.map(async (u) => {
         try {
           const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
-          if (!u.email) return;
+          if (!u.email || input.email === false) return;
           await mailer.send({ to: u.email, subject, text });
           await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
         } catch (e) {

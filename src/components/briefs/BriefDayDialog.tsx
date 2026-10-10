@@ -3,17 +3,17 @@
 import Link from "next/link";
 import { useEffect, useId, useRef } from "react";
 import { X } from "lucide-react";
-import type { BriefItem, BriefPerson } from "@/lib/briefCalendar";
+import type { BriefItem } from "@/lib/briefCalendar";
 import { dayLabel } from "@/lib/calendar";
 import { StatusBadge } from "../status";
 import { IconButton } from "../ui/IconButton";
 import { cn, focusRing } from "../ui/cn";
 
 /**
- * One day of the brief calendar: that day's requests grouped by person, "No brief" for anyone who sent none. Native
+ * One day of the brief calendar: that day's requests grouped by who sent them, in order of their first brief. Native
  * `<dialog>` like `calendar/DayDialog` (focus trap and Esc for free); closing returns focus to the opener.
  */
-export function BriefDayDialog({ day, people, items, onClose }: { day: string; people: BriefPerson[]; items: BriefItem[]; onClose: () => void }) {
+export function BriefDayDialog({ day, items, onClose }: { day: string; items: BriefItem[]; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -26,6 +26,8 @@ export function BriefDayDialog({ day, people, items, onClose }: { day: string; p
     };
   }, []);
   const count = items.length === 1 ? "1 brief" : `${items.length} briefs`;
+  const groups = new Map<string, { name: string; items: BriefItem[] }>();
+  for (const it of items) (groups.get(it.requesterId) ?? groups.set(it.requesterId, { name: it.requesterName, items: [] }).get(it.requesterId)!).items.push(it);
   return (
     <dialog ref={ref} aria-labelledby={titleId}
       onCancel={(e) => { e.preventDefault(); onClose(); }}
@@ -39,31 +41,28 @@ export function BriefDayDialog({ day, people, items, onClose }: { day: string; p
           </div>
           <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
         </div>
-        <div className="space-y-4">
-          {people.map((p) => {
-            const mine = items.filter((it) => it.requesterId === p.id);
-            return (
-              <section key={p.id} role="group" aria-label={p.name}>
-                <h3 className="mb-1.5 text-sm font-semibold text-foreground">{p.name}</h3>
-                {mine.length === 0 ? (
-                  <p className="text-sm text-foreground-secondary">No brief</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {mine.map((it) => (
-                      <li key={it.id} className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-surface p-2">
-                        <Link href={`/requests/${it.id}`} className={cn("truncate text-sm font-medium text-link hover:underline", focusRing)}>{it.title}</Link>
-                        <span className="flex items-center gap-2 text-xs text-foreground-secondary">
-                          {it.typeName}
-                          <StatusBadge status={it.status} />
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+        {groups.size === 0 ? (
+          <p className="text-sm text-foreground-secondary">No briefs this day.</p>
+        ) : (
+          <div className="space-y-4">
+            {[...groups].map(([id, g]) => (
+              <section key={id} role="group" aria-label={g.name}>
+                <h3 className="mb-1.5 text-sm font-semibold text-foreground">{g.name}</h3>
+                <ul className="space-y-1.5">
+                  {g.items.map((it) => (
+                    <li key={it.id} className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-surface p-2">
+                      <Link href={`/requests/${it.id}`} className={cn("truncate text-sm font-medium text-link hover:underline", focusRing)}>{it.title}</Link>
+                      <span className="flex items-center gap-2 text-xs text-foreground-secondary">
+                        {it.typeName}
+                        <StatusBadge status={it.status} />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </section>
-            );
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </dialog>
   );
