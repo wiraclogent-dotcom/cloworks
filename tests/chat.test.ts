@@ -130,7 +130,7 @@ describe("request chat", () => {
       expect(r.messages[29].body).toBe("m34");
       expect(r.hasOlder).toBe(true);
       expect(r.messages[0].author).toEqual({ id: C, name: "c" });
-      const older = await listMessagesWith(db.prisma, Q, A, { before: r.messages[0].createdAt });
+      const older = await listMessagesWith(db.prisma, Q, A, { before: { at: r.messages[0].createdAt, id: r.messages[0].id } });
       if (!older.ok) throw new Error("expected ok");
       expect(older.messages.map((m) => m.body)).toEqual(["m0", "m1", "m2", "m3", "m4"]);
       expect(older.hasOlder).toBe(false);
@@ -140,7 +140,9 @@ describe("request chat", () => {
       const Q = await mkUser("q");
       const A = await mkReq(Q);
       for (let i = 0; i < 3; i++) await say(A, C, `m${i}`, day(i + 1));
-      const r = await listMessagesWith(db.prisma, Q, A, { after: day(1) });
+      const first = await listMessagesWith(db.prisma, Q, A);
+      if (!first.ok) throw new Error("expected ok");
+      const r = await listMessagesWith(db.prisma, Q, A, { after: { at: first.messages[0].createdAt, id: first.messages[0].id } });
       if (!r.ok) throw new Error("expected ok");
       expect(r.messages.map((m) => m.body)).toEqual(["m1", "m2"]);
       expect(r.hasOlder).toBe(false);
@@ -153,6 +155,51 @@ describe("request chat", () => {
       expect(same.messages).toHaveLength(2);
       const ids = same.messages.map((m) => m.id);
       expect(ids).toEqual([...ids].sort());
+    });
+
+    it("orders tied timestamps by id regardless of insertion order", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q);
+      const t = day(8);
+      await db.prisma.comment.create({ data: { id: "t-b", requestId: A, authorId: C, body: "b", createdAt: t } });
+      await db.prisma.comment.create({ data: { id: "t-a", requestId: A, authorId: C, body: "a", createdAt: t } });
+      const r = await listMessagesWith(db.prisma, Q, A);
+      if (!r.ok) throw new Error("expected ok");
+      expect(r.messages.map((m) => m.id)).toEqual(["t-a", "t-b"]);
+    });
+
+    it("before cursor keeps ties across a page boundary", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q);
+      const tie = day(9);
+      const ids: string[] = [];
+      await db.prisma.comment.create({ data: { id: "bd-a", requestId: A, authorId: C, body: "x", createdAt: tie } });
+      await db.prisma.comment.create({ data: { id: "bd-b", requestId: A, authorId: C, body: "y", createdAt: tie } });
+      ids.push("bd-a", "bd-b");
+      for (let i = 0; i < 29; i++) {
+        const c = await say(A, C, `n${i}`, new Date(Date.UTC(2026, 8, 10, 0, i)));
+        ids.push(c.id);
+      }
+      const p1 = await listMessagesWith(db.prisma, Q, A);
+      if (!p1.ok) throw new Error("expected ok");
+      expect(p1.messages).toHaveLength(30);
+      expect(p1.messages[0].id).toBe("bd-b");
+      expect(p1.hasOlder).toBe(true);
+      const p2 = await listMessagesWith(db.prisma, Q, A, { before: { at: p1.messages[0].createdAt, id: p1.messages[0].id } });
+      if (!p2.ok) throw new Error("expected ok");
+      expect(p2.messages.map((m) => m.id)).toEqual(["bd-a"]);
+      expect([...p2.messages, ...p1.messages].map((m) => m.id).sort()).toEqual([...ids].sort());
+    });
+
+    it("after cursor returns tied rows with a higher id but not the cursor", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q);
+      const t = day(11);
+      await db.prisma.comment.create({ data: { id: "af-a", requestId: A, authorId: C, body: "a", createdAt: t } });
+      await db.prisma.comment.create({ data: { id: "af-b", requestId: A, authorId: C, body: "b", createdAt: t } });
+      const r = await listMessagesWith(db.prisma, Q, A, { after: { at: t, id: "af-a" } });
+      if (!r.ok) throw new Error("expected ok");
+      expect(r.messages.map((m) => m.id)).toEqual(["af-b"]);
     });
 
     it("rejects non-participants and unknown requests", async () => {

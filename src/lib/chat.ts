@@ -124,12 +124,13 @@ export async function listChatsWith(db: Db, userId: string, opts: { limit?: numb
 /**
  * Messages of one chat, ascending. Default: the newest page. `before`: the page older than that time.
  * `after`: everything newer (capped at 100), where `hasOlder` is always false (the client keeps its own value).
+ * Cursors are compound `(createdAt, id)` positions so comments sharing a timestamp are never dropped or repeated.
  */
 export async function listMessagesWith(
   db: Db,
   userId: string,
   requestId: string,
-  opts: { after?: Date; before?: Date; limit?: number } = {},
+  opts: { after?: { at: Date; id: string }; before?: { at: Date; id: string }; limit?: number } = {},
 ): Promise<{ ok: true; messages: ChatMessage[]; hasOlder: boolean } | CollabFail> {
   const part = await isParticipantWith(db, userId, requestId);
   if (part === "missing") return { ok: false, code: "NOT_FOUND", message: "Request not found." };
@@ -138,7 +139,7 @@ export async function listMessagesWith(
   const select = { id: true, body: true, createdAt: true, author: { select: { id: true, name: true } } } as const;
   if (opts.after) {
     const rows = await db.comment.findMany({
-      where: { requestId, createdAt: { gt: opts.after } },
+      where: { requestId, OR: [{ createdAt: { gt: opts.after.at } }, { createdAt: opts.after.at, id: { gt: opts.after.id } }] },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       take: 100,
       select,
@@ -147,7 +148,10 @@ export async function listMessagesWith(
   }
   const limit = opts.limit ?? MESSAGE_PAGE;
   const rows = await db.comment.findMany({
-    where: { requestId, ...(opts.before ? { createdAt: { lt: opts.before } } : {}) },
+    where: {
+      requestId,
+      ...(opts.before ? { OR: [{ createdAt: { lt: opts.before.at } }, { createdAt: opts.before.at, id: { lt: opts.before.id } }] } : {}),
+    },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: limit + 1,
     select,
