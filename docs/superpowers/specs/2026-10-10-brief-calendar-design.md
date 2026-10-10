@@ -97,3 +97,13 @@ coloured per-person circles and the "missed day" idea are gone.
 - **Grid:** each day shows its brief count ("3 briefs"), nothing on a day without briefs; Sunday and future
   styling unchanged. The day dialog groups that day's briefs by who sent them ("No briefs this day." if none).
 - The legend is removed.
+
+### Visual refresh (2026-10-10)
+
+- Summary is one card: the month total with a bar per day underneath (busiest day solid, future days flat),
+  and Today / Per work day / Busiest day beside it, plus a stacked bar of briefs by type.
+- The weekly table is a heat map: each cell is tinted in four steps relative to the busiest cell; each row
+  starts with the person's circle.
+- The calendar's per-person circles are back (avatar colour, count inside above 1), only for people who briefed
+  that day, at most four then "+N", with the day's total in the corner and the hover tooltip as before. A legend
+  lists the month's requesters.

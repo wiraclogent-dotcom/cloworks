@@ -11,7 +11,8 @@ export type BriefPerson = { id: string; name: string };
 export type BriefItem = {
   id: string; title: string; requesterId: string; requesterName: string; requestDay: string; typeName: string; status: RequestStatus;
 };
-export type BriefDay = CalendarDay & { isDayOff: boolean; isFuture: boolean; count: number };
+/** `people`: who briefed that day and how many, in the weekly table's order (most briefs this month first). */
+export type BriefDay = CalendarDay & { isDayOff: boolean; isFuture: boolean; count: number; people: { person: BriefPerson; count: number }[] };
 export type BriefSummary = {
   total: number;
   /** Briefs today; null when today is not in this month. */
@@ -34,7 +35,7 @@ export function buildBriefMonth(month: string, today: string, items: BriefItem[]
   for (const it of items) if (it.requestDay.startsWith(month)) (itemsByDay[it.requestDay] ??= []).push(it);
 
   const weeks = buildMonthGrid(month, today).weeks.map((week) =>
-    week.map((d): BriefDay => ({ ...d, isDayOff: d.weekday === 6, isFuture: d.day > today, count: d.inMonth ? itemsByDay[d.day]?.length ?? 0 : 0 })),
+    week.map((d): BriefDay => ({ ...d, isDayOff: d.weekday === 6, isFuture: d.day > today, count: d.inMonth ? itemsByDay[d.day]?.length ?? 0 : 0, people: [] })),
   );
   const days = weeks.flat().filter((d) => d.inMonth);
 
@@ -75,6 +76,13 @@ export function buildBriefMonth(month: string, today: string, items: BriefItem[]
       }
   });
   const rows = [...rowsById.values()].sort((a, b) => b.total - a.total || a.person.name.localeCompare(b.person.name));
+
+  const order = new Map(rows.map((r, i) => [r.person.id, i]));
+  for (const d of days) {
+    const per = new Map<string, number>();
+    for (const it of itemsByDay[d.day] ?? []) per.set(it.requesterId, (per.get(it.requesterId) ?? 0) + 1);
+    d.people = [...per].sort((a, b) => order.get(a[0])! - order.get(b[0])!).map(([id, count]) => ({ person: rows[order.get(id)!].person, count }));
+  }
 
   return { weeks, summary, weekCols, rows, itemsByDay };
 }

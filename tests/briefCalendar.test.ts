@@ -69,6 +69,12 @@ describe("buildBriefMonth", () => {
     ]);
   });
 
+  it("each day lists who briefed and how many, in the same order as the weekly table", () => {
+    expect(cell(m, "2026-10-08").people).toEqual([{ person: { id: "f", name: "F" }, count: 2 }, { person: { id: "s", name: "S" }, count: 1 }]);
+    expect(cell(m, "2026-10-05").people).toEqual([{ person: { id: "d", name: "D" }, count: 1 }]);
+    expect(cell(m, "2026-10-02").people).toEqual([]);
+  });
+
   it("ignores days outside the month", () => {
     const x = buildBriefMonth("2026-10", "2026-10-08", [item("f", "2026-11-02"), item("f", "2026-09-30")]);
     expect(cell(x, "2026-09-30").count).toBe(0);

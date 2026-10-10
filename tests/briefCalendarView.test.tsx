@@ -16,7 +16,7 @@ const ITEMS: BriefItem[] = [
   item("d", "Dimas", "2026-10-08", "General Design"),
 ];
 const OCT = buildBriefMonth("2026-10", "2026-10-08", ITEMS);
-const DAY8 = "Thursday 8 October: 3 briefs";
+const DAY8 = "Thursday 8 October: 3 briefs, Fafa 2, Dimas 1";
 
 beforeEach(() => {
   narrow = false;
@@ -35,7 +35,7 @@ describe("BriefCalendar", () => {
     expect(tile("Per work day").textContent).toContain("0.7"); // 5 briefs over 7 elapsed work days
     expect(tile("Busiest day").textContent).toContain("Thu 8 Oct");
     expect(tile("Busiest day").textContent).toContain("3 briefs");
-    expect(screen.getByLabelText("Briefs by type").textContent).toBe("Social Media 4 · General Design 1");
+    expect([...screen.getByLabelText("Briefs by type").children].map((c) => c.textContent)).toEqual(["Social Media 4", "General Design 1"]);
     expect(screen.queryByText(/work days$/)).toBeNull();
   });
 
@@ -65,13 +65,55 @@ describe("BriefCalendar", () => {
     expect(screen.queryByRole("table")).toBeNull();
   });
 
-  it("each day is a labelled button with its brief count; no per-person circles or legend", () => {
+  it("each day is a labelled button with one circle per person who briefed, count inside above 1, and the day total", () => {
     render(<BriefCalendar model={OCT} />);
-    expect(screen.getByRole("button", { name: DAY8 }).textContent).toContain("3 briefs");
-    expect(screen.getByRole("button", { name: "Thursday 1 October: 1 brief" }).textContent).toContain("1 brief");
-    expect(screen.getByRole("button", { name: "Friday 2 October: no briefs" }).textContent).not.toContain("brief");
-    expect(document.querySelector("[data-state]")).toBeNull();
-    expect(screen.queryByRole("list", { name: "Legend" })).toBeNull();
+    const day8 = screen.getByRole("button", { name: DAY8 });
+    const dots = [...day8.querySelectorAll("[data-person]")];
+    expect(dots.map((d) => d.getAttribute("data-person"))).toEqual(["f", "d"]);
+    expect(dots.map((d) => d.textContent)).toEqual(["2", ""]);
+    expect(day8.querySelector("[data-day-total]")!.textContent).toBe("3");
+    const day2 = screen.getByRole("button", { name: "Friday 2 October: no briefs" });
+    expect(day2.querySelector("[data-person]")).toBeNull();
+    expect(day2.querySelector("[data-day-total]")).toBeNull();
+  });
+
+  it("each circle has a hover tooltip with the person's name, count and that day's titles", () => {
+    render(<BriefCalendar model={OCT} />);
+    const tip = screen.getByRole("button", { name: DAY8 }).querySelector('[data-person="f"]')!.parentElement!.querySelector("[data-tooltip]")!;
+    expect(tip.textContent).toContain("Fafa · 2 briefs");
+    expect(tip.textContent).toContain("title 3");
+    expect(tip.textContent).toContain("title 4");
+  });
+
+  it("shows at most four circles a day, then +N", () => {
+    const many = ["a", "b", "c", "d", "e", "g"].map((id) => item(id, id.toUpperCase(), "2026-10-06"));
+    render(<BriefCalendar model={buildBriefMonth("2026-10", "2026-10-08", many)} />);
+    const day = screen.getByRole("button", { name: /^Tuesday 6 October: 6 briefs/ });
+    expect(day.querySelectorAll("[data-person]")).toHaveLength(4);
+    expect(day.querySelector("[data-more]")!.textContent).toBe("+2");
+  });
+
+  it("the legend lists this month's requesters with their colours", () => {
+    render(<BriefCalendar model={OCT} />);
+    const legend = screen.getByRole("list", { name: "Legend" });
+    expect(within(legend).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["Fafa", "Dimas"]);
+  });
+
+  it("the summary has one bar per day of the month, the busiest marked", () => {
+    render(<BriefCalendar model={OCT} />);
+    const strip = screen.getByRole("img", { name: "Briefs per day: busiest Thu 8 Oct with 3 briefs" });
+    const bars = strip.querySelectorAll("[data-bar]");
+    expect(bars).toHaveLength(31);
+    expect([...bars].filter((b) => b.hasAttribute("data-busiest"))).toHaveLength(1);
+    expect(bars[7].hasAttribute("data-busiest")).toBe(true);
+  });
+
+  it("weekly cells are shaded by how many briefs, relative to the busiest week", () => {
+    render(<BriefCalendar model={OCT} />);
+    const fafa = within(screen.getByRole("table")).getAllByRole("row")[1];
+    expect(within(fafa).getAllByRole("cell").slice(1, 4).map((c) => c.getAttribute("data-level"))).toEqual(["4", "4", null]);
+    const dimas = within(screen.getByRole("table")).getAllByRole("row")[2];
+    expect(within(dimas).getAllByRole("cell").slice(1, 3).map((c) => c.getAttribute("data-level"))).toEqual(["0", "2"]);
   });
 
   it("clicking a day opens a dialog of its briefs grouped by who sent them", () => {
