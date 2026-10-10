@@ -101,6 +101,16 @@ describe("LibraryView", () => {
     expect(screen.queryByRole("button", { name: /Add link/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /menu|actions/i })).toBeNull();
   });
+  it("shows extra files as their own links beside the row", () => {
+    view({ rows: [row({ id: "f1", title: "Box Laundry Pods", files: [{ label: "AI", url: "https://d.test/ai" }] })] });
+    const chip = screen.getByRole("link", { name: "AI – Box Laundry Pods" });
+    expect(chip.getAttribute("href")).toBe("https://d.test/ai");
+    expect(chip.getAttribute("target")).toBe("_blank");
+    expect(chip.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(chip.closest("a")).toBe(chip); // not nested inside the row link
+    expect(screen.getAllByRole("link").filter((a) => a.contains(chip) && a !== chip)).toHaveLength(0);
+  });
+
   it("renders a brand tag inside the row", () => {
     view();
     const a = screen.getAllByRole("link").find((l) => l.textContent?.includes("Beta sheet"))!;

@@ -59,6 +59,8 @@ export type LibraryRow = {
   sortOrder: number;
   createdAt: Date;
   contentUpdatedAt: Date;
+  /** Extra labelled links (PDF, AI, Mockup…); optional so older fixtures keep working. */
+  files?: { label: string; url: string }[];
 };
 
 export function filterRows(

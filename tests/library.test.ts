@@ -69,6 +69,29 @@ describe("library cores", () => {
   });
   afterAll(async () => { await db?.stop(); });
 
+  it("stores extra file links, trimmed, and reports when the content changed", async () => {
+    const files = [{ label: " AI ", url: " https://drive.google.com/ai " }, { label: "Mockup", url: "https://drive.google.com/m" }];
+    const { id } = await createItemWith(db.prisma, lead(), { ...base(), title: "Files", files });
+    expect((await getItem(id)).files).toEqual([{ label: "AI", url: "https://drive.google.com/ai" }, { label: "Mockup", url: "https://drive.google.com/m" }]);
+    const first = (await getItem(id)).contentUpdatedAt;
+    await new Promise((r) => setTimeout(r, 5));
+    // Same content (only pinned) → no content change.
+    expect(await updateItemWith(db.prisma, lead(), id, { ...base(), title: "Files", files, pinned: true })).toEqual({ contentChanged: false });
+    expect((await getItem(id)).contentUpdatedAt).toEqual(first);
+    // A changed file list counts as a content change.
+    expect(await updateItemWith(db.prisma, lead(), id, { ...base(), title: "Files", files: files.slice(0, 1) })).toEqual({ contentChanged: true });
+    expect((await getItem(id)).files).toEqual([{ label: "AI", url: "https://drive.google.com/ai" }]);
+    expect((await getItem(id)).contentUpdatedAt.getTime()).toBeGreaterThan(first.getTime());
+  });
+
+  it("validates extra file links", async () => {
+    const err = async (files: unknown) => (await createItemWith(db.prisma, lead(), { ...base(), files: files as never }).catch((e) => e)) as LibraryError;
+    expect((await err([{ label: "", url: "https://x.co" }])).fieldErrors?.files).toBe("Each file needs a label (max 30 characters)");
+    expect((await err([{ label: "AI", url: "javascript:alert(1)" }])).fieldErrors?.files).toBe("Each file link must be an http(s) link");
+    expect((await err(Array.from({ length: 7 }, (_, i) => ({ label: `F${i}`, url: "https://x.co" })))).fieldErrors?.files).toBe("At most 6 files");
+    expect((await err("nope")).fieldErrors?.files).toBeTruthy();
+  });
+
   it("rejects non-editors on every write", async () => {
     const { id } = await createItemWith(db.prisma, lead(), base());
     const cat = await db.prisma.libraryCategory.create({ data: { name: "Forbid" } });

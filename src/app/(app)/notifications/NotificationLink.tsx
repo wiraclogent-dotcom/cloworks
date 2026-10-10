@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { InboxItem } from "@/lib/inbox";
+import { notificationHref } from "@/lib/notificationLinks";
 import { NotificationItem, unreadRow } from "@/components/notifications/NotificationItem";
 import { cn, focusRing } from "@/components/ui/cn";
 import { markNotificationRead } from "./actions";
@@ -16,7 +17,8 @@ export function NotificationLink({ item, now }: { item: InboxItem; now: Date }) 
   async function open() {
     const wasUnread = readAt === null;
     if (wasUnread) setOverride(new Date());
-    if (item.requestId) router.push(`/requests/${encodeURIComponent(item.requestId)}`);
+    const href = notificationHref(item);
+    if (href) router.push(href);
     const r = await markNotificationRead(item.id).catch(() => ({ ok: false as const }));
     if (!r.ok && wasUnread) setOverride(undefined);
   }

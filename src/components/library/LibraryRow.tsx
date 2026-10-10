@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, ArrowUp, Ellipsis, FileText, Globe, HardDrive, Palette, Pencil, PenTool, Pin, PinOff, Presentation, Sheet, Trash2, type LucideIcon } from "lucide-react";
+import { ArrowDown, ArrowUp, Ellipsis, FileDown, FileText, Globe, HardDrive, Palette, Pencil, PenTool, Pin, PinOff, Presentation, Sheet, Trash2, type LucideIcon } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
 import { focusRing } from "@/components/ui/cn";
 import { BrandTag, Chip } from "@/components/ui/Chip";
@@ -88,11 +88,23 @@ export function LibraryRowItem({ row, now, actions }: { row: Row; now: Date; act
       </span>
     </a>
   );
-  if (!actions) return link;
+  const files = row.files ?? [];
+  if (!actions && files.length === 0) return link;
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex flex-wrap items-center gap-x-1">
       {link}
-      <RowMenu row={row} actions={actions} />
+      {files.length ? (
+        // Separate links (a link can't sit inside the row's own <a>), on their own line under the title so it keeps its room.
+        <span className="order-last flex w-full flex-wrap gap-1.5 pb-2 pl-12">
+          {files.map((f) => (
+            <a key={`${f.label}-${f.url}`} href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`${f.label} – ${row.title}`}
+              className={"inline-flex items-center gap-1 rounded-md border border-border-strong px-2 py-0.5 text-xs font-medium text-foreground-secondary transition-colors hover:bg-surface-muted hover:text-foreground [&_svg]:size-3 " + focusRing}>
+              <FileDown aria-hidden="true" strokeWidth={1.75} />{f.label}
+            </a>
+          ))}
+        </span>
+      ) : null}
+      {actions ? <RowMenu row={row} actions={actions} /> : null}
     </div>
   );
 }
