@@ -224,5 +224,6 @@ describe("loadLibrary", () => {
     expect(data.rows.find((r) => r.title === "c1-a")?.brandName).toBeNull();
     const brands = data.brands.filter((b) => b.name.startsWith("LL "));
     expect(brands.map((b) => b.name)).toEqual(["LL Alpha", "LL Zed"]);
+    expect(data.brandOptions.filter((b) => b.name.startsWith("LL ")).map((b) => b.name)).toEqual(["LL Alpha", "LL Unused", "LL Zed"]);
   });
 });

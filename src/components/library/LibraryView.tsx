@@ -1,7 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BookOpen, Box, Folder, Megaphone, Palette, Pin, Search, type LucideIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Folder, Pin, Plus, Search, Settings2 } from "lucide-react";
+import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/library/actions";
+import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CountPill } from "@/components/ui/Chip";
@@ -10,19 +13,21 @@ import { fieldClass } from "@/components/ui/Field";
 import { cn, focusRing } from "@/components/ui/cn";
 import { filterRows, type LibraryRow } from "@/lib/libraryView";
 import { LibraryRowItem } from "./LibraryRow";
+import { categoryIcon } from "./categoryIcons";
+import { CategoriesDialog } from "./CategoriesDialog";
+import { ConfirmDelete } from "./ConfirmDelete";
+import { ItemDialog, type ItemDraft } from "./ItemDialog";
 
 export type LibraryViewProps = {
   rows: LibraryRow[];
   categories: { id: string; name: string; icon: string | null }[];
+  /** Brands in use (for the filter). */
   brands: { id: string; name: string }[];
+  /** All workspace brands, for the item dialog. */
+  brandOptions?: { id: string; name: string }[];
   canManage: boolean;
   now: Date;
 };
-
-const CATEGORY_ICON: Record<string, LucideIcon> = {
-  book: BookOpen, palette: Palette, box: Box, megaphone: Megaphone, folder: Folder,
-};
-const categoryIcon = (key: string | null): LucideIcon => (key ? CATEGORY_ICON[key] : undefined) ?? Folder;
 
 const chipClass = (on: boolean) =>
   cn(
@@ -31,10 +36,41 @@ const chipClass = (on: boolean) =>
     focusRing,
   );
 
-export function LibraryView({ rows, categories, brands, canManage, now }: LibraryViewProps) {
+export function LibraryView({ rows, categories, brands, brandOptions = [], canManage, now }: LibraryViewProps) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [brandId, setBrandId] = useState<string | null>(null);
+
+  const [itemDraft, setItemDraft] = useState<ItemDraft | null>(null);
+  const [deleting, setDeleting] = useState<LibraryRow | null>(null);
+  const [managing, setManaging] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const newItem = (categoryId?: string): ItemDraft => ({
+    title: "", url: "", description: null, categoryId: categoryId ?? categories[0]?.id ?? "", brandId: null, pinned: false,
+  });
+  const editItem = (r: LibraryRow): ItemDraft => ({
+    id: r.id, title: r.title, url: r.url, description: r.description, categoryId: r.categoryId, brandId: r.brandId, pinned: r.pinned,
+  });
+  async function act(p: Promise<LibraryActionResult>) {
+    setError(null);
+    const r = await p;
+    if (!r.ok) setError(r.message);
+    else router.refresh();
+  }
+  const actionsFor = (r: LibraryRow) => {
+    const peers = rows.filter((x) => x.categoryId === r.categoryId);
+    const i = peers.findIndex((x) => x.id === r.id);
+    return {
+      canUp: i > 0, canDown: i < peers.length - 1,
+      onEdit: () => setItemDraft(editItem(r)),
+      onDelete: () => setDeleting(r),
+      onPin: () => void act(setPinned(r.id, !r.pinned)),
+      onMove: (dir: "up" | "down") => void act(moveItem(r.id, dir)),
+    };
+  };
+  const renderRow = (r: LibraryRow) => <LibraryRowItem key={r.id} row={r} now={now} actions={canManage ? actionsFor(r) : undefined} />;
 
   const filtered = useMemo(() => filterRows(rows, { q, categoryId, brandId }), [rows, q, categoryId, brandId]);
   const pinned = filtered.filter((r) => r.pinned);
@@ -73,6 +109,12 @@ export function LibraryView({ rows, categories, brands, canManage, now }: Librar
             </select>
           </label>
         ) : null}
+        {canManage ? (
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="secondary" icon={<Settings2 />} onClick={() => setManaging(true)}>Manage categories</Button>
+            <Button variant="primary" icon={<Plus />} disabled={categories.length === 0} onClick={() => setItemDraft(newItem())}>Add link</Button>
+          </div>
+        ) : null}
       </div>
       <div className="-mt-1 flex flex-wrap gap-2">
         <button type="button" aria-pressed={categoryId === null} onClick={() => setCategoryId(null)} className={chipClass(categoryId === null)}>All</button>
@@ -83,7 +125,16 @@ export function LibraryView({ rows, categories, brands, canManage, now }: Librar
         ))}
       </div>
 
-      {filtered.length === 0 && filtering ? (
+      {error ? <Alert tone="danger">{error}</Alert> : null}
+
+      {categories.length === 0 && canManage ? (
+        <EmptyState
+          icon={<Folder />}
+          title="No categories yet"
+          description="Create a category with Manage categories, then add links to it."
+          action={<Button variant="secondary" onClick={() => setManaging(true)}>Manage categories</Button>}
+        />
+      ) : filtered.length === 0 && filtering ? (
         <EmptyState
           icon={<Search />}
           title="No links match"
@@ -100,7 +151,7 @@ export function LibraryView({ rows, categories, brands, canManage, now }: Librar
                 <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />Pinned</CardTitle>
               </CardHeader>
               <div className="space-y-0.5">
-                {pinned.map((r) => <LibraryRowItem key={r.id} row={r} now={now} />)}
+                {pinned.map(renderRow)}
               </div>
             </Card>
           ) : null}
@@ -116,16 +167,25 @@ export function LibraryView({ rows, categories, brands, canManage, now }: Librar
                 </CardHeader>
                 {items.length > 0 ? (
                   <div className="space-y-0.5">
-                    {items.map((r) => <LibraryRowItem key={r.id} row={r} now={now} />)}
+                    {items.map(renderRow)}
                   </div>
                 ) : (
-                  <p className="text-sm text-foreground-secondary">No links in this category yet.</p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <p className="text-sm text-foreground-secondary">No links in this category yet.</p>
+                    {canManage ? <Button size="sm" variant="secondary" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
+                  </div>
                 )}
               </Card>
             );
           })}
         </>
       )}
+
+      {itemDraft ? (
+        <ItemDialog item={itemDraft} categories={categories} brandOptions={brandOptions} onClose={() => setItemDraft(null)} />
+      ) : null}
+      {deleting ? <ConfirmDelete id={deleting.id} title={deleting.title} onClose={() => setDeleting(null)} /> : null}
+      {managing ? <CategoriesDialog categories={categories} onClose={() => setManaging(false)} /> : null}
     </div>
   );
 }

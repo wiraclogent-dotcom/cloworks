@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+vi.mock("@/app/(app)/library/actions", () => ({ moveItem: vi.fn(), setPinned: vi.fn() }));
+
 import { LibraryView } from "@/components/library/LibraryView";
 import type { LibraryRow } from "@/lib/libraryView";
 
