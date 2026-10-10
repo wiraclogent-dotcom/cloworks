@@ -19,6 +19,7 @@ const MODELS = {
   attachment: { name: "hacked" },
   kpiTarget: { note: "hacked" },
   notification: { message: "hacked" },
+  chatRead: { lastReadAt: new Date(0) },
   project: { title: "hacked" },
   projectTask: { title: "hacked" },
   projectMilestone: { title: "hacked" },
@@ -62,6 +63,7 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   const comment = await raw.comment.create({ data: { ...w, requestId: request.id, authorId: user.id, body: "hi" } });
   const attachment = await raw.attachment.create({ data: { ...w, requestId: request.id, uploaderId: user.id, name: "f", url: "https://x/f" } });
   const notification = await raw.notification.create({ data: { ...w, userId: user.id, requestId: request.id, type: "t", message: "m" } });
+  const chatRead = await raw.chatRead.create({ data: { ...w, userId: user.id, requestId: request.id, lastReadAt: new Date() } });
   const kpiTarget = await raw.kpiTarget.create({ data: { ...w, userId: user.id, month: "2026-10", role: "DESIGNER", targetTasks: 5 } });
   const project = await raw.project.create({ data: { ...w, code: "P1", title: `P-${tag}`, ownerId: user.id, brandId: brand.id } });
   const projectTask = await raw.projectTask.create({ data: { ...w, projectId: project.id, position: 0, title: "T" } });
@@ -69,7 +71,7 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   return {
     user: user.id, allowedEmail: allowedEmail.id, brand: brand.id, division: division.id, requestType: requestType.id,
     request: request.id, statusEvent: statusEvent.id, deadlineEvent: deadlineEvent.id, comment: comment.id,
-    attachment: attachment.id, notification: notification.id, kpiTarget: kpiTarget.id, project: project.id,
+    attachment: attachment.id, notification: notification.id, chatRead: chatRead.id, kpiTarget: kpiTarget.id, project: project.id,
     projectTask: projectTask.id, projectMilestone: projectMilestone.id,
   };
 }

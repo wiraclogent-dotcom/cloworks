@@ -57,6 +57,7 @@ model Workspace {
   attachments       Attachment[]
   kpiTargets        KpiTarget[]
   notifications     Notification[]
+  chatReads         ChatRead[]
   projects          Project[]
   projectTasks      ProjectTask[]
   projectMilestones ProjectMilestone[]
@@ -90,6 +91,7 @@ model User {
   attachments    Attachment[]
   kpiTargets     KpiTarget[]
   notifications  Notification[]
+  chatReads      ChatRead[]
   ownedProjects  Project[]
   projectTasks   ProjectTask[]
 
@@ -181,6 +183,7 @@ model Request {
   comments       Comment[]
   attachments    Attachment[]
   notifications  Notification[]
+  chatReads      ChatRead[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -242,6 +245,23 @@ model Comment {
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([requestId])
+  @@index([requestId, createdAt])
+  @@index([workspaceId])
+}
+
+model ChatRead {
+  id         String   @id @default(cuid())
+  userId     String
+  requestId  String
+  lastReadAt DateTime
+
+  user    User    @relation(fields: [userId], references: [id])
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, requestId])
   @@index([workspaceId])
 }
 
