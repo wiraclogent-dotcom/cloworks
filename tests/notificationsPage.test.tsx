@@ -19,6 +19,8 @@ vi.mock("@/lib/inbox", () => ({
 }));
 
 import { NotificationsContent } from "@/app/(app)/notifications/NotificationsContent";
+import { NotificationLink } from "@/app/(app)/notifications/NotificationLink";
+import { readFileSync } from "node:fs";
 
 const rows = (n: number, from = 0): InboxItem[] =>
   Array.from({ length: n }, (_, i) => ({ id: `n${from + i}`, type: "COMMENT", message: `Message ${from + i}`, requestId: `r${from + i}`, readAt: null, createdAt: new Date() }));
@@ -66,5 +68,26 @@ describe("notifications page", () => {
     fireEvent.click(screen.getByRole("button", { name: "Mark all as read" }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(markAllNotificationsRead).toHaveBeenCalled();
+  });
+  it("a row shows read after a refresh delivers readAt (mark all)", () => {
+    const [n] = rows(1);
+    const now = new Date();
+    const { rerender } = render(<NotificationLink item={n} now={now} />);
+    expect(screen.getByText("Unread:")).toBeTruthy();
+    rerender(<NotificationLink item={{ ...n, readAt: new Date() }} now={now} />);
+    expect(screen.queryByText("Unread:")).toBeNull();
+  });
+  it("a failed mark-read restores the unread row", async () => {
+    markNotificationRead.mockResolvedValueOnce({ ok: false });
+    const [n] = rows(1);
+    render(<NotificationLink item={n} now={new Date()} />);
+    fireEvent.click(screen.getByRole("button", { name: /Message 0/ }));
+    await waitFor(() => expect(screen.getByText("Unread:")).toBeTruthy());
+  });
+});
+
+describe("requests page top bar", () => {
+  it("no longer has the coming-soon Notifications placeholder (the real bell is in the shell)", () => {
+    expect(readFileSync("src/app/(app)/requests/page.tsx", "utf8")).not.toContain('label="Notifications"');
   });
 });

@@ -27,6 +27,9 @@
   --background: #f5f3ee;
   --surface: #ffffff;
   --surface-muted: #f0eee9;
+  /* Unread notifications: the Requested tint, with its accent for the dot (both follow the theme) */
+  --unread: var(--status-requested-tint);
+  --unread-dot: var(--status-requested-accent);
   /* Board canvas: a warm tint with a faint dot grid behind the columns */
   --board-canvas: #efece6;
   --board-dot: rgba(23, 24, 28, 0.1);
@@ -267,6 +270,8 @@
   --color-link: var(--link);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-unread: var(--unread);
+  --color-unread-dot: var(--unread-dot);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--surface);

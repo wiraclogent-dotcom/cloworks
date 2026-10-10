@@ -95,4 +95,22 @@ describe("NotificationBellView", () => {
     await open();
     expect(screen.getByRole("menuitem", { name: "See all notifications" }).getAttribute("href")).toBe("/notifications");
   });
+  it("follows a fresh server count after a refresh or navigation", () => {
+    const a = fakeActions([]);
+    const { rerender } = render(<NotificationBellView unread={5} actions={a} />);
+    expect(bell().textContent).toBe("5");
+    rerender(<NotificationBellView unread={0} actions={a} />);
+    expect(bell().textContent).toBe("");
+    rerender(<NotificationBellView unread={2} actions={a} />);
+    expect(bell().textContent).toBe("2");
+  });
+  it("unread rows use a defined tint on the menu item, read rows none", async () => {
+    render(<NotificationBellView unread={1} actions={fakeActions([item(), item({ id: "n2", message: "Old one", readAt: new Date() })])} />);
+    await open();
+    const unreadRow = await screen.findByRole("menuitem", { name: /Dimas commented/ });
+    const readRow = screen.getByRole("menuitem", { name: /Old one/ });
+    expect(unreadRow.className).toContain("bg-unread");
+    expect(readRow.className).not.toContain("bg-unread");
+    expect(unreadRow.innerHTML).not.toContain("tone-tint");
+  });
 });

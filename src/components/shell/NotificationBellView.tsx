@@ -7,7 +7,7 @@ import { DropdownMenu } from "radix-ui";
 import { Bell } from "lucide-react";
 import type { InboxItem } from "@/lib/inbox";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
-import { NotificationItem } from "../notifications/NotificationItem";
+import { NotificationItem, unreadRow } from "../notifications/NotificationItem";
 import { Skeleton } from "../ui/Skeleton";
 import { cn, focusRing } from "../ui/cn";
 
@@ -31,6 +31,9 @@ const linkClass = "flex h-9 w-full cursor-default items-center justify-center ro
 export function NotificationBellView({ unread, actions = serverActions }: { unread: number; actions?: BellActions }) {
   const router = useRouter();
   const [count, setCount] = useState(unread);
+  // The bell lives in the layout: a refresh or navigation re-renders it with a fresh server count, so follow it.
+  const [seen, setSeen] = useState(unread);
+  if (unread !== seen) { setSeen(unread); setCount(unread); }
   const [items, setItems] = useState<InboxItem[] | null>(null);
   const [now, setNow] = useState(() => new Date());
 
@@ -91,7 +94,7 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
               <p className="px-2.5 py-6 text-center text-sm text-foreground-secondary">You&apos;re all caught up.</p>
             ) : (
               items.map((n) => (
-                <DropdownMenu.Item key={n.id} onSelect={() => void select(n)} className={rowClass}>
+                <DropdownMenu.Item key={n.id} onSelect={() => void select(n)} className={cn(rowClass, n.readAt === null && unreadRow)}>
                   <NotificationItem item={n} now={now} />
                 </DropdownMenu.Item>
               ))

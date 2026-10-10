@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
@@ -17,7 +17,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton, TimelineSkeleton } from "@/components/RequestSkeletons";
-import { Bell, CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
+import { CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { buildWindow, shiftWeek } from "@/lib/workload";
@@ -66,7 +66,6 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: VIEW_LABEL[p.view] }]}
         topBarActions={<>
           <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
-          <ComingSoon label="Notifications" icon={<Bell aria-hidden="true" />} />
         </>}
         actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
       {p.view === "board" ? (
@@ -124,16 +123,6 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
 }
 
 const VIEW_LABEL: Record<ViewParams["view"], string> = { board: "Board", table: "Table", calendar: "Calendar", timeline: "Timeline" };
-
-/** Top-bar icon button for a feature that does not exist yet: visible, labelled, and disabled (no fake action). */
-function ComingSoon({ label, icon }: { label: string; icon: ReactNode }) {
-  return (
-    <button type="button" disabled aria-label={`${label} (coming soon)`} title={`${label}: coming soon`}
-      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground-secondary disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:size-4">
-      {icon}
-    </button>
-  );
-}
 
 /** Fallback that matches the requested view: the board skeleton until the params resolve, then board, table, calendar or timeline. */
 async function ViewSkeleton({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {
