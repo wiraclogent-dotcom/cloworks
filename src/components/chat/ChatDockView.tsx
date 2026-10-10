@@ -297,6 +297,11 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
 
   useEffect(() => { minimizeRef.current = minimize; });
 
+  /** Below md the dock covers the whole screen, so a request opened from it would load hidden underneath: close it. */
+  function openRequest() {
+    if (typeof window.matchMedia === "function" && !window.matchMedia("(min-width: 768px)").matches) minimize();
+  }
+
   /** Opens straight into the newest unread chat when there is one; otherwise opens or closes the dock. */
   function launch() {
     if (open || count === 0 || !latest) { toggle(); return; }
@@ -385,7 +390,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
               {selectedId && conv && conv.id === selectedId ? (
                 <div className="min-h-0 flex-1">
                   <ChatConversation key={conv.id} conv={conv} title={selected?.title ?? null} status={selected?.status ?? null}
-                    userId={userId} now={now} onBack={() => select(null)} onLoadOlder={() => void loadOlder()} onSend={send} />
+                    userId={userId} now={now} onBack={() => select(null)} onOpenRequest={openRequest} onLoadOlder={() => void loadOlder()} onSend={send} />
                 </div>
               ) : (
                 <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-foreground-secondary">

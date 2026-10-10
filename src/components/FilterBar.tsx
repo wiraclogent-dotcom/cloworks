@@ -39,7 +39,9 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
     </label>
   );
   return (
-    <form method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
+    // Keyed on the filters: Clear filters / My requests are soft navigations that reuse this form, and uncontrolled
+    // fields ignore a new defaultValue, so a remount is what shows the new values (and closes the panel).
+    <form key={JSON.stringify([p.q, p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.view])} method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
       {p.view !== "board" && <input type="hidden" name="view" value={p.view} />}
       {p.view === "calendar" && <input type="hidden" name="month" value={p.month} />}
       {p.view === "timeline" && <input type="hidden" name="week" value={p.week} />}

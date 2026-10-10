@@ -43,4 +43,16 @@ describe("FilterBar", () => {
     const { container } = bar({ view: "timeline", week: "2026-10-12" });
     expect(hidden(container)).toEqual({ view: "timeline", week: "2026-10-12" });
   });
+
+  // Regression: Clear filters / My requests are soft navigations to the same page, so the form was reused and the
+  // uncontrolled fields kept the old values (and the next Apply quietly put the cleared filters back).
+  it("shows the new filters, and closes the panel, when the URL's filters change without a remount", () => {
+    const props = { brands: [], divisions: [], assignees: [], mineHref: "/requests?mine=1", clearHref: "/requests" };
+    const { container, rerender } = render(<FilterBar p={parseParams({ status: "DONE", q: "ads" })} {...props} />);
+    container.querySelector("details")!.open = true;
+    rerender(<FilterBar p={parseParams({})} {...props} />);
+    expect(container.querySelector<HTMLSelectElement>('select[name="status"]')!.value).toBe("");
+    expect(container.querySelector<HTMLInputElement>('input[name="q"]')!.value).toBe("");
+    expect(container.querySelector("details")!.open).toBe(false);
+  });
 });

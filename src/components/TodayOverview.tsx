@@ -15,7 +15,8 @@ function Tile({ href, icon, label, value, emphasis }: { href: string; icon: Reac
       <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground [&_svg]:size-[18px]">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-2xl leading-7 font-semibold tabular-nums text-foreground", value > 0 && emphasis)}>{value}</span>
-        <span title={label} className="block truncate text-[13px] leading-5 whitespace-nowrap text-foreground-secondary">{label}</span>
+        {/* Wraps rather than truncates: two-column tiles on a phone cut "Open requests" to "Open requ…". */}
+        <span className="block text-[13px] leading-5 text-pretty text-foreground-secondary">{label}</span>
       </span>
       <ArrowUpRight aria-hidden="true" className="absolute top-3 right-3 size-3.5 text-foreground-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" />
     </Link>

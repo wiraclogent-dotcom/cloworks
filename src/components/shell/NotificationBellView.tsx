@@ -35,12 +35,14 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
   const [seen, setSeen] = useState(unread);
   if (unread !== seen) { setSeen(unread); setCount(unread); }
   const [items, setItems] = useState<InboxItem[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [now, setNow] = useState(() => new Date());
 
   async function load() {
     setNow(new Date());
-    const r = await actions.list();
-    if (r.ok) { setItems(r.items); setCount(r.unread); } else setItems((cur) => cur ?? []);
+    // A failed load keeps any list from an earlier open; with none, it says so (not a skeleton, not "all caught up").
+    const r = await actions.list().catch(() => ({ ok: false as const }));
+    if (r.ok) { setItems(r.items); setCount(r.unread); setLoadFailed(false); } else setLoadFailed(true);
   }
 
   const setRead = (id: string, readAt: Date | null) => setItems((cur) => cur?.map((n) => (n.id === id ? { ...n, readAt } : n)) ?? cur);
@@ -85,7 +87,9 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-border" />
           <div className="max-h-96 overflow-y-auto">
-            {items === null ? (
+            {items === null && loadFailed ? (
+              <p role="alert" className="px-2.5 py-6 text-center text-sm text-foreground-secondary">Couldn&apos;t load notifications. Close and open again to retry.</p>
+            ) : items === null ? (
               <div role="status" aria-busy="true" className="grid gap-2 p-2.5">
                 <span className="sr-only">Loading…</span>
                 {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}

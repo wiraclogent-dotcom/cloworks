@@ -142,6 +142,16 @@ describe("board columns", () => {
 });
 
 describe("Done dialog (restyled)", () => {
+  // Regression: inside the request side panel (a native <dialog>), an Escape that was only stopPropagation'd still
+  // fired the panel's cancel event, so one Escape closed the Done dialog and the whole panel.
+  it("Escape cancels only this dialog: it claims the key so an enclosing <dialog> does not close too", () => {
+    const onCancel = vi.fn();
+    render(<DoneDialog title="Poster" onCancel={onCancel} onSubmit={() => {}} />);
+    const notCanceled = fireEvent.keyDown(screen.getByLabelText(/Number of outputs/), { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(notCanceled).toBe(false); // preventDefault was called
+  });
+
   it("keeps the labelled modal, kit fields and buttons, and inline errors with an icon", () => {
     render(<DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} />);
     const dialog = screen.getByRole("dialog", { name: "Mark as done" });

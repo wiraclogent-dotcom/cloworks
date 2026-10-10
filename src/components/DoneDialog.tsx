@@ -37,6 +37,9 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
 
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
+      // preventDefault too: inside the request side panel (a native <dialog>) Escape would otherwise also fire the
+      // panel's cancel event and close it along with this dialog.
+      e.preventDefault();
       e.stopPropagation();
       onCancel();
       return;

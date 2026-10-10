@@ -134,6 +134,27 @@ describe("ChatDockView", () => {
     expect(screen.getByRole("link", { name: "Open request" }).getAttribute("href")).toBe("/requests/r1");
   });
 
+  // Regression: below md the dock is a full-screen overlay that stays open across navigations, so the request page
+  // loaded hidden underneath it and "Open request" looked dead on phones.
+  it("Open request closes the full-screen dock on a phone, and keeps the floating one open on desktop", async () => {
+    const media = (wide: boolean) => { window.matchMedia = ((q: string) => ({ matches: wide, media: q })) as unknown as typeof window.matchMedia; };
+    media(false);
+    await openConversation(fakeActions([chat()]));
+    const link = screen.getByRole("link", { name: "Open request" });
+    link.addEventListener("click", (e) => e.preventDefault()); // no real navigation in jsdom
+    fireEvent.click(link);
+    expect(screen.queryByRole("dialog", { name: "Messages" })).toBeNull();
+    cleanup();
+    window.sessionStorage.clear();
+
+    media(true);
+    await openConversation(fakeActions([chat()]));
+    const wideLink = screen.getByRole("link", { name: "Open request" });
+    wideLink.addEventListener("click", (e) => e.preventDefault());
+    fireEvent.click(wideLink);
+    expect(screen.getByRole("dialog", { name: "Messages" })).toBeTruthy();
+  });
+
   it("sending appends one bubble and clears the box; a poll with the same id does not duplicate it", async () => {
     const a = fakeActions([chat()]);
     const box = await openConversation(a);
