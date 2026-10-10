@@ -12,6 +12,7 @@ import { saveUser } from "@/app/(app)/admin/users/actions";
 import { saveBrand } from "@/app/(app)/admin/lists/actions";
 import { submitProject, createProject } from "@/app/(app)/projects/actions";
 import { addComment, setIncludeKpi } from "@/app/(app)/requests/[id]/actions";
+import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 
 const MSG = "Your session ended. Sign in again.";
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
@@ -35,5 +36,9 @@ describe("server actions return a result object when the session ended", () => {
     expect(await createProject({ title: "x", ownerId: "o", status: "NOT_STARTED" })).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
     expect(await addComment("r", "hi")).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
     expect(await setIncludeKpi("r", false)).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
+  });
+  it("notification actions", async () => {
+    for (const r of [await listNotifications(), await markNotificationRead("n"), await markAllNotificationsRead()])
+      expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
 });
