@@ -7,6 +7,7 @@ import { render, screen, cleanup, within, fireEvent } from "@testing-library/rea
 vi.mock("@/app/(app)/dashboard/targets/actions", () => ({ setTarget: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
+vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }) }));
 vi.mock("@/lib/session", () => ({ requireUserOrRedirect: vi.fn(), requireUser: vi.fn() }));

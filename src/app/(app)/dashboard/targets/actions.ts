@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import type { JobRole } from "@prisma/client";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { setTargetWith, type SetTargetResult } from "@/lib/kpi/targets";
 
@@ -16,7 +15,8 @@ export async function setTarget(
   note?: string,
 ): Promise<SetTargetResult> {
   return withUser<SetTargetResult, SetTargetResult>(requireUser, async (user) => {
-    const r = await setTargetWith(prisma, user, { userId, month, role, targetTasks, note });
+    const db = dbFor(user);
+    const r = await setTargetWith(db, user, { userId, month, role, targetTasks, note });
     if (r.ok) {
       revalidatePath("/dashboard");
       revalidatePath("/dashboard/team");

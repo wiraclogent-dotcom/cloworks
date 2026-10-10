@@ -111,10 +111,12 @@ export async function assignRequestWith(
   if (!req) return fail("NOT_FOUND", "Request not found.");
   if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
   if (assigneeId !== null) {
-    const a = await db.user.findUnique({ where: { id: assigneeId }, select: { active: true, appRole: true } });
+    const a = await db.user.findUnique({ where: { id: assigneeId }, select: { active: true, appRole: true, jobRole: true } });
     if (!a) return fail("NOT_FOUND", "Assignee not found.");
     if (!a.active) return fail("INVALID", "That person is no longer active.");
     if (a.appRole === "REQUESTER") return fail("INVALID", "Requesters cannot be assignees. Pick a creative, lead or admin.");
+    // Same rule as listCreativeTeam (src/lib/team.ts): the creative team is the designers.
+    if (a.jobRole !== "DESIGNER") return fail("INVALID", "Only creative team members can be assignees.");
   }
   // Atomic guard: a request cancelled after the reads above matches 0 rows instead of being reassigned.
   const res = await db.request.updateMany({ where: { id: requestId, status: { not: "CANCELLED" } }, data: { assigneeId } });

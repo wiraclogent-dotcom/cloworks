@@ -34,4 +34,13 @@ describe("FilterBar", () => {
     const { container } = bar({ view: "calendar", month: "2026-03" });
     expect(hidden(container)).toEqual({ view: "calendar", month: "2026-03" });
   });
+  it("lists only the open statuses in the timeline view", () => {
+    bar({ view: "timeline" });
+    const opts = [...screen.getByLabelText("Status").querySelectorAll("option")].map((o) => o.textContent);
+    expect(opts).toEqual(["All", "Requested", "On progress", "First look"]);
+  });
+  it("carries the week through Apply in the timeline view", () => {
+    const { container } = bar({ view: "timeline", week: "2026-10-12" });
+    expect(hidden(container)).toEqual({ view: "timeline", week: "2026-10-12" });
+  });
 });

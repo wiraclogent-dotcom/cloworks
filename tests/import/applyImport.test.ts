@@ -25,7 +25,7 @@ describe("applyImport", () => {
 
   it("inserts requests and event chains; second run is idempotent", async () => {
     const records = reqs([reqRow({ Requester: "Rio", Designer: "Irshyad" }), reqRow({ Task: "B", Progress: "Requested", Designer: "" }), reqRow({ Task: "C", Progress: "On Progress" })]);
-    const r1 = await applyImport(db.prisma, records);
+    const r1 = await applyImport(db.prisma, db.workspaceId, records);
     expect(r1.inserted).toBe(3);
     expect(r1.alreadyImported).toEqual({});
     expect(await db.prisma.request.count()).toBe(3);
@@ -35,7 +35,7 @@ describe("applyImport", () => {
     expect(done.statusEvents.at(-1)!.at.toISOString()).toBe("2026-06-03T17:00:00.000Z");
     expect(await db.prisma.statusEvent.count()).toBe(4 + 1 + 2);
 
-    const r2 = await applyImport(db.prisma, records);
+    const r2 = await applyImport(db.prisma, db.workspaceId, records);
     expect(r2.inserted).toBe(0);
     expect(r2.alreadyImported).toEqual({ requests: 3 });
     expect(await db.prisma.request.count()).toBe(3);
@@ -43,8 +43,8 @@ describe("applyImport", () => {
 
   it("duplicate identical rows in one file insert both once", async () => {
     const records = reqs([reqRow({}), reqRow({})]);
-    expect((await applyImport(db.prisma, records)).inserted).toBe(2);
-    expect((await applyImport(db.prisma, records)).inserted).toBe(0);
+    expect((await applyImport(db.prisma, db.workspaceId, records)).inserted).toBe(2);
+    expect((await applyImport(db.prisma, db.workspaceId, records)).inserted).toBe(0);
     expect(await db.prisma.request.count()).toBe(2);
   });
 
@@ -52,7 +52,7 @@ describe("applyImport", () => {
     const records = reqs([reqRow({})]);
     const t = await db.prisma.requestType.findFirstOrThrow({ where: { name: "General Design" } });
     await db.prisma.requestType.update({ where: { id: t.id }, data: { name: "Renamed" } });
-    await expect(applyImport(db.prisma, records)).rejects.toThrow(/General Design/);
+    await expect(applyImport(db.prisma, db.workspaceId, records)).rejects.toThrow(/General Design/);
     expect(await db.prisma.request.count()).toBe(0);
     await db.prisma.requestType.update({ where: { id: t.id }, data: { name: "General Design" } });
   });
@@ -60,10 +60,10 @@ describe("applyImport", () => {
   it("mid-run failure keeps earlier batches; re-run completes", async () => {
     const records = reqs([reqRow({ Task: "A" }), reqRow({ Task: "B" }), reqRow({ Task: "C" }), reqRow({ Task: "D" })]);
     records[2].assigneeId = "does-not-exist";
-    await expect(applyImport(db.prisma, records, { batchSize: 2 })).rejects.toThrow(/batch 2/i);
+    await expect(applyImport(db.prisma, db.workspaceId, records, { batchSize: 2 })).rejects.toThrow(/batch 2/i);
     expect(await db.prisma.request.count()).toBe(2);
     records[2].assigneeId = null;
-    const r = await applyImport(db.prisma, records, { batchSize: 2 });
+    const r = await applyImport(db.prisma, db.workspaceId, records, { batchSize: 2 });
     expect(r.inserted).toBe(2);
     expect(r.alreadyImported).toEqual({ requests: 2 });
     expect(await db.prisma.request.count()).toBe(4);
@@ -71,7 +71,7 @@ describe("applyImport", () => {
 
   it("imported DONE request counts in KPI for its request month", async () => {
     const records = parseRequestRows("socmed", [socRow({ "Otomatis Request Date": "10/5/2026", Deadline: "10/7/2026", "Jumlah Output": "3" })], ctx, SOC_HEADERS).records;
-    await applyImport(db.prisma, records);
+    await applyImport(db.prisma, db.workspaceId, records);
     const fadli = await db.prisma.user.findFirstOrThrow({ where: { name: "Fadli" } });
     const kreqs = await loadKpiRequests(db.prisma, ["2026-10"]);
     const k = computeKpi(kreqs, { id: fadli.id, jobRole: fadli.jobRole }, "2026-10", { role: "DESIGNER", targetTasks: 50 });
@@ -81,11 +81,25 @@ describe("applyImport", () => {
 
   it("request-month rule: request 09-30, DONE with deadline 10-02 counts in 2026-09 not 2026-10", async () => {
     const records = parseRequestRows("socmed", [socRow({ "Otomatis Request Date": "9/30/2026", Deadline: "10/2/2026" })], ctx, SOC_HEADERS).records;
-    await applyImport(db.prisma, records);
+    await applyImport(db.prisma, db.workspaceId, records);
     const fadli = await db.prisma.user.findFirstOrThrow({ where: { name: "Fadli" } });
     const kreqs = await loadKpiRequests(db.prisma, ["2026-09", "2026-10"]);
     const kpi = (m: string) => computeKpi(kreqs, { id: fadli.id, jobRole: fadli.jobRole }, m, { role: "DESIGNER", targetTasks: 50 });
     expect(kpi("2026-09").tasksDone).toBe(1);
     expect(kpi("2026-10").tasksDone).toBe(0);
+  });
+
+  it("only treats import keys of its own workspace as already imported", async () => {
+    const records = reqs([reqRow({})]);
+    await applyImport(db.prisma, db.workspaceId, records);
+    // A request with the same key in another workspace must not be counted as imported by this one, and vice versa.
+    await db.raw.workspace.create({ data: { id: "other", name: "Other", slug: "other" } });
+    const mine = await db.raw.request.findFirstOrThrow({ where: { workspaceId: db.workspaceId } });
+    await db.raw.request.update({ where: { id: mine.id }, data: { workspaceId: "other" } });
+    const r = await applyImport(db.prisma, db.workspaceId, records);
+    expect(r.inserted).toBe(1);
+    expect(r.alreadyImported).toEqual({});
+    await db.raw.request.deleteMany({ where: { workspaceId: "other" } });
+    await db.raw.workspace.delete({ where: { id: "other" } });
   });
 });

@@ -1,5 +1,4 @@
-import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
@@ -11,18 +10,18 @@ import { activeChip } from "@/lib/adminChips";
 import { NameForm, TypeForm } from "./ListForms";
 
 export async function ListsContent() {
-  const viewer = await requireUserOrRedirect();
+  const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [brands, divisions, types] = await Promise.all([
-    prisma.brand.findMany({ orderBy: { name: "asc" } }),
-    prisma.division.findMany({ orderBy: { name: "asc" } }),
-    prisma.requestType.findMany({ orderBy: { name: "asc" } }),
+    db.brand.findMany({ orderBy: { name: "asc" } }),
+    db.division.findMany({ orderBy: { name: "asc" } }),
+    db.requestType.findMany({ orderBy: { name: "asc" } }),
   ]);
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" />}
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" />}
         description="Nothing here can be deleted; deactivate a request type to hide it from the new request form." />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

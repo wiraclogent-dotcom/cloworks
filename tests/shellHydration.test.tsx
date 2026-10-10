@@ -16,8 +16,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/admin/users" }));
 
 import { AppFrame } from "@/components/shell/AppFrame";
 import { NavItem } from "@/components/shell/NavItem";
-import { ThemeSwitch } from "@/components/ui/ThemeSwitch";
-import { UserChipView } from "@/components/shell/UserChipView";
+import { useDarkMode } from "@/components/ui/darkMode";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 /**
@@ -52,13 +51,19 @@ function Shell() {
       }
       footer={
         <>
-          <Suspense fallback={null}><Streamed><UserChipView name="Wira Budi" roleLabel="Admin" /></Streamed></Suspense>
-          <Suspense fallback={null}><Streamed><ThemeSwitch tone="sidebar" /></Streamed></Suspense>
+          <Suspense fallback={null}><Streamed><p title="Wira Budi">Wira Budi</p></Streamed></Suspense>
+          <Suspense fallback={null}><Streamed><DarkProbe /></Streamed></Suspense>
         </>
       }>
       <h1>Page</h1>
     </AppFrame>
   );
+}
+
+/** Reads the stored theme like the profile menu's Dark mode item (server snapshot: day). */
+function DarkProbe() {
+  const { dark } = useDarkMode();
+  return <span role="switch" aria-checked={dark} aria-label="Dark mode" />;
 }
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

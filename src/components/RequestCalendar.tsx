@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
@@ -18,19 +18,9 @@ import { Alert } from "./ui/Alert";
 import { Button, buttonClass } from "./ui/Button";
 import { EmptyState } from "./ui/EmptyState";
 import { cn } from "./ui/cn";
+import { useNarrow } from "./useNarrow";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const NARROW_QUERY = "(max-width: 639px)";
-
-/** Narrow-screen flag. The server snapshot is "wide", so hydration always renders the grid first. */
-function subscribeNarrow(onChange: () => void) {
-  if (typeof window.matchMedia !== "function") return () => {};
-  const mq = window.matchMedia(NARROW_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-const narrowNow = () => typeof window.matchMedia === "function" && window.matchMedia(NARROW_QUERY).matches;
-const useNarrow = () => useSyncExternalStore(subscribeNarrow, narrowNow, () => false);
 
 const monthName = (month: string, opts: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat("en-GB", { ...opts, timeZone: "UTC" }).format(new Date(`${month}-01T12:00:00Z`));

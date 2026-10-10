@@ -28,9 +28,9 @@ describe("runImport with swapped files", () => {
     const db = { user: { findMany: async () => users }, brand: { findMany: async () => brands }, division: { findMany: async () => divisions }, $queryRaw: async () => [] } as never;
     const apply = vi.fn();
     const deps = { apply, readFile: (p: string) => files[p], exists: () => true, log: () => {} };
-    await expect(runImport(db, { requestsPath: "soc.csv", socmedPath: "req.csv", apply: true }, deps)).rejects.toThrow(/SocMed/);
+    await expect(runImport(db, "clogent", { requestsPath: "soc.csv", socmedPath: "req.csv", apply: true }, deps)).rejects.toThrow(/SocMed/);
     expect(apply).not.toHaveBeenCalled();
-    await runImport(db, { requestsPath: "req.csv", socmedPath: "soc.csv", apply: false }, deps);
+    await runImport(db, "clogent", { requestsPath: "req.csv", socmedPath: "soc.csv", apply: false }, deps);
     expect(apply).not.toHaveBeenCalled();
   });
 });

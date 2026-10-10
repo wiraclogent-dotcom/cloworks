@@ -23,9 +23,14 @@ const getCollapsed = sidebarIsCollapsed;
 /**
  * Client frame of the signed-in app: Deep Blue sidebar (232px, collapsible to a 64px rail on desktop, remembered in
  * localStorage `ct-sidebar`), slim top bar + off-canvas drawer below 768px, skip link and `<main id="main">`.
- * The server AppShell passes in the nav and footer (permission checks stay on the server).
+ * The server AppShell passes in the nav, footer and workspace name (permission checks and reads stay on the server).
  */
-export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: ReactNode; children: ReactNode }) {
+export function AppFrame({ nav, footer, workspace, profile, children }: {
+  nav: ReactNode; footer?: ReactNode; workspace?: ReactNode;
+  /** The profile menu, pinned to the top-right of the content, in the row every PageHeader top bar leaves free. */
+  profile?: ReactNode;
+  children: ReactNode;
+}) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, getCollapsed, () => false);
   const [open, setOpen] = useState(false);
   const restoreFocus = useRef(false);
@@ -99,7 +104,7 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
               <LogoMark size={32} />
               <div className="sb-label min-w-0 flex-1 leading-tight">
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
-                <p className="truncate text-xs text-sidebar-foreground-secondary">Creative team</p>
+                <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
               </div>
               <ChevronsUpDown aria-hidden="true" className="sb-label size-4 shrink-0 text-sidebar-foreground-secondary" />
               <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
@@ -130,11 +135,14 @@ export function AppFrame({ nav, footer, children }: { nav: ReactNode; footer: Re
             </button>
           </div>
 
-          <div className="flex-none space-y-2 border-t border-sidebar-border p-3">{footer}</div>
+          {footer ? <div className="flex-none space-y-2 border-t border-sidebar-border p-3">{footer}</div> : null}
         </aside>
 
         <main id="main" tabIndex={-1} inert={open} className="min-w-0 flex-1 px-4 py-4 outline-none md:px-6 md:py-6">
-          <div className="app-content mx-auto w-full max-w-[1440px]">{children}</div>
+          <div className="app-content relative mx-auto w-full max-w-[1440px]">
+            {profile ? <div data-profile-slot="" className="absolute top-0 right-0 z-10">{profile}</div> : null}
+            {children}
+          </div>
         </main>
       </div>
     </>

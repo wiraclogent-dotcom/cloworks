@@ -62,6 +62,7 @@
   --primary-foreground: #ffffff;
   --primary-hover: #2b2d35;
   --secondary: var(--surface-muted);
+  --secondary-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--foreground-secondary);
   --accent: #ddf4f1;
@@ -167,6 +168,7 @@
   --primary: #f2f1ee;
   --primary-foreground: #111113;
   --primary-hover: #dcdbd6;
+  --secondary-foreground: #f2f1ee;
   --accent: #134350;
   --accent-foreground: #9fe1cb;
   --destructive: #c2342f;
@@ -267,10 +269,13 @@
   --color-surface-muted: var(--surface-muted);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
@@ -423,6 +428,74 @@
 .board-column {
   max-height: max(20rem, calc(100dvh - 16rem));
 }
+
+/*
+ * Hero board: one request card travels Requested → On progress → First look → Done, pausing in each column.
+ * The travelling card sits in a slot reserved at the top of every column, so it never covers the static cards.
+ * The reduced-motion rule below collapses the animation, leaving the card parked in Requested.
+ */
+.landing-board {
+  --gap: 0.5rem;
+  --slot: 5.75rem;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .landing-board {
+    --gap: 0.75rem;
+    --slot: 6.25rem;
+  }
+}
+
+.landing-slot {
+  height: var(--slot);
+}
+
+.landing-traveller {
+  position: absolute;
+  top: 2.25rem;
+  left: 0;
+  width: calc((100% - 3 * var(--gap)) / 4);
+  height: var(--slot);
+  border-top: 3px solid var(--status-requested-accent);
+  animation: landing-travel 12s cubic-bezier(0.65, 0, 0.35, 1) 0.6s infinite;
+}
+
+@keyframes landing-travel {
+  0%, 20% {
+    left: 0;
+    border-top-color: var(--status-requested-accent);
+  }
+  25%, 45% {
+    left: calc((100% - 3 * var(--gap)) / 4 + var(--gap));
+    border-top-color: var(--status-in-progress-accent);
+  }
+  50%, 70% {
+    left: calc(2 * (100% - 3 * var(--gap)) / 4 + 2 * var(--gap));
+    border-top-color: var(--status-first-look-accent);
+  }
+  75%, 95% {
+    left: calc(3 * (100% - 3 * var(--gap)) / 4 + 3 * var(--gap));
+    border-top-color: var(--status-done-accent);
+  }
+  100% {
+    left: 0;
+    border-top-color: var(--status-requested-accent);
+  }
+}
+
+/* The status line inside the card swaps in step with the column it lands in. */
+.landing-state { opacity: 0; }
+.landing-state:first-child { opacity: 1; }
+.landing-s0 { animation: landing-s0 12s steps(1, end) 0.6s infinite; }
+.landing-s1 { animation: landing-s1 12s steps(1, end) 0.6s infinite; }
+.landing-s2 { animation: landing-s2 12s steps(1, end) 0.6s infinite; }
+.landing-s3 { animation: landing-s3 12s steps(1, end) 0.6s infinite; }
+
+@keyframes landing-s0 { 0% { opacity: 1; } 22% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes landing-s1 { 0% { opacity: 0; } 24% { opacity: 1; } 47% { opacity: 0; } }
+@keyframes landing-s2 { 0% { opacity: 0; } 49% { opacity: 1; } 72% { opacity: 0; } }
+@keyframes landing-s3 { 0% { opacity: 0; } 74% { opacity: 1; } 97% { opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -26,8 +26,8 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
   p: ViewParams; brands: Opt[]; divisions: Opt[]; assignees: Opt[]; mineHref: string; clearHref: string;
 }) {
   const all = Object.keys(STATUS_LABEL) as RequestStatus[];
-  /** The calendar only shows open work, so closed statuses are not offered there. */
-  const statuses = p.view === "calendar" ? all.filter((s) => s !== "DONE" && s !== "CANCELLED") : all;
+  /** The calendar and timeline only show open work, so closed statuses are not offered there. */
+  const statuses = p.view === "calendar" || p.view === "timeline" ? all.filter((s) => s !== "DONE" && s !== "CANCELLED") : all;
   const activeCount = [p.status, p.brandId, p.divisionId, p.assigneeId, p.motion].filter(Boolean).length;
   const select = (name: string, label: string, value: string | undefined, opts: Opt[]) => (
     <label className={LABEL}>
@@ -42,6 +42,7 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
     <form method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
       {p.view !== "board" && <input type="hidden" name="view" value={p.view} />}
       {p.view === "calendar" && <input type="hidden" name="month" value={p.month} />}
+      {p.view === "timeline" && <input type="hidden" name="week" value={p.week} />}
       {p.mine && <input type="hidden" name="mine" value="1" />}
       {/* Keep the table sort when filtering (same rules as hrefWith). */}
       {p.view === "table" && p.sort !== "deadline" && <input type="hidden" name="sort" value={p.sort} />}

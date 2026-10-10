@@ -26,7 +26,7 @@ describe("notifications", () => {
     db = await createTestDb();
     const p = db.prisma;
     const mk = async (k: string, appRole: "REQUESTER" | "CREATIVE" | "LEAD", extra: { email?: string | null; active?: boolean; aliases?: string[] } = {}) => {
-      ids[k] = (await p.user.create({ data: { email: k === "noemail" ? null : `${k}@clogent.co.id`, name: k[0].toUpperCase() + k.slice(1), fullName: k, appRole, ...extra } })).id;
+      ids[k] = (await p.user.create({ data: { email: k === "noemail" ? null : `${k}@clogent.co.id`, name: k[0].toUpperCase() + k.slice(1), fullName: k, appRole, jobRole: appRole === "CREATIVE" ? "DESIGNER" : "OTHER", ...extra } })).id;
     };
     await mk("rina", "REQUESTER");
     await mk("dimas", "CREATIVE");

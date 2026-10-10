@@ -10,7 +10,7 @@ export default function RequestDetailPage({ params }: PageProps<"/requests/[id]"
   return (
     <div className="mx-auto w-full max-w-6xl">
       <Suspense fallback={<DetailSkeleton />}>
-        <DetailContent params={params} />
+        <DetailContent params={params} fullPage />
       </Suspense>
     </div>
   );

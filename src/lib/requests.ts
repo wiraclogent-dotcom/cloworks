@@ -243,3 +243,38 @@ export async function listCalendarRequests(
     deadlineDay: r.deadline ? jakartaDate(r.deadline) : null,
   }));
 }
+
+export type TimelineRow = CalendarRow & { assigneeId: string | null };
+
+/**
+ * Timeline data: open requests whose bar (request day to deadline; overdue and no-deadline ones run to today)
+ * meets [from, to] (Jakarta days, inclusive). Every open bar ends on or after today, so when the window starts on or
+ * before today only the start matters; a future window also needs a deadline on or after `from`.
+ * Ordered requestedAt asc, deadline asc (nulls last), id.
+ */
+export async function listTimelineRequests(
+  db: Pick<PrismaClient, "request">,
+  filter: RequestFilter,
+  range: { from: string; to: string; today: string },
+  now: Date = new Date(),
+): Promise<TimelineRow[]> {
+  if (filter.status && !isOpenStatus(filter.status)) return [];
+  const rows = await db.request.findMany({
+    where: {
+      AND: [
+        { status: filter.status ?? { in: OPEN_STATUSES } },
+        { requestedAt: { lt: jakartaStart(range.to, 1) } },
+        ...(range.today < range.from ? [{ deadline: { gte: jakartaStart(range.from) } }] : []),
+        ...filterClauses(filter),
+      ],
+    },
+    orderBy: [{ requestedAt: "asc" }, DEADLINE_ASC, { id: "asc" }],
+    select: { ...ROW_SELECT, assigneeId: true },
+  });
+  return rows.map((r) => ({
+    ...toRow(r, now),
+    assigneeId: r.assigneeId,
+    requestDay: jakartaDate(r.requestedAt),
+    deadlineDay: r.deadline ? jakartaDate(r.deadline) : null,
+  }));
+}

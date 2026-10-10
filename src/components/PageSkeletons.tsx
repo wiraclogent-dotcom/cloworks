@@ -71,6 +71,19 @@ export function TeamKpiSkeleton() {
   );
 }
 
+/** Brief Calendar fallback: header, 3 person tiles, month grid card. */
+export function BriefCalendarSkeleton() {
+  return (
+    <Busy label="Loading brief calendar…">
+      <HeaderSkeleton />
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[0, 1, 2].map((i) => <TileSkeleton key={i} />)}
+      </div>
+      <CardSkeleton><Skeleton className="h-96 w-full" /></CardSkeleton>
+    </Busy>
+  );
+}
+
 /** Projects fallback: header, grouped table card, timeline card. */
 export function ProjectsSkeleton() {
   return (

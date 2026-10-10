@@ -3,11 +3,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
 const act = {
-  saveLoginEmail: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveRequestType: vi.fn(),
+  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveRequestType: vi.fn(),
   saveUser: vi.fn(), addPerson: vi.fn(), addAllowed: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(),
 };
 vi.mock("@/app/(app)/admin/users/actions", () => ({
   saveLoginEmail: (...a: unknown[]) => act.saveLoginEmail(...a),
+  savePassword: (...a: unknown[]) => act.savePassword(...a),
   setUserActive: (...a: unknown[]) => act.setUserActive(...a),
   removeAllowed: (...a: unknown[]) => act.removeAllowed(...a),
   saveUser: (...a: unknown[]) => act.saveUser(...a),
@@ -21,24 +22,39 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
 }));
 
 const requireUser = vi.fn();
-vi.mock("@/lib/session", () => ({ requireUser: () => requireUser(), requireUserOrRedirect: () => requireUser() }));
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
-vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+// Pages read through the workspace-scoped client that requireScope hands them.
+vi.mock("@/lib/session", () => ({
+  requireUser: () => requireUser(),
+  requireUserOrRedirect: () => requireUser(),
+  requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
+}));
 
-import { ActiveToggle, LoginEmailForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
+import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
 import { TypeForm } from "@/app/(app)/admin/lists/ListForms";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
 
-const u = { id: "u1", name: "Rina", fullName: "Rina Putri", title: null, appRole: "CREATIVE", jobRole: "DESIGNER", aliases: [], email: null, active: true };
+const u = { id: "u1", name: "Rina", fullName: "Rina Putri", title: null, appRole: "CREATIVE", jobRole: "DESIGNER", aliases: [], email: null, active: true, hasPassword: false };
 
 beforeEach(() => vi.clearAllMocks());
 afterEach(cleanup);
 
 describe("admin forms", () => {
+  it("add person offers an optional login email and temporary password", () => {
+    render(<AddPersonForm />);
+    const email = screen.getByLabelText(/^login email/i) as HTMLInputElement;
+    const pw = screen.getByLabelText(/^temporary password/i) as HTMLInputElement;
+    expect(email.name).toBe("email");
+    expect(email.required).toBe(false);
+    expect(pw.name).toBe("password");
+    expect(pw.type).toBe("password");
+    expect(pw.required).toBe(false);
+  });
+
   it("login email keeps typed input and flags the field after a failed save", async () => {
     act.saveLoginEmail.mockImplementation(async (_p: unknown, fd: FormData) => ({
       ok: false, code: "CONFLICT", message: "x@gmail.com is already the login email of Dina", nonce: "n1", values: { email: String(fd.get("email")), userId: "u1" },
@@ -52,6 +68,24 @@ describe("admin forms", () => {
     expect(input.value).toBe("x@gmail.com");
     expect(input.getAttribute("aria-invalid")).toBe("true");
     expect(input.getAttribute("aria-describedby")).toBe(alert.id);
+  });
+
+  it("password form: needs a login email first; a failed save shows the error and does not echo the password", async () => {
+    const { unmount } = render(<PasswordForm u={u} />);
+    expect(screen.getByText(/set a login email first/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/password/i)).toBeNull();
+    unmount();
+
+    act.savePassword.mockImplementation(async () => ({
+      ok: false, code: "VALIDATION", message: "Password must be at least 10 characters.", nonce: "p1", values: { userId: "u1", password: "" },
+    }));
+    render(<PasswordForm u={{ ...u, email: "rina@clogent.co.id" }} />);
+    const input = screen.getByLabelText(/^password/i) as HTMLInputElement;
+    expect(input.type).toBe("password");
+    fireEvent.change(input, { target: { value: "short-pass" } });
+    fireEvent.click(screen.getByRole("button", { name: "Set password for Rina" }));
+    expect((await screen.findByRole("alert")).textContent).toMatch(/at least 10/);
+    expect((screen.getByLabelText(/^password/i) as HTMLInputElement).value).toBe("");
   });
 
   it("deactivate needs an explicit confirmation step", async () => {
@@ -122,5 +156,19 @@ describe("admin pages gate", () => {
     expect(screen.getByText("Used by Rina · login for Rina")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Allowed emails" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Add person" })).toBeTruthy();
+  });
+
+  it("shows whether a password is set but never loads or renders the hash", async () => {
+    requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
+    prismaMock.user.findMany.mockResolvedValue([
+      { ...u, email: "rina@clogent.co.id", passwordHash: "scrypt$32768$8$1$c2FsdA==$TOPSECRETHASH" },
+      { ...u, id: "u2", name: "Budi", email: "budi@clogent.co.id", passwordHash: null },
+    ]);
+    prismaMock.allowedEmail.findMany.mockResolvedValue([]);
+    const { container } = render(await UsersContent());
+    expect(container.innerHTML).not.toContain("TOPSECRETHASH");
+    expect(screen.getByText("Password set")).toBeTruthy();
+    expect(screen.getByText("No password yet")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Set password for Rina" }).textContent).toBe("Reset password");
   });
 });

@@ -1,6 +1,6 @@
 # UI kit (Phase A foundation)
 
-Small, typed, server-safe components (only `ThemeSwitch` is a client component). Every component takes `className`
+Small, typed, server-safe components (client-only helpers live in `darkMode.ts`). Every component takes `className`
 (merged with `cn()` from `./cn`, which uses `tailwind-merge`: on a conflict the LAST class wins, so
 `<Button className="h-10">` really is 40px). Import each from its own file: `import { Button } from "@/components/ui/Button"`.
 Spec: `docs/superpowers/specs/2026-10-08-ui-redesign-design.md`.
@@ -58,7 +58,6 @@ Type: base 14px; page title 22px/600 (PageHeader); section 16px/600 (CardTitle);
 | `tableClass()` | table.ts | `compact`, `minWidth` → `{wrapper, table, th, tr, td, rowHeader, numeric}` | Every table: sticky header, row hover, no zebra. |
 | `Divider` | Divider.tsx | `label` | Separators. |
 | `LogoMark` | LogoMark.tsx | `size` | Brand mark (decorative). |
-| `ThemeSwitch` | ThemeSwitch.tsx (client) | `tone` surface/sidebar | Already in the sidebar footer; do not add another. |
 
 ## Do
 

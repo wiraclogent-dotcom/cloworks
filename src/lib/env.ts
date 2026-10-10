@@ -22,7 +22,7 @@ export function validateEnv(env: Env = process.env): EnvReport {
 
   const google = set(env.AUTH_GOOGLE_ID);
   const entra = set(env.AUTH_MICROSOFT_ENTRA_ID_ID);
-  if (!google && !entra) errors.push("No sign-in provider is configured: set AUTH_GOOGLE_ID or AUTH_MICROSOFT_ENTRA_ID_ID (with their secrets).");
+  // Email + password sign-in always works, so OAuth providers are optional.
   if (google && !set(env.AUTH_GOOGLE_SECRET)) errors.push("AUTH_GOOGLE_ID is set but AUTH_GOOGLE_SECRET is missing.");
   if (entra) {
     if (!set(env.AUTH_MICROSOFT_ENTRA_ID_SECRET)) errors.push("AUTH_MICROSOFT_ENTRA_ID_ID is set but AUTH_MICROSOFT_ENTRA_ID_SECRET is missing.");

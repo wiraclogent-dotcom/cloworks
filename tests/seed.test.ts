@@ -23,6 +23,8 @@ describe("seed", () => {
     await db.prisma.user.update({ where: { id: (await db.prisma.user.findFirstOrThrow({ where: { name: "Idzni" } })).id }, data: { email: "idzni@example.com", appRole: "ADMIN" } });
     await seed(db.prisma);
     expect(await counts()).toEqual(first);
+    for (const m of ["user", "brand", "division", "requestType"] as const)
+      expect(await (db.raw[m] as unknown as { count(a: object): Promise<number> }).count({ where: { workspaceId: { not: "clogent" } } })).toBe(0);
 
     const withEmail = await db.prisma.user.findMany({ where: { email: { not: null } }, orderBy: { name: "asc" } });
     expect(withEmail.map((u) => u.name)).toEqual(["Idzni", "Wira"]);

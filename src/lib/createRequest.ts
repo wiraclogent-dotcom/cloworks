@@ -96,7 +96,7 @@ export async function createRequestWith(
   const [brand, division, type] = await Promise.all([
     brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
     divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
-    useDefault ? db.requestType.findUnique({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
+    useDefault ? db.requestType.findFirst({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
   ]);
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";

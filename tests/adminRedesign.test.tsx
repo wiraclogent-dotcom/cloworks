@@ -3,16 +3,20 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 
 vi.mock("@/app/(app)/admin/users/actions", () => ({
-  saveLoginEmail: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(), addAllowed: vi.fn(),
+  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(), addAllowed: vi.fn(),
 }));
 vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn() }));
 const requireUser = vi.fn();
-vi.mock("@/lib/session", () => ({ requireUser: () => requireUser(), requireUserOrRedirect: () => requireUser() }));
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
-vi.mock("@/lib/db", () => ({ prisma: prismaMock }));
+// Pages read through the workspace-scoped client that requireScope hands them.
+vi.mock("@/lib/session", () => ({
+  requireUser: () => requireUser(),
+  requireUserOrRedirect: () => requireUser(),
+  requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
+}));
 
 import { activeChip, appRoleChip, enumLabel, jobRoleChip } from "@/lib/adminChips";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
@@ -24,8 +28,8 @@ import AppNotFound from "@/app/(app)/not-found";
 
 const base = { fullName: "Rina Putri", title: "Designer II", aliases: [], department: null };
 const users = [
-  { ...base, id: "u1", name: "Rina", appRole: "ADMIN", jobRole: "DESIGNER", email: "rina@gmail.com", active: true },
-  { ...base, id: "u2", name: "Budi", title: null, appRole: "REQUESTER", jobRole: "SOCIAL_MEDIA", email: null, active: false },
+  { ...base, id: "u1", name: "Rina", appRole: "ADMIN", jobRole: "DESIGNER", email: "rina@gmail.com", active: true, passwordHash: "scrypt$32768$8$1$c2FsdA==$SECRETHASH" },
+  { ...base, id: "u2", name: "Budi", title: null, appRole: "REQUESTER", jobRole: "SOCIAL_MEDIA", email: null, active: false, passwordHash: null },
 ];
 
 beforeEach(() => {
@@ -98,7 +102,7 @@ describe("Users page", () => {
     expect(within(group).getByRole("button", { name: "Yes, remove a@gmail.com" }).className).toContain("bg-destructive");
     expect(within(group).getByRole("button", { name: "Cancel" })).toBeTruthy();
     cleanup();
-    render(<ActiveToggle u={{ ...users[0], title: null }} />);
+    render(<ActiveToggle u={{ ...users[0], title: null, hasPassword: true }} />);
     fireEvent.click(screen.getByRole("button", { name: "Deactivate Rina" }));
     expect(screen.getByRole("button", { name: "Yes, deactivate Rina" }).className).toContain("bg-destructive");
   });

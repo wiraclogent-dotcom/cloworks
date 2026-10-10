@@ -1,8 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/db";
-import { requireUser } from "@/lib/session";
+import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
 import { AdminError, createBrand, createDivision, renameBrand, renameDivision, upsertRequestType } from "@/lib/admin";
 import { adminResult, adminUnauth, type AdminFormState } from "@/lib/adminForm";
@@ -15,11 +14,12 @@ const done = (r: NonNullable<AdminFormState>) => {
 
 export async function saveBrand(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
         const id = s(fd, "id");
-        if (id) await renameBrand(prisma, actor, id, s(fd, "name"));
-        else await createBrand(prisma, actor, s(fd, "name"));
+        if (id) await renameBrand(db, actor, id, s(fd, "name"));
+        else await createBrand(db, actor, s(fd, "name"));
         return id ? "Brand renamed." : "Brand added.";
       }),
     );
@@ -28,11 +28,12 @@ export async function saveBrand(_prev: AdminFormState, fd: FormData): Promise<Ad
 
 export async function saveDivision(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
         const id = s(fd, "id");
-        if (id) await renameDivision(prisma, actor, id, s(fd, "name"));
-        else await createDivision(prisma, actor, s(fd, "name"));
+        if (id) await renameDivision(db, actor, id, s(fd, "name"));
+        else await createDivision(db, actor, s(fd, "name"));
         return id ? "Division renamed." : "Division added.";
       }),
     );
@@ -41,6 +42,7 @@ export async function saveDivision(_prev: AdminFormState, fd: FormData): Promise
 
 export async function saveRequestType(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
         let schema: unknown;
@@ -50,7 +52,7 @@ export async function saveRequestType(_prev: AdminFormState, fd: FormData): Prom
           throw new AdminError("VALIDATION", `Field schema is not valid JSON: ${e instanceof Error ? e.message : "parse error"}`);
         }
         const id = s(fd, "id");
-        await upsertRequestType(prisma, actor, { id: id || undefined, name: s(fd, "name"), fieldSchema: schema, active: fd.get("active") !== null });
+        await upsertRequestType(db, actor, { id: id || undefined, name: s(fd, "name"), fieldSchema: schema, active: fd.get("active") !== null });
         return id ? "Request type saved." : "Request type added.";
       }),
     );

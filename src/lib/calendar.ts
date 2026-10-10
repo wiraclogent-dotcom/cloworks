@@ -5,7 +5,7 @@ import { jakartaDate } from "./createRequest";
 export type CalendarDay = { day: string; inMonth: boolean; isToday: boolean; weekday: number };
 export type CalendarItem = { id: string; deadlineDay: string | null; requestDay: string };
 
-const DAY_MS = 86_400_000;
+export const DAY_MS = 86_400_000;
 const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -13,13 +13,13 @@ const MONTHS = [
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const utc = (day: string) => {
+export const utc = (day: string) => {
   const [y, m, d] = day.split("-").map(Number);
   return Date.UTC(y, m - 1, d, 12);
 };
-const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+export const fmt = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 /** 0 = Monday ... 6 = Sunday. */
-const weekdayOf = (ms: number) => (new Date(ms).getUTCDay() + 6) % 7;
+export const weekdayOf = (ms: number) => (new Date(ms).getUTCDay() + 6) % 7;
 
 export function parseMonth(raw: string | undefined, now: Date): string {
   const m = raw ? /^(\d{4})-(\d{2})$/.exec(raw) : null;
