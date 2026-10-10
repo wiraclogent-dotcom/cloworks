@@ -272,6 +272,7 @@ describe("ChatDockView", () => {
     fireEvent.keyDown(document, { key: "Escape" });
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(JSON.parse(window.sessionStorage.getItem("chat-dock") ?? "{}").open).toBe(false);
+    expect(document.activeElement).toBe(launcher());
   });
 });
 
@@ -288,6 +289,20 @@ describe("ChatDockView collapse and minimize", () => {
     expect(launcher()).toBeTruthy();
     expect(document.activeElement).toBe(launcher());
     expect(dock().open).toBe(false);
+  });
+
+  it("collapsing with a conversation open clears the selection: no conversation poll or markRead, list poll runs", async () => {
+    const a = fakeActions([chat()]);
+    await openConversation(a);
+    a.listMessages.mockClear(); a.markRead.mockClear(); a.listChats.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Collapse to chat list" }));
+    expect(dock()).toMatchObject({ open: true, selectedId: null, collapsed: true });
+    await firePoll();
+    await waitFor(() => expect(a.listChats).toHaveBeenCalled());
+    expect(a.listMessages).not.toHaveBeenCalled();
+    expect(a.markRead).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Expand messages" }));
+    expect(screen.getByText("Pick a chat to start messaging.")).toBeTruthy();
   });
 
   it("Collapse hides the conversation pane and the button becomes Expand", async () => {

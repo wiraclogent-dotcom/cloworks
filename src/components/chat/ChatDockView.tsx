@@ -338,7 +338,8 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
     return null;
   }
 
-  const setCollapsed = (c: boolean) => writeDock({ open, selectedId, collapsed: c });
+  /** Collapsing also clears the selection (one write): the collapsed view is "open, list showing", with no conversation poll or read marking. */
+  const setCollapsed = (c: boolean) => writeDock({ open, selectedId: c ? null : selectedId, collapsed: c });
   const selected = chats?.find((c) => c.requestId === selectedId) ?? null;
   const pillTitle = count > 0 && latest ? latest.title : null;
   const label = count > 0 ? `Messages, ${count} unread${pillTitle ? `, latest: ${pillTitle}` : ""}` : "Messages";
