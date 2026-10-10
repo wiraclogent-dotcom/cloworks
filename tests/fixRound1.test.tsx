@@ -84,6 +84,10 @@ describe("D8 tap targets", () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit={false} />);
     expect(screen.getByRole("link", { name: "Fadli" }).className).toContain("min-h-7");
     cleanup();
+    render(<TeamTable rows={rows} month="2026-10" canEdit={false} canOpen={false} />);
+    expect(screen.queryByRole("link", { name: "Fadli" })).toBeNull();
+    expect(screen.getByText("Fadli")).toBeTruthy();
+    cleanup();
     const { container } = render(<Avatar name="Rina Sari" size="sm" />);
     expect(container.firstElementChild!.className).toContain("text-[11px]");
     expect(container.firstElementChild!.className).not.toMatch(/text-\[(9|10)px\]/);

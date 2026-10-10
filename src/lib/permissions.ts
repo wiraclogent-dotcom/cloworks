@@ -5,14 +5,17 @@ export const ACTIONS = [
   "request.assign",
   "request.transition",
   "dashboard.team",
+  "dashboard.teamView",
   "dashboard.self",
+  "briefs.view",
   "project.manage",
   "admin.manage",
 ] as const;
 
 export type Action = (typeof ACTIONS)[number];
 
-const REQUESTER: readonly Action[] = ["request.create", "dashboard.self"];
+// dashboard.teamView: read the Team KPI table. dashboard.team: also set targets and open another person's KPI page.
+const REQUESTER: readonly Action[] = ["request.create", "dashboard.self", "dashboard.teamView", "briefs.view"];
 const CREATIVE: readonly Action[] = [...REQUESTER, "request.transition", "project.manage"];
 const LEAD: readonly Action[] = [...CREATIVE, "request.assign", "dashboard.team"];
 const ADMIN: readonly Action[] = [...LEAD, "admin.manage"];

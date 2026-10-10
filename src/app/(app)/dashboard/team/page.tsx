@@ -36,9 +36,9 @@ export const metadata: Metadata = { title: "Team KPI" };
 
 async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboard/team">["searchParams"] }) {
   const { user: viewer, db } = await requireScope();
-  if (!can(viewer.appRole, "dashboard.team")) {
+  if (!can(viewer.appRole, "dashboard.teamView")) {
     // Same pattern as the personal page: an inline message, never the data.
-    return <AccessDenied description="The team KPI page is only available to leads and admins." backHref="/dashboard" backLabel="Back to My KPI" />;
+    return <AccessDenied description="You do not have access to the team KPI page." backHref="/dashboard" backLabel="Back to My KPI" />;
   }
   const month = parseMonthParam((await searchParams).month);
   const [targets, requests] = await Promise.all([loadTargets(db, [month]), loadKpiRequests(db, [month])]);
@@ -54,6 +54,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     };
   });
   const summary = teamSummary(rows);
+  const canManage = can(viewer.appRole, "dashboard.team");
   return (
     <>
       <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" />} />
@@ -73,7 +74,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
           </section>
           <section aria-labelledby="team-table">
             <h2 id="team-table" className="sr-only">People</h2>
-            <TeamTable rows={rows} month={month} canEdit />
+            <TeamTable rows={rows} month={month} canEdit={canManage} canOpen={canManage} />
           </section>
         </div>
       )}

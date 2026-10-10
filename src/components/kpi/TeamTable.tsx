@@ -33,7 +33,8 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   );
 }
 
-export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: string; canEdit: boolean }) {
+/** `canOpen`: names link to each person's KPI page (leads and admins; for everyone else `user=` is ignored). */
+export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: TeamRow[]; month: string; canEdit: boolean; canOpen?: boolean }) {
   // ≥ 1024px (lg) the table fits its card: no min width, Turnaround and Workload only from xl (1280px), compact editor.
   // Below lg it keeps a min width and scrolls sideways inside the card, with a visible hint.
   const t = tableClass({ minWidth: canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0" });
@@ -67,7 +68,9 @@ export function TeamTable({ rows, month, canEdit }: { rows: TeamRow[]; month: st
                   <div className="flex items-center gap-2.5">
                     <Avatar name={r.name} size="md" decorative />
                     <div className="min-w-0">
-                      <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="-my-1 inline-flex min-h-7 items-center rounded-md font-medium text-foreground hover:text-link hover:underline">{r.name}</Link>
+                      {canOpen ? (
+                        <Link href={`/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}`} className="-my-1 inline-flex min-h-7 items-center rounded-md font-medium text-foreground hover:text-link hover:underline">{r.name}</Link>
+                      ) : <span className="font-medium text-foreground">{r.name}</span>}
                       <div className="mt-0.5"><Chip tone="tag-neutral" data-role={r.role}>{JOB_ROLE_LABEL[r.role]}</Chip></div>
                     </div>
                   </div>

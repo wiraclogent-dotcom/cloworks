@@ -27,16 +27,16 @@ function NavGroup({ id, label, divided = false, children }: { id: string; label:
   );
 }
 
-/** Team KPI is only offered to users who may open it (the page re-checks on the server). */
+/** Team KPI is offered to everyone who has a KPI dashboard (the page re-checks on the server). */
 export async function TeamKpiItem() {
   const { appRole } = await requireUserOrRedirect();
-  return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/team" label="Team KPI" icon={<Users aria-hidden="true" />} /> : null;
+  return can(appRole, "dashboard.teamView") ? <NavItem href="/dashboard/team" label="Team KPI" icon={<Users aria-hidden="true" />} /> : null;
 }
 
-/** Brief Calendar follows the Team KPI rule (the page re-checks on the server). */
+/** Brief Calendar is offered to every signed-in user (the page re-checks on the server). */
 export async function BriefCalendarItem() {
   const { appRole } = await requireUserOrRedirect();
-  return can(appRole, "dashboard.team") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
+  return can(appRole, "briefs.view") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
 }
 
 /** The signed-in person's workspace name, under the app name in the sidebar header. `Workspace` is not scoped. */

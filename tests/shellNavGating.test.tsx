@@ -23,18 +23,12 @@ async function renderGated(r: AppRole) {
 }
 
 describe("role-gated sidebar items (same can() checks as the pages)", () => {
-  it.each(["REQUESTER", "CREATIVE"] as const)("%s sees neither Team KPI nor Brief Calendar", async (r) => {
-    await renderGated(r);
-    expect(screen.queryByRole("link", { name: "Team KPI" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Brief Calendar" })).toBeNull();
-  });
-
-  it.each(["LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
+  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
     await renderGated(r);
     expect(screen.getByRole("link", { name: "Brief Calendar" }).getAttribute("href")).toBe("/dashboard/briefs");
   });
 
-  it.each(["LEAD", "ADMIN"] as const)("%s sees Team KPI", async (r) => {
+  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("%s sees Team KPI", async (r) => {
     await renderGated(r);
     expect(screen.getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
   });

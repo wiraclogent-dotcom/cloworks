@@ -13,8 +13,8 @@ import { parseMonthParam, type RawParam } from "../params";
 /** Brief calendar body (spec 2026-10-10). Lives outside page.tsx so tests can render it without the Suspense shell. */
 export async function BriefContent({ searchParams }: { searchParams: Promise<Record<string, RawParam>> }) {
   const { user: viewer, db } = await requireScope();
-  if (!can(viewer.appRole, "dashboard.team")) {
-    return <AccessDenied description="The brief calendar is only available to leads and admins." backHref="/dashboard" backLabel="Back to My KPI" />;
+  if (!can(viewer.appRole, "briefs.view")) {
+    return <AccessDenied description="You do not have access to the brief calendar." backHref="/dashboard" backLabel="Back to My KPI" />;
   }
   const month = parseMonthParam((await searchParams).month);
   const now = new Date();

@@ -17,11 +17,11 @@ afterEach(() => { cleanup(); role = "LEAD"; items = ITEMS; });
 const show = async (month?: string) => render(await BriefContent({ searchParams: Promise.resolve({ month }) }));
 
 describe("Brief Calendar page", () => {
-  it("a requester gets the access message and no calendar", async () => {
+  it("a requester sees the calendar too (everyone may open it)", async () => {
     role = "REQUESTER";
     await show("2026-10");
-    expect(screen.getByText("The brief calendar is only available to leads and admins.")).toBeTruthy();
-    expect(screen.queryByRole("region", { name: "Month summary" })).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Brief Calendar" })).toBeTruthy();
+    expect(screen.getByRole("region", { name: "Month summary" })).toBeTruthy();
   });
 
   it("a lead sees the month, the summary and everyone's briefs per week", async () => {
