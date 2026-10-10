@@ -3,6 +3,7 @@ import type { AppRole } from "@prisma/client";
 import type { ScopedDb } from "./db";
 import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
+import type { LibraryRow } from "./libraryView";
 
 export type LibraryErrorCode = "FORBIDDEN" | "VALIDATION" | "NOT_FOUND" | "CATEGORY_NOT_EMPTY";
 export class LibraryError extends Error {
@@ -193,4 +194,34 @@ async function swapWithNeighbour(ids: string[], id: string, dir: "up" | "down", 
   const next = [...ids];
   [next[i], next[j]] = [next[j], next[i]];
   await persist(next);
+}
+
+// ---- Read ----------------------------------------------------------------------------------------------------
+
+export async function loadLibrary(db: ScopedDb): Promise<{
+  rows: LibraryRow[];
+  categories: { id: string; name: string; icon: string | null }[];
+  brands: { id: string; name: string }[];
+}> {
+  const [cats, items] = await Promise.all([
+    db.libraryCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, icon: true, sortOrder: true } }),
+    db.libraryItem.findMany({ include: { brand: { select: { id: true, name: true } } } }),
+  ]);
+  const catOrder = new Map(cats.map((c, i) => [c.id, i]));
+  const sorted = [...items].sort(
+    (a, b) =>
+      (catOrder.get(a.categoryId) ?? 0) - (catOrder.get(b.categoryId) ?? 0) ||
+      a.sortOrder - b.sortOrder ||
+      a.createdAt.getTime() - b.createdAt.getTime() ||
+      a.id.localeCompare(b.id),
+  );
+  const rows: LibraryRow[] = sorted.map((i) => ({
+    id: i.id, title: i.title, url: i.url, description: i.description, categoryId: i.categoryId,
+    brandId: i.brandId, brandName: i.brand?.name ?? null, pinned: i.pinned, sortOrder: i.sortOrder,
+    createdAt: i.createdAt, contentUpdatedAt: i.contentUpdatedAt,
+  }));
+  const used = new Map<string, string>();
+  for (const i of items) if (i.brand) used.set(i.brand.id, i.brand.name);
+  const brands = [...used].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  return { rows, categories: cats.map((c) => ({ id: c.id, name: c.name, icon: c.icon })), brands };
 }

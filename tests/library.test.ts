@@ -3,7 +3,7 @@ import { STARTER_CATEGORIES } from "../prisma/seedCore";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 import {
   LibraryError, createItemWith, updateItemWith, deleteItemWith, setPinnedWith, moveItemWith,
-  createCategoryWith, updateCategoryWith, moveCategoryWith, deleteCategoryWith,
+  createCategoryWith, updateCategoryWith, moveCategoryWith, deleteCategoryWith, loadLibrary,
 } from "@/lib/library";
 
 describe("library schema", () => {
@@ -195,5 +195,34 @@ describe("library cores", () => {
     const { id } = await createItemWith(db.prisma, lead(), base());
     await deleteItemWith(db.prisma, lead(), id);
     expect(await db.prisma.libraryItem.findUnique({ where: { id } })).toBeNull();
+  });
+});
+
+describe("loadLibrary", () => {
+  let db: TestDb;
+  beforeAll(async () => { db = await createTestDb(); });
+  afterAll(async () => { await db?.stop(); });
+
+  it("orders categories and rows, and lists only used brands by name", async () => {
+    const user = await db.prisma.user.create({ data: { email: "l@clogent.co.id", name: "L", fullName: "L", appRole: "LEAD" } });
+    const c2 = await db.prisma.libraryCategory.create({ data: { name: "LL Second", sortOrder: 201 } });
+    const c1 = await db.prisma.libraryCategory.create({ data: { name: "LL First", sortOrder: 200 } });
+    const bZ = await db.prisma.brand.create({ data: { name: "LL Zed" } });
+    const bA = await db.prisma.brand.create({ data: { name: "LL Alpha" } });
+    await db.prisma.brand.create({ data: { name: "LL Unused" } });
+    const mk = (title: string, categoryId: string, sortOrder: number, brandId?: string) =>
+      db.prisma.libraryItem.create({ data: { title, url: "https://x.test", categoryId, sortOrder, brandId, createdById: user.id, updatedById: user.id } });
+    await mk("in-c2", c2.id, 0, bZ.id);
+    await mk("c1-b", c1.id, 1, bA.id);
+    await mk("c1-a", c1.id, 0);
+    const data = await loadLibrary(db.prisma);
+    const ours = data.categories.filter((c) => c.name.startsWith("LL "));
+    expect(ours.map((c) => c.name)).toEqual(["LL First", "LL Second"]);
+    expect(ours[0]).toEqual({ id: c1.id, name: "LL First", icon: null });
+    expect(data.rows.filter((r) => r.title.startsWith("c1") || r.title === "in-c2").map((r) => r.title)).toEqual(["c1-a", "c1-b", "in-c2"]);
+    expect(data.rows.find((r) => r.title === "c1-b")?.brandName).toBe("LL Alpha");
+    expect(data.rows.find((r) => r.title === "c1-a")?.brandName).toBeNull();
+    const brands = data.brands.filter((b) => b.name.startsWith("LL "));
+    expect(brands.map((b) => b.name)).toEqual(["LL Alpha", "LL Zed"]);
   });
 });

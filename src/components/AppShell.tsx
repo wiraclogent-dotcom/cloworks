@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CalendarDays, ChartColumn, FolderKanban, Plug, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, FolderKanban, LibraryBig, Plug, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -75,6 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-tools" label="Tools" divided>
+            <NavItem href="/library" label="Library" icon={<LibraryBig aria-hidden="true" />} />
             <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
         </nav>

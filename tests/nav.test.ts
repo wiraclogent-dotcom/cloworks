@@ -12,6 +12,7 @@ describe("activeNavHref", () => {
     ["/dashboard", "/dashboard"],
     ["/dashboard/team", "/dashboard/team"],
     ["/dashboard/briefs", "/dashboard/briefs"],
+    ["/library", "/library"],
   ])("%s → %s", (path, want) => {
     expect(activeNavHref(path)).toBe(want);
   });
