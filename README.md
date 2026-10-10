@@ -154,7 +154,12 @@ What to know:
 - **Requester nicknames are kept in notes.** A requester that is not in the roster (for example Yoel, Iyok, Ibnu) is not
   guessed: the request is imported under Wira and the notes say `Requester (as typed): <name>`. They are also listed
   in the report under "unmapped names".
-- **Re-running is safe.** Already imported rows are detected by an import key and skipped; Dimas rows with the same file
+- **Re-importing a newer export syncs changes.** Rows already imported are updated from the sheet: status only moves
+  forward (never back, never out of Cancelled), the designer is filled only when nobody is assigned in the app, and
+  links, deadline, output count, Include KPI and the SocMed flags/platform/published link take the sheet's value when
+  it has one. Notes, title, requester, brand and division are never changed. The dry-run lists every update first.
+  For production, run `bash scripts/sync-sheet-prod.local.sh "<workbook>.xlsx"` (dry-run, then asks before writing).
+- **Re-running is safe.** Already imported rows are detected by an import key and not inserted again; Dimas rows with the same file
   name and date get a counter. Caveat: correcting a requester name in the sheet after import and re-running creates a
   duplicate of that row. Run `npm run db:seed` first so names and aliases (for example Irshyad to Irsyad) resolve.
 - **Legacy CSV mode** still exists (`npm run import:sheet -- requests.csv [socmed.csv] [--apply]`, requests file first),

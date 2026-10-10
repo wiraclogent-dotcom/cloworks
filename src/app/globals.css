@@ -42,6 +42,9 @@
   --board-dot: rgba(23, 24, 28, 0.1);
   --border: #e6e3dc;
   --border-strong: #d3cfc5;
+  /* Scrollbars: thin, token-coloured thumb on a transparent track (the canvas, card or board shows through). */
+  --scrollbar-thumb: color-mix(in srgb, var(--foreground-muted) 55%, transparent);
+  --scrollbar-thumb-hover: var(--foreground-muted);
   --foreground: #17181c;
   --foreground-secondary: #62656d;
   /* Non-text only (decorative icons, dividers): 3.26:1 on white is below AA for text. */
@@ -369,6 +372,31 @@
   }
   h1 {
     color: var(--heading);
+  }
+  /*
+   * One scrollbar style everywhere (board, columns, tables, dialogs). Without it, Chrome with classic scrollbars
+   * (a mouse connected, or "Show scroll bars: Always") draws its grey default; macOS overlay scrollbars hide that.
+   * Chrome/Firefox use the standard properties (and then ignore ::-webkit-scrollbar); Safari uses the pseudo-elements.
+   */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background: var(--scrollbar-thumb) padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
   }
   /* Visible focus on every interactive element, even ones without their own focus classes. */
   :focus-visible {
