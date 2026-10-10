@@ -14,8 +14,10 @@ export function ConfirmDelete({ id, title, onClose }: { id: string; title: strin
   async function confirm() {
     setPending(true);
     setError(null);
-    const r = await deleteItem(id);
-    setPending(false);
+    let r;
+    try { r = await deleteItem(id); }
+    catch { setError("Something went wrong. Try again."); return; }
+    finally { setPending(false); }
     if (!r.ok) { setError(r.message); return; }
     router.refresh();
     onClose();

@@ -53,8 +53,8 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
   async function run(p: Promise<LibraryActionResult>): Promise<boolean> {
     setPending(true);
     setError(null);
-    const r = await p;
-    setPending(false);
+    let r: LibraryActionResult;
+    try { r = await p; } catch { setError("Something went wrong. Try again."); return false; } finally { setPending(false); }
     if (!r.ok) { setError(r.fieldErrors ? Object.values(r.fieldErrors)[0] ?? r.message : r.message); return false; }
     router.refresh();
     return true;

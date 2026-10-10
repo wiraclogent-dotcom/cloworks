@@ -180,4 +180,31 @@ describe("Library editor", () => {
     fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" }));
   });
+
+  it("recovers when an action rejects", async () => {
+    A.moveCategory.mockRejectedValueOnce(new Error("network"));
+    A.deleteItem.mockRejectedValueOnce(new Error("network"));
+    A.createItem.mockRejectedValueOnce(new Error("network"));
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Manage categories" }));
+    const d = screen.getByRole("dialog", { name: "Manage categories" });
+    fireEvent.click(within(d).getByRole("button", { name: "Move Product Knowledge down" }));
+    expect(await within(d).findByText("Something went wrong. Try again.")).toBeTruthy();
+    expect((within(d).getByRole("button", { name: "Delete Master Box Size" }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(within(d).getByRole("button", { name: "Close" }));
+
+    menu("Alpha deck", "Delete");
+    const del = screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' });
+    fireEvent.click(within(del).getByRole("button", { name: "Delete" }));
+    expect(await within(del).findByText("Something went wrong. Try again.")).toBeTruthy();
+    expect((within(del).getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(within(del).getByRole("button", { name: "Cancel" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    const add = screen.getByRole("dialog", { name: "Add link" });
+    fireEvent.change(within(add).getByLabelText("Title"), { target: { value: "T" } });
+    fireEvent.click(within(add).getByRole("button", { name: "Add link" }));
+    expect(await within(add).findByText("Something went wrong. Try again.")).toBeTruthy();
+    expect((within(add).getByRole("button", { name: "Add link" }) as HTMLButtonElement).disabled).toBe(false);
+  });
 });

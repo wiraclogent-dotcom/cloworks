@@ -41,8 +41,10 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
       title: title.trim(), url: url.trim(), description: description.trim() || null,
       categoryId, brandId: brandId || null, pinned,
     };
-    const r = item.id ? await updateItem(item.id, input) : await createItem(input);
-    setPending(false);
+    let r;
+    try { r = item.id ? await updateItem(item.id, input) : await createItem(input); }
+    catch { setFormError("Something went wrong. Try again."); return; }
+    finally { setPending(false); }
     if (!r.ok) {
       setErrors(r.fieldErrors ?? {});
       if (!r.fieldErrors || Object.keys(r.fieldErrors).length === 0) setFormError(r.message);
