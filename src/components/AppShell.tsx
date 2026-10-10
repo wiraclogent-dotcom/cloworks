@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CalendarDays, ChartColumn, FolderKanban, Inbox, Plug, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, FolderKanban, Plug, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -9,6 +9,7 @@ import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
 import { ProfileMenu } from "./shell/ProfileMenu";
 import { NotificationBell } from "./shell/NotificationBell";
+import { ChatDock } from "./chat/ChatDock";
 import { Skeleton } from "./ui/Skeleton";
 import { DisabledNavItem } from "./shell/DisabledNavItem";
 
@@ -47,7 +48,8 @@ export async function WorkspaceName() {
 
 /**
  * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools). The notification bell and the profile menu
- * (Account settings, Help center, Dark mode, Sign out) sit at the top right of every page; admin pages open from Settings.
+ * (Account settings, Help center, Dark mode, Sign out) sit at the top right of every page, the chat dock at the bottom
+ * right; admin pages open from Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -73,7 +75,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Suspense fallback={null}><TeamKpiItem /></Suspense>
           </NavGroup>
           <NavGroup id="nav-tools" label="Tools" divided>
-            <DisabledNavItem label="Inbox" icon={<Inbox aria-hidden="true" />} />
             <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
         </nav>
@@ -81,6 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 >
       <ThemeSync />
       {children}
+      <Suspense fallback={null}><ChatDock /></Suspense>
     </AppFrame>
   );
 }

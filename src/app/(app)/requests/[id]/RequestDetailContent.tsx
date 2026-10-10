@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
+import { markChatReadWith } from "@/lib/chat";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { daysLeft } from "@/lib/daysLeft";
@@ -23,6 +25,8 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
     },
   });
   if (!req) notFound();
+  // Viewing a request counts as reading its chat. Runs after the response; a failure must never affect the page.
+  after(() => markChatReadWith(db, user.id, id).catch(() => {}));
 
   const canAssign = can(user.appRole, "request.assign");
   const assignees = canAssign

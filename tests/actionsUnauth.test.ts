@@ -13,6 +13,7 @@ import { saveBrand } from "@/app/(app)/admin/lists/actions";
 import { submitProject, createProject } from "@/app/(app)/projects/actions";
 import { addComment, setIncludeKpi } from "@/app/(app)/requests/[id]/actions";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
+import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage } from "@/app/(app)/chat/actions";
 
 const MSG = "Your session ended. Sign in again.";
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
@@ -39,6 +40,10 @@ describe("server actions return a result object when the session ended", () => {
   });
   it("notification actions", async () => {
     for (const r of [await listNotifications(), await markNotificationRead("n"), await markAllNotificationsRead()])
+      expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
+  });
+  it("chat actions", async () => {
+    for (const r of [await chatUnreadCount(), await listChats(), await listMessages("r"), await markChatRead("r"), await sendChatMessage("r", "hi")])
       expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
 });
