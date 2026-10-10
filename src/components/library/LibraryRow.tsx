@@ -39,8 +39,10 @@ function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
     document.addEventListener("mousedown", away);
     return () => document.removeEventListener("mousedown", away);
   }, [open]);
+  // The clicked item unmounts with the menu, so park focus on the trigger first (a dialog then returns focus there).
+  const triggerFocus = () => ref.current?.querySelector<HTMLElement>("button[aria-haspopup]")?.focus();
   const item = (label: string, icon: React.ReactNode, run: () => void, disabled = false) => (
-    <button type="button" role="menuitem" disabled={disabled} className={itemClass} onClick={() => { setOpen(false); run(); }}>
+    <button type="button" role="menuitem" disabled={disabled} className={itemClass} onClick={() => { triggerFocus(); setOpen(false); run(); }}>
       {icon}{label}
     </button>
   );

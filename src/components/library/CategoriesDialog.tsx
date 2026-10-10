@@ -13,17 +13,17 @@ import { LibraryDialog } from "./LibraryDialog";
 
 type Cat = { id: string; name: string; icon: string | null };
 
-function IconSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+function IconSelect({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
-    <select aria-label={label} value={value} onChange={(e) => onChange(e.target.value)} className={fieldClass({ kind: "select", className: "w-28" })}>
+    <select aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={fieldClass({ kind: "select", className: "w-28" })}>
       <option value="">Default</option>
       {CATEGORY_ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
     </select>
   );
 }
 
-function CategoryRow({ cat, first, last, run }: {
-  cat: Cat; first: boolean; last: boolean; run: (p: Promise<LibraryActionResult>) => Promise<void>;
+function CategoryRow({ cat, first, last, run, pending }: {
+  cat: Cat; first: boolean; last: boolean; pending: boolean; run: (p: Promise<LibraryActionResult>) => Promise<boolean>;
 }) {
   const [name, setName] = useState(cat.name);
   const [icon, setIcon] = useState(cat.icon ?? "");
@@ -32,12 +32,12 @@ function CategoryRow({ cat, first, last, run }: {
     <li className="flex flex-wrap items-center gap-2">
       <input aria-label={`Name of ${cat.name}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
         className={fieldClass({ className: "min-w-0 flex-1" })} />
-      <IconSelect label={`Icon for ${cat.name}`} value={icon} onChange={setIcon} />
-      <Button size="sm" variant="secondary" disabled={!dirty}
+      <IconSelect label={`Icon for ${cat.name}`} value={icon} onChange={setIcon} disabled={pending} />
+      <Button size="sm" variant="secondary" disabled={!dirty || pending}
         onClick={() => run(updateCategory(cat.id, { name: name.trim(), icon: icon || null }))}>Save</Button>
-      <IconButton size="sm" aria-label={`Move ${cat.name} up`} icon={<ArrowUp />} disabled={first} onClick={() => run(moveCategory(cat.id, "up"))} />
-      <IconButton size="sm" aria-label={`Move ${cat.name} down`} icon={<ArrowDown />} disabled={last} onClick={() => run(moveCategory(cat.id, "down"))} />
-      <IconButton size="sm" aria-label={`Delete ${cat.name}`} icon={<Trash2 />} onClick={() => run(deleteCategory(cat.id))} />
+      <IconButton size="sm" aria-label={`Move ${cat.name} up`} icon={<ArrowUp />} disabled={first || pending} onClick={() => run(moveCategory(cat.id, "up"))} />
+      <IconButton size="sm" aria-label={`Move ${cat.name} down`} icon={<ArrowDown />} disabled={last || pending} onClick={() => run(moveCategory(cat.id, "down"))} />
+      <IconButton size="sm" aria-label={`Delete ${cat.name}`} icon={<Trash2 />} disabled={pending} onClick={() => run(deleteCategory(cat.id))} />
     </li>
   );
 }
@@ -48,15 +48,19 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
   const [newName, setNewName] = useState("");
   const [newIcon, setNewIcon] = useState("");
 
-  async function run(p: Promise<LibraryActionResult>) {
+  const [pending, setPending] = useState(false);
+
+  async function run(p: Promise<LibraryActionResult>): Promise<boolean> {
+    setPending(true);
     setError(null);
     const r = await p;
-    if (!r.ok) { setError(r.fieldErrors ? Object.values(r.fieldErrors)[0] ?? r.message : r.message); return; }
+    setPending(false);
+    if (!r.ok) { setError(r.fieldErrors ? Object.values(r.fieldErrors)[0] ?? r.message : r.message); return false; }
     router.refresh();
+    return true;
   }
   async function add() {
-    await run(createCategory({ name: newName.trim(), icon: newIcon || null }));
-    setNewName(""); setNewIcon("");
+    if (await run(createCategory({ name: newName.trim(), icon: newIcon || null }))) { setNewName(""); setNewIcon(""); }
   }
 
   return (
@@ -64,14 +68,14 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
       {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
       <ul className="space-y-2">
         {categories.map((c, i) => (
-          <CategoryRow key={`${c.id}:${c.name}:${c.icon}`} cat={c} first={i === 0} last={i === categories.length - 1} run={run} />
+          <CategoryRow key={`${c.id}:${c.name}:${c.icon}`} cat={c} first={i === 0} last={i === categories.length - 1} pending={pending} run={run} />
         ))}
       </ul>
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
         <input aria-label="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60}
           placeholder="New category" className={fieldClass({ className: "min-w-0 flex-1" })} />
-        <IconSelect label="New category icon" value={newIcon} onChange={setNewIcon} />
-        <Button variant="primary" disabled={newName.trim() === ""} onClick={add}>Add category</Button>
+        <IconSelect label="New category icon" value={newIcon} onChange={setNewIcon} disabled={pending} />
+        <Button variant="primary" disabled={newName.trim() === "" || pending} loading={pending} onClick={add}>Add category</Button>
       </div>
     </LibraryDialog>
   );

@@ -142,4 +142,42 @@ describe("Library editor", () => {
     view({ rows: [], categories: [] });
     expect(screen.getByText("No categories yet")).toBeTruthy();
   });
+
+  it("keeps the typed category name when adding fails", async () => {
+    A.createCategory.mockResolvedValue({ ok: false, code: "VALIDATION", message: "Already exists" });
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Manage categories" }));
+    const d = screen.getByRole("dialog", { name: "Manage categories" });
+    fireEvent.change(within(d).getByLabelText("New category name"), { target: { value: "Dup" } });
+    fireEvent.click(within(d).getByRole("button", { name: "Add category" }));
+    expect(await within(d).findByText("Already exists")).toBeTruthy();
+    expect((within(d).getByLabelText("New category name") as HTMLInputElement).value).toBe("Dup");
+  });
+
+  it("disables category controls while a call is in flight", async () => {
+    let done!: (v: unknown) => void;
+    A.moveCategory.mockReturnValue(new Promise((r) => { done = r; }));
+    view();
+    fireEvent.click(screen.getByRole("button", { name: "Manage categories" }));
+    const d = screen.getByRole("dialog", { name: "Manage categories" });
+    fireEvent.click(within(d).getByRole("button", { name: "Move Product Knowledge down" }));
+    await waitFor(() => expect((within(d).getByRole("button", { name: "Delete Master Box Size" }) as HTMLButtonElement).disabled).toBe(true));
+    expect((within(d).getByRole("button", { name: "Move Product Knowledge down" }) as HTMLButtonElement).disabled).toBe(true);
+    done({ ok: true });
+    await waitFor(() => expect((within(d).getByRole("button", { name: "Delete Master Box Size" }) as HTMLButtonElement).disabled).toBe(false));
+    expect(A.moveCategory).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns focus to the opener when a dialog closes", () => {
+    view();
+    const add = screen.getByRole("button", { name: "Add link" });
+    add.focus();
+    fireEvent.click(add);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Add link" })).getByRole("button", { name: "Close" }));
+    expect(document.activeElement).toBe(add);
+    // From the row menu the item unmounts, so focus goes to the row's Actions trigger.
+    menu("Alpha deck", "Delete");
+    fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" }));
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/components/ui/cn";
@@ -14,10 +14,13 @@ export function LibraryDialog({ title, onClose, children, wide = false }: {
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // The opener (captured at first render, before showModal moves focus) gets focus back when the dialog unmounts.
+  const [opener] = useState(() => (typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null)));
   useEffect(() => {
     const d = ref.current;
     if (d && !d.open) d.showModal();
-  }, []);
+    return () => { if (opener?.isConnected) opener.focus(); };
+  }, [opener]);
   return (
     <dialog ref={ref} aria-labelledby={titleId}
       onCancel={(e) => { e.preventDefault(); onClose(); }}
