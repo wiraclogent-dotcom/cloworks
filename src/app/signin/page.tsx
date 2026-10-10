@@ -6,7 +6,7 @@ import { PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError"
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { passwordSignIn } from "./actions";
 import { Alert } from "@/components/ui/Alert";
-import { buttonClass } from "@/components/ui/Button";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 
 /** Tab title: "Sign in · Cloworks" (root layout template). Static: no per-user data in metadata. */
@@ -23,7 +23,6 @@ function Notice({ searchParams }: { searchParams: SP }) {
 }
 
 export default function SignInPage({ searchParams }: { searchParams: SP }) {
-  const btn = buttonClass({ variant: "secondary", block: true, className: "h-10" });
   const providers = oauthProviderIds();
   return (
     <main id="main" className="flex flex-1 flex-col">
@@ -52,7 +51,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
               <label htmlFor="signin-password" className={labelClass}>Password</label>
               <input id="signin-password" name="password" type="password" autoComplete="current-password" required className={fieldClass({ className: "h-10" })} />
             </div>
-            <button className={buttonClass({ variant: "primary", block: true, className: "h-10" })}>Sign in</button>
+            <SubmitButton variant="primary" block className="h-10" pendingLabel="Signing in…">Sign in</SubmitButton>
           </form>
           <p className="text-center text-xs text-foreground-secondary">No password yet, or forgot it? Ask Wira to set one.</p>
           {providers.length > 0 && (
@@ -62,20 +61,20 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
                 <form
                   action={async () => {
                     "use server";
-                    await signIn("google", { redirectTo: "/" });
+                    await signIn("google", { redirectTo: "/requests" });
                   }}
                 >
-                  <button className={btn}>Continue with Google</button>
+                  <SubmitButton block className="h-10" pendingLabel="Opening Google…">Continue with Google</SubmitButton>
                 </form>
               )}
               {providers.includes("microsoft-entra-id") && (
                 <form
                   action={async () => {
                     "use server";
-                    await signIn("microsoft-entra-id", { redirectTo: "/" });
+                    await signIn("microsoft-entra-id", { redirectTo: "/requests" });
                   }}
                 >
-                  <button className={btn}>Continue with Microsoft</button>
+                  <SubmitButton block className="h-10" pendingLabel="Opening Microsoft…">Continue with Microsoft</SubmitButton>
                 </form>
               )}
             </>
