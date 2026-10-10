@@ -31,7 +31,7 @@ function cleanUrl(u: unknown): string {
 }
 
 /** Plain value of any exceljs cell shape. Never evaluates formulas: cached results only. */
-function cell(v: Cv | undefined, fmt: Fmt): Cell {
+export function cell(v: Cv | undefined, fmt: Fmt): Cell {
   if (v === null || v === undefined) return { text: "", url: "" };
   if (v instanceof Date) return { text: dateText(v, fmt), url: "" };
   if (typeof v === "boolean") return { text: v ? "TRUE" : "FALSE", url: "" };

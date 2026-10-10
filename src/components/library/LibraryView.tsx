@@ -48,10 +48,11 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
   const [error, setError] = useState<string | null>(null);
 
   const newItem = (categoryId?: string): ItemDraft => ({
-    title: "", url: "", description: null, categoryId: categoryId ?? categories[0]?.id ?? "", brandId: null, pinned: false,
+    title: "", url: "", description: null, categoryId: categoryId ?? categories[0]?.id ?? "", brandId: null, pinned: false, files: [],
   });
   const editItem = (r: LibraryRow): ItemDraft => ({
     id: r.id, title: r.title, url: r.url, description: r.description, categoryId: r.categoryId, brandId: r.brandId, pinned: r.pinned,
+    files: r.files ?? [],
   });
   async function act(p: Promise<LibraryActionResult>) {
     setError(null);

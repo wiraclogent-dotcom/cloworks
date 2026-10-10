@@ -448,6 +448,8 @@ model LibraryItem {
   updatedById      String
   updatedBy        User            @relation("LibraryItemUpdatedBy", fields: [updatedById], references: [id])
   createdAt        DateTime        @default(now())
+  /// Extra labelled file links shown as chips on the row, e.g. [{ "label": "AI", "url": "https://…" }]. Max 6.
+  files       Json            @default("[]")
   /// Set only by create/edit (not @updatedAt): pinning and reordering leave it alone, so they don't trigger the badge.
   contentUpdatedAt DateTime        @default(now())
 

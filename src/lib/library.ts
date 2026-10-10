@@ -21,7 +21,11 @@ export type LibraryItemInput = {
   categoryId: string;
   brandId?: string | null;
   pinned?: boolean;
+  /** Extra labelled links (PDF, AI, Mockup…) shown as chips on the row. Omitted on update = keep the current ones. */
+  files?: LibraryFile[];
 };
+export type LibraryFile = { label: string; url: string };
+export const MAX_FILES = 6;
 export type LibraryCategoryInput = { name: string; icon?: string | null };
 export type Actor = { id: string; appRole: AppRole };
 
@@ -33,6 +37,7 @@ const itemShape = z.object({
   brandId: z.string().nullable().optional(),
   pinned: z.boolean().optional(),
 });
+const filesShape = z.array(z.object({ label: z.string(), url: z.string() }), { message: "Files must be a list" }).optional();
 const dirShape = z.enum(["up", "down"]);
 const pinnedShape = z.boolean();
 function assertValid(r: { success: boolean; error?: z.ZodError }, field: string, message: string) {
@@ -59,8 +64,21 @@ function collect(r: { success: boolean; error?: z.ZodError }): Record<string, st
 
 const blankToNull = (v: string | null | undefined) => (v == null || v.trim() === "" ? null : v.trim());
 
+/** Trimmed file links, or an error message for the "files" field. */
+function cleanFiles(raw: unknown): LibraryFile[] | string {
+  const r = filesShape.safeParse(raw);
+  if (!r.success) return "Files must be a list of label + link";
+  const files = (r.data ?? []).map((f) => ({ label: f.label.trim(), url: f.url.trim() }));
+  if (files.length > MAX_FILES) return `At most ${MAX_FILES} files`;
+  if (files.some((f) => f.label === "" || f.label.length > 30)) return "Each file needs a label (max 30 characters)";
+  if (files.some((f) => f.url.length > 2048 || !isHttpUrl(f.url))) return "Each file link must be an http(s) link";
+  return files;
+}
+
 async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
   const errors = collect(itemShape.safeParse(input));
+  const files = input.files === undefined ? undefined : cleanFiles(input.files);
+  if (typeof files === "string") errors.files = files;
   const title = (input.title ?? "").trim();
   const url = (input.url ?? "").trim();
   if (!errors.url && !isHttpUrl(url)) errors.url = "Link must be an http(s) link";
@@ -70,7 +88,16 @@ async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
   if (brandId && !(await db.brand.findUnique({ where: { id: brandId }, select: { id: true } })))
     errors.brandId = "That brand does not exist";
   if (Object.keys(errors).length) throwFields(errors);
-  return { title, url, description: blankToNull(input.description), categoryId: input.categoryId, brandId };
+  return {
+    title, url, description: blankToNull(input.description), categoryId: input.categoryId, brandId,
+    ...(files === undefined ? {} : { files: files as LibraryFile[] }),
+  };
+}
+
+/** Stored JSON → file links in a fixed key order (jsonb reorders keys; anything malformed is dropped). */
+export function filesOf(json: unknown): LibraryFile[] {
+  if (!Array.isArray(json)) return [];
+  return json.filter((f) => typeof f?.label === "string" && typeof f?.url === "string").map((f) => ({ label: f.label as string, url: f.url as string }));
 }
 
 async function requireItem(db: ScopedDb, id: string) {
@@ -97,18 +124,22 @@ export async function createItemWith(db: ScopedDb, user: Actor, input: LibraryIt
   return { id: row.id };
 }
 
-export async function updateItemWith(db: ScopedDb, user: Actor, id: string, input: LibraryItemInput): Promise<void> {
+/** `contentChanged`: the title, link, description or files changed (what bumps the badge and notifies the team). */
+export async function updateItemWith(db: ScopedDb, user: Actor, id: string, input: LibraryItemInput): Promise<{ contentChanged: boolean }> {
   assertEditor(user);
   const existing = await requireItem(db, id);
   const c = await cleanItem(db, input);
   const data: Record<string, unknown> = { ...c, updatedById: user.id };
-  if (c.title !== existing.title || c.url !== existing.url || c.description !== existing.description) data.contentUpdatedAt = new Date();
+  const filesChanged = c.files !== undefined && JSON.stringify(c.files) !== JSON.stringify(filesOf(existing.files));
+  const contentChanged = c.title !== existing.title || c.url !== existing.url || c.description !== existing.description || filesChanged;
+  if (contentChanged) data.contentUpdatedAt = new Date();
   if (input.pinned !== undefined) data.pinned = input.pinned;
   if (c.categoryId !== existing.categoryId) {
     const max = await db.libraryItem.aggregate({ where: { categoryId: c.categoryId }, _max: { sortOrder: true } });
     data.sortOrder = (max._max.sortOrder ?? -1) + 1;
   }
   await db.libraryItem.update({ where: { id }, data });
+  return { contentChanged };
 }
 
 export async function deleteItemWith(db: ScopedDb, user: Actor, id: string): Promise<void> {
@@ -231,7 +262,7 @@ export async function loadLibrary(db: ScopedDb): Promise<{
   const rows: LibraryRow[] = sorted.map((i) => ({
     id: i.id, title: i.title, url: i.url, description: i.description, categoryId: i.categoryId,
     brandId: i.brandId, brandName: i.brand?.name ?? null, pinned: i.pinned, sortOrder: i.sortOrder,
-    createdAt: i.createdAt, contentUpdatedAt: i.contentUpdatedAt,
+    createdAt: i.createdAt, contentUpdatedAt: i.contentUpdatedAt, files: filesOf(i.files),
   }));
   const used = new Map<string, string>();
   for (const i of items) if (i.brand) used.set(i.brand.id, i.brand.name);
