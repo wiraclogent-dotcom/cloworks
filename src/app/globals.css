@@ -502,6 +502,22 @@
 @keyframes landing-s2 { 0% { opacity: 0; } 49% { opacity: 1; } 72% { opacity: 0; } }
 @keyframes landing-s3 { 0% { opacity: 0; } 74% { opacity: 1; } 97% { opacity: 0; } }
 
+/*
+ * Chat launcher running text: a title wider than its box slides left by --marquee-distance and back, pausing at
+ * both ends. Both custom properties are set inline from the measured overflow. Reduced motion: no animation
+ * (the element truncates with an ellipsis instead).
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .chat-marquee {
+    animation: chat-marquee var(--marquee-duration, 6s) linear infinite alternate;
+  }
+}
+
+@keyframes chat-marquee {
+  0%, 15% { transform: translateX(0); }
+  85%, 100% { transform: translateX(var(--marquee-distance, 0)); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, fireEvent, waitFor, act } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, waitFor, act, within } from "@testing-library/react";
 import type { ChatMessage, ChatSummary } from "@/lib/chat";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }), usePathname: () => "/requests" }));
@@ -29,7 +29,7 @@ const chat = (o: Partial<ChatSummary> = {}): ChatSummary => ({
 type Fail = { ok: false; code: "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "UNAUTHENTICATED"; message: string };
 function fakeActions(chats: ChatSummary[], messages: ChatMessage[] = [msg()]) {
   return {
-    unreadCount: vi.fn(async () => ({ ok: true as const, unread: 0 })),
+    unreadCount: vi.fn(async (): Promise<{ ok: true; unread: number; latestUnread: { requestId: string; title: string } | null } | Fail> => ({ ok: true, unread: 0, latestUnread: null })),
     listChats: vi.fn(async () => ({ ok: true as const, chats })),
     listMessages: vi.fn(async (): Promise<{ ok: true; messages: ChatMessage[]; hasOlder: boolean } | Fail> => ({ ok: true, messages, hasOlder: false })),
     markRead: vi.fn(async () => ({ ok: true as const })),
@@ -40,6 +40,8 @@ function fakeActions(chats: ChatSummary[], messages: ChatMessage[] = [msg()]) {
 }
 
 const launcher = () => screen.getByRole("button", { name: /^Messages/ });
+/** The chat list inside the open dock (the launcher can show a request title too). */
+const chatList = async () => within(await screen.findByRole("region", { name: "Chats" }));
 const badge = () => launcher().querySelector("[data-badge]");
 /** usePoll runs right away when the tab becomes visible: the way to fire a poll without waiting for its timer. */
 const firePoll = () => act(async () => { document.dispatchEvent(new Event("visibilitychange")); });
@@ -47,7 +49,7 @@ const firePoll = () => act(async () => { document.dispatchEvent(new Event("visib
 async function openConversation(a: ReturnType<typeof fakeActions>, unread = 3) {
   render(<ChatDockView unread={unread} userId="me" actions={a} />);
   fireEvent.click(launcher());
-  fireEvent.click(await screen.findByRole("button", { name: /Poster/ }));
+  fireEvent.click(await (await chatList()).findByRole("button", { name: /Poster/ }));
   await screen.findByText("Poster draft is up", { selector: "p" });
   return screen.getByRole("textbox", { name: "Message" }) as HTMLTextAreaElement;
 }
@@ -68,6 +70,40 @@ describe("ChatDockView", () => {
     expect(badge()?.textContent).toBe("9+");
   });
 
+  it("pill reads Chat when nothing is unread", () => {
+    render(<ChatDockView unread={0} latestUnread={null} userId="me" actions={fakeActions([])} />);
+    expect(launcher().querySelector("[data-pill-text]")?.textContent).toBe("Chat");
+  });
+  it("pill shows the latest unread request title and names it in the label", () => {
+    render(<ChatDockView unread={2} latestUnread={{ requestId: "r1", title: "POSTER | TWINDATE 10.10" }} userId="me" actions={fakeActions([])} />);
+    expect(launcher().querySelector("[data-pill-text]")?.textContent).toBe("POSTER | TWINDATE 10.10");
+    expect(launcher().getAttribute("aria-label")).toBe("Messages, 2 unread, latest: POSTER | TWINDATE 10.10");
+    expect(launcher().getAttribute("title")).toBe("POSTER | TWINDATE 10.10");
+  });
+  it("the pill text box has a fixed width", () => {
+    render(<ChatDockView unread={0} latestUnread={null} userId="me" actions={fakeActions([])} />);
+    expect(launcher().querySelector("[data-pill-box]")?.className).toContain("w-40");
+  });
+  it("clicking the pill opens straight into the latest unread chat", async () => {
+    const a = fakeActions([chat()]);
+    render(<ChatDockView unread={2} latestUnread={{ requestId: "r1", title: "POSTER | TWINDATE 10.10" }} userId="me" actions={a} />);
+    fireEvent.click(launcher());
+    expect(await screen.findByRole("dialog", { name: "Messages" })).toBeTruthy();
+    await waitFor(() => expect(a.listMessages).toHaveBeenCalledWith("r1"));
+    expect(await screen.findByText("Poster draft is up", { selector: "p" })).toBeTruthy();
+    // The list (loaded for the header) still counts r1 as unread, but it is the chat being read.
+    await waitFor(() => expect(a.listChats).toHaveBeenCalled());
+    await waitFor(() => expect(badge()).toBeNull());
+    expect(launcher().querySelector("[data-pill-text]")?.textContent).toBe("Chat");
+  });
+  it("a closed poll updates the pill title", async () => {
+    const a = fakeActions([]);
+    a.unreadCount.mockResolvedValueOnce({ ok: true, unread: 1, latestUnread: { requestId: "r9", title: "Banner" } });
+    render(<ChatDockView unread={0} latestUnread={null} userId="me" actions={a} />);
+    await firePoll();
+    await waitFor(() => expect(launcher().querySelector("[data-pill-text]")?.textContent).toBe("Banner"));
+  });
+
   it("opening with no chats shows the empty state", async () => {
     const a = fakeActions([]);
     render(<ChatDockView unread={0} userId="me" actions={a} />);
@@ -83,13 +119,14 @@ describe("ChatDockView", () => {
     ]);
     render(<ChatDockView unread={3} userId="me" actions={a} />);
     fireEvent.click(launcher());
-    expect(await screen.findByText("Poster")).toBeTruthy();
-    expect(screen.getByText("Banner")).toBeTruthy();
+    const list = await chatList();
+    expect(await list.findByText("Poster")).toBeTruthy();
+    expect(list.getByText("Banner")).toBeTruthy();
     expect(screen.getByText(/Poster draft is up/)).toBeTruthy();
     expect(screen.getByText(/Need the logo/)).toBeTruthy();
     expect(screen.getByText("Pick a chat to start messaging.")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Poster/ }));
+    fireEvent.click(list.getByRole("button", { name: /Poster/ }));
     expect(a.listMessages).toHaveBeenCalledWith("r1");
     await waitFor(() => expect(a.markRead).toHaveBeenCalledWith("r1"));
     expect(await screen.findByText("Poster draft is up", { selector: "p" })).toBeTruthy();

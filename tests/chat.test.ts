@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { isParticipantWith, markChatReadWith, chatUnreadCountWith, participantWhere, listChatsWith, listMessagesWith } from "@/lib/chat";
+import { isParticipantWith, markChatReadWith, chatUnreadCountWith, latestUnreadChatWith, participantWhere, listChatsWith, listMessagesWith } from "@/lib/chat";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("request chat", () => {
@@ -200,6 +200,47 @@ describe("request chat", () => {
       const r = await listMessagesWith(db.prisma, Q, A, { after: { at: t, id: "af-a" } });
       if (!r.ok) throw new Error("expected ok");
       expect(r.messages.map((m) => m.id)).toEqual(["af-b"]);
+    });
+
+    it("latestUnreadChatWith returns the request of the newest unread message from others", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q, "Alpha"), B = await mkReq(Q, "Beta");
+      await say(A, C, "a1", day(1));
+      await say(B, C, "b1", day(2));
+      await say(A, C, "a2", day(3));
+      await say(B, Q, "mine, newest", day(4));
+      const me = { id: Q, workspaceId: db.workspaceId };
+      expect(await latestUnreadChatWith(db.prisma, me)).toEqual({ requestId: A, title: "Alpha" });
+      await markChatReadWith(db.prisma, Q, A, day(3));
+      expect(await latestUnreadChatWith(db.prisma, me)).toEqual({ requestId: B, title: "Beta" });
+      await markChatReadWith(db.prisma, Q, B, day(4));
+      expect(await latestUnreadChatWith(db.prisma, me)).toBeNull();
+    });
+
+    it("latestUnreadChatWith ignores own messages and non-participants", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q, "Own");
+      await say(A, Q, "only mine", day(5));
+      expect(await latestUnreadChatWith(db.prisma, { id: Q, workspaceId: db.workspaceId })).toBeNull();
+      const Y = await mkUser("y");
+      await say(A, C, "from c", day(6));
+      expect(await latestUnreadChatWith(db.prisma, { id: Y, workspaceId: db.workspaceId })).toBeNull();
+    });
+
+    it("latestUnreadChatWith ignores other workspaces", async () => {
+      const Q = await mkUser("q");
+      const A = await mkReq(Q, "Home");
+      await say(A, C, "home", day(1));
+      const raw = db.raw;
+      const ws = await raw.workspace.create({ data: { name: "Other2", slug: "other-chat-latest" } });
+      const w = { workspaceId: ws.id };
+      const u = await raw.user.create({ data: { ...w, email: "o2@example.com", name: "O2", fullName: "O2" } });
+      const brand = await raw.brand.create({ data: { ...w, name: "B" } });
+      const div = await raw.division.create({ data: { ...w, name: "D" } });
+      const type = await raw.requestType.create({ data: { ...w, name: "T" } });
+      const r2 = await raw.request.create({ data: { ...w, title: "Away", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: Q } });
+      await raw.comment.create({ data: { ...w, requestId: r2.id, authorId: u.id, body: "other", createdAt: day(20) } });
+      expect(await latestUnreadChatWith(db.prisma, { id: Q, workspaceId: db.workspaceId })).toEqual({ requestId: A, title: "Home" });
     });
 
     it("rejects non-participants and unknown requests", async () => {

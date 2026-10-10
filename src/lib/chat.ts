@@ -51,12 +51,11 @@ export async function markChatReadWith(db: Db, userId: string, requestId: string
 }
 
 /**
- * Messages from others, in chats I belong to, newer than my read position. Raw SQL is not workspace-scoped,
- * so the workspace is filtered explicitly.
+ * FROM/WHERE for messages from others, in chats I belong to, newer than my read position. Raw SQL is not
+ * workspace-scoped, so the workspace is filtered explicitly on both tables. Aliases: `c` comment, `r` request.
  */
-export async function chatUnreadCountWith(db: Db, me: { id: string; workspaceId: string }): Promise<number> {
-  const rows = await db.$queryRaw<{ n: number }[]>`
-    SELECT COUNT(*)::int AS n
+function unreadFrom(me: { id: string; workspaceId: string }): Prisma.Sql {
+  return Prisma.sql`
     FROM "Comment" c
     JOIN "Request" r ON r.id = c."requestId"
     LEFT JOIN "ChatRead" cr ON cr."requestId" = c."requestId" AND cr."userId" = ${me.id}
@@ -66,7 +65,20 @@ export async function chatUnreadCountWith(db: Db, me: { id: string; workspaceId:
       AND (r."requesterId" = ${me.id} OR r."assigneeId" = ${me.id}
            OR EXISTS (SELECT 1 FROM "Comment" c2 WHERE c2."requestId" = r.id
                       AND (c2."authorId" = ${me.id} OR ${me.id} = ANY(c2.mentions))))`;
+}
+
+/** How many unread messages I have across my chats. */
+export async function chatUnreadCountWith(db: Db, me: { id: string; workspaceId: string }): Promise<number> {
+  const rows = await db.$queryRaw<{ n: number }[]>`SELECT COUNT(*)::int AS n ${unreadFrom(me)}`;
   return rows[0]?.n ?? 0;
+}
+
+/** The request of my newest unread message (one query), or null when everything is read. */
+export async function latestUnreadChatWith(db: Db, me: { id: string; workspaceId: string }): Promise<{ requestId: string; title: string } | null> {
+  const rows = await db.$queryRaw<{ requestId: string; title: string }[]>`
+    SELECT r.id AS "requestId", r.title ${unreadFrom(me)}
+    ORDER BY c."createdAt" DESC, c.id DESC LIMIT 1`;
+  return rows[0] ? { requestId: rows[0].requestId, title: rows[0].title } : null;
 }
 
 /** The user's chats, most recently active first. Five queries, all bounded by the page size. */

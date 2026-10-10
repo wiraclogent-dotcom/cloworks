@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { dbFor, requireUser, type ScopedDb } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { addCommentWith, type CollabFail } from "@/lib/collab";
-import { chatUnreadCountWith, listChatsWith, listMessagesWith, markChatReadWith, type ChatMessage, type ChatSummary } from "@/lib/chat";
+import { chatUnreadCountWith, latestUnreadChatWith, listChatsWith, listMessagesWith, markChatReadWith, type ChatMessage, type ChatSummary } from "@/lib/chat";
 import type { SessionUser } from "@/lib/session-core";
 
 function run<T>(fn: (user: SessionUser, db: ScopedDb) => Promise<T>): Promise<T | CollabFail> {
@@ -23,8 +23,14 @@ function cursor(c: unknown): Cursor | undefined {
 
 const invalid = (message: string) => ({ ok: false as const, code: "INVALID" as const, message });
 
-export async function chatUnreadCount(): Promise<{ ok: true; unread: number } | CollabFail> {
-  return run(async (u, db) => ({ ok: true as const, unread: await chatUnreadCountWith(db, { id: u.id, workspaceId: u.workspaceId }) }));
+export async function chatUnreadCount(): Promise<
+  { ok: true; unread: number; latestUnread: { requestId: string; title: string } | null } | CollabFail
+> {
+  return run(async (u, db) => {
+    const me = { id: u.id, workspaceId: u.workspaceId };
+    const [unread, latestUnread] = await Promise.all([chatUnreadCountWith(db, me), latestUnreadChatWith(db, me)]);
+    return { ok: true as const, unread, latestUnread };
+  });
 }
 
 export async function listChats(offset?: number): Promise<{ ok: true; chats: ChatSummary[] } | CollabFail> {

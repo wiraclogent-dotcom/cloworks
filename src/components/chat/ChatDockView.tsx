@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { MessageCircle, X } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { MessagesSquare, X } from "lucide-react";
 import type { ChatMessage, ChatSummary } from "@/lib/chat";
 import type { CollabFail } from "@/lib/collab";
 import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage } from "@/app/(app)/chat/actions";
@@ -12,8 +12,9 @@ import { IconButton } from "../ui/IconButton";
 import { cn, focusRing } from "../ui/cn";
 
 type Cursor = { at: Date; id: string };
+export type LatestUnread = { requestId: string; title: string };
 export type ChatActions = {
-  unreadCount: () => Promise<{ ok: true; unread: number } | CollabFail>;
+  unreadCount: () => Promise<{ ok: true; unread: number; latestUnread: LatestUnread | null } | CollabFail>;
   listChats: (offset?: number) => Promise<{ ok: true; chats: ChatSummary[] } | CollabFail>;
   listMessages: (requestId: string, opts?: { after?: Cursor; before?: Cursor }) => Promise<{ ok: true; messages: ChatMessage[]; hasOlder: boolean } | CollabFail>;
   markRead: (requestId: string) => Promise<{ ok: true } | CollabFail>;
@@ -57,19 +58,61 @@ function merge(cur: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
   return add.length ? [...cur, ...add].sort(byTime) : cur;
 }
 const cursorOf = (m: ChatMessage): Cursor => ({ at: m.createdAt, id: m.id });
+const latestKey = (l: LatestUnread | null) => (l ? `${l.requestId}\u0000${l.title}` : "");
+
+/** Running-text speed, and the share of each loop spent moving (the rest is the pause at both ends). */
+const MARQUEE_PX_PER_S = 40;
+const MARQUEE_MOVING = 0.7;
 
 /**
- * Bottom-right chat dock: launcher with the unread badge, and a popup with the chat list beside the open conversation
- * (one or the other below `md`). Near-live through polling, one poll at a time: the unread count every 60 s while
- * closed, the list every 30 s while open on it, the open conversation every 5 s. `actions` defaults to the server
- * actions and is injectable for tests.
+ * The launcher's fixed-width label. A label wider than its box scrolls back and forth (`.chat-marquee` in
+ * globals.css); with reduced motion it is truncated with an ellipsis instead.
  */
-export function ChatDockView({ unread, userId, actions = serverActions }: { unread: number; userId: string; actions?: ChatActions }) {
+function RunningText({ text }: { text: string }) {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [overflow, setOverflow] = useState(0);
+  useEffect(() => {
+    const box = boxRef.current, inner = textRef.current;
+    if (!box || !inner) return;
+    const measure = () => setOverflow(Math.max(0, Math.ceil(inner.scrollWidth - box.clientWidth)));
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(box);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [text]);
+  const style = overflow > 0
+    ? ({ "--marquee-distance": `-${overflow}px`, "--marquee-duration": `${(overflow / MARQUEE_PX_PER_S / MARQUEE_MOVING).toFixed(2)}s` } as CSSProperties)
+    : undefined;
+  return (
+    <span ref={boxRef} data-pill-box="" className="block w-40 overflow-hidden text-left text-sm font-semibold text-link">
+      <span ref={textRef} data-pill-text="" style={style}
+        className={cn("inline-block whitespace-nowrap", overflow > 0 && "chat-marquee motion-reduce:block motion-reduce:truncate")}>
+        {text}
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Bottom-right chat dock: a pill launcher (unread badge, newest unread request title as running text; a click opens
+ * straight into that chat), and a popup with the chat list beside the open conversation (one or the other below `md`).
+ * Near-live through polling, one poll at a time: the unread count every 60 s while closed, the list every 30 s while
+ * open on it, the open conversation every 5 s. `actions` defaults to the server actions and is injectable for tests.
+ */
+export function ChatDockView({ unread, latestUnread = null, userId, actions = serverActions }: {
+  unread: number; latestUnread?: LatestUnread | null; userId: string; actions?: ChatActions;
+}) {
   const { open, selectedId } = parseDock(useSyncExternalStore(subscribe, readRaw, () => null));
   const [count, setCount] = useState(unread);
-  // Follow a fresh server count after a refresh or navigation (same as the bell).
+  const [latest, setLatest] = useState<LatestUnread | null>(latestUnread);
+  // Follow fresh server values after a refresh or navigation (same as the bell).
   const [seen, setSeen] = useState(unread);
   if (unread !== seen) { setSeen(unread); setCount(unread); }
+  const [seenLatest, setSeenLatest] = useState(latestKey(latestUnread));
+  if (latestKey(latestUnread) !== seenLatest) { setSeenLatest(latestKey(latestUnread)); setLatest(latestUnread); }
   const [chats, setChats] = useState<ChatSummary[] | null>(null);
   const [conv, setConv] = useState<ConversationState | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -94,14 +137,20 @@ export function ChatDockView({ unread, userId, actions = serverActions }: { unre
   async function refreshChats() {
     const r = await actions.listChats().catch(() => failed("Couldn't load chats."));
     setNow(new Date());
-    if (r.ok) { setChats(r.chats); setCount(r.chats.reduce((n, c) => n + c.unread, 0)); }
-    else setChats((cur) => cur ?? []);
+    if (r.ok) {
+      // The open conversation is being read (and marked read) right now, even if the list answered first.
+      const list = r.chats.map((c) => (c.requestId === selectedId && c.unread > 0 ? { ...c, unread: 0 } : c));
+      setChats(list);
+      setCount(list.reduce((n, c) => n + c.unread, 0));
+      const first = list.find((c) => c.unread > 0); // the list is newest first
+      setLatest(first ? { requestId: first.requestId, title: first.title } : null);
+    } else setChats((cur) => cur ?? []);
   }
 
   // Polls: exactly one is enabled at a time.
   usePoll(async () => {
     const r = await actions.unreadCount();
-    if (r.ok) setCount(r.unread);
+    if (r.ok) { setCount(r.unread); setLatest(r.latestUnread); }
   }, 60_000, { enabled: !open });
   usePoll(refreshChats, 30_000, { enabled: open && !selectedId, immediate: true });
   usePoll(async () => {
@@ -158,7 +207,15 @@ export function ChatDockView({ unread, userId, actions = serverActions }: { unre
     writeDock({ open: !open, selectedId });
   }
 
+  /** Opens straight into the newest unread chat when there is one; otherwise opens or closes the dock. */
+  function launch() {
+    if (open || count === 0 || !latest) { toggle(); return; }
+    setNow(new Date());
+    select(latest.requestId);
+  }
+
   function select(id: string | null) {
+    if (id && id === latest?.requestId) setLatest(null);
     if (id) {
       const n = chats?.find((c) => c.requestId === id)?.unread ?? 0;
       if (n > 0) {
@@ -191,22 +248,26 @@ export function ChatDockView({ unread, userId, actions = serverActions }: { unre
   }
 
   const selected = chats?.find((c) => c.requestId === selectedId) ?? null;
-  const label = count > 0 ? `Messages, ${count} unread` : "Messages";
+  const pillTitle = count > 0 && latest ? latest.title : null;
+  const label = count > 0 ? `Messages, ${count} unread${pillTitle ? `, latest: ${pillTitle}` : ""}` : "Messages";
 
   return (
     <>
-      <button ref={launcherRef} type="button" aria-label={label} title="Messages" aria-expanded={open} aria-controls={open ? "chat-dock" : undefined}
-        onClick={toggle}
+      <button ref={launcherRef} type="button" aria-label={label} title={pillTitle ?? "Messages"} aria-expanded={open} aria-controls={open ? "chat-dock" : undefined}
+        onClick={launch}
         className={cn(
-          "fixed right-4 bottom-4 z-40 inline-flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-raised transition-colors hover:bg-primary-hover",
+          "fixed right-4 bottom-4 z-40 inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-background px-3 shadow-raised transition-colors hover:bg-surface-muted",
           focusRing,
         )}>
-        <MessageCircle aria-hidden="true" strokeWidth={1.75} className="size-5.5" />
-        {count > 0 && (
-          <span data-badge="" aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
-            {count > 9 ? "9+" : count}
-          </span>
-        )}
+        <span className="relative inline-flex shrink-0 text-link">
+          <MessagesSquare aria-hidden="true" strokeWidth={1.75} className="size-5.5" />
+          {count > 0 && (
+            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
+              {count > 9 ? "9+" : count}
+            </span>
+          )}
+        </span>
+        <RunningText text={pillTitle ?? "Chat"} />
       </button>
 
       {open && (
