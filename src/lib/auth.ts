@@ -4,6 +4,7 @@ import { authConfig } from "./auth.config";
 import { prisma } from "./db";
 import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
 import { bindSignInToken, refreshJwt } from "./session-core";
+import { loadActiveUserOnce } from "./activeUser";
 import { authenticateWithPassword } from "./passwordAuth";
 
 export { isAllowedEmail } from "./signin";
@@ -48,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return bindSignInToken(token, r.user);
       }
       // Every later call: re-read DB; deleted/inactive invalidates the session.
-      return refreshJwt(prisma, token);
+      return refreshJwt(prisma, token, loadActiveUserOnce);
     },
   },
 });

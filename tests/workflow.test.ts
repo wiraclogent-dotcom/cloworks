@@ -198,7 +198,7 @@ describe("runTransitionAction (action wrapper core)", () => {
     await expect(runTransitionAction(getUser, {} as never, "x", "ON_PROGRESS")).rejects.toThrow("Unauthenticated");
   });
   it("forbidden role rejects before touching db", async () => {
-    const getUser = async () => ({ id: "u", appRole: "REQUESTER" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false });
+    const getUser = async () => ({ id: "u", name: "U", appRole: "REQUESTER" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false });
     await expect(runTransitionAction(getUser, {} as never, "x", "ON_PROGRESS")).rejects.toThrow(/forbidden/i);
   });
 });

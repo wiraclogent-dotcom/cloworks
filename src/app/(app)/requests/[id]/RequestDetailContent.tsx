@@ -12,7 +12,9 @@ import { RequestDetailView } from "./RequestDetailView";
 export async function DetailContent({ params, fullPage = false }: { params: PageProps<"/requests/[id]">["params"]; fullPage?: boolean }) {
   const { user, db } = await requireScope();
   const { id } = await params;
-  const req = await db.request.findUnique({
+  const canAssign = can(user.appRole, "request.assign");
+  // One joined SQL statement for the request and its relations (relationJoins, see schema.prisma); the team list (assignee picker) loads alongside it.
+  const [req, team] = await Promise.all([db.request.findUnique({
     where: { id },
     include: {
       brand: { select: { name: true } }, division: { select: { name: true } },
@@ -23,14 +25,13 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
       comments: { orderBy: { createdAt: "asc" }, include: { author: { select: { name: true } } } },
       attachments: { orderBy: { createdAt: "asc" }, include: { uploader: { select: { name: true } } } },
     },
-  });
+  }), canAssign ? listCreativeTeam(db) : null]);
   if (!req) notFound();
   // Viewing a request counts as reading its chat. Runs after the response; a failure must never affect the page.
   after(() => markChatReadWith(db, user.id, id).catch(() => {}));
 
-  const canAssign = can(user.appRole, "request.assign");
-  const assignees = canAssign
-    ? assigneeOptions(await listCreativeTeam(db), req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
+  const assignees = team
+    ? assigneeOptions(team, req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
     : [];
   const canMove = can(user.appRole, "request.transition");
   const left = daysLeft(req.deadline);

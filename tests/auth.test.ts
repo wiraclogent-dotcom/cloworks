@@ -163,7 +163,7 @@ describe("decideSignIn + session", () => {
     const u = await db.prisma.user.create({ data: { email: "c@clogent.co.id", name: "C", fullName: "C", appRole: "CREATIVE" } });
     const sess = (id: string) => async () => ({ user: { id, loginEmail: "c@clogent.co.id", appRole: "ADMIN" } });
     const ok = await requireUserWith(sess(u.id), db.prisma);
-    expect(ok).toEqual({ id: u.id, appRole: "CREATIVE", jobRole: "OTHER", workspaceId: "clogent", mustChangePassword: false });
+    expect(ok).toEqual({ id: u.id, name: "C", appRole: "CREATIVE", jobRole: "OTHER", workspaceId: "clogent", mustChangePassword: false });
     await expect(requireUserWith(async () => null, db.prisma)).rejects.toThrow();
     await expect(requireUserWith(sess("nope"), db.prisma)).rejects.toThrow();
     await db.prisma.user.update({ where: { id: u.id }, data: { active: false } });

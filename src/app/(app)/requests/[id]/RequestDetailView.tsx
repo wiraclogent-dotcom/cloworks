@@ -4,7 +4,7 @@ import { ChevronLeft, CircleSlash, ExternalLink, FileText, FolderOpen, Link2, Ta
 import { isOpenStatus, shortLabel } from "@/lib/reschedule";
 import { jakartaDate } from "@/lib/createRequest";
 import { isHttpUrl } from "@/lib/fieldSchema";
-import { splitMentions } from "@/lib/collab";
+import { splitMentions } from "@/lib/mentions";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { STATUS_LABEL } from "@/components/status";
 import { PageHeader } from "@/components/ui/PageHeader";
