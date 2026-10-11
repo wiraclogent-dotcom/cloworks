@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
-import { AdminError, addAllowedEmail, createUser, normalizeEmail, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { AdminError, createUser, normalizeEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
 import { checkNewPassword } from "@/lib/password";
 import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
 
@@ -126,28 +126,4 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
       ),
     );
   }, () => scrub(adminUnauth(fd)));
-}
-
-export async function addAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
-  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
-    const db = dbFor(actor);
-    return done(
-      await adminResult(fd, async () => {
-        await addAllowedEmail(db, actor, s(fd, "email"), s(fd, "note"));
-        return "Email allowed.";
-      }),
-    );
-  }, () => adminUnauth(fd));
-}
-
-export async function removeAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
-  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
-    const db = dbFor(actor);
-    return done(
-      await adminResult(fd, async () => {
-        await removeAllowedEmail(db, actor, s(fd, "email"));
-        return "Removed. Anyone relying on it loses access on their next request.";
-      }),
-    );
-  }, () => adminUnauth(fd));
 }

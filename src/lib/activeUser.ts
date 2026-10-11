@@ -2,7 +2,7 @@ import { cache } from "react";
 import { loadActiveUser, type ActiveUserLoader } from "./session-core";
 
 const loadOnce = cache((id: string, loginEmail: string | null, pwv: number | null, db: Parameters<ActiveUserLoader>[0]) =>
-  loadActiveUser(db, id, undefined, { loginEmail, pwv: pwv ?? undefined }));
+  loadActiveUser(db, id, { loginEmail, pwv: pwv ?? undefined }));
 
 /**
  * `loadActiveUser` memoised per request by React `cache()`: the Auth.js jwt callback and `requireUserWith` read the

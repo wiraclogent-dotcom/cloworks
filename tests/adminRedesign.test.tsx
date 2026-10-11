@@ -3,12 +3,12 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 
 vi.mock("@/app/(app)/admin/users/actions", () => ({
-  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(), addAllowed: vi.fn(),
+  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(),
 }));
 vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn() }));
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
-  user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
+  user: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
 // Pages read through the workspace-scoped client that requireScope hands them.
@@ -21,7 +21,7 @@ vi.mock("@/lib/session", () => ({
 import { activeChip, appRoleChip, enumLabel, jobRoleChip } from "@/lib/adminChips";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
-import { RemoveAllowed, ActiveToggle } from "@/app/(app)/admin/users/UserForms";
+import { ActiveToggle } from "@/app/(app)/admin/users/UserForms";
 import { AdminSkeleton } from "@/components/PageSkeletons";
 import AppError from "@/app/(app)/error";
 import AppNotFound from "@/app/(app)/not-found";
@@ -36,7 +36,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
   prismaMock.user.findMany.mockResolvedValue(users);
-  prismaMock.allowedEmail.findMany.mockResolvedValue([{ id: "e1", email: "rina@gmail.com", note: null }, { id: "e2", email: "x@y.test", note: "vendor" }]);
   prismaMock.brand.findMany.mockResolvedValue([{ id: "b1", name: "Clogent" }, { id: "b2", name: "Zed" }]);
   prismaMock.division.findMany.mockResolvedValue([{ id: "d1", name: "Marketing" }]);
   prismaMock.requestType.findMany.mockResolvedValue([{ id: "t1", name: "Video", active: false, fieldSchema: [] }]);
@@ -63,7 +62,7 @@ describe("Users page", () => {
     const nav = screen.getByRole("navigation", { name: "Admin sections" });
     expect(within(nav).getByRole("link", { name: "Users" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Add person", "Allowed emails"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Add person"]);
   });
   it("table: avatar + name + full name/title, role chips, login email, active chip, unique Edit summaries", async () => {
     render(await UsersContent());
@@ -85,26 +84,16 @@ describe("Users page", () => {
     expect(screen.getByRole("button", { name: "Save changes for Rina" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reactivate Budi" })).toBeTruthy();
   });
-  it("allowed emails card with per-row remove buttons", async () => {
-    render(await UsersContent());
-    expect(screen.getByText("Used by Rina")).toBeTruthy();
-    expect(screen.getByText("Not linked to a person · vendor")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Remove rina@gmail.com" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Remove x@y.test" })).toBeTruthy();
+  it("no Allowed emails section: access is an active person with a login email", async () => {
+    const { container } = render(await UsersContent());
+    expect(container.textContent).not.toMatch(/allowed/i);
+    expect(screen.queryByRole("button", { name: /^Remove / })).toBeNull();
   });
-  it("the confirm step uses the kit danger button; triggers are danger-text ghost buttons", () => {
-    render(<RemoveAllowed email="a@gmail.com" />);
-    const trigger = screen.getByRole("button", { name: "Remove a@gmail.com" });
-    expect(trigger.className).toContain("text-danger");
-    fireEvent.click(trigger);
-    const group = screen.getByRole("group", { name: "Confirm: Remove" });
-    expect(group.getAttribute("data-tone")).toBe("cancelled");
-    expect(within(group).getByRole("button", { name: "Yes, remove a@gmail.com" }).className).toContain("bg-destructive");
-    expect(within(group).getByRole("button", { name: "Cancel" })).toBeTruthy();
-    cleanup();
+  it("the confirm step uses the kit danger button", () => {
     render(<ActiveToggle u={{ ...users[0], title: null, hasPassword: true }} />);
     fireEvent.click(screen.getByRole("button", { name: "Deactivate Rina" }));
     expect(screen.getByRole("button", { name: "Yes, deactivate Rina" }).className).toContain("bg-destructive");
+    expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
   });
 });
 

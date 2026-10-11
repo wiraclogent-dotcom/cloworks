@@ -1,8 +1,6 @@
 import type { AppRole, JobRole, PrismaClient } from "@prisma/client";
 
-import { DEFAULT_ALLOWED_DOMAIN, isAllowedEmail } from "./signin";
-
-type Db = Pick<PrismaClient, "user" | "allowedEmail">;
+type Db = Pick<PrismaClient, "user">;
 /** Thrown when there is no valid, still-permitted session. Message kept as "Unauthenticated" for older callers. */
 export class UnauthenticatedError extends Error {
   constructor() {
@@ -23,14 +21,13 @@ export class PasswordChangeRequiredError extends UnauthenticatedError {
 export type SessionUser = { id: string; name: string; appRole: AppRole; jobRole: JobRole; workspaceId: string; mustChangePassword: boolean };
 
 /**
- * Current, still-permitted user or null. Denies inactive users, users with no login email, and users whose
- * email is no longer permitted (not on the company domain and not on the allow-list), so revoking access
- * takes effect on the next request rather than when the JWT expires.
+ * Current, still-permitted user or null. Denies missing or inactive users and users with no login email, so
+ * deactivating someone takes effect on the next request rather than when the JWT expires. An active User is the
+ * whole grant: there is no email-domain or allow-list test.
  */
 export async function loadActiveUser(
   db: Db,
   id: string,
-  domain: string = process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN,
   /**
    * When present, the session's `loginEmail` claim must match the user's CURRENT email (rebinding revokes), and its
    * password version (`pwv`, 0 for tokens issued before passwords existed) must match (a password change revokes).
@@ -42,10 +39,6 @@ export async function loadActiveUser(
   const email = u.email.trim().toLowerCase();
   if (claim && (!claim.loginEmail || claim.loginEmail.trim().toLowerCase() !== email)) return null;
   if (claim && (claim.pwv ?? 0) !== u.passwordVersion) return null;
-  if (!isAllowedEmail(email, domain, [])) {
-    const row = await db.allowedEmail.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
-    if (!row) return null;
-  }
   return { id: u.id, name: u.name, appRole: u.appRole, jobRole: u.jobRole, workspaceId: u.workspaceId, mustChangePassword: u.mustChangePassword };
 }
 
@@ -54,7 +47,7 @@ export async function loadActiveUser(
  * and `requireUserWith` share one DB read; tests and scripts use the plain `loadActiveUser`.
  */
 export type ActiveUserLoader = (db: Db, id: string, claim: { loginEmail?: string | null; pwv?: number }) => Promise<SessionUser | null>;
-const loadUncached: ActiveUserLoader = (db, id, claim) => loadActiveUser(db, id, undefined, claim);
+const loadUncached: ActiveUserLoader = (db, id, claim) => loadActiveUser(db, id, claim);
 
 /** jwt-callback refresh for an existing token: re-reads the DB; null invalidates the session. */
 export async function refreshJwt<T extends { uid?: string; loginEmail?: string; pwv?: number; appRole?: AppRole; jobRole?: JobRole }>(

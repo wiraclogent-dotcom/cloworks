@@ -2,12 +2,10 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
-import { DEFAULT_ALLOWED_DOMAIN, decideSignIn, resolveSignIn } from "./signin";
+import { decideSignIn, resolveSignIn } from "./signin";
 import { bindSignInToken, refreshJwt } from "./session-core";
 import { loadActiveUserOnce } from "./activeUser";
 import { authenticateWithPassword } from "./passwordAuth";
-
-export { isAllowedEmail } from "./signin";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -29,7 +27,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account, profile }) {
-      // Password sign-in was fully vetted in authorize() (active, permitted email, right password).
+      // Password sign-in was fully vetted in authorize() (active, right password).
       if (account?.provider === "credentials") return true;
       const r = await decideSignIn(
         prisma,
@@ -42,9 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async jwt({ token, user }) {
       if (user?.email) {
         // Fresh sign-in (signIn callback already vetted it): bind token to the DB user.
-        const r = await resolveSignIn(prisma, { email: user.email, name: user.name }, process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN, {
-          viaAllowList: true,
-        });
+        const r = await resolveSignIn(prisma, { email: user.email, name: user.name });
         if (!r.ok) return null;
         return bindSignInToken(token, r.user);
       }

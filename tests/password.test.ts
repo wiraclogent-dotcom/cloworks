@@ -91,10 +91,8 @@ describe("password sign-in (db)", () => {
     expect(await authenticateWithPassword(db.prisma, off.email!, "initial-password-1")).toBeNull();
   });
 
-  it("rejects an email that is no longer permitted (off-domain and not on the allow-list)", async () => {
+  it("accepts an active user on any email domain", async () => {
     const u = await mk({ email: `${uniq("ext")}@gmail.com` });
-    expect(await authenticateWithPassword(db.prisma, u.email!, "initial-password-1")).toBeNull();
-    await db.prisma.allowedEmail.create({ data: { email: u.email! } });
     expect((await authenticateWithPassword(db.prisma, u.email!, "initial-password-1"))?.id).toBe(u.id);
   });
 
@@ -155,11 +153,11 @@ describe("password sign-in (db)", () => {
     const token = bindSignInToken<Token>({}, u);
     expect(token.pwv).toBe(0);
     expect(await refreshJwt(db.prisma, { ...token })).not.toBeNull();
-    expect(await loadActiveUser(db.prisma, u.id, undefined, { loginEmail: token.loginEmail })).not.toBeNull();
+    expect(await loadActiveUser(db.prisma, u.id, { loginEmail: token.loginEmail })).not.toBeNull();
 
     await setUserPassword(db.prisma, admin, u.id, "reset-by-admin-1");
     expect(await refreshJwt(db.prisma, { ...token })).toBeNull();
-    expect(await loadActiveUser(db.prisma, u.id, undefined, { loginEmail: token.loginEmail })).toBeNull();
+    expect(await loadActiveUser(db.prisma, u.id, { loginEmail: token.loginEmail })).toBeNull();
 
     const fresh = bindSignInToken<Token>({}, await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } }));
     expect(fresh.pwv).toBe(1);

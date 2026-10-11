@@ -39,6 +39,4 @@ The **Login email** column shows **Password set** or **No password yet**. Resett
 
 To stop someone signing in, clear the **Login email** field on their record. The form says that leaving it empty removes access.
 
-## Outside addresses
-
-**Allowed emails** lists addresses outside the company domain that may sign in. Any address not on this list and not on the company domain is refused.
+Any active person with a login email can sign in, whatever their email domain.

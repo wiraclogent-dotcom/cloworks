@@ -56,7 +56,6 @@ model Workspace {
   joinLinkEnabled Boolean  @default(true)
 
   users             User[]
-  allowedEmails     AllowedEmail[]
   brands            Brand[]
   divisions         Division[]
   requestTypes      RequestType[]
@@ -115,18 +114,6 @@ model User {
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-  @@index([workspaceId])
-}
-
-model AllowedEmail {
-  id    String  @id @default(cuid())
-  email String
-  note  String?
-
-  workspaceId String    @default(dbgenerated())
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-
-  @@unique([workspaceId, email])
   @@index([workspaceId])
 }
 

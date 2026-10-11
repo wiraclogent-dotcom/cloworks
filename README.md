@@ -57,7 +57,6 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 | `DATABASE_URL` | PostgreSQL connection string. `npm run db:dev` prints a ready-made one. | Yes |
 | `AUTH_SECRET` | Signs and encrypts session cookies. Generate with `openssl rand -base64 32`. | Yes |
 | `AUTH_URL` | Public base URL of the app (`http://localhost:3000` locally). | Yes in production; locally also used by `dev:session` |
-| `ALLOWED_EMAIL_DOMAIN` | Company email domain that may sign in automatically. Defaults to `clogent.co.id`. | No |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client for sign-in. | Yes, to use Google sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Microsoft Entra app registration. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | `https://login.microsoftonline.com/<tenant-id>/v2.0`. | Yes, to use Microsoft sign-in |
@@ -72,14 +71,14 @@ Never commit `.env`; `.gitignore` already excludes it.
 
 - After seeding, only **Wira** (Creative Director, `wira.budi@clogent.co.id`, role ADMIN) can sign in. Every other
   seeded person has no login email yet.
-- As admin, open **Admin > Users**. Add each person's login email on their row, and add Gmail (or any non-company)
-  addresses under **Allowed emails**; those can sign in through Google.
-- Emails on the company domain (`ALLOWED_EMAIL_DOMAIN`) sign in automatically. A first sign-in is linked to an
-  existing person only by exact email match; an unknown company-domain email creates a new REQUESTER.
-- Microsoft Entra sign-in is for company-domain emails only (the allow-list applies to Google) and requires
-  `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`.
-- Sessions last 24 hours. Deactivating a person, clearing or changing their login email, or removing their access
-  takes effect on their next request.
+- As admin, open **Admin > Users** and add each person's login email on their row. Any active person with a login
+  email can sign in (password, Google or Microsoft), whatever the email domain.
+- A first OAuth sign-in is linked to an existing person only by exact email match. An unknown email whose domain is a
+  workspace's email domain (`Workspace.emailDomain`, `clogent.co.id` for Clogent) creates a new REQUESTER in that
+  workspace; any other unknown email is refused.
+- Microsoft Entra sign-in requires `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`.
+- Sessions last 24 hours. Deactivating a person or clearing or changing their login email takes effect on their next
+  request.
 
 ## Roles and permissions
 
@@ -212,7 +211,7 @@ Safety: the script refuses to run unless `AUTH_URL` (or `APP_BASE_URL`) is local
 ## Deployment notes
 
 - Provide a PostgreSQL database and set the environment variables above (at minimum `DATABASE_URL`, `AUTH_SECRET`,
-  `AUTH_URL`, the OAuth variables you use, and `ALLOWED_EMAIL_DOMAIN` if it is not `clogent.co.id`).
+  `AUTH_URL`, and the OAuth variables you use).
 - Build and start: `npm ci`, `npx prisma migrate deploy`, `npm run build`, `npm start`.
 - Seed once (`npm run db:seed`) so Wira can sign in; add everyone else through Admin > Users.
 - Register the OAuth redirect URIs for your public URL (`/api/auth/callback/google` and

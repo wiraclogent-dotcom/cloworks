@@ -10,7 +10,7 @@ async function counts() {
   const p = db.prisma;
   return {
     users: await p.user.count(), brands: await p.brand.count(), divisions: await p.division.count(),
-    types: await p.requestType.count(), allowed: await p.allowedEmail.count(),
+    types: await p.requestType.count(), invites: await p.invite.count(),
   };
 }
 
@@ -18,7 +18,7 @@ describe("seed", () => {
   it("is idempotent and does not overwrite admin edits", async () => {
     await seed(db.prisma);
     const first = await counts();
-    expect(first).toEqual({ users: 13, brands: 2, divisions: 5, types: 3, allowed: 0 });
+    expect(first).toEqual({ users: 13, brands: 2, divisions: 5, types: 3, invites: 0 });
 
     await db.prisma.user.update({ where: { id: (await db.prisma.user.findFirstOrThrow({ where: { name: "Idzni" } })).id }, data: { email: "idzni@example.com", appRole: "ADMIN" } });
     await seed(db.prisma);

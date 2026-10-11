@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { makeScoped, scopedDb } from "@/lib/db";
-import { addAllowedEmail, createBrand, renameBrand, type Actor } from "@/lib/admin";
+import { createBrand, renameBrand, type Actor } from "@/lib/admin";
 import { resolveSignIn } from "@/lib/signin";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 // Every scoped model, by Prisma client key, with a harmless field change for update tests.
 const MODELS = {
   user: { name: "hacked" },
-  allowedEmail: { note: "hacked" },
+  invite: { email: "hacked@example.com" },
   brand: { name: "hacked" },
   division: { name: "hacked" },
   requestType: { name: "hacked" },
@@ -51,7 +51,9 @@ let other: Record<ModelKey, string>;
 async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): Promise<Record<ModelKey, string>> {
   const w = { workspaceId };
   const user = await raw.user.create({ data: { ...w, name: `U-${tag}`, fullName: `User ${tag}`, email: `u-${tag}@example.com` } });
-  const allowedEmail = await raw.allowedEmail.create({ data: { ...w, email: "shared@example.com" } });
+  const invite = await raw.invite.create({
+    data: { ...w, email: "shared@example.com", appRole: "REQUESTER", jobRole: "OTHER", tokenHash: `hash-${tag}`, invitedById: user.id, expiresAt: new Date(Date.now() + 86_400_000) },
+  });
   const brand = await raw.brand.create({ data: { ...w, name: "Main" } });
   const division = await raw.division.create({ data: { ...w, name: "Ops" } });
   const requestType = await raw.requestType.create({ data: { ...w, name: "Design" } });
@@ -69,7 +71,7 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   const projectTask = await raw.projectTask.create({ data: { ...w, projectId: project.id, position: 0, title: "T" } });
   const projectMilestone = await raw.projectMilestone.create({ data: { ...w, projectId: project.id, title: "M", date: new Date() } });
   return {
-    user: user.id, allowedEmail: allowedEmail.id, brand: brand.id, division: division.id, requestType: requestType.id,
+    user: user.id, invite: invite.id, brand: brand.id, division: division.id, requestType: requestType.id,
     request: request.id, statusEvent: statusEvent.id, deadlineEvent: deadlineEvent.id, comment: comment.id,
     attachment: attachment.id, notification: notification.id, chatRead: chatRead.id, kpiTarget: kpiTarget.id, project: project.id,
     projectTask: projectTask.id, projectMilestone: projectMilestone.id,
@@ -172,17 +174,6 @@ describe("app cores through the scoped client", () => {
     expect(temp).toMatchObject({ workspaceId: "clogent" });
     expect(await renameBrand(s, admin(), temp.id, "Main")).toMatchObject({ name: "Main", workspaceId: "clogent" });
     expect(await db.raw.brand.count({ where: { name: "Main" } })).toBe(2);
-  });
-
-  it("addAllowedEmail writes to the actor's workspace and lists only its rows", async () => {
-    const s = makeScoped(db.raw, "clogent");
-    await addAllowedEmail(s, admin(), "guest@partner.com", "guest");
-    // The actor's workspace is used even through the raw client.
-    expect(await addAllowedEmail(db.raw, admin(), "raw@partner.com")).toMatchObject({ workspaceId: "clogent" });
-    const listed = await s.allowedEmail.findMany();
-    expect(listed.every((r) => r.workspaceId === "clogent")).toBe(true);
-    expect(listed.map((r) => r.email)).toEqual(expect.arrayContaining(["shared@example.com", "guest@partner.com", "raw@partner.com"]));
-    expect(listed.map((r) => r.id)).not.toContain(other.allowedEmail);
   });
 
   it("first OAuth sign-in creates the user in the Clogent workspace", async () => {

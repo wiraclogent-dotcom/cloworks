@@ -2,7 +2,7 @@
 
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
 import { enumLabel } from "@/lib/adminChips";
-import { addAllowed, addPerson, removeAllowed, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
+import { addPerson, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
 
 const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
 const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
@@ -132,36 +132,5 @@ export function AddPersonForm() {
         </div>
       )}
     </AdminForm>
-  );
-}
-
-export function AddAllowedForm() {
-  return (
-    <AdminForm action={addAllowed} prefix="add-allowed" submitLabel="Allow email">
-      {({ v, idFor, aria }) => (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Labeled id={idFor("email")} label="Email address">
-            <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
-          </Labeled>
-          <Labeled id={idFor("note")} label="Note (optional)">
-            <input id={idFor("note")} name="note" className={control} defaultValue={v("note")} />
-          </Labeled>
-        </div>
-      )}
-    </AdminForm>
-  );
-}
-
-export function RemoveAllowed({ email }: { email: string }) {
-  return (
-    <ConfirmAction
-      action={removeAllowed}
-      prefix={`rm-${email}`}
-      hidden={{ email }}
-      triggerLabel="Remove"
-      triggerAriaLabel={`Remove ${email}`}
-      question={`Remove ${email}? Anyone signing in with it loses access on their next request.`}
-      confirmLabel={`Yes, remove ${email}`}
-    />
   );
 }

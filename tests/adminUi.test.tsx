@@ -3,17 +3,15 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
 const act = {
-  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), removeAllowed: vi.fn(), saveRequestType: vi.fn(),
-  saveUser: vi.fn(), addPerson: vi.fn(), addAllowed: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(),
+  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveRequestType: vi.fn(),
+  saveUser: vi.fn(), addPerson: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(),
 };
 vi.mock("@/app/(app)/admin/users/actions", () => ({
   saveLoginEmail: (...a: unknown[]) => act.saveLoginEmail(...a),
   savePassword: (...a: unknown[]) => act.savePassword(...a),
   setUserActive: (...a: unknown[]) => act.setUserActive(...a),
-  removeAllowed: (...a: unknown[]) => act.removeAllowed(...a),
   saveUser: (...a: unknown[]) => act.saveUser(...a),
   addPerson: (...a: unknown[]) => act.addPerson(...a),
-  addAllowed: (...a: unknown[]) => act.addAllowed(...a),
 }));
 vi.mock("@/app/(app)/admin/lists/actions", () => ({
   saveRequestType: (...a: unknown[]) => act.saveRequestType(...a),
@@ -23,7 +21,7 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
 
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
-  user: { findMany: vi.fn() }, allowedEmail: { findMany: vi.fn() },
+  user: { findMany: vi.fn() },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
 // Pages read through the workspace-scoped client that requireScope hands them.
@@ -33,7 +31,7 @@ vi.mock("@/lib/session", () => ({
   requireScope: async () => ({ user: await requireUser(), db: prismaMock }),
 }));
 
-import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "@/app/(app)/admin/users/UserForms";
+import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm } from "@/app/(app)/admin/users/UserForms";
 import { TypeForm } from "@/app/(app)/admin/lists/ListForms";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
@@ -106,13 +104,12 @@ describe("admin forms", () => {
     expect((await screen.findByRole("status")).textContent).toMatch(/deactivated/i);
   });
 
-  it("removing an allowed email needs confirmation; a failure is reported as text", async () => {
-    act.removeAllowed.mockResolvedValue({ ok: false, message: "nope", values: {}, nonce: "n3" });
-    render(<RemoveAllowed email="a@gmail.com" />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove a@gmail.com" }));
-    expect(act.removeAllowed).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: /yes, remove a@gmail.com/i }));
-    await waitFor(() => expect(act.removeAllowed).toHaveBeenCalledTimes(1));
+  it("a failed confirmed action is reported as text", async () => {
+    act.setUserActive.mockResolvedValue({ ok: false, message: "nope", values: {}, nonce: "n3" });
+    render(<ActiveToggle u={u} />);
+    fireEvent.click(screen.getByRole("button", { name: "Deactivate Rina" }));
+    fireEvent.click(screen.getByRole("button", { name: /yes, deactivate rina/i }));
+    await waitFor(() => expect(act.setUserActive).toHaveBeenCalledTimes(1));
     expect((await screen.findByRole("alert")).textContent).toBe("Error: nope");
   });
 
@@ -142,7 +139,7 @@ describe("admin pages gate", () => {
         expect(container.textContent).not.toMatch(/@/);
         unmount();
       }
-      for (const m of [prismaMock.user, prismaMock.allowedEmail, prismaMock.brand, prismaMock.division, prismaMock.requestType])
+      for (const m of [prismaMock.user, prismaMock.brand, prismaMock.division, prismaMock.requestType])
         expect(m.findMany).not.toHaveBeenCalled();
     });
   }
@@ -150,11 +147,10 @@ describe("admin pages gate", () => {
   it("admin sees the data", async () => {
     requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
     prismaMock.user.findMany.mockResolvedValue([{ ...u, email: "rina@gmail.com", department: null }]);
-    prismaMock.allowedEmail.findMany.mockResolvedValue([{ id: "e1", email: "rina@gmail.com", note: "login for Rina" }]);
     render(await UsersContent());
     expect(screen.getByRole("columnheader", { name: "Login email" })).toBeTruthy();
-    expect(screen.getByText("Used by Rina · login for Rina")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Allowed emails" })).toBeTruthy();
+    expect(screen.getByText("rina@gmail.com")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Allowed emails" })).toBeNull();
     expect(screen.getByRole("heading", { name: "Add person" })).toBeTruthy();
   });
 
@@ -164,7 +160,6 @@ describe("admin pages gate", () => {
       { ...u, email: "rina@clogent.co.id", passwordHash: "scrypt$32768$8$1$c2FsdA==$TOPSECRETHASH" },
       { ...u, id: "u2", name: "Budi", email: "budi@clogent.co.id", passwordHash: null },
     ]);
-    prismaMock.allowedEmail.findMany.mockResolvedValue([]);
     const { container } = render(await UsersContent());
     expect(container.innerHTML).not.toContain("TOPSECRETHASH");
     expect(screen.getByText("Password set")).toBeTruthy();

@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole } from "@prisma/client";
 import {
-  AdminError, updateUser, createUser, setUserLoginEmail, addAllowedEmail, removeAllowedEmail,
+  AdminError, updateUser, createUser, setUserLoginEmail,
   createBrand, renameBrand, createDivision, renameDivision, upsertRequestType,
 } from "@/lib/admin";
-import { loadActiveUser, requireUserWith, refreshJwt } from "@/lib/session-core";
+import { loadActiveUser, requireUserWith } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 let db: TestDb;
@@ -44,8 +44,6 @@ describe("FORBIDDEN for non-admins on every core", () => {
         updateUser(p, a, u.id, { active: false }),
         createUser(p, a, { name: uniq("N"), jobRole: "OTHER", appRole: "REQUESTER" }),
         setUserLoginEmail(p, a, u.id, "a@gmail.com"),
-        addAllowedEmail(p, a, "a@gmail.com"),
-        removeAllowedEmail(p, a, "a@gmail.com"),
         createBrand(p, a, uniq("B")),
         renameBrand(p, a, "x", "y"),
         createDivision(p, a, uniq("D")),
@@ -157,17 +155,14 @@ describe("createUser", () => {
 
 describe("setUserLoginEmail", () => {
   const sess = (id: string, loginEmail?: string) => async () => ({ user: { id, loginEmail } });
-  it("gmail creates an AllowedEmail row and enables login; company domain does not", async () => {
+  it("any domain binds and enables login with no extra access row", async () => {
     const u = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, u.id, "  Fadli.Test@Gmail.com ");
     expect((await db.prisma.user.findUnique({ where: { id: u.id } }))?.email).toBe("fadli.test@gmail.com");
-    const row = await db.prisma.allowedEmail.findFirst({ where: { email: "fadli.test@gmail.com" } });
-    expect(row?.note).toBe(`login for ${u.name}`);
     expect((await requireUserWith(sess(u.id, "fadli.test@gmail.com"), db.prisma)).id).toBe(u.id);
 
     const c = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, c.id, "Someone@CLOGENT.co.id");
-    expect(await db.prisma.allowedEmail.count({ where: { email: "someone@clogent.co.id" } })).toBe(0);
     expect((await requireUserWith(sess(c.id, "someone@clogent.co.id"), db.prisma)).id).toBe(c.id);
   });
   it("loadActiveUser returns workspaceId and mustChangePassword", async () => {
@@ -176,24 +171,13 @@ describe("setUserLoginEmail", () => {
     await db.raw.user.update({ where: { id: u.id }, data: { mustChangePassword: true } });
     expect((await loadActiveUser(db.prisma, u.id))?.mustChangePassword).toBe(true);
   });
-  it("lookalike domain is treated as outside (gets an allow-list row)", async () => {
-    const u = await mk({ email: null });
-    await setUserLoginEmail(db.prisma, admin, u.id, "x@sub.clogent.co.id");
-    expect(await db.prisma.allowedEmail.count({ where: { email: "x@sub.clogent.co.id" } })).toBe(1);
-  });
-  it("changing the email removes the old row, unless another user still uses it", async () => {
+  it("changing the email ends sessions bound to the old one", async () => {
     const u = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, u.id, "old1@gmail.com");
+    expect((await requireUserWith(sess(u.id, "old1@gmail.com"), db.prisma)).id).toBe(u.id);
     await setUserLoginEmail(db.prisma, admin, u.id, "new1@gmail.com");
-    expect(await db.prisma.allowedEmail.count({ where: { email: "old1@gmail.com" } })).toBe(0);
-    expect(await db.prisma.allowedEmail.count({ where: { email: "new1@gmail.com" } })).toBe(1);
-
-    const a = await mk({ email: "shared@gmail.com" });
-    await db.prisma.allowedEmail.create({ data: { email: "shared@gmail.com" } });
-    const b = await mk({ email: "Shared@Gmail.com" }); // legacy mixed-case duplicate by another user
-    await setUserLoginEmail(db.prisma, admin, a.id, "elsewhere@gmail.com");
-    expect(await db.prisma.allowedEmail.count({ where: { email: "shared@gmail.com" } })).toBe(1);
-    expect(b.id).toBeTruthy();
+    await expect(requireUserWith(sess(u.id, "old1@gmail.com"), db.prisma)).rejects.toThrow();
+    expect((await requireUserWith(sess(u.id, "new1@gmail.com"), db.prisma)).id).toBe(u.id);
   });
   it("conflict when another user has it; user keeps their email", async () => {
     const a = await mk({ email: "taken@gmail.com" });
@@ -201,12 +185,11 @@ describe("setUserLoginEmail", () => {
     await expect(setUserLoginEmail(db.prisma, admin, b.id, "TAKEN@gmail.com")).rejects.toMatchObject({ code: "CONFLICT", message: expect.stringContaining(a.name) });
     expect((await db.prisma.user.findUnique({ where: { id: b.id } }))?.email).toBeNull();
   });
-  it("null clears the email, removes the row and revokes access", async () => {
+  it("null clears the email and revokes access", async () => {
     const u = await mk({ email: null });
     await setUserLoginEmail(db.prisma, admin, u.id, "gone@gmail.com");
     await setUserLoginEmail(db.prisma, admin, u.id, null);
     expect((await db.prisma.user.findUnique({ where: { id: u.id } }))?.email).toBeNull();
-    expect(await db.prisma.allowedEmail.count({ where: { email: "gone@gmail.com" } })).toBe(0);
     await expect(requireUserWith(sess(u.id, "gone@gmail.com"), db.prisma)).rejects.toThrow();
   });
   it("rejects invalid shapes", async () => {
@@ -217,26 +200,6 @@ describe("setUserLoginEmail", () => {
   });
   it("NOT_FOUND", async () => {
     expect(await code(setUserLoginEmail(db.prisma, admin, "nope", "a@gmail.com"))).toBe("NOT_FOUND");
-  });
-});
-
-describe("allowed emails", () => {
-  it("normalizes, is idempotent, keeps note unless a new one is given", async () => {
-    await addAllowedEmail(db.prisma, admin, " Ext@Gmail.com ", "vendor");
-    await addAllowedEmail(db.prisma, admin, "ext@gmail.com");
-    expect(await db.prisma.allowedEmail.count({ where: { email: "ext@gmail.com" } })).toBe(1);
-    expect((await db.prisma.allowedEmail.findFirst({ where: { email: "ext@gmail.com" } }))?.note).toBe("vendor");
-    expect(await code(addAllowedEmail(db.prisma, admin, "a@b@c"))).toBe("VALIDATION");
-  });
-  it("removal is idempotent and revokes an existing session", async () => {
-    const u = await mk({ email: "rev@gmail.com" });
-    await addAllowedEmail(db.prisma, admin, "REV@gmail.com");
-    const s = async () => ({ user: { id: u.id, loginEmail: "rev@gmail.com" } });
-    expect((await requireUserWith(s, db.prisma)).id).toBe(u.id);
-    await removeAllowedEmail(db.prisma, admin, " Rev@Gmail.com");
-    await removeAllowedEmail(db.prisma, admin, "rev@gmail.com");
-    await expect(requireUserWith(s, db.prisma)).rejects.toThrow();
-    expect(await refreshJwt(db.prisma, { uid: u.id, loginEmail: "rev@gmail.com" })).toBeNull();
   });
 });
 
@@ -296,23 +259,18 @@ describe("sign-in-capable admin guard (email path)", () => {
       d.prisma.user.create({ data: { name, fullName: name, email, appRole: "ADMIN", ...extra } });
     return { d, mkA };
   }
-  const snapshot = async (d: TestDb, id: string) => ({
-    email: (await d.prisma.user.findUnique({ where: { id } }))?.email,
-    rows: await d.prisma.allowedEmail.count(),
-  });
+  const emailOf = async (d: TestDb, id: string) => (await d.prisma.user.findUnique({ where: { id } }))?.email;
 
-  it("single Gmail admin: removeAllowedEmail, clearing and re-pointing are LAST_ADMIN and change nothing", async () => {
+  it("single Gmail admin: clearing is LAST_ADMIN and changes nothing; re-pointing is allowed", async () => {
     const { d, mkA } = await fresh();
     try {
       const a = await mkA("Gm", "gm@gmail.com");
-      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
       const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
-      const before = await snapshot(d, a.id);
-      expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("LAST_ADMIN");
       expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("LAST_ADMIN");
-      expect(await code(setUserLoginEmail(d.prisma, act, a.id, "other@yahoo.com.invalid"))).toBe("OK"); // gets its own allow row: still capable
+      expect(await emailOf(d, a.id)).toBe("gm@gmail.com");
+      expect(await code(setUserLoginEmail(d.prisma, act, a.id, "other@yahoo.com.invalid"))).toBe("OK");
       expect(await code(setUserLoginEmail(d.prisma, act, a.id, "gm@gmail.com"))).toBe("OK");
-      expect(await snapshot(d, a.id)).toEqual(before);
+      expect(await emailOf(d, a.id)).toBe("gm@gmail.com");
     } finally {
       await d.stop();
     }
@@ -329,41 +287,47 @@ describe("sign-in-capable admin guard (email path)", () => {
       await d.stop();
     }
   });
-  it("demoting: an admin whose only email was never allow-listed does not count", async () => {
+  it("an active admin with an outside-domain email counts as sign-in capable", async () => {
     const { d, mkA } = await fresh();
     try {
       const a = await mkA("Ok", "ok@clogent.co.id");
-      await mkA("Orphan", "orphan@gmail.com");
+      await mkA("Outside", "outside@gmail.com");
+      const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
+      expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("OK");
+    } finally {
+      await d.stop();
+    }
+  });
+  it("an inactive admin with an email does not count", async () => {
+    const { d, mkA } = await fresh();
+    try {
+      const a = await mkA("Ok", "ok@clogent.co.id");
+      await mkA("Off", "off@gmail.com", { active: false });
       expect(await code(updateUser(d.prisma, { id: a.id, appRole: "ADMIN", workspaceId: "clogent" }, a.id, { appRole: "LEAD" }))).toBe("LAST_ADMIN");
     } finally {
       await d.stop();
     }
   });
-  it("with a second sign-in-capable admin every path is allowed; company-domain admin needs no AllowedEmail row", async () => {
+  it("with a second sign-in-capable admin clearing the email and demoting are allowed", async () => {
     const { d, mkA } = await fresh();
     try {
       const a = await mkA("Gm", "gm@gmail.com");
-      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
       await mkA("Co", "co@clogent.co.id");
       const act = { id: a.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
-      expect(await code(removeAllowedEmail(d.prisma, act, "gm@gmail.com"))).toBe("OK");
       expect(await code(setUserLoginEmail(d.prisma, act, a.id, null))).toBe("OK");
       expect(await code(updateUser(d.prisma, act, a.id, { appRole: "LEAD" }))).toBe("OK");
     } finally {
       await d.stop();
     }
   });
-  it("concurrent: removing the allow row and demoting the company admin cannot both succeed", async () => {
+  it("concurrent: clearing one admin's email and demoting the other cannot both succeed", async () => {
     const { d, mkA } = await fresh();
     try {
       const g = await mkA("Gm", "gm@gmail.com");
       const c = await mkA("Co", "co@clogent.co.id");
-      await d.prisma.allowedEmail.create({ data: { email: "gm@gmail.com" } });
       const act = { id: g.id, appRole: "ADMIN" as const, workspaceId: "clogent" };
-      await Promise.allSettled([removeAllowedEmail(d.prisma, act, "gm@gmail.com"), updateUser(d.prisma, act, c.id, { appRole: "LEAD" })]);
-      const capable = await d.prisma.user.findMany({ where: { appRole: "ADMIN", active: true } });
-      const rows = await d.prisma.allowedEmail.count();
-      expect(capable.some((u) => u.email?.endsWith("@clogent.co.id") || rows > 0)).toBe(true);
+      await Promise.allSettled([setUserLoginEmail(d.prisma, act, g.id, null), updateUser(d.prisma, act, c.id, { appRole: "LEAD" })]);
+      expect(await d.prisma.user.count({ where: { appRole: "ADMIN", active: true, email: { not: null } } })).toBeGreaterThan(0);
     } finally {
       await d.stop();
     }
