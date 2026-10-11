@@ -70,7 +70,7 @@ function cleanName(raw: string, label: string, max = MAX_NAME_LEN): string {
 }
 
 /** Serialises every roster mutation that can change who the admins are (released at commit). */
-async function lockRoster(tx: Tx) {
+export async function lockRoster(tx: Tx) {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(7312001)`;
 }
 

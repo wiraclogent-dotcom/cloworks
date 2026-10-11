@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { notificationHref } from "@/lib/notificationLinks";
 import { Children, isValidElement, type ReactNode } from "react";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/requests", useRouter: () => ({ push: vi.fn() }) }));
@@ -32,5 +33,11 @@ describe("notification bell in the shell", () => {
   it("the top-right slot shows the bell before the profile menu", () => {
     const types = walk(frame.props.profile).map((e) => e.type).filter((t) => t === NotificationBell || t === ProfileMenu);
     expect(types).toEqual([NotificationBell, ProfileMenu]);
+  });
+});
+
+describe("join request notifications", () => {
+  it("link to Members → Requests", () => {
+    expect(notificationHref({ type: "JOIN_REQUEST", requestId: null })).toBe("/admin/users?tab=requests");
   });
 });

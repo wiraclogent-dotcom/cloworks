@@ -1,5 +1,7 @@
 import { Prisma, type Applicant, type JoinSource, type PrismaClient } from "@prisma/client";
-import type { Mailer } from "@/lib/mailer";
+import { createMailerFromEnv, type Mailer } from "@/lib/mailer";
+import { bestEffort } from "@/lib/notify";
+import { notifyJoinRequest } from "@/lib/joinRequests";
 import { checkNewPassword, hashPassword } from "@/lib/password";
 import { alreadyHaveAccountEmail, codeEmail } from "@/lib/joinEmails";
 import {
@@ -28,9 +30,19 @@ export type Deps = {
   now?: Date;
   /** Origin used for links in emails, e.g. "https://cloworks.vercel.app". */
   baseUrl: string;
-  /** Called once after any join request is written (admins get notified). */
+  /** Called once after any join request is written; default: notifyJoinRequest (bell + email to the admins). */
   onRequest?: (applicantId: string) => Promise<void>;
 };
+
+/** What requestWorkspace needs: the db, and optionally the hook or a mailer for the default notification. */
+type RequestDeps = Pick<Deps, "db" | "onRequest"> & { mailer?: Mailer };
+
+/** Runs the onRequest hook (default: notify the admins). Best-effort: a failure never fails the request. */
+function announceRequest(d: RequestDeps, applicantId: string): Promise<void> {
+  return bestEffort(() =>
+    d.onRequest ? d.onRequest(applicantId) : notifyJoinRequest(d.db, d.mailer ?? createMailerFromEnv(), applicantId),
+  );
+}
 
 const HOUR_MS = 3_600_000;
 
@@ -251,7 +263,7 @@ export async function requestJoinByCode(d: Deps, applicantId: string, joinCode: 
  * deactivated user's email, VALIDATION for an active user's (callers sign members in before reaching this).
  */
 export async function oauthApplicant(
-  d: Pick<Deps, "db" | "now" | "onRequest">,
+  d: Pick<Deps, "db" | "now" | "onRequest"> & { mailer?: Mailer },
   profile: { email: string; name: string },
 ): Promise<Applicant> {
   const now = nowOf(d);
@@ -329,7 +341,7 @@ async function workspaceByJoinCode(db: PrismaClient, joinCode: string) {
  * previous request.
  */
 async function requestWorkspace(
-  d: Pick<Deps, "db" | "onRequest">,
+  d: RequestDeps,
   a: Pick<Applicant, "id" | "requestedWorkspaceId" | "rejectedAt">,
   workspaceId: string,
   source: JoinSource,
@@ -342,7 +354,7 @@ async function requestWorkspace(
     data: { requestedWorkspaceId: workspaceId, requestedAt: now, requestSource: source, pendingJoinCode: null },
   });
   if (res.count === 0) throw new JoinError("REJECTED", "Your join request was declined. Contact the workspace admin.");
-  await d.onRequest?.(a.id);
+  await announceRequest(d, a.id);
 }
 
 /**
@@ -350,7 +362,7 @@ async function requestWorkspace(
  * a JoinError: a reason for not requesting comes back as `notice`.
  */
 async function routeVerified(
-  d: Pick<Deps, "db" | "onRequest">,
+  d: RequestDeps,
   id: string,
   email: string,
   pendingJoinCode: string | null,
