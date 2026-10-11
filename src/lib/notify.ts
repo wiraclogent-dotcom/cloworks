@@ -51,7 +51,7 @@ export function buildMessage(
   }
 }
 
-function safeBaseUrl(raw: string | undefined): string | null {
+export function safeBaseUrl(raw: string | undefined): string | null {
   if (!raw) return null;
   try {
     const u = new URL(raw.trim());

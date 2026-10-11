@@ -35,12 +35,12 @@ export type Deps = {
 };
 
 /** What requestWorkspace needs: the db, and optionally the hook or a mailer for the default notification. */
-type RequestDeps = Pick<Deps, "db" | "onRequest"> & { mailer?: Mailer };
+type RequestDeps = Pick<Deps, "db" | "onRequest"> & { mailer?: Mailer; baseUrl?: string };
 
 /** Runs the onRequest hook (default: notify the admins). Best-effort: a failure never fails the request. */
 function announceRequest(d: RequestDeps, applicantId: string): Promise<void> {
   return bestEffort(() =>
-    d.onRequest ? d.onRequest(applicantId) : notifyJoinRequest(d.db, d.mailer ?? createMailerFromEnv(), applicantId),
+    d.onRequest ? d.onRequest(applicantId) : notifyJoinRequest(d.db, d.mailer ?? createMailerFromEnv(), applicantId, d.baseUrl),
   );
 }
 
@@ -263,7 +263,7 @@ export async function requestJoinByCode(d: Deps, applicantId: string, joinCode: 
  * deactivated user's email, VALIDATION for an active user's (callers sign members in before reaching this).
  */
 export async function oauthApplicant(
-  d: Pick<Deps, "db" | "now" | "onRequest"> & { mailer?: Mailer },
+  d: Pick<Deps, "db" | "now" | "onRequest"> & { mailer?: Mailer; baseUrl?: string },
   profile: { email: string; name: string },
 ): Promise<Applicant> {
   const now = nowOf(d);

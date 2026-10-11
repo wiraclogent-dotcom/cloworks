@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, afterEach, vi } from "vitest";
 import type { AppRole } from "@prisma/client";
 import {
   listJoinRequests, approveApplicant, rejectApplicant, undoReject, resetJoinLink, setJoinLinkEnabled, notifyJoinRequest,
@@ -254,5 +254,46 @@ describe("join requests", () => {
     const onRequest = async () => { throw new Error("boom"); };
     const row = await oauthApplicant({ db: db.raw, onRequest }, { email: "cici@notify-fail.test", name: "Cici" });
     expect(row.requestedWorkspaceId).toBe("clogent");
+  });
+
+  describe("join-request email link", () => {
+    afterEach(() => { vi.unstubAllEnvs(); });
+    const LINK = "/admin/users?tab=requests";
+    const pending = () => mkApplicant();
+
+    it("uses APP_BASE_URL like the other notifications", async () => {
+      vi.stubEnv("APP_BASE_URL", "https://app.example.test/");
+      vi.stubEnv("AUTH_URL", "https://auth.example.test");
+      const { mailer, sent } = fakeMailer();
+      await notifyJoinRequest(db.raw, mailer, (await pending()).id);
+      expect(sent.length).toBeGreaterThan(0);
+      expect(sent.every((m) => m.text.includes(`https://app.example.test${LINK}`))).toBe(true);
+      expect(sent.some((m) => m.text.includes("auth.example.test"))).toBe(false);
+    });
+
+    it("an explicit baseUrl wins over APP_BASE_URL", async () => {
+      vi.stubEnv("APP_BASE_URL", "https://app.example.test");
+      const { mailer, sent } = fakeMailer();
+      await notifyJoinRequest(db.raw, mailer, (await pending()).id, "https://given.example.test");
+      expect(sent.every((m) => m.text.includes(`https://given.example.test${LINK}`))).toBe(true);
+    });
+
+    it("no base at all → no link and no throw", async () => {
+      vi.stubEnv("APP_BASE_URL", "");
+      vi.stubEnv("AUTH_URL", "https://auth.example.test");
+      const { mailer, sent } = fakeMailer();
+      await expect(notifyJoinRequest(db.raw, mailer, (await pending()).id)).resolves.toBeUndefined();
+      expect(sent.length).toBeGreaterThan(0);
+      expect(sent.some((m) => m.text.includes(LINK) || m.text.includes("http"))).toBe(false);
+    });
+
+    it("the default applicant notification passes the deps baseUrl", async () => {
+      vi.stubEnv("APP_BASE_URL", "");
+      await db.raw.workspace.update({ where: { id: "clogent" }, data: { emailDomain: "notify-base.test" } });
+      const { mailer, sent } = fakeMailer();
+      await oauthApplicant({ db: db.raw, mailer, baseUrl: "https://deps.example.test" }, { email: "dodi@notify-base.test", name: "Dodi" });
+      expect(sent.length).toBeGreaterThan(0);
+      expect(sent.every((m) => m.text.includes(`https://deps.example.test${LINK}`))).toBe(true);
+    });
   });
 });

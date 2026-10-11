@@ -8,7 +8,7 @@ import { approvedEmail } from "./joinEmails";
 import { newJoinCode } from "./joinTokens";
 import { pickShortName } from "./shortName";
 import { JOIN_REQUEST_NOTIFICATION } from "./notificationLinks";
-import { bestEffort, cleanLine } from "./notify";
+import { bestEffort, cleanLine, safeBaseUrl } from "./notify";
 
 /**
  * Admin side of join requests. Takes the raw client because `Applicant` is global; every query is confined to
@@ -155,22 +155,12 @@ export async function setJoinLinkEnabled(db: PrismaClient, actor: Actor, enabled
   await db.workspace.update({ where: { id: actor.workspaceId }, data: { joinLinkEnabled: enabled === true } });
 }
 
-function linkBase(): string | null {
-  const raw = (process.env.AUTH_URL ?? process.env.NEXTAUTH_URL)?.trim();
-  if (!raw) return null;
-  try {
-    const u = new URL(raw);
-    return u.protocol === "http:" || u.protocol === "https:" ? u.origin : null;
-  } catch {
-    return null;
-  }
-}
-
 /**
  * Tells every active admin of the applicant's requested workspace (bell + email). Best-effort per recipient: a
- * failed write or send is logged and skipped.
+ * failed write or send is logged and skipped. The email links to Members → Requests under `baseUrl` (default:
+ * APP_BASE_URL, like the other notifications); no valid base, no link.
  */
-export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applicantId: string): Promise<void> {
+export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applicantId: string, baseUrl?: string): Promise<void> {
   const a = await db.applicant.findUnique({
     where: { id: applicantId },
     select: { name: true, email: true, requestedWorkspace: { select: { id: true, name: true } } },
@@ -184,7 +174,7 @@ export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applic
   const who = cleanLine(a.name, 80);
   const message = cleanLine(`${who} (${cleanLine(a.email, 254)}) asked to join`, 500);
   const subject = cleanLine(`${who} asked to join ${ws.name}`, 200);
-  const base = linkBase();
+  const base = safeBaseUrl(baseUrl ?? process.env.APP_BASE_URL);
   const text = base ? `${message}\n\n${base}/admin/users?tab=requests\n` : `${message}\n`;
   await Promise.all(
     admins.map((u) =>
