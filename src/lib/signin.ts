@@ -1,5 +1,5 @@
 import type { PrismaClient, User } from "@prisma/client";
-import { normalizeName } from "./import/aliases";
+import { pickShortName } from "./shortName";
 import { CLOGENT_WORKSPACE_ID } from "./workspace";
 
 export const DEFAULT_ALLOWED_DOMAIN = "clogent.co.id";
@@ -78,14 +78,7 @@ export async function resolveSignIn(
   // collides with anyone's name/fullName/alias, fall back to the email local part (numeric suffix if that collides too).
   // Sign-up stays closed and Clogent is the only workspace, so a first OAuth sign-in joins Clogent.
   const workspaceId = CLOGENT_WORKSPACE_ID;
-  const roster = await db.user.findMany({ where: { workspaceId }, select: { name: true, fullName: true, aliases: true } });
-  const taken = new Set(roster.flatMap((u) => [u.name, u.fullName, ...u.aliases]).map(normalizeName));
-  let name = display;
-  if (!normalizeName(display) || taken.has(normalizeName(display))) {
-    const base = local.toLowerCase();
-    name = base;
-    for (let n = 2; !normalizeName(name) || taken.has(normalizeName(name)); n++) name = `${base}${n}`;
-  }
+  const name = await pickShortName(db, workspaceId, display, email);
   const created = await db.user.create({ data: { workspaceId, email, name, fullName: display, appRole: "REQUESTER" } });
   return { ok: true, user: created, created: true };
 }
