@@ -1,6 +1,10 @@
 import { headers } from "next/headers";
 import { describeJoinCode, lobbyState, type Deps } from "./applicants";
+import type { AppRole, JobRole } from "@prisma/client";
+import type { Actor } from "./admin";
 import { acceptInvite, describeInvite } from "./invites";
+import type { Mailer } from "./mailer";
+import { approveApplicant, listJoinRequests, rejectApplicant, resetJoinLink, setJoinLinkEnabled, undoReject } from "./joinRequests";
 import { prisma } from "./db";
 import { createMailerFromEnv } from "./mailer";
 import { safeBaseUrl } from "./notify";
@@ -41,3 +45,21 @@ export const loadInvite = (token: string) => describeInvite(prisma, token);
 
 /** Accepts an invite by token for the signed-in applicant or a new name + password. */
 export const acceptInviteBy = (token: string, who: Parameters<typeof acceptInvite>[2]) => acceptInvite(prisma, token, who);
+
+// Admin side (Members → Requests and the invite-link card). Same reason: Applicant and Workspace are global.
+
+/** What the Members page needs beyond the scoped client: the join-link settings and the join requests. */
+export async function loadJoinAdmin(actor: Actor) {
+  const [workspace, requests] = await Promise.all([
+    prisma.workspace.findUniqueOrThrow({ where: { id: actor.workspaceId }, select: { joinCode: true, joinLinkEnabled: true, emailDomain: true } }),
+    listJoinRequests(prisma, actor),
+  ]);
+  return { workspace, requests };
+}
+
+export const approveFor = (actor: Actor, mailer: Mailer, applicantId: string, roles: { appRole: AppRole; jobRole: JobRole }, baseUrl: string) =>
+  approveApplicant(prisma, actor, mailer, applicantId, roles, baseUrl);
+export const rejectFor = (actor: Actor, applicantId: string) => rejectApplicant(prisma, actor, applicantId);
+export const undoRejectFor = (actor: Actor, applicantId: string) => undoReject(prisma, actor, applicantId);
+export const resetLinkFor = (actor: Actor) => resetJoinLink(prisma, actor);
+export const setLinkEnabledFor = (actor: Actor, enabled: boolean) => setJoinLinkEnabled(prisma, actor, enabled);

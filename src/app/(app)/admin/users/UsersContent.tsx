@@ -10,18 +10,64 @@ import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
+import { loadJoinAdmin, requestBaseUrl } from "@/lib/joinDeps";
+import { InvitedList, type InviteRow } from "./InvitedList";
+import { InviteLinkCard } from "./InviteLinkCard";
+import { MemberTabs, parseMemberTab } from "./MemberTabs";
+import { RequestsList, type RequestRow } from "./RequestsList";
 import { ActiveToggle, AddPersonForm, EditUserForm, LoginEmailForm, PasswordForm } from "./UserForms";
 
 function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
   return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
 }
 
-/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
-export async function UsersContent() {
+const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
+
+/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. `tab`: members | invited | requests. */
+export async function UsersContent({ tab }: { tab?: string } = {}) {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
+  const current = parseMemberTab(tab);
 
-  // Explicit select: rows go to client forms, so secrets (passwordHash) must never be loaded here.
+  const [{ workspace, requests }, base] = await Promise.all([loadJoinAdmin(viewer), requestBaseUrl()]);
+  const toRow = (r: (typeof requests.pending)[number]): RequestRow => ({ applicantId: r.applicantId, name: r.name, email: r.email, source: r.source, requestedAt: when.format(r.requestedAt) });
+
+  let panel: React.ReactNode;
+  let count: number | undefined;
+  if (current === "invited") {
+    const invites = await loadInvites(db);
+    panel = <InvitedList invites={invites} />;
+  } else if (current === "requests") {
+    panel = <RequestsList pending={requests.pending.map(toRow)} rejected={requests.rejected.map(toRow)} />;
+  } else {
+    const loaded = await loadMembers(db);
+    count = loaded.users.length;
+    panel = loaded.view;
+  }
+
+  return (
+    <>
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
+        description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
+      <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
+      <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
+      {panel}
+    </>
+  );
+}
+
+async function loadInvites(db: Awaited<ReturnType<typeof requireScope>>["db"]): Promise<InviteRow[]> {
+  const now = Date.now();
+  const rows = await db.invite.findMany({
+    where: { acceptedAt: null, revokedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, email: true, appRole: true, jobRole: true, expiresAt: true, invitedBy: { select: { name: true } } },
+  });
+  return rows.map((i) => ({ id: i.id, email: i.email, appRole: i.appRole, jobRole: i.jobRole, invitedBy: i.invitedBy.name, expiresOn: day.format(i.expiresAt), expired: i.expiresAt.getTime() <= now }));
+}
+
+async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
   const users = await db.user
     .findMany({
       orderBy: [{ active: "desc" }, { name: "asc" }],
@@ -30,11 +76,8 @@ export async function UsersContent() {
     .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash })));
   const t = tableClass({ minWidth: "min-w-[60rem]" });
 
-  return (
+  const view = (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Users" }]} title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
-        description="Any active person with a login email can sign in." />
-
       <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
         <table className={t.table}>
           <caption className="sr-only">All people</caption>
@@ -101,4 +144,5 @@ export async function UsersContent() {
       </div>
     </>
   );
+  return { users, view };
 }

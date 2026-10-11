@@ -7,7 +7,7 @@ const act = {
   saveUser: vi.fn(), addPerson: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(),
 };
 vi.mock("@/app/(app)/admin/users/actions", () => ({
-  saveLoginEmail: (...a: unknown[]) => act.saveLoginEmail(...a),
+  inviteMember: vi.fn(), resendMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn(), undoRejectRequest: vi.fn(), resetInviteLink: vi.fn(), toggleInviteLink: vi.fn(), saveLoginEmail: (...a: unknown[]) => act.saveLoginEmail(...a),
   savePassword: (...a: unknown[]) => act.savePassword(...a),
   setUserActive: (...a: unknown[]) => act.setUserActive(...a),
   saveUser: (...a: unknown[]) => act.saveUser(...a),
@@ -19,6 +19,10 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
   saveDivision: (...a: unknown[]) => act.saveDivision(...a),
 }));
 
+vi.mock("@/lib/joinDeps", () => ({
+  loadJoinAdmin: async () => ({ workspace: { joinCode: "abc123", joinLinkEnabled: true, emailDomain: null }, requests: { pending: [], rejected: [] } }),
+  requestBaseUrl: async () => "https://cloworks.test",
+}));
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() },

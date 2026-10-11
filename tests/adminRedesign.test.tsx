@@ -3,9 +3,13 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 
 vi.mock("@/app/(app)/admin/users/actions", () => ({
-  saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(),
+  inviteMember: vi.fn(), resendMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn(), undoRejectRequest: vi.fn(), resetInviteLink: vi.fn(), toggleInviteLink: vi.fn(), saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(),
 }));
 vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn() }));
+vi.mock("@/lib/joinDeps", () => ({
+  loadJoinAdmin: async () => ({ workspace: { joinCode: "abc123", joinLinkEnabled: true, emailDomain: null }, requests: { pending: [], rejected: [] } }),
+  requestBaseUrl: async () => "https://cloworks.test",
+}));
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
   user: { findMany: vi.fn() },
@@ -56,13 +60,13 @@ describe("admin chips", () => {
 });
 
 describe("Users page", () => {
-  it("one h1 via PageHeader, Users | Lists switcher, card headings", async () => {
+  it("one h1 via PageHeader, Members | Lists switcher, card headings", async () => {
     render(await UsersContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["People and access"]);
     const nav = screen.getByRole("navigation", { name: "Admin sections" });
-    expect(within(nav).getByRole("link", { name: "Users" }).getAttribute("aria-current")).toBe("page");
+    expect(within(nav).getByRole("link", { name: "Members" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Add person"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Invite link", "Add person"]);
   });
   it("table: avatar + name + full name/title, role chips, login email, active chip, unique Edit summaries", async () => {
     render(await UsersContent());
