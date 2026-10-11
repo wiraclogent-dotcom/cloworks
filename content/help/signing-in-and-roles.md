@@ -6,7 +6,15 @@ order: 2
 
 ## Signing in
 
-Sign in with your company email address and the password an admin gave you. If you have no password yet or forgot it, ask an admin to set a new one.
+Sign in with your email address and your password, or with **Continue with Google** if your workspace uses it. Use the eye button in the password field to see what you typed.
+
+Tick **Remember me** to stay signed in on this device for 30 days. Without it, you are signed out 24 hours after signing in. Google sign-ins always last 24 hours.
+
+If you forgot your password, ask an admin to set a new one.
+
+## New here?
+
+Choose **Create an account** on the sign-in page, or open the invite email or invite link an admin sent you. After you confirm your email with the 6-digit code we send, you either join straight away (email invite) or wait in the lobby until an admin approves you. The lobby moves you in as soon as you are approved.
 
 ## Your first sign-in
 
