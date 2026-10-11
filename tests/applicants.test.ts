@@ -108,20 +108,92 @@ describe("applicants", () => {
     expect((await db.raw.applicant.findUniqueOrThrow({ where: { email } })).name).toBe("Andi");
   });
 
-  it("sign-up again while unverified overwrites name, password and code", async () => {
+  it("sign-up again while unverified replaces the row with a fresh id (C1)", async () => {
     const email = `${uniq("over")}@gmail.com`;
-    const { d, sent } = deps();
-    const a = await signUp(d, { name: "First", email, password: PASSWORD });
+    const t0 = new Date();
+    const first = deps({ now: t0 });
+    const a = await signUp(first.d, { name: "First", email, password: PASSWORD });
     const before = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
-    const b = await signUp(d, { name: "Second", email, password: "another long password" });
-    expect(b.applicantId).toBe(a.applicantId);
+    // Owner signs up 2 minutes later: new id, new name/password, a new code is sent.
+    const later = deps({ now: new Date(t0.getTime() + 120_000) });
+    const b = await signUp(later.d, { name: "Second", email, password: "another long password" });
+    expect(b.applicantId).not.toBe(a.applicantId);
+    expect(await db.raw.applicant.findUnique({ where: { id: a.applicantId! } })).toBeNull();
+    expect(await lobbyState(db.raw, a.applicantId!)).toBeNull();
     const after = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
+    expect(after.id).toBe(b.applicantId);
     expect(after.name).toBe("Second");
     expect(after.passwordHash).not.toBe(before.passwordHash);
     expect(after.codeHash).not.toBe(before.codeHash);
-    expect(sent).toHaveLength(2);
-    expect(await errCode(verifyCode(d, a.applicantId!, codeOf(sent[0])))).toBe("CODE_INVALID");
-    expect(await errCode(verifyCode(d, a.applicantId!, codeOf(sent[1])))).toBe("OK");
+    expect(after.createdAt.getTime()).toBe(before.createdAt.getTime());
+    expect(later.sent).toHaveLength(1);
+    // The earlier session's id can't be verified any more.
+    expect(await errCode(verifyCode(later.d, a.applicantId!, codeOf(first.sent[0])))).toBe("CODE_INVALID");
+    expect(await errCode(verifyCode(later.d, b.applicantId!, codeOf(first.sent[0])))).toBe("CODE_INVALID");
+    expect(await errCode(verifyCode(later.d, b.applicantId!, codeOf(later.sent[0])))).toBe("OK");
+  });
+
+  it("re-sign-up within 60 s or over the hourly cap: no throw, no email, old code still works (I3)", async () => {
+    const email = `${uniq("squat")}@gmail.com`;
+    const t0 = new Date();
+    const at = (s: number) => deps({ now: new Date(t0.getTime() + s * 1000) });
+    const owner = at(0);
+    const a = await signUp(owner.d, { name: "Owner", email, password: PASSWORD });
+    const firstRow = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
+    // Within the gap.
+    const quick = at(10);
+    const b = await signUp(quick.d, { name: "Squatter", email, password: "squatter password!" });
+    expect(b.applicantId).toBeTruthy();
+    expect(b.applicantId).not.toBe(a.applicantId);
+    expect(quick.sent).toHaveLength(0);
+    let row = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
+    expect(row.codeHash).toBe(firstRow.codeHash);
+    expect(row.codesSentInWindow).toBe(1);
+    // Fill the hourly window (sends 2..5), then one more sign-up: still no throw and no email.
+    for (let i = 1; i <= 4; i++) expect((await (async () => { const x = at(61 * i); await signUp(x.d, { name: "S", email, password: PASSWORD }); return x.sent.length; })())).toBe(1);
+    const over = at(61 * 5);
+    const c = await signUp(over.d, { name: "S", email, password: PASSWORD });
+    expect(c.applicantId).toBeTruthy();
+    expect(over.sent).toHaveLength(0);
+    row = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
+    expect(row.codesSentInWindow).toBe(5);
+    expect(row.createdAt.getTime()).toBe(firstRow.createdAt.getTime());
+  });
+
+  it("repeated re-sign-ups don't keep a squatted row alive past 7 days (I3)", async () => {
+    const email = `${uniq("keepalive")}@gmail.com`;
+    const day = 24 * 3_600_000;
+    const t0 = Date.now() - 10 * day;
+    await signUp(deps({ now: new Date(t0) }).d, { name: "S", email, password: PASSWORD });
+    await signUp(deps({ now: new Date(t0 + 5 * day) }).d, { name: "S", email, password: PASSWORD });
+    await signUp(deps().d, { name: "N", email: `${uniq("other")}@gmail.com`, password: PASSWORD });
+    expect(await db.raw.applicant.findUnique({ where: { email } })).toBeNull();
+  });
+
+  it("two concurrent sign-ups for the same new email: no throw, one row (I2)", async () => {
+    const email = `${uniq("race")}@gmail.com`;
+    const x = deps();
+    const results = await Promise.all([
+      signUp(x.d, { name: "A", email, password: PASSWORD }),
+      signUp(x.d, { name: "B", email, password: PASSWORD }),
+    ]);
+    expect(results.every((r) => typeof r.applicantId === "string")).toBe(true);
+    expect(await db.raw.applicant.count({ where: { email } })).toBe(1);
+    expect(x.sent.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("parallel wrong guesses can't exceed 5 attempts (I1)", async () => {
+    const { d, sent } = deps();
+    const { applicantId } = await signUp(d, { name: "A", email: `${uniq("par")}@gmail.com`, password: PASSWORD });
+    const right = codeOf(sent[0]);
+    const guesses = Array.from({ length: 20 }, (_, i) => String((Number(right) + 1 + i) % 1_000_000).padStart(6, "0"));
+    const results = await Promise.all(guesses.map((g) => errCode(verifyCode(d, applicantId!, g))));
+    expect(results.filter((r) => r === "CODE_INVALID").length).toBeLessThanOrEqual(4);
+    expect(results.every((r) => r === "CODE_INVALID" || r === "TOO_MANY")).toBe(true);
+    const row = await db.raw.applicant.findUniqueOrThrow({ where: { id: applicantId! } });
+    expect(row.codeAttempts).toBeLessThanOrEqual(5);
+    expect(await errCode(verifyCode(d, applicantId!, right))).toBe("TOO_MANY");
+    expect((await db.raw.applicant.findUniqueOrThrow({ where: { id: applicantId! } })).emailVerifiedAt).toBeNull();
   });
 
   it("wrong code 5 times → TOO_MANY, then even the right code fails", async () => {
@@ -247,7 +319,8 @@ describe("applicants", () => {
     const { applicantId } = await signUp(d, { name: "A", email: `${uniq("reset")}@gmail.com`, password: PASSWORD, joinCode: old });
     await db.raw.workspace.update({ where: { id: "clogent" }, data: { joinCode: newJoinCode() } });
     expect(await describeJoinCode(db.raw, old)).toBeNull();
-    expect(await errCode(verifyCode(d, applicantId!, codeOf(sent[0])))).toBe("LINK_INVALID");
+    // Verification is committed; the notice says why no request was made (R4).
+    expect(await verifyCode(d, applicantId!, codeOf(sent[0]))).toEqual({ joined: false, notice: "LINK_INVALID" });
     let row = await db.raw.applicant.findUniqueOrThrow({ where: { id: applicantId! } });
     expect(row.emailVerifiedAt).not.toBeNull();
     expect(row.requestedWorkspaceId).toBeNull();
@@ -284,6 +357,19 @@ describe("applicants", () => {
     expect((await db.raw.applicant.findUniqueOrThrow({ where: { id } })).rejectedAt).not.toBeNull();
   });
 
+  it("rejected applicant can't request another workspace either (I4)", async () => {
+    const ws = await clogent();
+    const other = await db.raw.workspace.create({ data: { name: "Other Co", slug: uniq("other-co"), joinCode: newJoinCode() } });
+    const { id } = await verified(`${uniq("rej2")}@gmail.com`, ws.joinCode!);
+    await db.raw.applicant.update({ where: { id }, data: { rejectedAt: new Date() } });
+    const { d, requested } = deps();
+    expect(await errCode(requestJoinByCode(d, id, other.joinCode!))).toBe("REJECTED");
+    const row = await db.raw.applicant.findUniqueOrThrow({ where: { id } });
+    expect(row.requestedWorkspaceId).toBe("clogent");
+    expect(row.rejectedAt).not.toBeNull();
+    expect(requested).toHaveLength(0);
+  });
+
   it("deactivated member's email → INACTIVE_MEMBER on requestJoinByCode/verify", async () => {
     const ws = await clogent();
     // verify: the person signed up, then an admin created and deactivated a user with that email.
@@ -291,7 +377,8 @@ describe("applicants", () => {
     const a = deps();
     const { applicantId } = await signUp(a.d, { name: "A", email: e1, password: PASSWORD });
     await db.prisma.user.create({ data: { name: uniq("I"), fullName: "Inactive", email: e1, active: false } });
-    expect(await errCode(verifyCode(a.d, applicantId!, codeOf(a.sent[0])))).toBe("INACTIVE_MEMBER");
+    expect(await verifyCode(a.d, applicantId!, codeOf(a.sent[0]))).toEqual({ joined: false, notice: "INACTIVE_MEMBER" });
+    expect((await db.raw.applicant.findUniqueOrThrow({ where: { id: applicantId! } })).emailVerifiedAt).not.toBeNull();
     expect((await db.raw.applicant.findUniqueOrThrow({ where: { id: applicantId! } })).requestedWorkspaceId).toBeNull();
     expect(a.requested).toHaveLength(0);
     // requestJoinByCode: a verified applicant in the lobby.
@@ -339,17 +426,31 @@ describe("applicants", () => {
     expect(await lobbyState(db.raw, g.id)).toEqual({ kind: "none" });
   });
 
-  it("oauthApplicant verifies an unverified applicant and uses its join intent", async () => {
+  it("oauthApplicant replaces an unverified row: fresh id, Google name, no password, no join intent (C2)", async () => {
     const ws = await clogent();
     const { d } = deps();
     const email = `${uniq("gl")}@gmail.com`;
-    const { applicantId } = await signUp(d, { name: "Form Name", email, password: PASSWORD, joinCode: ws.joinCode! });
+    const { applicantId } = await signUp(d, { name: "Attacker", email, password: PASSWORD, joinCode: ws.joinCode! });
     const requested: string[] = [];
     const a = await oauthApplicant({ db: db.raw, onRequest: async (id) => { requested.push(id); } }, { email, name: "Google Name" });
-    expect(a.id).toBe(applicantId);
+    expect(a.id).not.toBe(applicantId);
+    expect(await db.raw.applicant.findUnique({ where: { id: applicantId! } })).toBeNull();
+    expect(a.name).toBe("Google Name");
+    expect(a.passwordHash).toBeNull();
+    expect(a.pendingJoinCode).toBeNull();
     expect(a.emailVerifiedAt).not.toBeNull();
     expect(a.codeHash).toBeNull();
-    expect(a.requestSource).toBe("LINK");
+    expect(a.requestedWorkspaceId).toBeNull();
+    expect(requested).toHaveLength(0);
+  });
+
+  it("oauthApplicant on an unverified company-domain row still requests by domain", async () => {
+    const { d } = deps();
+    const email = `${uniq("gld")}@clogent.co.id`;
+    await signUp(d, { name: "Someone", email, password: PASSWORD });
+    const requested: string[] = [];
+    const a = await oauthApplicant({ db: db.raw, onRequest: async (id) => { requested.push(id); } }, { email, name: "Real" });
+    expect(a.requestSource).toBe("DOMAIN");
     expect(requested).toEqual([a.id]);
   });
 

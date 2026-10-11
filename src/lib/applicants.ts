@@ -1,4 +1,4 @@
-import type { Applicant, JoinSource, PrismaClient } from "@prisma/client";
+import { Prisma, type Applicant, type JoinSource, type PrismaClient } from "@prisma/client";
 import type { Mailer } from "@/lib/mailer";
 import { checkNewPassword, hashPassword } from "@/lib/password";
 import { alreadyHaveAccountEmail, codeEmail } from "@/lib/joinEmails";
@@ -35,6 +35,10 @@ export type Deps = {
 const HOUR_MS = 3_600_000;
 
 const nowOf = (d: { now?: Date }) => d.now ?? new Date();
+
+const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+
+export type JoinNotice = "LINK_INVALID" | "INACTIVE_MEMBER" | "REJECTED";
 
 /** Trimmed, lowercased; one "@" with something on both sides, no spaces. */
 function normalize(raw: string): string {
@@ -79,9 +83,15 @@ function freshCode(secret: string, now: Date, windowCount: number) {
 }
 
 /**
- * Creates (or overwrites an unverified) applicant and emails a 6-digit code. If the email already belongs to a user
+ * Creates (or replaces an unverified) applicant and emails a 6-digit code. If the email already belongs to a user
  * or a verified applicant, sends "you already have an account" instead and returns `applicantId: null`, so the page
  * looks the same either way.
+ *
+ * Replacing an unverified row always gives it a fresh id, so a session issued for the earlier sign-up (possibly an
+ * attacker's) never points at the row the owner verifies. Over the resend limits (60 s gap, 5 per hour) the row is
+ * still replaced but no email goes out and nothing is thrown: the earlier code keeps working (attempts carried over)
+ * and the owner can use Resend once the window allows. `createdAt` keeps the first sign-up time, so the 7-day cleanup
+ * still applies.
  */
 export async function signUp(
   d: Deps,
@@ -102,59 +112,91 @@ export async function signUp(
 
   // Hash before branching so both outcomes take about as long.
   const passwordHash = await hashPassword(input.password);
+  const fields = { email, name, passwordHash, joinCode };
+  try {
+    return await signUpOnce(d, now, fields);
+  } catch (e) {
+    // A concurrent sign-up for the same email won the insert (or replaced the row first): go round once more.
+    if (!isUniqueViolation(e) && !(e instanceof RowGone)) throw e;
+    return signUpOnce(d, now, fields);
+  }
+}
 
-  const [user, existing] = await Promise.all([findUserByEmail(d.db, email), d.db.applicant.findUnique({ where: { email } })]);
+class RowGone extends Error {}
+
+async function signUpOnce(
+  d: Deps,
+  now: Date,
+  f: { email: string; name: string; passwordHash: string; joinCode: string | null },
+): Promise<{ applicantId: string | null }> {
+  const [user, existing] = await Promise.all([findUserByEmail(d.db, f.email), d.db.applicant.findUnique({ where: { email: f.email } })]);
   if (user || existing?.emailVerifiedAt) {
-    await d.mailer.send({ to: email, ...alreadyHaveAccountEmail({ signinUrl: `${d.baseUrl}/signin` }) });
+    await d.mailer.send({ to: f.email, ...alreadyHaveAccountEmail({ signinUrl: `${d.baseUrl}/signin` }) });
     return { applicantId: null };
   }
+  const base = { email: f.email, name: f.name, passwordHash: f.passwordHash, pendingJoinCode: f.joinCode };
 
-  let id: string;
-  let code: string;
-  if (existing) {
-    const windowCount = sendsInWindow(existing, now);
-    if (windowCount >= RESENDS_PER_HOUR) throw new JoinError("RATE_LIMITED", "Too many codes sent. Try again in an hour.");
-    const fresh = freshCode(d.secret, now, windowCount);
-    code = fresh.code;
-    await d.db.applicant.update({
-      where: { id: existing.id },
-      data: { name, passwordHash, pendingJoinCode: joinCode, createdAt: now, failedLogins: 0, lockedUntil: null, ...fresh.data },
-    });
-    id = existing.id;
-  } else {
+  if (!existing) {
     const fresh = freshCode(d.secret, now, 0);
-    code = fresh.code;
-    const row = await d.db.applicant.create({
-      data: { email, name, passwordHash, pendingJoinCode: joinCode, createdAt: now, ...fresh.data },
-    });
-    id = row.id;
+    const row = await d.db.applicant.create({ data: { ...base, createdAt: now, ...fresh.data } });
+    await d.mailer.send({ to: f.email, ...codeEmail(fresh.code) });
+    return { applicantId: row.id };
   }
-  await d.mailer.send({ to: email, ...codeEmail(code) });
-  return { applicantId: id };
+
+  const tooSoon = existing.codeSentAt !== null && now.getTime() - existing.codeSentAt.getTime() < RESEND_GAP_MS;
+  const windowCount = sendsInWindow(existing, now);
+  const fresh = !tooSoon && windowCount < RESENDS_PER_HOUR ? freshCode(d.secret, now, windowCount) : null;
+  const kept = {
+    codeHash: existing.codeHash,
+    codeExpiresAt: existing.codeExpiresAt,
+    codeAttempts: existing.codeAttempts,
+    codeSentAt: existing.codeSentAt,
+    codesSentInWindow: existing.codesSentInWindow,
+  };
+  const row = await d.db.$transaction(async (tx) => {
+    const del = await tx.applicant.deleteMany({ where: { id: existing.id, emailVerifiedAt: null } });
+    if (del.count === 0) throw new RowGone();
+    return tx.applicant.create({ data: { ...base, createdAt: existing.createdAt, ...(fresh ? fresh.data : kept) } });
+  });
+  if (fresh) await d.mailer.send({ to: f.email, ...codeEmail(fresh.code) });
+  return { applicantId: row.id };
 }
 
 /**
  * Checks the code (15 min, 5 attempts). On success marks the email verified and routes the applicant: a saved join
- * link → request with source LINK; else a workspace on the email's domain → request with source DOMAIN.
- * `joined` = a join request now exists. Throws LINK_INVALID (after verifying) when the saved link no longer works and
- * no domain workspace matched.
+ * link -> request with source LINK; else a workspace on the email's domain -> request with source DOMAIN.
+ * `joined` = a join request now exists. Once verification is committed this never throws: `notice` says why no
+ * request was made (stale link, deactivated member, rejected). CODE_INVALID / CODE_EXPIRED / TOO_MANY are thrown
+ * before anything is committed.
+ *
+ * Each guess consumes an attempt atomically before the comparison, so parallel guesses can't exceed the limit.
  */
-export async function verifyCode(d: Deps, applicantId: string, code: string): Promise<{ joined: boolean }> {
+export async function verifyCode(
+  d: Deps,
+  applicantId: string,
+  code: string,
+): Promise<{ joined: boolean; notice?: JoinNotice }> {
   const now = nowOf(d);
   const a = await d.db.applicant.findUnique({ where: { id: applicantId } });
   if (!a) throw new JoinError("CODE_INVALID", "That code isn't right.");
   if (a.emailVerifiedAt) return { joined: a.requestedWorkspaceId !== null };
-  if (a.codeAttempts >= CODE_MAX_ATTEMPTS) throw new JoinError("TOO_MANY", "Too many wrong codes. Ask for a new one.");
-  if (!a.codeHash || !a.codeExpiresAt) throw new JoinError("CODE_INVALID", "That code isn't right.");
-  if (now.getTime() > a.codeExpiresAt.getTime()) throw new JoinError("CODE_EXPIRED", "That code has expired. Ask for a new one.");
+  if (!a.codeHash) throw new JoinError("CODE_INVALID", "That code isn't right.");
+
+  const consumed = await d.db.applicant.updateMany({
+    where: { id: a.id, codeHash: a.codeHash, emailVerifiedAt: null, codeAttempts: { lt: CODE_MAX_ATTEMPTS }, codeExpiresAt: { gt: now } },
+    data: { codeAttempts: { increment: 1 } },
+  });
+  if (consumed.count === 0) {
+    const cur = await d.db.applicant.findUnique({ where: { id: a.id } });
+    if (cur?.emailVerifiedAt) return { joined: cur.requestedWorkspaceId !== null };
+    if (!cur || cur.codeHash !== a.codeHash || !cur.codeExpiresAt) throw new JoinError("CODE_INVALID", "That code isn't right.");
+    if (cur.codeAttempts >= CODE_MAX_ATTEMPTS) throw new JoinError("TOO_MANY", "Too many wrong codes. Ask for a new one.");
+    throw new JoinError("CODE_EXPIRED", "That code has expired. Ask for a new one.");
+  }
 
   if (!codeMatches((code ?? "").trim(), a.codeHash, d.secret)) {
-    const bumped = await d.db.applicant.updateMany({
-      where: { id: a.id, codeHash: a.codeHash, codeAttempts: { lt: CODE_MAX_ATTEMPTS } },
-      data: { codeAttempts: { increment: 1 } },
-    });
-    if (bumped.count === 0 || a.codeAttempts + 1 >= CODE_MAX_ATTEMPTS)
-      throw new JoinError("TOO_MANY", "Too many wrong codes. Ask for a new one.");
+    const cur = await d.db.applicant.findUnique({ where: { id: a.id }, select: { codeAttempts: true } });
+    if (!cur || cur.codeAttempts >= CODE_MAX_ATTEMPTS) throw new JoinError("TOO_MANY", "Too many wrong codes. Ask for a new one.");
     throw new JoinError("CODE_INVALID", "That code isn't right.");
   }
 
@@ -169,9 +211,7 @@ export async function verifyCode(d: Deps, applicantId: string, code: string): Pr
     throw new JoinError("CODE_INVALID", "That code isn't right.");
   }
 
-  const r = await routeVerified(d, a.id, a.email, a.pendingJoinCode, now);
-  if (r.linkInvalid && !r.joined) throw new JoinError("LINK_INVALID", "This join link is no longer valid. Ask your admin for a new one.");
-  return { joined: r.joined };
+  return routeVerified(d, a.id, a.email, a.pendingJoinCode, now);
 }
 
 /** New code by email: at least 60 s apart, at most 5 sends per hour (the sign-up code counts). */
@@ -205,10 +245,10 @@ export async function requestJoinByCode(d: Deps, applicantId: string, joinCode: 
 }
 
 /**
- * Applicant for a trusted OAuth identity (email counts as verified). Creates one if needed, or verifies an
- * unverified one, then routes it like verifyCode. A stale saved join link is dropped silently here (sign-in must not
- * fail). Throws INACTIVE_MEMBER for a deactivated user's email, VALIDATION for an active user's (callers sign
- * members in before reaching this).
+ * Applicant for a trusted OAuth identity (email counts as verified). Creates one if needed and routes it by email
+ * domain. An existing unverified row was made by whoever typed this email into the form (maybe not its owner), so it
+ * is replaced by a fresh row (new id, Google name, no password, no saved join link). Throws INACTIVE_MEMBER for a
+ * deactivated user's email, VALIDATION for an active user's (callers sign members in before reaching this).
  */
 export async function oauthApplicant(
   d: Pick<Deps, "db" | "now" | "onRequest">,
@@ -220,20 +260,31 @@ export async function oauthApplicant(
   if (user && !user.active) throw new JoinError("INACTIVE_MEMBER", "This email belongs to a deactivated account. Contact your admin.");
   if (user) throw new JoinError("VALIDATION", "This email already has an account.");
 
-  const existing = await d.db.applicant.findUnique({ where: { email } });
-  if (existing?.emailVerifiedAt) return existing;
-
-  let row: Applicant;
-  if (existing) {
-    row = await d.db.applicant.update({
-      where: { id: existing.id },
-      data: { emailVerifiedAt: now, codeHash: null, codeExpiresAt: null, codeAttempts: 0 },
+  const name = (profile.name ?? "").trim() || email.slice(0, email.indexOf("@"));
+  const data = { email, name, emailVerifiedAt: now, createdAt: now };
+  // null = the unverified row changed under us (go round again).
+  const create = async (): Promise<{ row: Applicant; isNew: boolean } | null> => {
+    const existing = await d.db.applicant.findUnique({ where: { email } });
+    if (existing?.emailVerifiedAt) return { row: existing, isNew: false };
+    if (!existing) return { row: await d.db.applicant.create({ data }), isNew: true };
+    const row = await d.db.$transaction(async (tx) => {
+      const del = await tx.applicant.deleteMany({ where: { id: existing.id, emailVerifiedAt: null } });
+      return del.count === 0 ? null : tx.applicant.create({ data });
     });
-  } else {
-    const name = (profile.name ?? "").trim() || email.slice(0, email.indexOf("@"));
-    row = await d.db.applicant.create({ data: { email, name, emailVerifiedAt: now, createdAt: now } });
+    return row ? { row, isNew: true } : null;
+  };
+  let got: { row: Applicant; isNew: boolean } | null;
+  try {
+    got = await create();
+  } catch (e) {
+    if (!isUniqueViolation(e)) throw e;
+    got = null;
   }
-  await routeVerified(d, row.id, email, row.pendingJoinCode, now);
+  got ??= await create();
+  if (!got) throw new JoinError("VALIDATION", "Please try again.");
+  const { row, isNew } = got;
+  if (!isNew) return row;
+  await routeVerified(d, row.id, email, null, now);
   return d.db.applicant.findUniqueOrThrow({ where: { id: row.id } });
 }
 
@@ -273,8 +324,9 @@ async function workspaceByJoinCode(db: PrismaClient, joinCode: string) {
 }
 
 /**
- * Writes the join request and notifies once. Same workspace already pending → no-op; same workspace rejected →
- * REJECTED. Asking for another workspace replaces the previous request.
+ * Writes the join request and notifies once. Same workspace already pending -> no-op. A rejected applicant can't
+ * request any workspace (REJECTED) until an admin undoes the rejection. Asking for another workspace replaces the
+ * previous request.
  */
 async function requestWorkspace(
   d: Pick<Deps, "db" | "onRequest">,
@@ -283,43 +335,51 @@ async function requestWorkspace(
   source: JoinSource,
   now: Date,
 ): Promise<void> {
-  if (a.requestedWorkspaceId === workspaceId) {
-    if (a.rejectedAt) throw new JoinError("REJECTED", "This workspace declined your request.");
-    return;
-  }
-  await d.db.applicant.update({
-    where: { id: a.id },
-    data: { requestedWorkspaceId: workspaceId, requestedAt: now, requestSource: source, rejectedAt: null, pendingJoinCode: null },
+  if (a.rejectedAt) throw new JoinError("REJECTED", "Your join request was declined. Contact the workspace admin.");
+  if (a.requestedWorkspaceId === workspaceId) return;
+  const res = await d.db.applicant.updateMany({
+    where: { id: a.id, rejectedAt: null },
+    data: { requestedWorkspaceId: workspaceId, requestedAt: now, requestSource: source, pendingJoinCode: null },
   });
+  if (res.count === 0) throw new JoinError("REJECTED", "Your join request was declined. Contact the workspace admin.");
   await d.onRequest?.(a.id);
 }
 
-/** After verification: saved join link first, then the email domain. Clears the saved link either way. */
+/**
+ * After verification: saved join link first, then the email domain. Clears the saved link either way. Never throws
+ * a JoinError: a reason for not requesting comes back as `notice`.
+ */
 async function routeVerified(
   d: Pick<Deps, "db" | "onRequest">,
   id: string,
   email: string,
   pendingJoinCode: string | null,
   now: Date,
-): Promise<{ joined: boolean; linkInvalid: boolean }> {
+): Promise<{ joined: boolean; notice?: JoinNotice }> {
   if (pendingJoinCode) await d.db.applicant.update({ where: { id }, data: { pendingJoinCode: null } });
-  await assertNotInactiveMember(d.db, email);
+  const u = await findUserByEmail(d.db, email);
+  if (u && !u.active) return { joined: false, notice: "INACTIVE_MEMBER" };
   const a = await d.db.applicant.findUniqueOrThrow({ where: { id } });
-  if (a.requestedWorkspaceId) return { joined: true, linkInvalid: false };
+  if (a.rejectedAt) return { joined: false, notice: "REJECTED" };
+  if (a.requestedWorkspaceId) return { joined: true };
 
-  let linkInvalid = false;
+  let notice: JoinNotice | undefined;
+  let target: { id: string; source: JoinSource } | null = null;
   if (pendingJoinCode) {
     const ws = await workspaceByJoinCode(d.db, pendingJoinCode);
-    if (ws) {
-      await requestWorkspace(d, a, ws.id, "LINK", now);
-      return { joined: true, linkInvalid: false };
-    }
-    linkInvalid = true;
+    if (ws) target = { id: ws.id, source: "LINK" };
+    else notice = "LINK_INVALID";
   }
-  const byDomain = await d.db.workspace.findUnique({ where: { emailDomain: domainOf(email) }, select: { id: true } });
-  if (byDomain) {
-    await requestWorkspace(d, a, byDomain.id, "DOMAIN", now);
-    return { joined: true, linkInvalid };
+  if (!target) {
+    const byDomain = await d.db.workspace.findUnique({ where: { emailDomain: domainOf(email) }, select: { id: true } });
+    if (byDomain) target = { id: byDomain.id, source: "DOMAIN" };
   }
-  return { joined: false, linkInvalid };
+  if (!target) return notice ? { joined: false, notice } : { joined: false };
+  try {
+    await requestWorkspace(d, a, target.id, target.source, now);
+  } catch (e) {
+    if (e instanceof JoinError && e.code === "REJECTED") return { joined: false, notice: "REJECTED" };
+    throw e;
+  }
+  return { joined: true };
 }
