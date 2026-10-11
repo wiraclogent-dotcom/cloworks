@@ -54,7 +54,7 @@ describe("Members page", () => {
     expect(within(nav).getByRole("link", { name: "Requests 3" }).getAttribute("href")).toBe("/admin/users?tab=requests");
     const sections = screen.getByRole("navigation", { name: "Admin sections" });
     expect(within(sections).getByRole("link", { name: "Members" }).getAttribute("href")).toBe("/admin/users");
-    expect(screen.getByRole("heading", { name: "Add person" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Add person" })).toBeNull(); // moved to its own page
   });
 
   it("invite link card: URL, Copy, Reset link, on/off switch and the domain line", async () => {
@@ -180,7 +180,7 @@ describe("Members page", () => {
   it("an unknown tab falls back to Members", async () => {
     render(await UsersContent({ tab: "nonsense" }));
     expect(within(screen.getByRole("navigation", { name: "Member views" })).getByRole("link", { name: "Members" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("heading", { name: "Add person" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Add person" })).toBeNull(); // moved to its own page
   });
 
   for (const role of ["REQUESTER", "CREATIVE", "LEAD"]) {

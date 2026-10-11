@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CalendarDays, ChartColumn, FolderKanban, LibraryBig, ListChecks, Plug, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, FolderKanban, LibraryBig, ListChecks, Plug, SquareKanban, UserPlus, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -46,6 +46,7 @@ export async function AdminNavGroup() {
   return (
     <NavGroup id="nav-admin" label="Admin" divided>
       <NavItem href="/admin/users" label="Members" icon={<Users aria-hidden="true" />} />
+      <NavItem href="/admin/add-person" label="Add person" icon={<UserPlus aria-hidden="true" />} />
       <NavItem href="/admin/lists" label="Lists" icon={<ListChecks aria-hidden="true" />} />
     </NavGroup>
   );

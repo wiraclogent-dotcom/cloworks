@@ -15,7 +15,7 @@ import { InvitedList, type InviteRow } from "./InvitedList";
 import { InviteLinkCard } from "./InviteLinkCard";
 import { MemberTabs, parseMemberTab } from "./MemberTabs";
 import { RequestsList, type RequestRow } from "./RequestsList";
-import { ActiveToggle, AddPersonForm, EditUserForm, LoginEmailForm, PasswordForm } from "./UserForms";
+import { ActiveToggle, EditUserForm, LoginEmailForm, PasswordForm } from "./UserForms";
 
 function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
   return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
@@ -132,15 +132,6 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
-        <Card>
-          <section aria-labelledby="add-person-h">
-            <CardHeader><CardTitle id="add-person-h">Add person</CardTitle></CardHeader>
-            <AddPersonForm />
-          </section>
-        </Card>
       </div>
     </>
   );

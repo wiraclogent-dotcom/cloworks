@@ -155,7 +155,7 @@ describe("admin pages gate", () => {
     expect(screen.getByRole("columnheader", { name: "Login email" })).toBeTruthy();
     expect(screen.getByText("rina@gmail.com")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Allowed emails" })).toBeNull();
-    expect(screen.getByRole("heading", { name: "Add person" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Add person" })).toBeNull(); // moved to its own page
   });
 
   it("shows whether a password is set but never loads or renders the hash", async () => {

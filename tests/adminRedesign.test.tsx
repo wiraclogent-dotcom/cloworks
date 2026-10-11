@@ -66,7 +66,7 @@ describe("Users page", () => {
     const nav = screen.getByRole("navigation", { name: "Admin sections" });
     expect(within(nav).getByRole("link", { name: "Members" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
-    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Invite link", "Add person"]);
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Invite link"]);
   });
   it("table: avatar + name + full name/title, role chips, login email, active chip, unique Edit summaries", async () => {
     render(await UsersContent());
