@@ -23,4 +23,21 @@ describe("join emails", () => {
     expect(m.text).toContain("https://x.test/signin");
     expect(m.text).toContain("ignore");
   });
+  it("without a trusted absolute url every email drops the link sentence (no bare /signin)", () => {
+    const expires = new Date("2026-10-18T00:00:00Z");
+    for (const url of ["", "/signin", "/join/invite/t"]) {
+      const mails = [
+        inviteEmail({ inviter: "Wira", workspace: "Clogent", role: "Designer", url, expires }),
+        approvedEmail({ workspace: "Clogent", url }),
+        alreadyHaveAccountEmail({ signinUrl: url }),
+        codeEmail("482913"),
+      ];
+      for (const m of mails) {
+        expect(m.text).not.toContain("/signin");
+        expect(m.text).not.toContain("/join/");
+        expect(m.text).not.toContain("http");
+      }
+    }
+    expect(approvedEmail({ workspace: "Clogent", url: "" }).text.startsWith("You're in. Clogent approved your request.")).toBe(true);
+  });
 });

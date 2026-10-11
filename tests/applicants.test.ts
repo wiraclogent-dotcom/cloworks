@@ -102,10 +102,48 @@ describe("applicants", () => {
   it("sign-up with a verified applicant's email sends already-have-account", async () => {
     const email = `${uniq("ver")}@gmail.com`;
     await verified(email);
-    const { d, sent } = deps();
+    // The code email just sent counts toward the once-an-hour limit, so come back later.
+    const { d, sent } = deps({ now: new Date(Date.now() + 61 * 60_000) });
     expect(await signUp(d, { name: "Again", email, password: PASSWORD })).toEqual({ applicantId: null });
     expect(sent[0].subject).toBe("You already have a Cloworks account");
     expect((await db.raw.applicant.findUniqueOrThrow({ where: { email } })).name).toBe("Andi");
+  });
+
+  it("already-have-account goes out at most once an hour per member address (R15)", async () => {
+    const email = `${uniq("bomb")}@clogent.co.id`;
+    await db.prisma.user.create({ data: { name: uniq("B"), fullName: "Bombed", email } });
+    const t0 = new Date("2026-10-11T08:00:00Z");
+    const sends: Msg[] = [];
+    for (const [now, name] of [[t0, "A"], [new Date(t0.getTime() + 30 * 60_000), "B"]] as const) {
+      const { d, sent } = deps({ now });
+      expect(await signUp(d, { name, email, password: PASSWORD })).toEqual({ applicantId: null });
+      sends.push(...sent);
+    }
+    expect(sends).toHaveLength(1);
+    const { d, sent } = deps({ now: new Date(t0.getTime() + 61 * 60_000) });
+    expect(await signUp(d, { name: "C", email, password: PASSWORD })).toEqual({ applicantId: null });
+    sends.push(...sent);
+    expect(sends).toHaveLength(2);
+  });
+
+  it("already-have-account for a verified applicant shares the hourly limit with code emails", async () => {
+    const email = `${uniq("vbomb")}@gmail.com`;
+    await verified(email);
+    const soon = deps();
+    expect(await signUp(soon.d, { name: "X", email, password: PASSWORD })).toEqual({ applicantId: null });
+    expect(soon.sent).toHaveLength(0);
+    const later = deps({ now: new Date(Date.now() + 61 * 60_000) });
+    await signUp(later.d, { name: "X", email, password: PASSWORD });
+    expect(later.sent).toHaveLength(1);
+  });
+
+  it("without a base url the notice has no link", async () => {
+    const email = `${uniq("nolink")}@clogent.co.id`;
+    await db.prisma.user.create({ data: { name: uniq("N"), fullName: "No link", email } });
+    const { d, sent } = deps();
+    await signUp({ ...d, baseUrl: "" }, { name: "Someone", email, password: PASSWORD });
+    expect(sent).toHaveLength(1);
+    expect(sent[0].text).not.toContain("/signin");
   });
 
   it("sign-up again while unverified replaces the row with a fresh id (C1)", async () => {

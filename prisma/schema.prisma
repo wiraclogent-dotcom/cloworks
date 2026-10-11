@@ -77,24 +77,26 @@ model Workspace {
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String?   @unique
-  name               String
-  fullName           String
-  title              String?
-  department         String?
-  appRole            AppRole   @default(REQUESTER)
-  jobRole            JobRole   @default(OTHER)
-  aliases            String[]
-  active             Boolean   @default(true)
+  id                  String    @id @default(cuid())
+  email               String?   @unique
+  name                String
+  fullName            String
+  title               String?
+  department          String?
+  appRole             AppRole   @default(REQUESTER)
+  jobRole             JobRole   @default(OTHER)
+  aliases             String[]
+  active              Boolean   @default(true)
   /// scrypt hash for email + password sign-in; null = no password set.
-  passwordHash       String?
+  passwordHash        String?
   /// Bumped on every password change; sessions issued under an older version end.
-  passwordVersion    Int       @default(0)
-  failedLogins       Int       @default(0)
-  lockedUntil        DateTime?
+  passwordVersion     Int       @default(0)
+  failedLogins        Int       @default(0)
+  lockedUntil         DateTime?
+  /// Last "you already have an account" email (sign-up with this email); at most one per hour.
+  accountNoticeSentAt DateTime?
   /// Set when an admin sets or resets the password; cleared when the person changes it.
-  mustChangePassword Boolean   @default(false)
+  mustChangePassword  Boolean   @default(false)
 
   requested           Request[]       @relation("RequestRequester")
   assigned            Request[]       @relation("RequestAssignee")

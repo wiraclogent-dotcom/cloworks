@@ -1,5 +1,11 @@
 export type Mail = { subject: string; text: string };
 
+/**
+ * Only absolute http(s) links go into an email. An empty or relative url (no trusted base URL is configured, e.g.
+ * production without APP_BASE_URL) means the link sentence is left out rather than sending a bare "/signin".
+ */
+const linkOf = (url: string | undefined): string | null => (url && /^https?:\/\/[^\s]+$/.test(url) ? url : null);
+
 /** Sign-up verification code. */
 export function codeEmail(code: string): Mail {
   return {
@@ -13,7 +19,9 @@ export function inviteEmail(p: { inviter: string; workspace: string; role: strin
   const date = p.expires.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
   return {
     subject: `${p.inviter} invited you to join ${p.workspace} on Cloworks`,
-    text: `${p.inviter} invited you to join ${p.workspace} on Cloworks as ${p.role}.\n\nAccept the invite: ${p.url}\n\nThis link expires on ${date}.`,
+    text: linkOf(p.url)
+      ? `${p.inviter} invited you to join ${p.workspace} on Cloworks as ${p.role}.\n\nAccept the invite: ${linkOf(p.url)}\n\nThis link expires on ${date}.`
+      : `${p.inviter} invited you to join ${p.workspace} on Cloworks as ${p.role}.\n\nAsk ${p.inviter} for the invite link. The invite expires on ${date}.`,
   };
 }
 
@@ -21,7 +29,9 @@ export function inviteEmail(p: { inviter: string; workspace: string; role: strin
 export function approvedEmail(p: { workspace: string; url: string }): Mail {
   return {
     subject: `You're in: ${p.workspace} approved your request`,
-    text: `You're in. ${p.workspace} approved your request.\n\nSign in to get started: ${p.url}`,
+    text: linkOf(p.url)
+      ? `You're in. ${p.workspace} approved your request.\n\nSign in to get started: ${linkOf(p.url)}`
+      : `You're in. ${p.workspace} approved your request.\n\nSign in to Cloworks to get started.`,
   };
 }
 
@@ -29,6 +39,8 @@ export function approvedEmail(p: { workspace: string; url: string }): Mail {
 export function alreadyHaveAccountEmail(p: { signinUrl: string }): Mail {
   return {
     subject: "You already have a Cloworks account",
-    text: `You already have a Cloworks account. Sign in here: ${p.signinUrl}\n\nIf this wasn't you, you can ignore this email.`,
+    text: linkOf(p.signinUrl)
+      ? `You already have a Cloworks account. Sign in here: ${linkOf(p.signinUrl)}\n\nIf this wasn't you, you can ignore this email.`
+      : `You already have a Cloworks account. Sign in to Cloworks with this email.\n\nIf this wasn't you, you can ignore this email.`,
   };
 }

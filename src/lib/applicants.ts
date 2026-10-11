@@ -143,7 +143,21 @@ async function signUpOnce(
 ): Promise<{ applicantId: string | null }> {
   const [user, existing] = await Promise.all([findUserByEmail(d.db, f.email), d.db.applicant.findUnique({ where: { email: f.email } })]);
   if (user || existing?.emailVerifiedAt) {
-    await d.mailer.send({ to: f.email, ...alreadyHaveAccountEmail({ signinUrl: `${d.baseUrl}/signin` }) });
+    // At most one notice per hour per address, so the sign-up form can't be used to mail-bomb an inbox. Claimed with a
+    // conditional update (concurrent sign-ups send once). A verified applicant's last code email counts too.
+    const since = new Date(now.getTime() - HOUR_MS);
+    const claimed = user
+      ? await d.db.user.updateMany({
+          where: { id: user.id, OR: [{ accountNoticeSentAt: null }, { accountNoticeSentAt: { lte: since } }] },
+          data: { accountNoticeSentAt: now },
+        })
+      : await d.db.applicant.updateMany({
+          where: { id: existing!.id, emailVerifiedAt: { not: null }, OR: [{ codeSentAt: null }, { codeSentAt: { lte: since } }] },
+          data: { codeSentAt: now },
+        });
+    if (claimed.count > 0) {
+      await d.mailer.send({ to: f.email, ...alreadyHaveAccountEmail({ signinUrl: d.baseUrl ? `${d.baseUrl}/signin` : "" }) });
+    }
     return { applicantId: null };
   }
   const base = { email: f.email, name: f.name, passwordHash: f.passwordHash, pendingJoinCode: f.joinCode };

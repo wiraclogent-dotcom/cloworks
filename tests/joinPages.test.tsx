@@ -6,7 +6,8 @@ import { render, screen, cleanup } from "@testing-library/react";
 const redirect = vi.fn((url: string) => { throw new Error(`NEXT_REDIRECT:${url}`); });
 vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
 vi.mock("next/font/google", () => ({ Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
-vi.mock("next/headers", () => ({ headers: async () => new Headers({ host: "app.test", "x-forwarded-proto": "https" }) }));
+const reqHeaders = vi.hoisted(() => ({ current: { host: "app.test", "x-forwarded-proto": "https" } as Record<string, string> }));
+vi.mock("next/headers", () => ({ headers: async () => new Headers(reqHeaders.current) }));
 const signIn = vi.fn();
 const signOut = vi.fn();
 vi.mock("@/lib/auth", () => ({ auth: vi.fn(), signIn: (...a: unknown[]) => signIn(...a), signOut: (...a: unknown[]) => signOut(...a) }));
@@ -107,6 +108,23 @@ describe("/signup", () => {
       name: "Andi", email: "andi@gmail.com", password: "long-enough-1", joinCode: "abc",
     });
     expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", redirectTo: "/verify?next=%2Fjoin%2Fabc" });
+  });
+  it("never derives email links from request headers in production (R14)", async () => {
+    const { requestBaseUrl } = await import("@/lib/joinDeps");
+    reqHeaders.current = { host: "app.test", "x-forwarded-host": "evil.example", "x-forwarded-proto": "https" };
+    try {
+      vi.stubEnv("NODE_ENV", "production");
+      expect(await requestBaseUrl()).toBe("");
+      vi.stubEnv("APP_BASE_URL", "https://cloworks.example");
+      expect(await requestBaseUrl()).toBe("https://cloworks.example");
+      vi.stubEnv("APP_BASE_URL", "");
+      vi.stubEnv("NODE_ENV", "development");
+      expect(await requestBaseUrl()).toBe("https://evil.example");
+      reqHeaders.current = { host: "localhost:3000" };
+      expect(await requestBaseUrl()).toBe("http://localhost:3000");
+    } finally {
+      reqHeaders.current = { host: "app.test", "x-forwarded-proto": "https" };
+    }
   });
   it("prefers APP_BASE_URL for email links", async () => {
     vi.stubEnv("APP_BASE_URL", "https://cloworks.example/");

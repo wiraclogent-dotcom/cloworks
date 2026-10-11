@@ -43,7 +43,7 @@ async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: strin
     inviter: inviter?.fullName || inviter?.name || "Your admin",
     workspace: workspace.name,
     role: roleLabel(inv),
-    url: `${baseUrl.replace(/\/+$/, "")}/join/invite/${token}`,
+    url: baseUrl ? `${baseUrl.replace(/\/+$/, "")}/join/invite/${token}` : "",
     expires: expiresAt,
   });
   await mailer.send({ to: inv.email, ...mail });

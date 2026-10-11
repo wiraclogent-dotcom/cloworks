@@ -118,7 +118,7 @@ export async function approveApplicant(
 
   await bestEffort(async () => {
     const ws = await db.workspace.findUniqueOrThrow({ where: { id: actor.workspaceId }, select: { name: true } });
-    const mail = approvedEmail({ workspace: ws.name, url: `${baseUrl}/signin` });
+    const mail = approvedEmail({ workspace: ws.name, url: baseUrl ? `${baseUrl}/signin` : "" });
     await mailer.send({ to: user.email, ...mail });
   });
   return { userId: user.id };

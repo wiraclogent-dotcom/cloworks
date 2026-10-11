@@ -7,12 +7,14 @@ import { safeBaseUrl } from "./notify";
 import { codeSecret } from "./joinTokens";
 
 /**
- * Origin for links in emails: APP_BASE_URL when set, else this request's origin (Host + x-forwarded-proto). Only an
- * http(s) origin is ever returned.
+ * Origin for links in emails: APP_BASE_URL when set. Outside production only, this request's origin (Host /
+ * x-forwarded-host + x-forwarded-proto) as a dev convenience; in production those headers are attacker-controlled, so
+ * without APP_BASE_URL the result is "" and emails go out without links. Only an http(s) origin is ever returned.
  */
 export async function requestBaseUrl(): Promise<string> {
   const configured = safeBaseUrl(process.env.APP_BASE_URL);
   if (configured) return configured;
+  if (process.env.NODE_ENV === "production") return "";
   const h = await headers();
   const host = (h.get("x-forwarded-host") ?? h.get("host") ?? "").split(",")[0].trim();
   const fwd = (h.get("x-forwarded-proto") ?? "").split(",")[0].trim();
