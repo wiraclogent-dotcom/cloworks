@@ -35,16 +35,18 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
             <Link href={`/requests/${card.id}`} draggable={false} className={cn("rounded-sm underline-offset-2 hover:underline", focusRing)}>{card.title}</Link>
           ) : card.title}
         </p>
-        {handle}
-      </div>
-      <div className="mt-1 flex items-center justify-between gap-1">
+        </div>
+      <div className="mt-0.5 flex items-center justify-between gap-1">
         {isOverdue(card, today) ? (
-          <span className="rounded-md bg-tone-tint px-1.5 py-px font-medium text-tone-text">Overdue</span>
+          <span className="rounded px-1 text-[11px] leading-4 font-medium bg-tone-tint text-tone-text">Overdue</span>
         ) : card.deadlineDay === null ? (
-          <span className="text-foreground-secondary">No deadline</span>
+          <span className="text-[11px] leading-4 text-foreground-secondary">No deadline</span>
         ) : <span />}
-        <span className="inline-flex shrink-0" title={assignee} aria-label={assignee} role="img">
-          {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
+        <span className="inline-flex shrink-0 items-center gap-1">
+          {handle}
+          <span className="inline-flex" title={assignee} aria-label={assignee} role="img">
+            {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative className="size-5 text-[9px]" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
+          </span>
         </span>
       </div>
     </>
@@ -80,11 +82,11 @@ export function DraggableCalendarCard({ card, today, busy, locked, dragging }: {
         handle={
           <button type="button" ref={setActivatorNodeRef} {...attributes} aria-label={`Drag “${card.title}”`} disabled={busy}
             className={cn(
-              "-mt-0.5 -mr-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-foreground-secondary transition-opacity duration-150",
+              "inline-flex size-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-foreground-secondary transition-opacity duration-150",
               "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-surface-muted",
               focusRing,
             )}>
-            <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+            <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-3" />
           </button>
         } />
     </li>
