@@ -45,7 +45,8 @@ const isJoin = (pathname: string) => pathname.startsWith("/join/");
  * Pure edge routing: true = allow, false = send to sign-in, string = redirect there.
  * Public: "/", /signin, /signup, /join/**. An applicant may reach only /lobby, /verify, /join/** (and /signin, the
  * Auth.js error page); everything else sends them to /lobby. A member on /lobby or /verify goes to /requests, and on
- * "/" skips the landing page unless previewing.
+ * "/" skips the landing page unless previewing. /verify is also open to anonymous visitors: sign-up with an email that
+ * already has an account lands there without a session, so the screen must not depend on being signed in.
  */
 export function routeDecision(pathname: string, kind: RouteKind, opts: { preview?: boolean } = {}): boolean | string {
   if (pathname === "/") {
@@ -55,6 +56,7 @@ export function routeDecision(pathname: string, kind: RouteKind, opts: { preview
   if (pathname === "/signin" || isJoin(pathname)) return true;
   if (kind === "applicant") return APPLICANT_PATHS.some((p) => under(pathname, p)) ? true : "/lobby";
   if (PUBLIC_PATHS.some((p) => pathname === p)) return true;
+  if (under(pathname, "/verify")) return kind === "member" ? "/requests" : true;
   if (APPLICANT_PATHS.some((p) => under(pathname, p))) return kind === "member" ? "/requests" : false;
   return kind === "member";
 }

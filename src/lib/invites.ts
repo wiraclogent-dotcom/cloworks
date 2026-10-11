@@ -25,7 +25,7 @@ const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownR
 const openWhere = { acceptedAt: null, revokedAt: null } as const;
 
 /** "Designer", or the app role when the job role is Other. */
-const roleLabel = (inv: Pick<Invite, "appRole" | "jobRole">) => (inv.jobRole === "OTHER" ? ROLE_LABEL[inv.appRole] : JOB_ROLE_LABEL[inv.jobRole]);
+export const roleLabel = (inv: Pick<Invite, "appRole" | "jobRole">) => (inv.jobRole === "OTHER" ? ROLE_LABEL[inv.appRole] : JOB_ROLE_LABEL[inv.jobRole]);
 
 /** Gives the invite a fresh token and expiry (optionally new roles) and emails the link. The old link stops working. */
 async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole }) {

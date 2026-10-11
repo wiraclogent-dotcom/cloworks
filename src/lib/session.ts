@@ -50,6 +50,14 @@ export const requireApplicantOrRedirect: () => Promise<SessionApplicant> = cache
   return r.applicant;
 });
 
+/**
+ * Who is visiting a public join page, without redirecting: a member, a valid applicant, or nobody (no session, or an
+ * applicant session whose row is gone). Memoised per request.
+ */
+export const currentVisitor: () => Promise<
+  { kind: "member" } | { kind: "none" } | { kind: "applicant"; applicant: SessionApplicant }
+> = cache(async () => loadSessionApplicant(prisma, await auth()));
+
 /** Database client scoped to the user's workspace. */
 export const dbFor = (user: SessionUser): ScopedDb => scopedDb(user.workspaceId);
 

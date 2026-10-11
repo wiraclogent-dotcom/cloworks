@@ -50,7 +50,7 @@ describe("routeDecision: who may open which path", () => {
     "/join/x": { anonymous: true, applicant: true, member: true },
     "/join/invite/y": { anonymous: true, applicant: true, member: true },
     "/lobby": { anonymous: false, applicant: true, member: "/requests" },
-    "/verify": { anonymous: false, applicant: true, member: "/requests" },
+    "/verify": { anonymous: true, applicant: true, member: "/requests" },
     "/requests": { anonymous: false, applicant: "/lobby", member: true },
     "/admin/users": { anonymous: false, applicant: "/lobby", member: true },
   };
