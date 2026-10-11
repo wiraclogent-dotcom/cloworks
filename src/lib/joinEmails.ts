@@ -48,3 +48,15 @@ export function alreadyHaveAccountEmail(p: { signinUrl: string }): Mail {
       : `You already have a Cloworks account. Sign in to Cloworks with this email.\n\n${tail}`,
   };
 }
+
+/** Password reset link, valid for one hour. */
+export function resetEmail(p: { url: string }): Mail {
+  const link = linkOf(p.url);
+  return {
+    subject: "Reset your Cloworks password",
+    text:
+      "Someone asked to reset the password for this email address.\n\n" +
+      (link ? `Set a new password here (valid for one hour): ${link}\n\n` : "The reset link could not be created. Ask your admin for help.\n\n") +
+      "If you didn't ask for this, you can ignore this email. Your password stays the same.",
+  };
+}

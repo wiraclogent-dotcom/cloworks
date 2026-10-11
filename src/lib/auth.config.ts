@@ -65,7 +65,7 @@ export function routeDecision(pathname: string, kind: RouteKind, opts: { preview
     if (kind === "member") return opts.preview ? true : "/requests";
     return kind === "applicant" ? "/lobby" : true;
   }
-  if (pathname === "/signin" || isJoin(pathname)) return true;
+  if (pathname === "/signin" || pathname === "/forgot" || under(pathname, "/reset") || isJoin(pathname)) return true;
   if (kind === "applicant") return APPLICANT_PATHS.some((p) => under(pathname, p)) ? true : "/lobby";
   if (PUBLIC_PATHS.some((p) => pathname === p)) return true;
   if (under(pathname, "/verify")) return kind === "member" ? "/requests" : true;

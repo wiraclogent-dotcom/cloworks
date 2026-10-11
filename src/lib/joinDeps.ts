@@ -9,6 +9,7 @@ import { prisma } from "./db";
 import { createMailerFromEnv } from "./mailer";
 import { safeBaseUrl } from "./notify";
 import { codeSecret } from "./joinTokens";
+import { isResetLinkUsable, resetPassword } from "./passwordReset";
 
 /**
  * Origin for links in emails: APP_BASE_URL when set. Outside production only, this request's origin (Host /
@@ -63,3 +64,6 @@ export const rejectFor = (actor: Actor, applicantId: string) => rejectApplicant(
 export const undoRejectFor = (actor: Actor, applicantId: string) => undoReject(prisma, actor, applicantId);
 export const resetLinkFor = (actor: Actor) => resetJoinLink(prisma, actor);
 export const setLinkEnabledFor = (actor: Actor, enabled: boolean) => setJoinLinkEnabled(prisma, actor, enabled);
+
+export const resetLinkUsable = (token: string) => isResetLinkUsable(prisma, token);
+export const resetPasswordBy = (token: string, password: string) => resetPassword({ db: prisma }, token, password);

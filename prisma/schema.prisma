@@ -510,3 +510,17 @@ model Invite {
   @@index([workspaceId])
   @@index([email])
 }
+
+/// One-time "reset my password" links. Global (not workspace-scoped): the email decides whose password it sets.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  /// Lowercased address the link was sent to.
+  email     String
+  /// SHA-256 of the raw token; the raw token only lives in the emailed link.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}

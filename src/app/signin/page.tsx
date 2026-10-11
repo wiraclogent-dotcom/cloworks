@@ -99,7 +99,10 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
             <input id="signin-email" name="email" type="email" autoComplete="username" placeholder="name@clogent.co.id" required className={fieldClass({ className: "h-11" })} />
           </div>
           <div>
-            <label htmlFor="signin-password" className={labelClass}>Password</label>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label htmlFor="signin-password" className="text-[13px] font-medium text-foreground">Password</label>
+              <Link href="/forgot" className="text-[13px] font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
+            </div>
             <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
           </div>
           <RememberMe id="signin-remember" />
@@ -110,7 +113,6 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
         <p className="text-sm text-foreground-secondary">
           New here? <Suspense fallback={<Link href="/signup" className={signUpLink}>Create an account</Link>}><SignUpLink searchParams={searchParams} /></Suspense>
         </p>
-        <p className="text-sm text-foreground-secondary">Forgot your password? Ask Wira to set a new one.</p>
       </div>
     </AuthShell>
   );
