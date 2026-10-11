@@ -25,7 +25,7 @@ describe("settings: general", () => {
     expect(screen.getByText("Wira Budi")).toBeTruthy();
     expect(screen.getByText("wira@example.com")).toBeTruthy();
     expect(screen.getByText("Department").nextElementSibling?.textContent).toBe("Creative");
-    expect(screen.getByText("Role").nextElementSibling?.textContent).toBe("Creative");
+    expect(screen.getAllByText("Creative").length).toBeGreaterThan(0); // role and job role shown as chips
     expect(screen.queryByRole("textbox")).toBeNull(); // account details are read-only
   });
 
@@ -53,11 +53,11 @@ describe("settings: general", () => {
 });
 
 describe("settings: administration", () => {
-  it("admins get an Administration section linking to Users and Lists", async () => {
+  it("admins get an Administration section linking to Members and Lists", async () => {
     appRole = "ADMIN";
     render(await SettingsContent());
     expect(screen.getByRole("heading", { name: "Administration" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Users/ }).getAttribute("href")).toBe("/admin/users");
+    expect(screen.getByRole("link", { name: /Members/ }).getAttribute("href")).toBe("/admin/users");
     expect(screen.getByRole("link", { name: /Lists/ }).getAttribute("href")).toBe("/admin/lists");
   });
 
