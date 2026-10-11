@@ -49,10 +49,10 @@ export function TodayOverview({ name, now, overview }: { name: string; now: Date
         </div>
       </div>
       <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
-        <li className="min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<Clock aria-hidden="true" />} label="Due today" value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label="Overdue" value={overview.overdue} emphasis="text-danger" /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&status=DONE" icon={<CircleCheckBig aria-hidden="true" />} label="Done today" value={overview.doneToday} /></li>
+        <li className="flex min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<Clock aria-hidden="true" />} label="Due today" value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label="Overdue" value={overview.overdue} emphasis="text-danger" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&status=DONE" icon={<CircleCheckBig aria-hidden="true" />} label="Done today" value={overview.doneToday} /></li>
       </ul>
     </section>
   );
