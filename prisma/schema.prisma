@@ -97,6 +97,10 @@ model User {
   accountNoticeSentAt DateTime?
   /// Set when an admin sets or resets the password; cleared when the person changes it.
   mustChangePassword  Boolean   @default(false)
+  /// Profile photo: a small JPEG/PNG/WebP stored in the row (null = initials). Served by /api/avatar/<id>.
+  avatar              Bytes?
+  avatarType          String?
+  avatarUpdatedAt     DateTime?
 
   requested           Request[]       @relation("RequestRequester")
   assigned            Request[]       @relation("RequestAssignee")

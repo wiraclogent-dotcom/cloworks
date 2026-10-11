@@ -5,6 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { ChangePasswordForm } from "./ChangePasswordForm";
+import { PhotoEditor } from "./PhotoEditor";
 
 /**
  * Settings: a profile card (who you are, read-only) beside the password form and, for admins, the way into the admin
@@ -14,7 +15,7 @@ export async function SettingsContent() {
   const { user, db } = await requireScope();
   const me = await db.user.findUnique({
     where: { id: user.id },
-    select: { fullName: true, email: true, title: true, department: true, passwordHash: true },
+    select: { fullName: true, email: true, title: true, department: true, passwordHash: true, avatarUpdatedAt: true },
   });
   const hasPassword = !!me?.passwordHash;
   const rows = accountRows({
@@ -23,6 +24,7 @@ export async function SettingsContent() {
   });
   const value = (label: string) => rows.find((r) => r.label === label)?.value ?? "—";
   const fullName = me?.fullName || user.name;
+  const photoSrc = me?.avatarUpdatedAt ? `/api/avatar/${user.id}?v=${me.avatarUpdatedAt.getTime()}` : null;
   const title = value("Title");
 
   return (
@@ -30,8 +32,9 @@ export async function SettingsContent() {
       <Card className="p-5">
         <CardTitle as="h2" className="sr-only">Account</CardTitle>
         <div className="flex flex-col items-center text-center">
-          <Avatar name={fullName} size="lg" />
-          <p className="mt-3 text-lg font-semibold text-foreground">{fullName}</p>
+          <Avatar name={fullName} size="lg" src={photoSrc} className="size-24 text-2xl" />
+          <div className="mt-3"><PhotoEditor hasPhoto={!!photoSrc} /></div>
+          <p className="mt-4 text-lg font-semibold text-foreground">{fullName}</p>
           {title !== "—" ? <p className="text-sm text-foreground-secondary">{title}</p> : null}
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
             <Chip>{value("Role")}</Chip>
