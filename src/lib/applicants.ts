@@ -1,4 +1,5 @@
-import { Prisma, type Applicant, type JoinSource, type PrismaClient } from "@prisma/client";
+import type { Applicant, JoinSource, PrismaClient } from "@prisma/client";
+import { cleanEmail, isUniqueViolation } from "@/lib/admin";
 import { createMailerFromEnv, type Mailer } from "@/lib/mailer";
 import { bestEffort } from "@/lib/notify";
 import { notifyJoinRequest } from "@/lib/joinRequests";
@@ -48,17 +49,26 @@ const HOUR_MS = 3_600_000;
 
 const nowOf = (d: { now?: Date }) => d.now ?? new Date();
 
-const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-
 export type JoinNotice = "LINK_INVALID" | "INACTIVE_MEMBER" | "REJECTED";
 
-/** Trimmed, lowercased; one "@" with something on both sides, no spaces. */
+/** Trimmed, lowercased; one "@", no spaces, a dotted domain (see cleanEmail). */
 function normalize(raw: string): string {
-  const e = (raw ?? "").trim().toLowerCase();
-  const parts = e.split("@");
-  if (!e || e.length > 254 || /\s/.test(e) || parts.length !== 2 || !parts[0] || !parts[1])
-    throw new JoinError("VALIDATION", "Enter a valid email address.");
+  const e = cleanEmail(raw);
+  if (!e) throw new JoinError("VALIDATION", "Enter a valid email address.");
   return e;
+}
+
+/** Shown when the mail provider refuses or fails a code email (bad address, outage). */
+export const EMAIL_SEND_FAILED = "We couldn't send an email to that address. Check it and try again.";
+
+/** Sends a code email; any mailer failure becomes a VALIDATION JoinError with fixed copy. */
+async function sendCode(d: Pick<Deps, "mailer">, to: string, code: string): Promise<void> {
+  try {
+    await d.mailer.send({ to, ...codeEmail(code) });
+  } catch (e) {
+    console.error("[applicants] code email failed", e);
+    throw new JoinError("VALIDATION", EMAIL_SEND_FAILED);
+  }
 }
 
 const domainOf = (email: string) => email.slice(email.indexOf("@") + 1);
@@ -95,7 +105,8 @@ function freshCode(secret: string, now: Date, windowCount: number) {
 }
 
 /**
- * Creates (or replaces an unverified) applicant and emails a 6-digit code. If the email already belongs to a user
+ * Creates (or replaces an unverified) applicant and emails a 6-digit code. A failed code email throws VALIDATION
+ * (EMAIL_SEND_FAILED) and leaves no new row behind (a replacement is only written after its email went out). If the email already belongs to a user
  * or a verified applicant, sends "you already have an account" instead and returns `applicantId: null`, so the page
  * looks the same either way.
  *
@@ -155,8 +166,9 @@ async function signUpOnce(
           where: { id: existing!.id, emailVerifiedAt: { not: null }, OR: [{ codeSentAt: null }, { codeSentAt: { lte: since } }] },
           data: { codeSentAt: now },
         });
+    // Silent on failure: an error here would reveal that the address has an account.
     if (claimed.count > 0) {
-      await d.mailer.send({ to: f.email, ...alreadyHaveAccountEmail({ signinUrl: d.baseUrl ? `${d.baseUrl}/signin` : "" }) });
+      await bestEffort(() => d.mailer.send({ to: f.email, ...alreadyHaveAccountEmail({ signinUrl: d.baseUrl ? `${d.baseUrl}/signin` : "" }) }));
     }
     return { applicantId: null };
   }
@@ -165,13 +177,21 @@ async function signUpOnce(
   if (!existing) {
     const fresh = freshCode(d.secret, now, 0);
     const row = await d.db.applicant.create({ data: { ...base, createdAt: now, ...fresh.data } });
-    await d.mailer.send({ to: f.email, ...codeEmail(fresh.code) });
+    try {
+      await sendCode(d, f.email, fresh.code);
+    } catch (e) {
+      // Nothing to verify with: drop the row (unless it was verified meanwhile) so a corrected sign-up starts clean.
+      await d.db.applicant.deleteMany({ where: { id: row.id, emailVerifiedAt: null } });
+      throw e;
+    }
     return { applicantId: row.id };
   }
 
   const tooSoon = existing.codeSentAt !== null && now.getTime() - existing.codeSentAt.getTime() < RESEND_GAP_MS;
   const windowCount = sendsInWindow(existing, now);
   const fresh = !tooSoon && windowCount < RESENDS_PER_HOUR ? freshCode(d.secret, now, windowCount) : null;
+  // Send before replacing: if the email fails, the earlier row, its code and its session all stay as they were.
+  if (fresh) await sendCode(d, f.email, fresh.code);
   const kept = {
     codeHash: existing.codeHash,
     codeExpiresAt: existing.codeExpiresAt,
@@ -184,7 +204,6 @@ async function signUpOnce(
     if (del.count === 0) throw new RowGone();
     return tx.applicant.create({ data: { ...base, createdAt: existing.createdAt, ...(fresh ? fresh.data : kept) } });
   });
-  if (fresh) await d.mailer.send({ to: f.email, ...codeEmail(fresh.code) });
   return { applicantId: row.id };
 }
 
@@ -240,7 +259,10 @@ export async function verifyCode(
   return routeVerified(d, a.id, a.email, a.pendingJoinCode, now);
 }
 
-/** New code by email: at least 60 s apart, at most 5 sends per hour (the sign-up code counts). */
+/**
+ * New code by email: at least 60 s apart, at most 5 sends per hour (the sign-up code counts). A failed send restores
+ * the previous code and throws VALIDATION (EMAIL_SEND_FAILED).
+ */
 export async function resendCode(d: Deps, applicantId: string): Promise<void> {
   const now = nowOf(d);
   const a = await d.db.applicant.findUnique({ where: { id: applicantId } });
@@ -256,7 +278,17 @@ export async function resendCode(d: Deps, applicantId: string): Promise<void> {
     data: fresh.data,
   });
   if (res.count === 0) throw new JoinError("RATE_LIMITED", "Wait a minute before asking for another code.");
-  await d.mailer.send({ to: a.email, ...codeEmail(fresh.code) });
+  try {
+    await sendCode(d, a.email, fresh.code);
+  } catch (e) {
+    // Put the previous code back (only if nothing else changed the row since), so the person isn't left with a code
+    // they never received and the failed send doesn't count toward the limits.
+    await d.db.applicant.updateMany({
+      where: { id: a.id, emailVerifiedAt: null, codeHash: fresh.data.codeHash },
+      data: { codeHash: a.codeHash, codeExpiresAt: a.codeExpiresAt, codeAttempts: a.codeAttempts, codeSentAt: a.codeSentAt, codesSentInWindow: a.codesSentInWindow },
+    });
+    throw e;
+  }
 }
 
 /** Lobby: paste a join link/code to request that workspace. */
@@ -272,7 +304,7 @@ export async function requestJoinByCode(d: Deps, applicantId: string, joinCode: 
 
 /**
  * Applicant for a trusted OAuth identity (email counts as verified). Creates one if needed and routes it by email
- * domain. An existing unverified row was made by whoever typed this email into the form (maybe not its owner), so it
+ * domain (not when the email has an open invite to that workspace). An existing unverified row was made by whoever typed this email into the form (maybe not its owner), so it
  * is replaced by a fresh row (new id, Google name, no password, no saved join link). Throws INACTIVE_MEMBER for a
  * deactivated user's email, VALIDATION for an active user's (callers sign members in before reaching this).
  */
@@ -372,8 +404,9 @@ async function requestWorkspace(
 }
 
 /**
- * After verification: saved join link first, then the email domain. Clears the saved link either way. Never throws
- * a JoinError: a reason for not requesting comes back as `notice`.
+ * After verification: saved join link first, then the email domain (skipped when the email has an open, unexpired
+ * invite to that workspace). Clears the saved link either way. Never throws a JoinError: a reason for not requesting
+ * comes back as `notice`.
  */
 async function routeVerified(
   d: RequestDeps,
@@ -398,7 +431,14 @@ async function routeVerified(
   }
   if (!target) {
     const byDomain = await d.db.workspace.findUnique({ where: { emailDomain: domainOf(email) }, select: { id: true } });
-    if (byDomain) target = { id: byDomain.id, source: "DOMAIN" };
+    // Someone already invited to that workspace accepts the invite instead: no request, no admin notification.
+    const invited = byDomain
+      ? await d.db.invite.findFirst({
+          where: { workspaceId: byDomain.id, email: { equals: email, mode: "insensitive" }, acceptedAt: null, revokedAt: null, expiresAt: { gt: now } },
+          select: { id: true },
+        })
+      : null;
+    if (byDomain && !invited) target = { id: byDomain.id, source: "DOMAIN" };
   }
   if (!target) return notice ? { joined: false, notice } : { joined: false };
   try {

@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { ENTER_PATH } from "@/lib/auth.config";
-import { JoinError, resendCode, verifyCode } from "@/lib/applicants";
+import { EMAIL_SEND_FAILED, JoinError, resendCode, verifyCode } from "@/lib/applicants";
 import { failed, field, told, type AuthFormState } from "@/lib/authForm";
 import { joinDeps } from "@/lib/joinDeps";
 import { safeNext } from "@/lib/joinTokens";
@@ -41,7 +41,7 @@ export async function resendAction(): Promise<AuthFormState> {
     await resendCode(await joinDeps(), visitor.applicant.id);
   } catch (e) {
     if (!(e instanceof JoinError)) throw e;
-    if (e.code === "RATE_LIMITED") return failed(e.message);
+    if (e.code === "RATE_LIMITED" || e.message === EMAIL_SEND_FAILED) return failed(e.message);
     // Nothing left to verify (already verified): the lobby is the next step.
     redirect("/lobby");
   }

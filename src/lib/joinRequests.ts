@@ -1,7 +1,7 @@
 import {
-  Prisma, AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type JobRole, type JoinSource, type PrismaClient,
+  AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type JobRole, type JoinSource, type Prisma, type PrismaClient,
 } from "@prisma/client";
-import { AdminError, lockRoster, type Actor } from "./admin";
+import { AdminError, isUniqueViolation, lockRoster, type Actor } from "./admin";
 import { can } from "./permissions";
 import type { Mailer } from "./mailer";
 import { approvedEmail } from "./joinEmails";
@@ -29,8 +29,6 @@ function assertAdmin(actor: Actor) {
 }
 
 const notFound = () => new AdminError("NOT_FOUND", "Join request not found");
-
-const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
 export async function listJoinRequests(
   db: PrismaClient,
@@ -63,7 +61,8 @@ export async function listJoinRequests(
 /**
  * Turns a pending, verified applicant of the actor's workspace into a User with the same id. The guarded
  * deleteMany is the race guard: of two parallel approvals only one deletes the row; the other gets NOT_FOUND.
- * An email that already belongs to any User rolls everything back (CONFLICT; the applicant is kept).
+ * An email that already belongs to any User rolls everything back (CONFLICT; the applicant is kept). Any open invite
+ * for the email in this workspace is marked accepted in the same transaction.
  */
 export async function approveApplicant(
   db: PrismaClient,
@@ -93,6 +92,11 @@ export async function approveApplicant(
       if (del.count !== 1) throw notFound();
       const clash = await tx.user.findFirst({ where: { email: { equals: a.email, mode: "insensitive" } }, select: { id: true } });
       if (clash) throw new AdminError("CONFLICT", `${a.email} already has an account`);
+      // An open invite for this email is answered by the approval: close it so it no longer shows as Invited.
+      await tx.invite.updateMany({
+        where: { workspaceId: actor.workspaceId, email: { equals: a.email, mode: "insensitive" }, acceptedAt: null, revokedAt: null },
+        data: { acceptedAt: new Date() },
+      });
       const name = await pickShortName(tx, actor.workspaceId, a.name, a.email);
       const u = await tx.user.create({
         data: {

@@ -1,25 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { emailDomainOf, resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
+import { resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
 import { refreshJwt, loadActiveUser, requireUserWith, bindSignInToken, bindApplicantToken, loadSessionApplicant } from "@/lib/session-core";
 import { authenticateWithPassword } from "@/lib/passwordAuth";
 import { hashPassword } from "@/lib/password";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 type Tok = { uid?: string; aid?: string; loginEmail?: string; pwv?: number; appRole?: "ADMIN" | "REQUESTER"; jobRole?: "OTHER" };
-
-describe("emailDomainOf", () => {
-  it("returns the lowercased domain of a well-formed address", () => {
-    expect(emailDomainOf("Wira@CLOGENT.co.id")).toBe("clogent.co.id");
-    expect(emailDomainOf(" a@sub.clogent.co.id ")).toBe("sub.clogent.co.id");
-  });
-  it("returns null for malformed input", () => {
-    expect(emailDomainOf("")).toBeNull();
-    expect(emailDomainOf("clogent.co.id")).toBeNull();
-    expect(emailDomainOf("a@b@clogent.co.id")).toBeNull();
-    expect(emailDomainOf("@clogent.co.id")).toBeNull();
-    expect(emailDomainOf("a@")).toBeNull();
-  });
-});
 
 describe("resolveSignIn (never creates anything)", () => {
   let db: TestDb;

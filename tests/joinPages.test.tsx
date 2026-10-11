@@ -197,6 +197,9 @@ describe("/verify", () => {
     expect(await resendAction()).toMatchObject({ info: "We sent a new code." });
     lib.resendCode.mockRejectedValue(new JoinError("RATE_LIMITED", "Wait a minute before asking for another code."));
     expect(await resendAction()).toMatchObject({ error: "Wait a minute before asking for another code." });
+    // A failed email (bad address, provider down) is shown, not turned into a redirect.
+    lib.resendCode.mockRejectedValue(new JoinError("VALIDATION", "We couldn't send an email to that address. Check it and try again."));
+    expect(await resendAction()).toMatchObject({ error: "We couldn't send an email to that address. Check it and try again." });
   });
 });
 

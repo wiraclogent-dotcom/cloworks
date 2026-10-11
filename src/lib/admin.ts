@@ -33,12 +33,25 @@ function assertAdmin(actor: Actor) {
 
 const norm = (s: string) => s.trim().replace(/\s+/g, " ");
 
-/** Normalised email, or throws VALIDATION: exactly one @, no whitespace, <= 254 chars. */
-export function normalizeEmail(raw: string): string {
+/** Prisma unique-constraint violation (P2002). */
+export const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+
+/**
+ * Trimmed, lowercased email, or null when malformed: exactly one @ with a local part, no whitespace, at most 254
+ * characters, and a domain of at least two dot-separated, non-empty labels ("andi@gmail" is refused).
+ */
+export function cleanEmail(raw: string): string | null {
   const e = (raw ?? "").trim().toLowerCase();
   const parts = e.split("@");
-  if (!e || e.length > 254 || /\s/.test(e) || parts.length !== 2 || !parts[0] || !parts[1])
-    throw new AdminError("VALIDATION", "Enter a valid email address (one @, no spaces, at most 254 characters)");
+  if (!e || e.length > 254 || /\s/.test(e) || parts.length !== 2 || !parts[0]) return null;
+  const labels = parts[1].split(".");
+  return labels.length >= 2 && labels.every(Boolean) ? e : null;
+}
+
+/** Normalised email, or throws VALIDATION (see cleanEmail). */
+export function normalizeEmail(raw: string): string {
+  const e = cleanEmail(raw);
+  if (!e) throw new AdminError("VALIDATION", "Enter a valid email address (one @, no spaces, a domain like example.com, at most 254 characters)");
   return e;
 }
 

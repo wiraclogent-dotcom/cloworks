@@ -1,7 +1,7 @@
-import { Prisma, AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type Invite, type JobRole, type PrismaClient } from "@prisma/client";
+import { AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type Invite, type JobRole, type PrismaClient } from "@prisma/client";
 import type { ScopedDb } from "./db";
 import type { Mailer } from "./mailer";
-import { AdminError, normalizeEmail, type Actor } from "./admin";
+import { AdminError, isUniqueViolation, lockRoster, normalizeEmail, type Actor } from "./admin";
 import { can } from "./permissions";
 import { INVITE_TTL_MS, hashToken, maskEmail, newToken } from "./joinTokens";
 import { inviteEmail } from "./joinEmails";
@@ -20,39 +20,47 @@ function assertRoles(appRole: unknown, jobRole: unknown) {
   if (!Object.values(JobRoleEnum).includes(jobRole as JobRole)) throw new AdminError("VALIDATION", `Unknown job role "${String(jobRole)}"`);
 }
 
-const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-
 const openWhere = { acceptedAt: null, revokedAt: null } as const;
 
 /** "Designer", or the app role when the job role is Other. */
 export const roleLabel = (inv: Pick<Invite, "appRole" | "jobRole">) => (inv.jobRole === "OTHER" ? ROLE_LABEL[inv.appRole] : JOB_ROLE_LABEL[inv.jobRole]);
 
-/** Gives the invite a fresh token and expiry (optionally new roles) and emails the link. The old link stops working. */
+/**
+ * Gives the invite a fresh token and expiry (optionally new roles) and emails the link; the old link stops working.
+ * The email goes out FIRST: if it fails (bad address, provider down) nothing is written, the current link and roles
+ * keep working, and the admin gets VALIDATION naming the address.
+ */
 async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole }) {
   const token = newToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
-  const inv = await db.invite.update({
-    where: { id: inviteId },
-    data: { tokenHash: hashToken(token), expiresAt, invitedById: actor.id, ...roles },
-  });
-  const [inviter, workspace] = await Promise.all([
+  const [inv, inviter, workspace] = await Promise.all([
+    db.invite.findUniqueOrThrow({ where: { id: inviteId }, select: { email: true, appRole: true, jobRole: true } }),
     db.user.findUnique({ where: { id: actor.id }, select: { fullName: true, name: true } }),
     db.workspace.findUniqueOrThrow({ where: { id: actor.workspaceId }, select: { name: true } }),
   ]);
   const mail = inviteEmail({
     inviter: inviter?.fullName || inviter?.name || "Your admin",
     workspace: workspace.name,
-    role: roleLabel(inv),
+    role: roleLabel(roles ?? inv),
     url: baseUrl ? `${baseUrl.replace(/\/+$/, "")}/join/invite/${token}` : "",
     expires: expiresAt,
   });
-  await mailer.send({ to: inv.email, ...mail });
+  try {
+    await mailer.send({ to: inv.email, ...mail });
+  } catch (e) {
+    console.error("[invites] invite email failed", e);
+    throw new AdminError("VALIDATION", `Couldn't email ${inv.email} — check the address.`);
+  }
+  await db.invite.update({
+    where: { id: inviteId },
+    data: { tokenHash: hashToken(token), expiresAt, invitedById: actor.id, ...roles },
+  });
 }
 
 /**
  * Invites an email to the actor's workspace with the given roles and emails the link. Refuses an email that already
  * belongs to a member (active or deactivated); an existing open invite for the email is resent (new token, new roles)
- * instead of duplicated.
+ * instead of duplicated. A failed email throws VALIDATION and leaves no new invite (an existing one is unchanged).
  */
 export async function createInvite(
   db: ScopedDb,
@@ -70,16 +78,22 @@ export async function createInvite(
 
   const roles = { appRole: input.appRole, jobRole: input.jobRole };
   const open = await db.invite.findFirst({ where: { email, ...openWhere }, select: { id: true } });
-  const id =
-    open?.id ??
-    (
-      await db.invite.create({
-        // Placeholder hash and expiry; issue() replaces both before the email goes out.
-        data: { email, ...roles, tokenHash: hashToken(newToken()), invitedById: actor.id, expiresAt: new Date() },
-        select: { id: true },
-      })
-    ).id;
-  await issue(db, actor, mailer, id, baseUrl, roles);
+  if (open) {
+    await issue(db, actor, mailer, open.id, baseUrl, roles);
+    return { id: open.id };
+  }
+  // Placeholder hash and an already-past expiry (unusable); issue() sets both once the email has gone out.
+  const { id } = await db.invite.create({
+    data: { email, ...roles, tokenHash: hashToken(newToken()), invitedById: actor.id, expiresAt: new Date() },
+    select: { id: true },
+  });
+  try {
+    await issue(db, actor, mailer, id, baseUrl, roles);
+  } catch (e) {
+    // The email never went out: don't leave a dead invite listed under Invited.
+    await db.invite.deleteMany({ where: { id, acceptedAt: null } });
+    throw e;
+  }
   return { id };
 }
 
@@ -191,6 +205,8 @@ export async function acceptInvite(
       }
 
       await tx.applicant.deleteMany({ where: { email } });
+      // Serialise with other roster writes (approvals, accepts) so two people can't pick the same short name.
+      await lockRoster(tx);
       const name = await pickShortName(tx, inv.workspaceId, display, email);
       const user = await tx.user.create({
         data: {

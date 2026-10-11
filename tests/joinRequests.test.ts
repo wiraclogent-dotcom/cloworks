@@ -141,6 +141,21 @@ describe("join requests", () => {
     expect(sent).toHaveLength(0);
   });
 
+  it("approval closes an open invite for the same email in this workspace only (I2/R18)", async () => {
+    const a = await mkApplicant();
+    const mk = (workspaceId: string, invitedById: string, over: object = {}) => db.raw.invite.create({
+      data: { email: a.email, appRole: "REQUESTER", jobRole: "OTHER", tokenHash: `h-${uniq("t")}`, invitedById, workspaceId, expiresAt: new Date(Date.now() + 86_400_000), ...over },
+    });
+    const mine = await mk("clogent", admin.id);
+    const revoked = await mk("clogent", admin.id, { revokedAt: new Date() });
+    const theirs = await mk(otherWs, otherAdmin.id);
+    const { mailer } = fakeMailer();
+    await approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE);
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id: mine.id } })).acceptedAt).not.toBeNull();
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id: revoked.id } })).acceptedAt).toBeNull();
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id: theirs.id } })).acceptedAt).toBeNull();
+  });
+
   it("a failing mailer does not fail the approval", async () => {
     const a = await mkApplicant();
     const mailer: Mailer = { async send() { throw new Error("smtp down"); } };

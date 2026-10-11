@@ -1,12 +1,6 @@
 import type { Applicant, PrismaClient, User } from "@prisma/client";
 import { JoinError, oauthApplicant } from "./applicants";
 
-/** Pure: the domain of a well-formed address (exactly one @, both sides non-empty), lowercased; otherwise null. */
-export function emailDomainOf(email: string): string | null {
-  const parts = email.trim().toLowerCase().split("@");
-  return parts.length === 2 && parts[0] && parts[1] ? parts[1] : null;
-}
-
 /** OAuth sign-in decision: a member, an applicant (found or created), or refused. */
 export type SignInResult =
   | { ok: true; kind: "user"; user: User }

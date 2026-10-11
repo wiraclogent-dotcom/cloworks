@@ -384,3 +384,14 @@ describe("enum validation", () => {
     expect(await code(createUser(db.prisma, admin, { name: uniq("E"), jobRole: undefined as never, appRole: "REQUESTER" }))).toBe("VALIDATION");
   });
 });
+
+describe("normalizeEmail", () => {
+  it("lowercases and trims; requires one @ and a dotted domain with no empty labels", async () => {
+    const { normalizeEmail } = await import("@/lib/admin");
+    expect(normalizeEmail("  Andi@Gmail.COM ")).toBe("andi@gmail.com");
+    expect(normalizeEmail("a@sub.clogent.co.id")).toBe("a@sub.clogent.co.id");
+    for (const bad of ["andi@gmail", "andi@gmail.", "andi@.com", "andi@gmail..com", "a@b@c.com", "@x.com", "a b@x.com", ""]) {
+      expect(() => normalizeEmail(bad), bad).toThrow(AdminError);
+    }
+  });
+});

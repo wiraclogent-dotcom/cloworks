@@ -279,13 +279,72 @@ describe("applicants", () => {
     expect(await errCode(verifyCode(reset.d, applicantId!, codeOf(reset.sent[0])))).toBe("OK");
   });
 
-  it("mailer failure propagates from sign-up and resend", async () => {
+  it("a failed code email is a VALIDATION error and leaves nothing behind (I1)", async () => {
     const { d } = deps();
     const failing = { ...d, mailer: { async send() { throw new Error("mail down"); } } };
-    await expect(signUp(failing, { name: "A", email: `${uniq("mf")}@gmail.com`, password: PASSWORD })).rejects.toThrow("mail down");
+    const email = `${uniq("mf")}@gmail.com`;
+    const e = await signUp(failing, { name: "A", email, password: PASSWORD }).catch((x) => x);
+    expect(e).toBeInstanceOf(JoinError);
+    expect(e.code).toBe("VALIDATION");
+    expect(e.message).toBe("We couldn't send an email to that address. Check it and try again.");
+    expect(await db.raw.applicant.findUnique({ where: { email } })).toBeNull();
+  });
+
+  it("a failed resend keeps the previous code working (I1)", async () => {
+    const { d, sent } = deps();
     const t0 = new Date();
     const { applicantId } = await signUp({ ...d, now: t0 }, { name: "A", email: `${uniq("mf")}@gmail.com`, password: PASSWORD });
-    await expect(resendCode({ ...failing, now: new Date(t0.getTime() + 61_000) }, applicantId!)).rejects.toThrow("mail down");
+    const failing = { ...d, now: new Date(t0.getTime() + 61_000), mailer: { async send() { throw new Error("mail down"); } } };
+    const e = await resendCode(failing, applicantId!).catch((x) => x);
+    expect(e).toBeInstanceOf(JoinError);
+    expect(e.code).toBe("VALIDATION");
+    expect(e.message).toMatch(/couldn't send an email/);
+    // Not counted as a send either: an immediate retry is allowed.
+    const ok = deps();
+    await resendCode({ ...ok.d, now: new Date(t0.getTime() + 62_000) }, applicantId!);
+    expect(ok.sent).toHaveLength(1);
+    // The code from before a failed resend still verifies.
+    const { applicantId: id2 } = await signUp({ ...d, now: t0 }, { name: "B", email: `${uniq("mf")}@gmail.com`, password: PASSWORD });
+    await resendCode({ ...failing }, id2!).catch(() => {});
+    expect(await verifyCode({ ...d, now: new Date(t0.getTime() + 70_000) }, id2!, codeOf(sent.at(-1)!))).toEqual({ joined: false });
+  });
+
+  it("a failed code email on re-sign-up keeps the earlier row and code (I1)", async () => {
+    const { d, sent } = deps();
+    const t0 = new Date();
+    const email = `${uniq("mfr")}@gmail.com`;
+    const { applicantId } = await signUp({ ...d, now: t0 }, { name: "A", email, password: PASSWORD });
+    const failing = { ...d, now: new Date(t0.getTime() + 61_000), mailer: { async send() { throw new Error("mail down"); } } };
+    expect(await errCode(signUp(failing, { name: "A2", email, password: PASSWORD }))).toBe("VALIDATION");
+    const row = await db.raw.applicant.findUniqueOrThrow({ where: { email } });
+    expect(row.id).toBe(applicantId);
+    expect(row.name).toBe("A");
+    expect(await verifyCode({ ...d, now: new Date(t0.getTime() + 70_000) }, applicantId!, codeOf(sent[0]))).toEqual({ joined: false });
+  });
+
+  it("a failed already-have-account email stays silent (never reveals the account)", async () => {
+    const email = `${uniq("silent")}@clogent.co.id`;
+    await db.prisma.user.create({ data: { name: uniq("S"), fullName: "Silent", email } });
+    const { d } = deps();
+    const failing = { ...d, mailer: { async send() { throw new Error("mail down"); } } };
+    expect(await signUp(failing, { name: "X", email, password: PASSWORD })).toEqual({ applicantId: null });
+  });
+
+  it("the already-have-account email also covers a deactivated account (M7)", async () => {
+    const email = `${uniq("deact")}@gmail.com`;
+    await db.prisma.user.create({ data: { name: uniq("D"), fullName: "Deact", email, active: false } });
+    const { d, sent } = deps();
+    await signUp(d, { name: "X", email, password: PASSWORD });
+    expect(sent[0].text).toContain("If you can't sign in, contact your admin.");
+  });
+
+  it("an email domain without a dot is invalid (I1)", async () => {
+    const { d, sent } = deps();
+    expect(await errCode(signUp(d, { name: "X", email: "andi@gmail", password: PASSWORD }))).toBe("VALIDATION");
+    expect(await errCode(signUp(d, { name: "X", email: "andi@gmail.", password: PASSWORD }))).toBe("VALIDATION");
+    expect(await errCode(signUp(d, { name: "X", email: "andi@.com", password: PASSWORD }))).toBe("VALIDATION");
+    expect(await errCode(signUp(d, { name: "X", email: "andi@gmail..com", password: PASSWORD }))).toBe("VALIDATION");
+    expect(sent).toHaveLength(0);
   });
 
   it("verified @clogent.co.id → request to clogent with source DOMAIN, onRequest called", async () => {
@@ -490,6 +549,37 @@ describe("applicants", () => {
     const a = await oauthApplicant({ db: db.raw, onRequest: async (id) => { requested.push(id); } }, { email, name: "Real" });
     expect(a.requestSource).toBe("DOMAIN");
     expect(requested).toEqual([a.id]);
+  });
+
+  it("oauthApplicant skips domain routing when the email has an open invite to that workspace (I2/R18)", async () => {
+    const email = `${uniq("invd")}@clogent.co.id`;
+    const inviter = await db.raw.user.findFirstOrThrow({ where: { workspaceId: "clogent" } }).catch(async () =>
+      db.raw.user.create({ data: { name: uniq("Inv"), fullName: "Inviter", email: `${uniq("inv")}@clogent.co.id`, appRole: "ADMIN" } }));
+    await db.raw.invite.create({
+      data: { email, appRole: "CREATIVE", jobRole: "DESIGNER", tokenHash: `h-${uniq("t")}`, invitedById: inviter.id, workspaceId: "clogent", expiresAt: new Date(Date.now() + 86_400_000) },
+    });
+    const requested: string[] = [];
+    const a = await oauthApplicant({ db: db.raw, onRequest: async (id) => { requested.push(id); } }, { email, name: "Invitee" });
+    expect(a.requestedWorkspaceId).toBeNull();
+    expect(requested).toHaveLength(0);
+    // An expired or revoked invite doesn't count.
+    const email2 = `${uniq("invx")}@clogent.co.id`;
+    await db.raw.invite.create({
+      data: { email: email2, appRole: "CREATIVE", jobRole: "DESIGNER", tokenHash: `h-${uniq("t")}`, invitedById: inviter.id, workspaceId: "clogent", expiresAt: new Date(Date.now() - 1000) },
+    });
+    const b = await oauthApplicant({ db: db.raw, onRequest: async (id) => { requested.push(id); } }, { email: email2, name: "Late" });
+    expect(b.requestSource).toBe("DOMAIN");
+  });
+
+  it("a verified code sign-up with an open invite isn't routed by domain either", async () => {
+    const email = `${uniq("invc")}@clogent.co.id`;
+    const inviter = await db.raw.user.findFirstOrThrow({ where: { workspaceId: "clogent" } });
+    await db.raw.invite.create({
+      data: { email, appRole: "CREATIVE", jobRole: "DESIGNER", tokenHash: `h-${uniq("t")}`, invitedById: inviter.id, workspaceId: "clogent", expiresAt: new Date(Date.now() + 86_400_000) },
+    });
+    const { res, requested } = await verified(email);
+    expect(res).toEqual({ joined: false });
+    expect(requested).toHaveLength(0);
   });
 
   it("oauthApplicant refuses a deactivated member's email", async () => {

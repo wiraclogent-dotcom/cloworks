@@ -107,6 +107,32 @@ describe("invites", () => {
     expect((await describeInvite(db.raw, fresh))?.status).toBe("open");
   });
 
+  it("a failed invite email is a VALIDATION error naming the address, and creates no invite (I1)", async () => {
+    const email = `${uniq("bounce")}@gmail.com`;
+    const failing: Mailer = { async send() { throw new Error("Resend responded 422"); } };
+    const e = await createInvite(db.prisma, admin, failing, { email, appRole: "CREATIVE", jobRole: "DESIGNER" }, BASE).catch((x) => x);
+    expect(e).toBeInstanceOf(AdminError);
+    expect(e.code).toBe("VALIDATION");
+    expect(e.message).toBe(`Couldn't email ${email} — check the address.`);
+    expect(await db.raw.invite.count({ where: { email } })).toBe(0);
+  });
+
+  it("a failed resend keeps the current link and roles working (I1)", async () => {
+    const email = `${uniq("bounce2")}@gmail.com`;
+    const { id, token } = await invite(email);
+    const failing: Mailer = { async send() { throw new Error("Resend responded 500"); } };
+    expect(await code(resendInvite(db.prisma, admin, failing, id, BASE))).toBe("VALIDATION");
+    expect(await code(createInvite(db.prisma, admin, failing, { email, appRole: "LEAD", jobRole: "OTHER" }, BASE))).toBe("VALIDATION");
+    expect((await describeInvite(db.raw, token))?.status).toBe("open");
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id } })).appRole).toBe("CREATIVE");
+  });
+
+  it("an email domain without a dot is refused before anything is sent (I1)", async () => {
+    const { mailer, sent } = rec();
+    expect(await code(createInvite(db.prisma, admin, mailer, { email: "andi@gmail", appRole: "CREATIVE", jobRole: "DESIGNER" }, BASE))).toBe("VALIDATION");
+    expect(sent).toHaveLength(0);
+  });
+
   it("revoke → describe status used/expired, accept NOT_FOUND", async () => {
     const email = `${uniq("rev")}@gmail.com`;
     const { id, token } = await invite(email);
@@ -198,6 +224,16 @@ describe("invites", () => {
     expect(bad).toHaveLength(1);
     expect(bad[0].reason.code).toBe("NOT_FOUND");
     expect(await code(acceptInvite(db.raw, token, { name: "Three", password: PASSWORD }))).toBe("NOT_FOUND");
+  });
+
+  it("two invites accepted at once with the same name both get distinct short names (M3: roster lock)", async () => {
+    const [x, y] = await Promise.all([invite(`${uniq("twinA")}@gmail.com`), invite(`${uniq("twinB")}@gmail.com`)]);
+    const [ra, rb] = await Promise.all([
+      acceptInvite(db.raw, x.token, { name: "Twin Racer", password: PASSWORD }),
+      acceptInvite(db.raw, y.token, { name: "Twin Racer", password: PASSWORD }),
+    ]);
+    const names = await db.raw.user.findMany({ where: { id: { in: [ra.userId, rb.userId] } }, select: { name: true } });
+    expect(new Set(names.map((u) => u.name)).size).toBe(2);
   });
 
   it("pickShortName falls back to local part then numeric suffix on collision", async () => {

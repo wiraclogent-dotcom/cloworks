@@ -35,12 +35,16 @@ export function approvedEmail(p: { workspace: string; url: string }): Mail {
   };
 }
 
-/** Sent instead of a code when someone signs up with an email that already has an account. */
+/**
+ * Sent instead of a code when someone signs up with an email that already has an account (active or deactivated: the
+ * copy covers both without saying which).
+ */
 export function alreadyHaveAccountEmail(p: { signinUrl: string }): Mail {
+  const tail = "If you can't sign in, contact your admin.\n\nIf this wasn't you, you can ignore this email.";
   return {
     subject: "You already have a Cloworks account",
     text: linkOf(p.signinUrl)
-      ? `You already have a Cloworks account. Sign in here: ${linkOf(p.signinUrl)}\n\nIf this wasn't you, you can ignore this email.`
-      : `You already have a Cloworks account. Sign in to Cloworks with this email.\n\nIf this wasn't you, you can ignore this email.`,
+      ? `You already have a Cloworks account. Sign in here: ${linkOf(p.signinUrl)}\n\n${tail}`
+      : `You already have a Cloworks account. Sign in to Cloworks with this email.\n\n${tail}`,
   };
 }
