@@ -494,6 +494,8 @@ model Applicant {
   requestedAt          DateTime?
   requestSource        JoinSource?
   rejectedAt           DateTime?
+  /// Join code the person signed up through; used once their email is verified.
+  pendingJoinCode      String?
   createdAt            DateTime    @default(now())
 
   @@index([requestedWorkspaceId])
