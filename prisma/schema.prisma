@@ -43,12 +43,17 @@ enum ProjectStatus {
 // without a workspace fails); the empty dbgenerated() only makes the field optional in Prisma's create types so
 // the scoped client (src/lib/db.ts) can stamp it.
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  createdAt       DateTime @default(now())
   /// Chat launch moment: comments before it count as read for anyone without a ChatRead row ("start fresh").
-  chatSince DateTime @default(now())
+  chatSince       DateTime @default(now())
+  /// People whose email is on this domain may ask to join (replaces the ALLOWED_EMAIL_DOMAIN env var).
+  emailDomain     String?  @unique
+  /// Random URL-safe code in the shared join link.
+  joinCode        String?  @unique
+  joinLinkEnabled Boolean  @default(true)
 
   users             User[]
   allowedEmails     AllowedEmail[]
@@ -68,6 +73,8 @@ model Workspace {
   projectMilestones ProjectMilestone[]
   libraryCategories LibraryCategory[]
   libraryItems      LibraryItem[]
+  invites           Invite[]
+  applicants        Applicant[]        @relation("ApplicantRequestedWorkspace")
 }
 
 model User {
@@ -103,6 +110,7 @@ model User {
   libraryItemsCreated LibraryItem[]   @relation("LibraryItemCreatedBy")
   libraryItemsUpdated LibraryItem[]   @relation("LibraryItemUpdatedBy")
   projectTasks        ProjectTask[]
+  invitesSent         Invite[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -449,7 +457,7 @@ model LibraryItem {
   updatedBy        User            @relation("LibraryItemUpdatedBy", fields: [updatedById], references: [id])
   createdAt        DateTime        @default(now())
   /// Extra labelled file links shown as chips on the row, e.g. [{ "label": "AI", "url": "https://…" }]. Max 6.
-  files       Json            @default("[]")
+  files            Json            @default("[]")
   /// Set only by create/edit (not @updatedAt): pinning and reordering leave it alone, so they don't trigger the badge.
   contentUpdatedAt DateTime        @default(now())
 
@@ -458,4 +466,56 @@ model LibraryItem {
 
   @@index([workspaceId])
   @@index([categoryId])
+}
+
+enum JoinSource {
+  LINK
+  DOMAIN
+}
+
+/// Someone who signed up but is not a member of any workspace. Global (not workspace-scoped); the id becomes the
+/// User.id on approval.
+model Applicant {
+  id                   String      @id @default(cuid())
+  email                String      @unique
+  name                 String
+  passwordHash         String?
+  emailVerifiedAt      DateTime?
+  codeHash             String?
+  codeExpiresAt        DateTime?
+  codeAttempts         Int         @default(0)
+  codeSentAt           DateTime?
+  codesSentInWindow    Int         @default(0)
+  failedLogins         Int         @default(0)
+  lockedUntil          DateTime?
+  /// Set = join request for that workspace; null = lobby.
+  requestedWorkspaceId String?
+  requestedWorkspace   Workspace?  @relation("ApplicantRequestedWorkspace", fields: [requestedWorkspaceId], references: [id])
+  requestedAt          DateTime?
+  requestSource        JoinSource?
+  rejectedAt           DateTime?
+  createdAt            DateTime    @default(now())
+
+  @@index([requestedWorkspaceId])
+}
+
+/// An admin's invitation to join a workspace. The raw token only lives in the email link; we keep its SHA-256 hex.
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  appRole     AppRole
+  jobRole     JobRole
+  tokenHash   String    @unique
+  invitedById String
+  invitedBy   User      @relation(fields: [invitedById], references: [id])
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
 }
