@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { ENTER_PATH, oauthProviderIds } from "@/lib/auth.config";
 import { isInviteToken } from "@/lib/authForm";
 import { loadInvite } from "@/lib/joinDeps";
@@ -21,6 +22,8 @@ const lead = "mt-3 text-base leading-relaxed text-foreground-secondary";
  */
 export async function InviteView({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
+  // Request-time only: describeInvite reads the clock (now = new Date()), which cacheComponents forbids in a prerender.
+  await connection();
   const [invite, visitor] = await Promise.all([isInviteToken(token) ? loadInvite(token) : null, currentVisitor()]);
 
   if (visitor.kind === "member") {

@@ -28,6 +28,8 @@ vi.mock("@/lib/applicants", async (orig) => {
   };
 });
 vi.mock("@/lib/invites", async (orig) => ({ ...(await orig<typeof import("@/lib/invites")>()), describeInvite: lib.describeInvite, acceptInvite: lib.acceptInvite }));
+const connection = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("next/server", async (orig) => ({ ...(await orig<typeof import("next/server")>()), connection }));
 vi.mock("@/app/lobby/LobbyPoll", () => ({ LobbyPoll: () => <div data-testid="lobby-poll" /> }));
 
 import SignInPage from "@/app/signin/page";
@@ -298,6 +300,12 @@ describe("/join/invite/[token]", () => {
     expect(screen.getByLabelText("Password")).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect((document.querySelector('input[name="next"]') as HTMLInputElement).value).toBe("/join/invite/tok");
+  });
+  it("opts out of prerendering before reading the clock (describeInvite defaults now = new Date())", async () => {
+    lib.describeInvite.mockResolvedValue(open);
+    render(await InviteView({ params }));
+    expect(connection).toHaveBeenCalled();
+    expect(connection.mock.invocationCallOrder[0]).toBeLessThan(lib.describeInvite.mock.invocationCallOrder[0]);
   });
   it("expired or used: ask the inviter; unknown: ask your admin", async () => {
     lib.describeInvite.mockResolvedValue({ ...open, status: "expired" });
