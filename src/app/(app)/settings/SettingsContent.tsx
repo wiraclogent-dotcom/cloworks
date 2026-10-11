@@ -1,12 +1,9 @@
-import Link from "next/link";
-import { Building2, ChevronRight, ListChecks, Mail, Users } from "lucide-react";
+import { Building2, Mail } from "lucide-react";
 import { requireScope } from "@/lib/session";
-import { can } from "@/lib/permissions";
 import { accountRows } from "@/lib/settings/account";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
-import { cn, focusRing } from "@/components/ui/cn";
 import { ChangePasswordForm } from "./ChangePasswordForm";
 
 /**
@@ -27,7 +24,6 @@ export async function SettingsContent() {
   const value = (label: string) => rows.find((r) => r.label === label)?.value ?? "—";
   const fullName = me?.fullName || user.name;
   const title = value("Title");
-  const isAdmin = can(user.appRole, "admin.manage");
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
@@ -64,21 +60,6 @@ export async function SettingsContent() {
             <p className="text-sm text-foreground-secondary">You sign in without a password. Ask an admin if you want one.</p>
           )}
         </Card>
-
-        {isAdmin ? (
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle as="h2">Administration</CardTitle>
-                <p className="mt-1 text-sm text-foreground-secondary">Manage people and the lists the board uses.</p>
-              </div>
-            </CardHeader>
-            <ul className="grid divide-y divide-border">
-              <AdminLink href="/admin/users" icon={<Users aria-hidden="true" />} label="Members" hint="Invite people, approve join requests, roles and passwords" />
-              <AdminLink href="/admin/lists" icon={<ListChecks aria-hidden="true" />} label="Lists" hint="Brands, divisions and request types" />
-            </ul>
-          </Card>
-        ) : null}
       </div>
     </div>
   );
@@ -96,17 +77,3 @@ function ProfileRow({ icon, label, value }: { icon: React.ReactNode; label: stri
   );
 }
 
-function AdminLink({ href, icon, label, hint }: { href: string; icon: React.ReactNode; label: string; hint: string }) {
-  return (
-    <li>
-      <Link href={href} className={cn("-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition-colors hover:bg-surface-muted [&_svg]:size-4", focusRing)}>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground-secondary">{icon}</span>
-        <span className="min-w-0 flex-1">
-          <span className="block text-sm font-medium text-foreground">{label}</span>
-          <span className="block text-xs text-foreground-secondary">{hint}</span>
-        </span>
-        <ChevronRight aria-hidden="true" className="text-foreground-muted" />
-      </Link>
-    </li>
-  );
-}

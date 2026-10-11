@@ -53,12 +53,10 @@ describe("settings: general", () => {
 });
 
 describe("settings: administration", () => {
-  it("admins get an Administration section linking to Members and Lists", async () => {
+  it("admins do not get an Administration card here: Members and Lists live in the sidebar", async () => {
     appRole = "ADMIN";
     render(await SettingsContent());
-    expect(screen.getByRole("heading", { name: "Administration" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: /Members/ }).getAttribute("href")).toBe("/admin/users");
-    expect(screen.getByRole("link", { name: /Lists/ }).getAttribute("href")).toBe("/admin/lists");
+    expect(screen.queryByRole("heading", { name: "Administration" })).toBeNull();
   });
 
   it.each(["REQUESTER", "CREATIVE", "LEAD"])("%s does not see it", async (r) => {
