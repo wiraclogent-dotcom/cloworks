@@ -3,7 +3,7 @@
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
-import { field } from "@/lib/authForm";
+import { field, rememberOf } from "@/lib/authForm";
 import { safeNext } from "@/lib/joinTokens";
 
 /**
@@ -15,7 +15,7 @@ export async function passwordSignIn(fd: FormData) {
   const password = typeof fd.get("password") === "string" ? (fd.get("password") as string) : "";
   const next = safeNext(field(fd, "next"), "/requests");
   try {
-    await signIn("credentials", { email, password, redirectTo: next });
+    await signIn("credentials", { email, password, ...rememberOf(fd), redirectTo: next });
   } catch (e) {
     // signIn's success path throws Next's redirect, which must propagate; only Auth.js failures are mapped.
     if (e instanceof AuthError) {

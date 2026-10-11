@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 import type { AppRole, JobRole } from "@prisma/client";
 import Google from "next-auth/providers/google";
+import { isExpiredShortSession } from "./session-core";
 import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
 declare module "next-auth" {
@@ -23,6 +24,9 @@ declare module "@auth/core/jwt" {
     pwv?: number;
     appRole?: AppRole;
     jobRole?: JobRole;
+    /** Signed in without "Remember me": the session ends 24 h after `issuedAt` (ms since epoch). */
+    short?: boolean;
+    issuedAt?: number;
   }
 }
 
@@ -84,6 +88,11 @@ export const authConfig = {
   pages: { signIn: "/signin", error: "/signin" },
   session: { strategy: "jwt" },
   callbacks: {
+    // Edge/DB-free: a short ("Remember me" unchecked) session past its 24 h is dropped, so the proxy clears the cookie.
+    // auth.ts replaces this with the DB-backed jwt callback, which applies the same rule.
+    jwt({ token }) {
+      return isExpiredShortSession(token) ? null : token;
+    },
     // Edge role comes from the cookie token and may be stale up to 24h; requireUser() is the authoritative gate.
     authorized({ auth, request }) {
       const { pathname, searchParams } = request.nextUrl;

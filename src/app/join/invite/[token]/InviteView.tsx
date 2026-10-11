@@ -11,6 +11,7 @@ import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit } from "@/components/auth/styles";
 import { Alert } from "@/components/ui/Alert";
 import { buttonClass } from "@/components/ui/Button";
+import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { acceptInviteAction } from "./actions";
 
@@ -74,10 +75,11 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
               </div>
               <div>
                 <label htmlFor="invite-password" className={labelClass}>Password</label>
-                <input id="invite-password" name="password" type="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={200} required
+                <PasswordInput id="invite-password" name="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={200} required
                   aria-describedby="invite-password-hint" className={fieldClass({ className: "h-11" })} />
                 <p id="invite-password-hint" className={hintClass}>At least {MIN_PASSWORD_LENGTH} characters.</p>
               </div>
+              <RememberMe id="invite-remember" />
             </AuthForm>
           </>
         )}

@@ -2,8 +2,34 @@ import type { AppRole, JobRole, PrismaClient } from "@prisma/client";
 
 type Db = Pick<PrismaClient, "user">;
 type TokenDb = Pick<PrismaClient, "user" | "applicant">;
-/** Claims either token kind may carry: a member (`uid`) or an applicant (`aid`), never both. */
-type TokenClaims = { uid?: string; aid?: string; loginEmail?: string; pwv?: number; appRole?: AppRole; jobRole?: JobRole };
+/**
+ * Claims either token kind may carry: a member (`uid`) or an applicant (`aid`), never both. `short` + `issuedAt` mark
+ * a session signed in without "Remember me".
+ */
+type TokenClaims = { uid?: string; aid?: string; loginEmail?: string; pwv?: number; appRole?: AppRole; jobRole?: JobRole; short?: boolean; issuedAt?: number };
+
+/** Cookie/JWT lifetime (Auth.js `session.maxAge`, seconds): what "Remember me" gives. */
+export const REMEMBER_SESSION_S = 30 * 24 * 60 * 60;
+/** A session signed in without "Remember me" (and every OAuth sign-in) ends this long after sign-in. */
+export const SHORT_SESSION_MS = 24 * 60 * 60 * 1000;
+
+/** Fresh sign-in: not remembered → `short` with the sign-in time; remembered → neither (the 30-day cookie applies). */
+export function markSessionLength<T extends TokenClaims>(token: T, remember: boolean, now: number = Date.now()): T {
+  if (remember) {
+    delete token.short;
+    delete token.issuedAt;
+  } else {
+    token.short = true;
+    token.issuedAt = now;
+  }
+  return token;
+}
+
+/** Pure and DB-free (the edge uses it too): a short token more than 24 h past sign-in, or with no sign-in time. */
+export function isExpiredShortSession(token: { short?: unknown; issuedAt?: unknown }, now: number = Date.now()): boolean {
+  if (token.short !== true) return false;
+  return typeof token.issuedAt !== "number" || now - token.issuedAt > SHORT_SESSION_MS;
+}
 /** Thrown when there is no valid, still-permitted session. Message kept as "Unauthenticated" for older callers. */
 export class UnauthenticatedError extends Error {
   constructor() {
@@ -53,12 +79,19 @@ export type ActiveUserLoader = (db: Db, id: string, claim: { loginEmail?: string
 const loadUncached: ActiveUserLoader = (db, id, claim) => loadActiveUser(db, id, claim);
 
 /**
- * jwt-callback refresh for an existing token: re-reads the DB; null invalidates the session.
+ * jwt-callback refresh for an existing token: re-reads the DB; null invalidates the session. A short ("Remember me"
+ * unchecked) token ends 24 h after sign-in; upgrading an applicant token keeps `short`/`issuedAt`.
  * Member token: the user must still be active with matching claims. Applicant token (`aid`): once a User with that id
  * exists (approval reuses the applicant's id), is active and has the token's email, the token is upgraded to a member
  * token; otherwise the Applicant row must still exist with that email.
  */
-export async function refreshJwt<T extends TokenClaims>(db: TokenDb, token: T, load: ActiveUserLoader = loadUncached): Promise<T | null> {
+export async function refreshJwt<T extends TokenClaims>(
+  db: TokenDb,
+  token: T,
+  load: ActiveUserLoader = loadUncached,
+  now: number = Date.now(),
+): Promise<T | null> {
+  if (isExpiredShortSession(token, now)) return null;
   if (token.aid && !token.uid) return refreshApplicantJwt(db, token);
   if (!token.uid) return token;
   const u = await load(db, token.uid, { loginEmail: token.loginEmail, pwv: token.pwv });
@@ -92,7 +125,10 @@ export async function requireUserWith(
   return u;
 }
 
-/** Fresh sign-in: bind the token to the matched user and the exact email it was issued for. Drops any applicant claim. */
+/**
+ * Fresh sign-in (or an applicant token's upgrade): bind the token to the matched user and the exact email it was issued
+ * for. Drops any applicant claim; leaves `short`/`issuedAt` as they are.
+ */
 export function bindSignInToken<T extends TokenClaims>(
   token: T,
   user: { id: string; email: string | null; passwordVersion?: number; appRole: AppRole; jobRole: JobRole },

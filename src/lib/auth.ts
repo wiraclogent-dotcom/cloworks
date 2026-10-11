@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "./auth.config";
 import { prisma } from "./db";
 import { decideSignIn, resolveSignIn } from "./signin";
-import { bindApplicantToken, bindSignInToken, refreshJwt } from "./session-core";
+import { bindApplicantToken, bindSignInToken, markSessionLength, refreshJwt, REMEMBER_SESSION_S } from "./session-core";
 import { loadActiveUserOnce } from "./activeUser";
 import { authenticateWithPassword } from "./passwordAuth";
 
@@ -13,7 +13,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.providers,
     Credentials({
       id: "credentials",
-      credentials: { email: {}, password: {} },
+      credentials: { email: {}, password: {}, remember: {} },
       async authorize(c) {
         const email = typeof c?.email === "string" ? c.email : "";
         const password = typeof c?.password === "string" ? c.password : "";
@@ -21,11 +21,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!who) throw new CredentialsSignin();
         // Member or applicant: the jwt callback re-resolves the email and binds the matching token kind.
         const row = who.kind === "user" ? who.user : who.applicant;
-        return { id: row.id, email: row.email, name: row.name };
+        // "Remember me" rides on the user object into the jwt callback ("1" = checked).
+        return { id: row.id, email: row.email, name: row.name, remember: c?.remember === "1" };
       },
     }),
   ],
-  session: { strategy: "jwt", maxAge: 60 * 60 * 24 },
+  // 30 days is the "Remember me" lifetime; sessions without it carry `short` and end after 24 h (jwt callback).
+  session: { strategy: "jwt", maxAge: REMEMBER_SESSION_S },
   callbacks: {
     ...authConfig.callbacks,
     async signIn({ user, account, profile }) {
@@ -48,6 +50,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const row = r.kind === "user" ? r.user : r.applicant;
         // Password sign-in: authorize() vetted a specific row; refuse if the email now resolves to another one.
         if (account?.provider === "credentials" && user.id !== row.id) return null;
+        // Only the password form has "Remember me"; OAuth sign-ins are always the 24 h session.
+        const remember = account?.provider === "credentials" && (user as { remember?: unknown }).remember === true;
+        markSessionLength(token, remember);
         return r.kind === "user" ? bindSignInToken(token, r.user) : bindApplicantToken(token, r.applicant);
       }
       // Every later call: re-read DB; deleted/inactive invalidates the session; an approved applicant becomes a member.

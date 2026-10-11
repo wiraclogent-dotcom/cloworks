@@ -74,6 +74,12 @@ describe("/signin", () => {
     await passwordSignIn(fd({ email: "a@b.co", password: "x", next: "//evil.example" }));
     expect(signIn).toHaveBeenLastCalledWith("credentials", { email: "a@b.co", password: "x", redirectTo: "/requests" });
   });
+  it("password sign-in passes Remember me through only when checked", async () => {
+    await passwordSignIn(fd({ email: "a@b.co", password: "x", remember: "1" }));
+    expect(signIn).toHaveBeenLastCalledWith("credentials", { email: "a@b.co", password: "x", remember: "1", redirectTo: "/requests" });
+    await passwordSignIn(fd({ email: "a@b.co", password: "x", remember: "on" }));
+    expect(signIn).toHaveBeenLastCalledWith("credentials", { email: "a@b.co", password: "x", redirectTo: "/requests" });
+  });
   it("Google sign-in honours a safe next", async () => {
     await googleSignIn(fd({ next: "/join/invite/tok" }));
     expect(signIn).toHaveBeenCalledWith("google", { redirectTo: "/join/invite/tok" });
@@ -127,6 +133,17 @@ describe("/signup", () => {
     } finally {
       reqHeaders.current = { host: "app.test", "x-forwarded-proto": "https" };
     }
+  });
+  it("has an unchecked Remember me box and passes it to the sign-in", async () => {
+    render(await SignUpView({ searchParams: sp({}) }));
+    const box = screen.getByLabelText("Remember me") as HTMLInputElement;
+    expect(box.type).toBe("checkbox");
+    expect(box.checked).toBe(false);
+    expect(box.name).toBe("remember");
+    expect(box.value).toBe("1");
+    lib.signUp.mockResolvedValue({ applicantId: "a1" });
+    await signUpAction(null, fd({ name: "Andi", email: "andi@gmail.com", password: "long-enough-1", remember: "1" }));
+    expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", remember: "1", redirectTo: "/verify" });
   });
   it("prefers APP_BASE_URL for email links", async () => {
     vi.stubEnv("APP_BASE_URL", "https://cloworks.example/");
@@ -330,6 +347,16 @@ describe("/join/invite/[token]", () => {
     render(await InviteView({ params }));
     expect(text()).toContain("You're already a member");
     expect(screen.getByRole("link", { name: /requests/i }).getAttribute("href")).toBe("/lobby/enter");
+  });
+  it("password path has an unchecked Remember me box and passes it on", async () => {
+    lib.describeInvite.mockResolvedValue(open);
+    render(await InviteView({ params }));
+    const box = screen.getByLabelText("Remember me") as HTMLInputElement;
+    expect(box.checked).toBe(false);
+    expect(box.closest("form")?.querySelector('input[name="mode"]')?.getAttribute("value")).toBe("password");
+    lib.acceptInvite.mockResolvedValue({ userId: "u1", email: "andi@gmail.com" });
+    await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1", remember: "1" }));
+    expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", remember: "1", redirectTo: "/requests" });
   });
   it("password path accepts then signs in to /requests", async () => {
     lib.acceptInvite.mockResolvedValue({ userId: "u1", email: "andi@gmail.com" });

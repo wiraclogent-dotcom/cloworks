@@ -69,8 +69,10 @@ class Browser {
     return ((await (await this.get("/api/auth/csrf")).json()) as { csrfToken: string }).csrfToken;
   }
   /** Returns "ok" or the ?error= code the sign-in page would show. */
-  async signIn(email: string, password: string) {
-    const res = await this.post("/api/auth/callback/credentials", { email, password, csrfToken: await this.csrf(), callbackUrl: `${BASE}/requests` });
+  async signIn(email: string, password: string, remember = false) {
+    const res = await this.post("/api/auth/callback/credentials", {
+      email, password, csrfToken: await this.csrf(), callbackUrl: `${BASE}/requests`, ...(remember ? { remember: "1" } : {}),
+    });
     const loc = res.headers.get("location") ?? "";
     const err = new URL(loc, BASE).searchParams.get("error");
     return err ?? (this.jar.has("authjs.session-token") ? "ok" : `no-session(${res.status} ${loc})`);
@@ -190,6 +192,28 @@ describe("sign up → applicant session → approval upgrades the same session",
     expect((await b.session())?.applicantId).toBe(applicantId);
     await db.raw.applicant.delete({ where: { id: applicantId! } });
     expect(await b.session()).toBeNull();
+  }, 60_000);
+
+  it("Remember me: unchecked marks the token short (24 h), checked doesn't; the cookie itself lasts 30 days", async () => {
+    const b = new Browser(h);
+    expect(await b.signIn("wira.budi@clogent.co.id", "admin-password-1")).toBe("ok");
+    const short = await b.cookieToken();
+    expect(short?.short).toBe(true);
+    expect(Math.abs(Number(short?.issuedAt) - Date.now())).toBeLessThan(60_000);
+    // A session read keeps the flags (refresh re-encodes the token).
+    await b.session();
+    expect((await b.cookieToken())?.short).toBe(true);
+    await b.signOut();
+    const res = await b.post("/api/auth/callback/credentials", {
+      email: "wira.budi@clogent.co.id", password: "admin-password-1", csrfToken: await b.csrf(), callbackUrl: `${BASE}/requests`, remember: "1",
+    });
+    const cookie = res.headers.getSetCookie().find((c) => c.startsWith("authjs.session-token="))!;
+    const expires = Date.parse(/expires=([^;]+)/i.exec(cookie)![1]);
+    expect(expires - Date.now()).toBeGreaterThan(29 * 86_400_000);
+    const long = await b.cookieToken();
+    expect(long?.uid).toBe(admin.id);
+    expect(long?.short).toBeUndefined();
+    expect(long?.issuedAt).toBeUndefined();
   }, 60_000);
 
   it("existing member sign-in is unchanged", async () => {

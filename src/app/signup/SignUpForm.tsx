@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthForm } from "@/components/auth/AuthForm";
+import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { signUpAction } from "./actions";
 
@@ -22,9 +23,10 @@ export function SignUpForm({ join, next, minLength }: { join?: string; next?: st
           </div>
           <div>
             <label htmlFor="signup-password" className={labelClass}>Password</label>
-            <input id="signup-password" name="password" type="password" autoComplete="new-password" minLength={minLength} maxLength={200} required aria-describedby="signup-password-hint" className={fieldClass({ className: "h-11" })} />
+            <PasswordInput id="signup-password" name="password" autoComplete="new-password" minLength={minLength} maxLength={200} required aria-describedby="signup-password-hint" className={fieldClass({ className: "h-11" })} />
             <p id="signup-password-hint" className={hintClass}>At least {minLength} characters.</p>
           </div>
+          <RememberMe id="signup-remember" />
         </>
       )}
     </AuthForm>

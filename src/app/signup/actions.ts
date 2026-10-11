@@ -4,7 +4,7 @@ import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
 import { signIn } from "@/lib/auth";
 import { JoinError, signUp } from "@/lib/applicants";
-import { failed, field, isJoinCode, type AuthFormState } from "@/lib/authForm";
+import { failed, field, isJoinCode, rememberOf, type AuthFormState } from "@/lib/authForm";
 import { joinDeps } from "@/lib/joinDeps";
 import { safeNext } from "@/lib/joinTokens";
 
@@ -31,7 +31,7 @@ export async function signUpAction(_prev: AuthFormState, fd: FormData): Promise<
   }
   if (!applicantId) redirect(verifyUrl);
   try {
-    await signIn("credentials", { email, password, redirectTo: verifyUrl });
+    await signIn("credentials", { email, password, ...rememberOf(fd), redirectTo: verifyUrl });
   } catch (e) {
     // signIn's success path throws Next's redirect, which must propagate.
     if (e instanceof AuthError) return failed("Your account was created, but signing in failed. Sign in to continue.", { name, email });

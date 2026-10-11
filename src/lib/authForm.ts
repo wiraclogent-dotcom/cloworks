@@ -29,5 +29,8 @@ export const isJoinCode = (s: string | null | undefined): s is string => !!s && 
 /** Invite tokens are base64url too (32 bytes → 43 chars); only the charset is checked here. */
 export const isInviteToken = (s: string | null | undefined): s is string => !!s && /^[A-Za-z0-9_-]{1,128}$/.test(s);
 
+/** The "Remember me" checkbox as Credentials sign-in options: `{ remember: "1" }` when checked, else nothing. */
+export const rememberOf = (fd: FormData): { remember?: "1" } => (fd.get("remember") === "1" ? { remember: "1" } : {});
+
 /** First value of a search param. */
 export const first = (v: string | string[] | undefined): string | undefined => (Array.isArray(v) ? v[0] : v);

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { ENTER_PATH } from "@/lib/auth.config";
 import { signIn } from "@/lib/auth";
 import { AdminError } from "@/lib/admin";
-import { failed, field, isInviteToken, type AuthFormState } from "@/lib/authForm";
+import { failed, field, isInviteToken, rememberOf, type AuthFormState } from "@/lib/authForm";
 import { acceptInviteBy } from "@/lib/joinDeps";
 import { currentVisitor } from "@/lib/session";
 
@@ -51,7 +51,7 @@ export async function acceptInviteAction(_prev: AuthFormState, fd: FormData): Pr
     throw e;
   }
   try {
-    await signIn("credentials", { email, password, redirectTo: "/requests" });
+    await signIn("credentials", { email, password, ...rememberOf(fd), redirectTo: "/requests" });
   } catch (e) {
     // signIn's success path throws Next's redirect, which must propagate.
     if (e instanceof AuthError) redirect("/signin");

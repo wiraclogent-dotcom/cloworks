@@ -6,6 +6,7 @@ import { oauthProviderIds } from "@/lib/auth.config";
 import { first } from "@/lib/authForm";
 import { safeNext } from "@/lib/joinTokens";
 import { PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
+import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { passwordSignIn } from "./actions";
 import { Alert } from "@/components/ui/Alert";
@@ -99,8 +100,9 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
           </div>
           <div>
             <label htmlFor="signin-password" className={labelClass}>Password</label>
-            <input id="signin-password" name="password" type="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
+            <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
           </div>
+          <RememberMe id="signin-remember" />
           <SubmitButton variant="primary" block className={brandSubmit} pendingLabel="Signing in…">
             Sign in
           </SubmitButton>

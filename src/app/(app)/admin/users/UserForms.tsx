@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { enumLabel } from "@/lib/adminChips";
 import { addPerson, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
 
@@ -64,7 +65,7 @@ export function PasswordForm({ u }: { u: UserRowData }) {
     <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
       {({ idFor, aria }) => (
         <Labeled id={idFor("password")} label={u.hasPassword ? "New password (signs them out everywhere)" : "Password (at least 10 characters)"}>
-          <input id={idFor("password")} name="password" type="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
+          <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
         </Labeled>
       )}
     </AdminForm>
@@ -127,7 +128,7 @@ export function AddPersonForm() {
             <input id={idFor("email")} name="email" type="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
           </Labeled>
           <Labeled id={idFor("password")} label="Temporary password (optional, needs a login email)">
-            <input id={idFor("password")} name="password" type="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
+            <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
           </Labeled>
         </div>
       )}
