@@ -3,7 +3,7 @@ import { DAY_MS, fmt, utc, weekdayOf } from "./calendar";
 
 /** Pure, client-safe layout for the request Timeline (workload per person). Days are `YYYY-MM-DD` Jakarta dates. */
 
-export const TIMELINE_DAYS = 14;
+export const TIMELINE_DAYS = 7;
 
 export type TimelineDay = { day: string; weekday: number; isToday: boolean; /** Sunday: the team works Monday to Saturday. */ isDayOff: boolean };
 export type TimelineItem = { id: string; assigneeId: string | null; assigneeName: string | null; requestDay: string; deadlineDay: string | null };
