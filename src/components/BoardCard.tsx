@@ -31,11 +31,14 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
   return (
     <>
       <div className="flex items-center justify-between gap-2 text-xs text-foreground-secondary">
-        <span className="inline-flex min-w-0 items-center gap-1.5" title="Request code">
+        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" title="Request code">
           <Link2 aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />
           <span className="font-medium tabular-nums">{code}</span>
         </span>
-        {handle}
+        <span className="ml-auto inline-flex shrink-0 items-center gap-1">
+          <time dateTime={card.requestedAt.toISOString()} className="tabular-nums">{DATE_FORMAT.format(card.requestedAt)}</time>
+          {handle}
+        </span>
       </div>
       <p className="mt-2 line-clamp-2 text-sm leading-5 font-semibold break-words text-foreground">
         {interactive ? (
@@ -50,17 +53,16 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
           {card.needsMotion && <NeedsMotionChip />}
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3">
-        <div className="flex min-w-0 items-center">
-          <p className="inline-flex shrink-0" title={`Requester: ${card.requesterName}`}>
-            <Avatar name={card.requesterName} size="sm" ring decorative />
-            <span className="sr-only">Requester: {card.requesterName}</span>
-          </p>
-          <span className="-ml-1.5 inline-flex shrink-0" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
-            {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" ring decorative /> : <UnassignedAvatar size="sm" ring decorative />}
-          </span>
-        </div>
-        <time dateTime={card.requestedAt.toISOString()} className="shrink-0 text-xs tabular-nums text-foreground-secondary">{DATE_FORMAT.format(card.requestedAt)}</time>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3 text-xs">
+        <p className="inline-flex min-w-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
+          <Avatar name={card.requesterName} size="sm" decorative />
+          <span className="truncate text-foreground-secondary">{card.requesterName}</span>
+          <span className="sr-only">Requester: {card.requesterName}</span>
+        </p>
+        <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
+          <span className="truncate text-foreground-secondary">{card.assigneeName ?? "Unassigned"}</span>
+          {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
+        </span>
       </div>
     </>
   );
