@@ -50,8 +50,9 @@ export function parseParams(raw: RawParams, now: Date = new Date()): ViewParams 
     assigneeId: id(raw.assignee), brandId: id(raw.brand), divisionId: id(raw.division), q: one(raw.q)?.trim().slice(0, MAX_Q).trim() || undefined,
     motion: one(raw.motion) === "yes" ? "yes" : one(raw.motion) === "no" ? "no" : undefined,
     mine: one(raw.mine) === "1",
-    sort: SORT_KEYS.find((k) => k === sort) ?? "deadline",
-    dir: one(raw.dir) === "desc" ? "desc" : "asc",
+    sort: SORT_KEYS.find((k) => k === sort) ?? "requested",
+    // Newest first unless a sort is chosen; with a chosen sort, ascending unless asked for descending.
+    dir: one(raw.dir) === "desc" ? "desc" : one(raw.dir) === "asc" ? "asc" : sort === undefined ? "desc" : "asc",
     more: parseMore(raw.more),
     page: parsePage(raw.page),
   };
@@ -69,12 +70,14 @@ export function toFilter(p: ViewParams, userId: string): RequestFilter {
 export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "month" | "week" | "status" | "assignee" | "brand" | "division" | "q" | "motion" | "mine" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
   const cur: Record<string, string | undefined> = {
     view: p.view === "board" ? undefined : p.view, month: p.view === "calendar" ? p.month : undefined, week: p.view === "timeline" ? p.week : undefined, status: p.status, assignee: p.assigneeId, brand: p.brandId, division: p.divisionId,
-    q: p.q, mine: p.mine ? "1" : undefined, sort: p.view === "table" && p.sort !== "deadline" ? p.sort : undefined,
-    dir: p.dir === "desc" ? "desc" : undefined, motion: p.motion,
+    q: p.q, mine: p.mine ? "1" : undefined, sort: p.view === "table" ? p.sort : undefined,
+    dir: p.view === "table" ? p.dir : undefined, motion: p.motion,
   };
   const merged = { ...cur, ...over };
   if (merged.view !== "calendar") delete merged.month;
   if (merged.view !== "timeline") delete merged.week;
+  // The default (newest requested first) needs no sort or dir in the URL.
+  if (merged.sort === "requested" && merged.dir === "desc") { delete merged.sort; delete merged.dir; }
   const sp = new URLSearchParams();
   for (const [k, v] of Object.entries(merged)) if (v) sp.set(k, v);
   const s = sp.toString();

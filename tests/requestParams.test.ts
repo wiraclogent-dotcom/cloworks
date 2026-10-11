@@ -15,7 +15,7 @@ describe("parseParams limits", () => {
     expect(parseParams({ brand: "x".repeat(MAX_ID) }).brandId).toHaveLength(MAX_ID);
   });
   it("still validates enums", () => {
-    expect(parseParams({ sort: "nope", dir: "desc", status: "DONE" })).toMatchObject({ sort: "deadline", dir: "desc", status: "DONE" });
+    expect(parseParams({ sort: "nope", dir: "desc", status: "DONE" })).toMatchObject({ sort: "requested", dir: "desc", status: "DONE" });
   });
 });
 
