@@ -1,7 +1,7 @@
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card } from "@/components/ui/Card";
 import { AdminDenied } from "../AdminDenied";
 import { AddPersonForm } from "../users/UserForms";
 
@@ -16,9 +16,8 @@ export async function AddPersonContent() {
         title="Add person"
         description="Create an account now with a temporary password. When the person can use email, an invite is better: they set their own password."
       />
-      <Card className="max-w-2xl">
-        <section aria-labelledby="add-person-h">
-          <CardHeader><CardTitle id="add-person-h">New account</CardTitle></CardHeader>
+      <Card>
+        <section aria-label="New account">
           <AddPersonForm />
         </section>
       </Card>
