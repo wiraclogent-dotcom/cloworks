@@ -11,7 +11,7 @@ const PERIOD_ICON: Record<DayPeriod, React.ReactNode> = { morning: <Sunrise />, 
 /** One number that opens the list it counts. `emphasis` colours the number only when there is something to act on. */
 function Tile({ href, icon, label, value, emphasis }: { href: string; icon: React.ReactNode; label: string; value: number; emphasis?: string }) {
   return (
-    <Link href={href} className={cn("group relative flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card transition-colors duration-150 hover:border-border-strong", focusRing)}>
+    <Link href={href} className={cn("group relative flex w-full min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card transition-colors duration-150 hover:border-border-strong", focusRing)}>
       <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground [&_svg]:size-[18px]">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-2xl leading-7 font-semibold tabular-nums text-foreground", value > 0 && emphasis)}>{value}</span>
