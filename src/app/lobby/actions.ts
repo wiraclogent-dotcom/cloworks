@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { ENTER_PATH } from "@/lib/auth.config";
 import { signOut } from "@/lib/auth";
 import { JoinError, requestJoinByCode } from "@/lib/applicants";
 import { failed, field, isJoinCode, type AuthFormState } from "@/lib/authForm";
@@ -28,7 +29,7 @@ function codeFrom(raw: string): string | null {
 export async function joinWithCodeAction(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
   const raw = field(fd, "link", { max: 500 });
   const visitor = await currentVisitor();
-  if (visitor.kind === "member") redirect("/requests");
+  if (visitor.kind === "member") redirect(ENTER_PATH);
   if (visitor.kind !== "applicant") redirect("/signin");
   if (/\/join\/invite\//.test(raw)) return failed("That's an invite link. Open it in your browser to accept the invite.");
   const code = codeFrom(raw);

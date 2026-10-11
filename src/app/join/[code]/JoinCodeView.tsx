@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ENTER_PATH } from "@/lib/auth.config";
 import { isJoinCode } from "@/lib/authForm";
 import { loadJoinCode } from "@/lib/joinDeps";
 import { currentVisitor } from "@/lib/session";
@@ -31,7 +32,7 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
       {visitor.kind === "member" ? (
         <>
           <p className={lead}>You&apos;re already in {join.workspaceName}.</p>
-          <Link href="/requests" className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</Link>
+          <a href={ENTER_PATH} className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</a>
         </>
       ) : visitor.kind === "applicant" ? (
         <>

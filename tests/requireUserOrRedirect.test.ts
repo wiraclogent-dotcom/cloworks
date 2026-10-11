@@ -99,3 +99,11 @@ describe("password-change flag", () => {
     expect(dbFor({ id: "u", name: "U", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w2", mustChangePassword: false })).toEqual({ scopedTo: "w2" });
   });
 });
+
+describe("requireApplicantOrRedirect", () => {
+  it("sends a member session (e.g. an applicant upgraded on this read) through /lobby/enter, which writes the cookie", async () => {
+    const { requireApplicantOrRedirect } = await import("@/lib/session");
+    authFn.mockResolvedValue({ user: { id: "u1", loginEmail: "fadli@clogent.co.id" } });
+    await expect(requireApplicantOrRedirect()).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
+  });
+});

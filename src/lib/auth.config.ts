@@ -36,6 +36,14 @@ export function oauthProviderIds(env: Record<string, string | undefined> = proce
 
 export type RouteKind = "anonymous" | "applicant" | "member";
 
+/**
+ * Where a page sends someone it finds is a member while their cookie may still hold the applicant token (approval or
+ * invite acceptance upgrades the token only in memory: `auth()` in server components and actions never writes cookies,
+ * and the edge proxy has no jwt callback). Its route handler refreshes the session through Auth.js, writes the upgraded
+ * cookie, then redirects to /requests. Excluded from the proxy matcher so the proxy can't re-set the stale cookie too.
+ */
+export const ENTER_PATH = "/lobby/enter";
+
 const PUBLIC_PATHS = ["/signin", "/signup"];
 const APPLICANT_PATHS = ["/lobby", "/verify"];
 const under = (pathname: string, base: string) => pathname === base || pathname.startsWith(base + "/");
@@ -45,7 +53,7 @@ const isJoin = (pathname: string) => pathname.startsWith("/join/");
  * Pure edge routing: true = allow, false = send to sign-in, string = redirect there.
  * Public: "/", /signin, /signup, /join/**. An applicant may reach only /lobby, /verify, /join/** (and /signin, the
  * Auth.js error page); everything else sends them to /lobby. A member on /lobby or /verify goes to /requests, and on
- * "/" skips the landing page unless previewing. /verify is also open to anonymous visitors: sign-up with an email that
+ * "/" skips the landing page unless previewing. /lobby/enter (ENTER_PATH) follows the /lobby rule. /verify is also open to anonymous visitors: sign-up with an email that
  * already has an account lands there without a session, so the screen must not depend on being signed in.
  */
 export function routeDecision(pathname: string, kind: RouteKind, opts: { preview?: boolean } = {}): boolean | string {

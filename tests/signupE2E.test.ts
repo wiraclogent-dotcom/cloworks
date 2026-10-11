@@ -22,6 +22,7 @@ import { newJoinCode } from "@/lib/joinTokens";
 import type { Mailer } from "@/lib/mailer";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 import { NextRequest } from "next/server.js";
+import { decode } from "next-auth/jwt";
 
 // End-to-end through the real Auth.js handlers on a throwaway database: someone signs up, verifies, signs in as an
 // applicant (no workspace access), an admin approves, and the same browser session becomes a member.
@@ -77,6 +78,16 @@ class Browser {
   async session() {
     const s = (await (await this.get("/api/auth/session")).json()) as { user?: SessionJson } | null;
     return s?.user ?? null;
+  }
+  /** GET /lobby/enter through its real route handler (the proxy never runs on it). */
+  async enter() {
+    const { GET } = (await import("@/app/lobby/enter/route")) as unknown as { GET: (r: Request, ctx: unknown) => Promise<Response> };
+    return this.keep(await GET(new NextRequest(BASE + "/lobby/enter", { headers: { cookie: this.cookie() } }), { params: Promise.resolve({}) }));
+  }
+  /** Decodes the session cookie itself (not via a session read, which would refresh it). */
+  async cookieToken() {
+    const raw = this.jar.get("authjs.session-token");
+    return raw ? decode({ token: raw, secret: process.env.AUTH_SECRET!, salt: "authjs.session-token" }) : null;
   }
   async signOut() {
     await this.post("/api/auth/signout", { csrfToken: await this.csrf(), callbackUrl: `${BASE}/signin` });
@@ -139,6 +150,37 @@ describe("sign up → applicant session → approval upgrades the same session",
     expect(await b.signIn(email, password)).toBe("ok");
     expect((await b.session())?.appRole).toBe("REQUESTER");
   }, 120_000);
+
+  it("after approval, /lobby/enter writes the upgraded member token into the cookie (no redirect loop)", async () => {
+    const email = "enter.me@gmail.com";
+    const password = "Enter-password-123";
+    const { applicantId } = await signUp(deps(), { name: "Enter", email, password, joinCode });
+    const code = sent.at(-1)!.text.match(/\d{6}/)![0];
+    await verifyCode(deps(), applicantId!, code);
+    const b = new Browser(h);
+    expect(await b.signIn(email, password)).toBe("ok");
+
+    // Still waiting: back to the lobby, cookie stays an applicant token.
+    const waiting = await b.enter();
+    expect(new URL(waiting.headers.get("location")!).pathname).toBe("/lobby");
+    expect((await b.cookieToken())?.aid).toBe(applicantId);
+
+    await approveApplicant(db.raw, admin, mailer, applicantId!, { appRole: "REQUESTER", jobRole: "OTHER" }, BASE);
+    // Before the fix only server components saw the upgrade; the cookie kept `aid`, so the edge kept sending to /lobby.
+    expect((await b.cookieToken())?.aid).toBe(applicantId);
+    const res = await b.enter();
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/requests");
+    expect(res.headers.getSetCookie().some((c) => c.startsWith("authjs.session-token="))).toBe(true);
+    const tok = await b.cookieToken();
+    expect(tok?.appRole).toBe("REQUESTER");
+    expect(tok?.uid).toBe(applicantId);
+    expect(tok?.aid).toBeUndefined();
+  }, 120_000);
+
+  it("/lobby/enter without a session goes to sign-in", async () => {
+    const res = await new Browser(h).enter();
+    expect(new URL(res.headers.get("location")!).pathname).toBe("/signin");
+  }, 60_000);
 
   it("an applicant whose row disappears (deleted, not approved) loses the session", async () => {
     const email = "gone.soon@gmail.com";

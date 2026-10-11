@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { ENTER_PATH } from "@/lib/auth.config";
 import { JoinError, resendCode, verifyCode } from "@/lib/applicants";
 import { failed, field, told, type AuthFormState } from "@/lib/authForm";
 import { joinDeps } from "@/lib/joinDeps";
@@ -18,7 +19,7 @@ const SENT = "We sent a new code.";
 export async function verifyAction(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
   const code = field(fd, "code", { max: 20 });
   const visitor = await currentVisitor();
-  if (visitor.kind === "member") redirect("/requests");
+  if (visitor.kind === "member") redirect(ENTER_PATH);
   if (visitor.kind !== "applicant" || !/^\d{6}$/.test(code)) return failed(WRONG);
   let res: Awaited<ReturnType<typeof verifyCode>>;
   try {
@@ -34,7 +35,7 @@ export async function verifyAction(_prev: AuthFormState, fd: FormData): Promise<
 /** New code for the signed-in applicant (rate limited). Anonymous visitors get the same "sent" answer, and nothing happens. */
 export async function resendAction(): Promise<AuthFormState> {
   const visitor = await currentVisitor();
-  if (visitor.kind === "member") redirect("/requests");
+  if (visitor.kind === "member") redirect(ENTER_PATH);
   if (visitor.kind !== "applicant") return told(SENT, { sentAt: Date.now() });
   try {
     await resendCode(await joinDeps(), visitor.applicant.id);

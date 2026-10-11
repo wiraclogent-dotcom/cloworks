@@ -41,6 +41,18 @@ describe("edge authorized + shared session callback", () => {
   });
 });
 
+describe("proxy matcher", () => {
+  it("skips /lobby/enter (its route handler writes the refreshed cookie; the proxy would also re-set the old one)", async () => {
+    const { config } = await import("@/proxy");
+    const re = new RegExp(`^${config.matcher[0]}$`);
+    expect(re.test("/lobby/enter")).toBe(false);
+    expect(re.test("/lobby")).toBe(true);
+    expect(re.test("/lobby/enterx")).toBe(true);
+    expect(re.test("/requests")).toBe(true);
+    expect(re.test("/api/auth/session")).toBe(false);
+  });
+});
+
 describe("routeDecision: who may open which path", () => {
   // true = allowed, false = sent to sign-in, string = redirect target.
   const table: Record<string, Record<"anonymous" | "applicant" | "member", true | false | string>> = {
@@ -50,6 +62,7 @@ describe("routeDecision: who may open which path", () => {
     "/join/x": { anonymous: true, applicant: true, member: true },
     "/join/invite/y": { anonymous: true, applicant: true, member: true },
     "/lobby": { anonymous: false, applicant: true, member: "/requests" },
+    "/lobby/enter": { anonymous: false, applicant: true, member: "/requests" },
     "/verify": { anonymous: true, applicant: true, member: "/requests" },
     "/requests": { anonymous: false, applicant: "/lobby", member: true },
     "/admin/users": { anonymous: false, applicant: "/lobby", member: true },

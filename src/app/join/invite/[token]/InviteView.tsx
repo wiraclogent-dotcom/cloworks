@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { oauthProviderIds } from "@/lib/auth.config";
+import { ENTER_PATH, oauthProviderIds } from "@/lib/auth.config";
 import { isInviteToken } from "@/lib/authForm";
 import { loadInvite } from "@/lib/joinDeps";
 import { roleLabel } from "@/lib/invites";
@@ -29,7 +28,7 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
       <div>
         <h1 className={authTitleClass}>You&apos;re already a member</h1>
         <p className={lead}>You&apos;re signed in to a workspace already.</p>
-        <Link href="/requests" className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</Link>
+        <a href={ENTER_PATH} className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</a>
       </div>
     );
   }

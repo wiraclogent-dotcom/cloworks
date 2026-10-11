@@ -159,7 +159,10 @@ describe("/verify", () => {
     lib.lobbyState.mockResolvedValue({ kind: "none" });
     await expect(VerifyView({ searchParams: sp({}) })).rejects.toThrow("NEXT_REDIRECT:/lobby");
     currentVisitor.mockResolvedValue({ kind: "member" });
-    await expect(VerifyView({ searchParams: sp({}) })).rejects.toThrow("NEXT_REDIRECT:/requests");
+    // Through /lobby/enter, which writes the upgraded token to the cookie (else the edge loops the visitor to /lobby).
+    await expect(VerifyView({ searchParams: sp({}) })).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
+    await expect(verifyAction(null, fd({ code: "123456" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
+    await expect(resendAction()).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
   });
   it("anonymous submit and resend get the fixed answers and touch nothing", async () => {
     expect(await verifyAction(null, fd({ code: "123456" }))).toMatchObject({ error: "That code isn't right or has expired." });
@@ -247,6 +250,8 @@ describe("/lobby", () => {
     expect(await joinWithCodeAction(null, fd({ link: "abc" }))).toMatchObject({ error: expect.stringContaining("Contact your admin") });
     currentVisitor.mockResolvedValue({ kind: "none" });
     await expect(joinWithCodeAction(null, fd({ link: "abc" }))).rejects.toThrow("NEXT_REDIRECT:/signin");
+    currentVisitor.mockResolvedValue({ kind: "member" });
+    await expect(joinWithCodeAction(null, fd({ link: "abc" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
   });
 });
 
@@ -275,7 +280,7 @@ describe("/join/[code]", () => {
     currentVisitor.mockResolvedValue({ kind: "member" });
     render(await JoinCodeView({ params: params("abc") }));
     expect(text()).toContain("You're already in Clogent");
-    expect(screen.getByRole("link", { name: /requests/i }).getAttribute("href")).toBe("/requests");
+    expect(screen.getByRole("link", { name: /requests/i }).getAttribute("href")).toBe("/lobby/enter");
   });
 });
 
@@ -313,6 +318,7 @@ describe("/join/invite/[token]", () => {
     currentVisitor.mockResolvedValue({ kind: "member" });
     render(await InviteView({ params }));
     expect(text()).toContain("You're already a member");
+    expect(screen.getByRole("link", { name: /requests/i }).getAttribute("href")).toBe("/lobby/enter");
   });
   it("password path accepts then signs in to /requests", async () => {
     lib.acceptInvite.mockResolvedValue({ userId: "u1", email: "andi@gmail.com" });
@@ -320,11 +326,16 @@ describe("/join/invite/[token]", () => {
     expect(lib.acceptInvite).toHaveBeenCalledWith({ db: true }, "tok", { name: "Andi", password: "long-enough-1" });
     expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", redirectTo: "/requests" });
   });
-  it("applicant path accepts with the session's applicant and goes to /requests", async () => {
+  it("applicant path accepts with the session's applicant and goes in through /lobby/enter", async () => {
     currentVisitor.mockResolvedValue(applicant);
     lib.acceptInvite.mockResolvedValue({ userId: "a1", email: "andi@gmail.com" });
-    await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/requests");
+    await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
     expect(lib.acceptInvite).toHaveBeenCalledWith({ db: true }, "tok", { applicantId: "a1" });
+  });
+  it("a member (e.g. a just-upgraded applicant) goes in through /lobby/enter", async () => {
+    currentVisitor.mockResolvedValue({ kind: "member" });
+    await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
+    expect(lib.acceptInvite).not.toHaveBeenCalled();
   });
   it("maps refusals to copy; a stale applicant session is told to sign in again", async () => {
     currentVisitor.mockResolvedValue(applicant);

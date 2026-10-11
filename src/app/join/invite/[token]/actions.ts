@@ -2,6 +2,7 @@
 
 import { AuthError } from "next-auth";
 import { redirect } from "next/navigation";
+import { ENTER_PATH } from "@/lib/auth.config";
 import { signIn } from "@/lib/auth";
 import { AdminError } from "@/lib/admin";
 import { failed, field, isInviteToken, type AuthFormState } from "@/lib/authForm";
@@ -19,14 +20,14 @@ function copyFor(e: AdminError): string {
 
 /**
  * Accepts an invite. `mode=applicant`: the signed-in applicant becomes the member (same id, so the next session read
- * upgrades the token) and goes to /requests. `mode=password`: a new account with the given name and password, then a
+ * upgrades the token) and goes to /requests via /lobby/enter. `mode=password`: a new account with the given name and password, then a
  * password sign-in to /requests.
  */
 export async function acceptInviteAction(_prev: AuthFormState, fd: FormData): Promise<AuthFormState> {
   const token = field(fd, "token", { max: 200 });
   if (!isInviteToken(token)) return failed(GONE);
   const visitor = await currentVisitor();
-  if (visitor.kind === "member") redirect("/requests");
+  if (visitor.kind === "member") redirect(ENTER_PATH);
 
   if (field(fd, "mode") === "applicant") {
     if (visitor.kind !== "applicant") return failed("Your session ended — sign in again.");
@@ -36,7 +37,8 @@ export async function acceptInviteAction(_prev: AuthFormState, fd: FormData): Pr
       if (e instanceof AdminError) return failed(copyFor(e));
       throw e;
     }
-    redirect("/requests");
+    // Through /lobby/enter: it writes the upgraded (member) token to the cookie, else the edge sends them back to /lobby.
+    redirect(ENTER_PATH);
   }
 
   const name = field(fd, "name", { max: 200 });
