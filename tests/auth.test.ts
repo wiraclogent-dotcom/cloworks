@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { resolveUser } from "@/lib/import/aliases";
 import { emailDomainOf, resolveSignIn, isTrustedIdentity, decideSignIn } from "@/lib/signin";
-import { refreshJwt, loadActiveUser, requireUserWith, bindSignInToken } from "@/lib/session-core";
+import { refreshJwt, loadActiveUser, requireUserWith, bindSignInToken, bindApplicantToken, loadSessionApplicant } from "@/lib/session-core";
 import { authenticateWithPassword } from "@/lib/passwordAuth";
 import { hashPassword } from "@/lib/password";
 import { createTestDb, type TestDb } from "./helpers/testDb";
+
+type Tok = { uid?: string; aid?: string; loginEmail?: string; pwv?: number; appRole?: "ADMIN" | "REQUESTER"; jobRole?: "OTHER" };
 
 describe("emailDomainOf", () => {
   it("returns the lowercased domain of a well-formed address", () => {
@@ -20,73 +21,47 @@ describe("emailDomainOf", () => {
   });
 });
 
-describe("resolveSignIn", () => {
+describe("resolveSignIn (never creates anything)", () => {
   let db: TestDb;
   beforeAll(async () => {
     db = await createTestDb();
-    const p = db.prisma;
+    const p = db.raw;
     await p.user.create({
-      data: { email: "wira.budi@clogent.co.id", name: "Wira", fullName: "Wira Budi", appRole: "ADMIN", jobRole: "OTHER" },
+      data: { email: "wira.budi@clogent.co.id", name: "Wira", fullName: "Wira Budi", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "clogent" },
     });
+    await p.user.create({ data: { email: "gone@clogent.co.id", name: "Gone", fullName: "Gone", active: false, workspaceId: "clogent" } });
     await p.user.create({
-      data: { email: "gone@clogent.co.id", name: "Gone", fullName: "Gone", active: false },
+      data: { email: null, name: "Rina", fullName: "Rina Putri", aliases: ["rina.p"], jobRole: "DESIGNER", appRole: "CREATIVE", workspaceId: "clogent" },
     });
-    await p.user.create({
-      data: { email: null, name: "Rina", fullName: "Rina Putri", aliases: ["rina.p"], jobRole: "DESIGNER", appRole: "CREATIVE" },
-    });
-    await p.user.create({ data: { email: null, name: "Dup", fullName: "Dup A", aliases: ["dup"] } });
-    await p.user.create({ data: { email: null, name: "dup", fullName: "Dup B" } });
-    await p.user.create({ data: { email: "fadli@gmail.com", name: "Fadli", fullName: "Fadli", appRole: "CREATIVE" } });
+    await p.user.create({ data: { email: "fadli@gmail.com", name: "Fadli", fullName: "Fadli", appRole: "CREATIVE", workspaceId: "clogent" } });
+    await p.applicant.create({ data: { email: "andi@gmail.com", name: "Andi", emailVerifiedAt: new Date() } });
   });
   afterAll(async () => {
     await db?.stop();
   });
 
-  it("links existing user by email (case-insensitive)", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "Wira.Budi@Clogent.co.id" });
-    expect(r.ok).toBe(true);
-    if (r.ok) {
-      expect(r.user.appRole).toBe("ADMIN");
-      expect(r.created).toBe(false);
-    }
+  it("links an existing user by email (case-insensitive)", async () => {
+    const r = await resolveSignIn(db.raw, { email: "Wira.Budi@Clogent.co.id" });
+    expect(r.ok && r.kind === "user" && r.user.appRole).toBe("ADMIN");
   });
   it("rejects inactive users", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "gone@clogent.co.id" });
-    expect(r).toEqual({ ok: false, reason: "inactive" });
+    expect(await resolveSignIn(db.raw, { email: "gone@clogent.co.id" })).toEqual({ ok: false, reason: "inactive" });
   });
-  it("refuses an unknown email whose domain is no workspace's email domain", async () => {
-    expect(await resolveSignIn(db.prisma, { email: "someone@gmail.com" })).toEqual({ ok: false, reason: "not-allowed" });
-    expect((await resolveSignIn(db.prisma, { email: "x@evil-clogent.co.id" })).ok).toBe(false);
-    expect((await resolveSignIn(db.prisma, { email: "x@sub.clogent.co.id" })).ok).toBe(false);
-    expect((await resolveSignIn(db.prisma, { email: "a@b@clogent.co.id" })).ok).toBe(false);
-    expect(await db.prisma.user.count({ where: { email: "someone@gmail.com" } })).toBe(0);
+  it("finds an applicant by email (case-insensitive)", async () => {
+    const r = await resolveSignIn(db.raw, { email: " Andi@Gmail.com " });
+    expect(r.ok && r.kind === "applicant" && r.applicant.email).toBe("andi@gmail.com");
   });
-  it("an existing User signs in whatever their email domain", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "Fadli@gmail.com" });
-    expect(r.ok && !r.created && r.user.appRole).toBe("CREATIVE");
+  it("an unknown email, even on a workspace email domain, is not found and creates nothing", async () => {
+    const before = { users: await db.raw.user.count(), applicants: await db.raw.applicant.count() };
+    expect(await resolveSignIn(db.raw, { email: "someone@gmail.com" })).toEqual({ ok: false, reason: "not-found" });
+    expect(await resolveSignIn(db.raw, { email: "new.person@clogent.co.id", name: "New" })).toEqual({ ok: false, reason: "not-found" });
+    expect(await resolveSignIn(db.raw, { email: "" })).toEqual({ ok: false, reason: "no-email" });
+    expect({ users: await db.raw.user.count(), applicants: await db.raw.applicant.count() }).toEqual(before);
   });
   it("does not let an outside address claim a roster row by alias or name", async () => {
-    const r1 = await resolveSignIn(db.prisma, { email: "rina.p@gmail.com", name: "Rina" });
-    expect(r1).toEqual({ ok: false, reason: "not-allowed" });
-    const row = await db.prisma.user.findFirst({ where: { name: "Rina", fullName: "Rina Putri" } });
+    expect(await resolveSignIn(db.raw, { email: "rina.p@gmail.com", name: "Rina" })).toEqual({ ok: false, reason: "not-found" });
+    const row = await db.raw.user.findFirst({ where: { name: "Rina", fullName: "Rina Putri" } });
     expect(row?.email).toBeNull();
-    expect(row?.appRole).toBe("CREATIVE");
-  });
-  it("creates the user in the workspace whose emailDomain matches (case-insensitive)", async () => {
-    await db.raw.workspace.create({ data: { id: "ws-partner", name: "Partner", slug: "partner", emailDomain: "Partner.Test" } });
-    const r = await resolveSignIn(db.raw, { email: "Newbie@partner.test", name: "Newbie" });
-    expect(r.ok && r.created && r.user.workspaceId).toBe("ws-partner");
-  });
-  it("same-domain local-part equal to alias does not link either", async () => {
-    const r = await resolveSignIn(db.prisma, { email: "rina.p@clogent.co.id" });
-    expect(r.ok && r.created && r.user.appRole).toBe("REQUESTER");
-  });
-  it("creates a REQUESTER for a new permitted email, once", async () => {
-    const a = await resolveSignIn(db.prisma, { email: "New.Person@clogent.co.id", name: "New Person" });
-    const b = await resolveSignIn(db.prisma, { email: "new.person@clogent.co.id", name: "New Person" });
-    expect(a.ok && a.created && a.user.appRole).toBe("REQUESTER");
-    expect(b.ok && !b.created && b.user.id).toBe(a.ok ? a.user.id : "");
-    expect(await db.prisma.user.count({ where: { email: "new.person@clogent.co.id" } })).toBe(1);
   });
 });
 
@@ -124,29 +99,92 @@ describe("decideSignIn + session", () => {
   });
 
   it("unverified google email rejected; verified accepted", async () => {
-    const bad = await decideSignIn(db.prisma, "google", { email: "a@clogent.co.id", email_verified: false }, env);
-    expect(bad.ok).toBe(false);
-    const good = await decideSignIn(db.prisma, "google", { email: "a@clogent.co.id", email_verified: true }, env);
+    const bad = await decideSignIn(db.raw, "google", { email: "a@clogent.co.id", email_verified: false }, env);
+    expect(bad).toEqual({ ok: false, reason: "untrusted" });
+    const good = await decideSignIn(db.raw, "google", { email: "a@clogent.co.id", email_verified: true }, env);
     expect(good.ok).toBe(true);
   });
   it("entra: wrong tid or missing env rejected; right tid accepted", async () => {
-    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "x" }, env)).ok).toBe(false);
-    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, {})).ok).toBe(false);
-    expect((await decideSignIn(db.prisma, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, env)).ok).toBe(true);
+    expect((await decideSignIn(db.raw, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "x" }, env)).ok).toBe(false);
+    expect((await decideSignIn(db.raw, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, {})).ok).toBe(false);
+    expect((await decideSignIn(db.raw, "microsoft-entra-id", { email: "b@clogent.co.id", tid: "t1" }, env)).ok).toBe(true);
   });
-  it("an existing gmail User signs in through Google; an unknown gmail address is refused", async () => {
-    expect((await decideSignIn(db.prisma, "google", { email: "G@gmail.com", email_verified: true }, env)).ok).toBe(true);
-    expect(await decideSignIn(db.prisma, "google", { email: "stranger@gmail.com", email_verified: true }, env)).toEqual({ ok: false, reason: "not-allowed" });
+  it("decideSignIn: trusted unknown gmail → applicant; inactive user → inactive; unverified Google → untrusted", async () => {
+    const users = await db.raw.user.count();
+    const r = await decideSignIn(db.raw, "google", { email: "stranger@gmail.com", name: "Stranger", email_verified: true }, env);
+    expect(r.ok && r.kind).toBe("applicant");
+    if (!r.ok || r.kind !== "applicant") throw new Error("expected applicant");
+    expect(r.applicant).toMatchObject({ email: "stranger@gmail.com", name: "Stranger", requestedWorkspaceId: null });
+    expect(r.applicant.emailVerifiedAt).not.toBeNull();
+    expect(await db.raw.user.count()).toBe(users);
+
+    await db.raw.user.create({ data: { email: "off@gmail.com", name: "Off", fullName: "Off", active: false, workspaceId: "clogent" } });
+    expect(await decideSignIn(db.raw, "google", { email: "Off@gmail.com", email_verified: true }, env)).toEqual({ ok: false, reason: "inactive" });
+    expect(await decideSignIn(db.raw, "google", { email: "new@gmail.com", email_verified: false }, env)).toEqual({ ok: false, reason: "untrusted" });
+    expect(await db.raw.applicant.count({ where: { email: "new@gmail.com" } })).toBe(0);
+  });
+  it("decideSignIn: an existing User signs in as a member; a workspace-domain email becomes an applicant with a join request, not a User", async () => {
+    const g = await decideSignIn(db.raw, "google", { email: "G@gmail.com", email_verified: true }, env);
+    expect(g.ok && g.kind === "user" && g.user.email).toBe("g@gmail.com");
+    const before = await db.raw.user.count();
+    const d = await decideSignIn(db.raw, "google", { email: "Fresh@clogent.co.id", name: "Fresh", email_verified: true }, env);
+    expect(d.ok && d.kind === "applicant" && d.applicant.requestedWorkspaceId).toBe("clogent");
+    expect(await db.raw.user.count()).toBe(before);
+  });
+  it("decideSignIn: Andi@Gmail.com matches applicant andi@gmail.com", async () => {
+    const a = await db.raw.applicant.create({ data: { email: "andi@gmail.com", name: "Andi", emailVerifiedAt: new Date() } });
+    const r = await decideSignIn(db.raw, "google", { email: "Andi@Gmail.com", name: "Someone Else", email_verified: true }, env);
+    expect(r.ok && r.kind === "applicant" && r.applicant.id).toBe(a.id);
+    expect(await db.raw.applicant.count({ where: { email: { equals: "andi@gmail.com", mode: "insensitive" } } })).toBe(1);
+  });
+
+  it("refreshJwt upgrades an aid token once a User with that id exists", async () => {
+    const a = await db.raw.applicant.create({ data: { email: "up@gmail.com", name: "Up", emailVerifiedAt: new Date() } });
+    const tok = bindApplicantToken<Tok>({ uid: "stale", appRole: "ADMIN", jobRole: "OTHER", pwv: 3 }, a);
+    expect(tok).toEqual({ aid: a.id, loginEmail: "up@gmail.com" });
+    expect(await refreshJwt(db.raw, { ...tok })).toEqual(tok);
+    // Approval: same id, applicant row gone.
+    await db.raw.$transaction([
+      db.raw.applicant.delete({ where: { id: a.id } }),
+      db.raw.user.create({ data: { id: a.id, email: "up@gmail.com", name: "Up", fullName: "Up", appRole: "REQUESTER", workspaceId: "clogent" } }),
+    ]);
+    const up = await refreshJwt(db.raw, { ...tok });
+    expect(up).toEqual({ uid: a.id, loginEmail: "up@gmail.com", pwv: 0, appRole: "REQUESTER", jobRole: "OTHER" });
+    expect(await refreshJwt(db.raw, up!)).not.toBeNull();
+  });
+  it("refreshJwt returns null when neither row exists", async () => {
+    expect(await refreshJwt(db.raw, { aid: "nobody", loginEmail: "x@gmail.com" })).toBeNull();
+  });
+  it("refreshJwt refuses an aid token whose email no longer matches, or whose User is inactive or has another email", async () => {
+    const a = await db.raw.applicant.create({ data: { email: "m1@gmail.com", name: "M", emailVerifiedAt: new Date() } });
+    expect(await refreshJwt(db.raw, { aid: a.id, loginEmail: "other@gmail.com" })).toBeNull();
+    expect(await refreshJwt(db.raw, { aid: a.id })).toBeNull();
+    await db.raw.applicant.delete({ where: { id: a.id } });
+    const u = await db.raw.user.create({ data: { id: a.id, email: "m2@gmail.com", name: "M2", fullName: "M2", workspaceId: "clogent" } });
+    expect(await refreshJwt(db.raw, { aid: a.id, loginEmail: "m1@gmail.com" })).toBeNull();
+    await db.raw.user.update({ where: { id: u.id }, data: { email: "m1@gmail.com", active: false } });
+    expect(await refreshJwt(db.raw, { aid: a.id, loginEmail: "m1@gmail.com" })).toBeNull();
+  });
+  it("an applicant session is never a user session; loadSessionApplicant tells the kinds apart", async () => {
+    const a = await db.raw.applicant.create({ data: { email: "lob@gmail.com", name: "Lob" } });
+    const sess = { user: { applicantId: a.id, loginEmail: "lob@gmail.com" } };
+    await expect(requireUserWith(async () => sess, db.raw)).rejects.toThrow();
+    expect(await loadSessionApplicant(db.raw, sess)).toEqual({ kind: "applicant", applicant: { id: a.id, email: "lob@gmail.com", name: "Lob" } });
+    expect(await loadSessionApplicant(db.raw, { user: { applicantId: a.id, loginEmail: "no@gmail.com" } })).toEqual({ kind: "none" });
+    expect(await loadSessionApplicant(db.raw, { user: { id: "u1", applicantId: a.id } })).toEqual({ kind: "member" });
+    expect(await loadSessionApplicant(db.raw, null)).toEqual({ kind: "none" });
+    expect(await loadSessionApplicant(db.raw, { user: { applicantId: "gone", loginEmail: "lob@gmail.com" } })).toEqual({ kind: "none" });
   });
 
   it("an active gmail User with a password signs in without any allow-list row", async () => {
     const u = await db.prisma.user.create({
       data: { email: "solo@gmail.com", name: "Solo", fullName: "Solo", passwordHash: await hashPassword("correct horse battery") },
     });
-    expect((await authenticateWithPassword(db.prisma, "Solo@Gmail.com", "correct horse battery"))?.id).toBe(u.id);
-    expect(await authenticateWithPassword(db.prisma, "solo@gmail.com", "wrong password here")).toBeNull();
+    const r = await authenticateWithPassword(db.raw, "Solo@Gmail.com", "correct horse battery");
+    expect(r?.kind === "user" && r.user.id).toBe(u.id);
+    expect(await authenticateWithPassword(db.raw, "solo@gmail.com", "wrong password here")).toBeNull();
     await db.prisma.user.update({ where: { id: u.id }, data: { active: false } });
-    expect(await authenticateWithPassword(db.prisma, "solo@gmail.com", "correct horse battery")).toBeNull();
+    expect(await authenticateWithPassword(db.raw, "solo@gmail.com", "correct horse battery")).toBeNull();
   });
   it("loadActiveUser accepts any active user with matching claims", async () => {
     const u = await db.prisma.user.create({ data: { email: "anyone@partner.test", name: "Any", fullName: "Any", appRole: "CREATIVE" } });
@@ -211,23 +249,5 @@ describe("decideSignIn + session", () => {
     expect(tok.loginEmail).toBe("bind@clogent.co.id");
     expect(tok.uid).toBe(u.id);
     expect(await refreshJwt(db.prisma, tok)).not.toBeNull();
-  });
-  it("an OAuth display name that collides with the roster gets the email local part as name and keeps the display name as fullName", async () => {
-    const wira = await db.prisma.user.create({ data: { email: "wira.x@clogent.co.id", name: "Wira", fullName: "Wira Budi Prasetyo", appRole: "ADMIN", aliases: ["Wiro"] } });
-    const a = await resolveSignIn(db.prisma, { email: "wira.second@clogent.co.id", name: "Wira Budi Prasetyo" });
-    expect(a.ok && a.created).toBe(true);
-    if (!a.ok) throw new Error("setup");
-    expect(a.user.name).toBe("wira.second");
-    expect(a.user.fullName).toBe("Wira Budi Prasetyo");
-    const roster = await db.prisma.user.findMany({ select: { id: true, name: true, fullName: true, aliases: true, active: true } });
-    expect(resolveUser("Wira", roster)).toBe(wira.id);
-    expect(resolveUser("Wiro", roster)).toBe(wira.id);
-  });
-  it("numeric suffix when the local part collides as well, and a free display name is kept", async () => {
-    await db.prisma.user.create({ data: { email: "pat@clogent.co.id", name: "Pat Roster", fullName: "Pat Roster", appRole: "CREATIVE" } });
-    const a = await resolveSignIn(db.prisma, { email: "pat.roster@clogent.co.id", name: "Pat Roster" }); // local "pat.roster" collides with name
-    expect(a.ok && a.user.name).toBe("pat.roster2");
-    const b = await resolveSignIn(db.prisma, { email: "zed@clogent.co.id", name: "Zed Unique" });
-    expect(b.ok && b.user.name).toBe("Zed Unique");
   });
 });

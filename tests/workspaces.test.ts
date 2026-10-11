@@ -176,9 +176,8 @@ describe("app cores through the scoped client", () => {
     expect(await db.raw.brand.count({ where: { name: "Main" } })).toBe(2);
   });
 
-  it("first OAuth sign-in creates the user in the Clogent workspace", async () => {
-    const r = await resolveSignIn(db.raw, { email: "newcomer@clogent.co.id", name: "Newcomer" });
-    expect(r).toMatchObject({ ok: true, created: true });
-    if (r.ok) expect(r.user.workspaceId).toBe("clogent");
+  it("first OAuth sign-in on the Clogent email domain creates no User (it becomes an applicant)", async () => {
+    expect(await resolveSignIn(db.raw, { email: "newcomer@clogent.co.id", name: "Newcomer" })).toEqual({ ok: false, reason: "not-found" });
+    expect(await db.raw.user.count({ where: { email: "newcomer@clogent.co.id" } })).toBe(0);
   });
 });

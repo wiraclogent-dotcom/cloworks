@@ -5,12 +5,18 @@ import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 
 declare module "next-auth" {
   interface Session {
-    user: { id: string; appRole: AppRole; jobRole: JobRole; loginEmail?: string; pwv?: number } & import("next-auth").DefaultSession["user"];
+    /**
+     * Member sessions set id/appRole/jobRole. Applicant sessions set only `applicantId` (+ loginEmail): `id` and the
+     * roles stay unset, so `requireUser()` rejects them.
+     */
+    user: { id: string; appRole: AppRole; jobRole: JobRole; loginEmail?: string; pwv?: number; applicantId?: string } & import("next-auth").DefaultSession["user"];
   }
 }
 declare module "@auth/core/jwt" {
   interface JWT {
     uid?: string;
+    /** Applicant id for an applicant token (no uid/appRole/jobRole/pwv). */
+    aid?: string;
     /** Normalised email this token was issued for; a rebound/cleared email invalidates it. */
     loginEmail?: string;
     /** User.passwordVersion when issued; a password change invalidates older tokens. */
@@ -28,6 +34,37 @@ export function oauthProviderIds(env: Record<string, string | undefined> = proce
   return ids;
 }
 
+export type RouteKind = "anonymous" | "applicant" | "member";
+
+const PUBLIC_PATHS = ["/signin", "/signup"];
+const APPLICANT_PATHS = ["/lobby", "/verify"];
+const under = (pathname: string, base: string) => pathname === base || pathname.startsWith(base + "/");
+const isJoin = (pathname: string) => pathname.startsWith("/join/");
+
+/**
+ * Pure edge routing: true = allow, false = send to sign-in, string = redirect there.
+ * Public: "/", /signin, /signup, /join/**. An applicant may reach only /lobby, /verify, /join/** (and /signin, the
+ * Auth.js error page); everything else sends them to /lobby. A member on /lobby or /verify goes to /requests, and on
+ * "/" skips the landing page unless previewing.
+ */
+export function routeDecision(pathname: string, kind: RouteKind, opts: { preview?: boolean } = {}): boolean | string {
+  if (pathname === "/") {
+    if (kind === "member") return opts.preview ? true : "/requests";
+    return kind === "applicant" ? "/lobby" : true;
+  }
+  if (pathname === "/signin" || isJoin(pathname)) return true;
+  if (kind === "applicant") return APPLICANT_PATHS.some((p) => under(pathname, p)) ? true : "/lobby";
+  if (PUBLIC_PATHS.some((p) => pathname === p)) return true;
+  if (APPLICANT_PATHS.some((p) => under(pathname, p))) return kind === "member" ? "/requests" : false;
+  return kind === "member";
+}
+
+/** Which kind of session the edge sees, from the session callback's output. */
+function routeKind(user: { appRole?: unknown; applicantId?: unknown } | undefined): RouteKind {
+  if (user?.appRole) return "member";
+  return user?.applicantId ? "applicant" : "anonymous";
+}
+
 /**
  * Edge/DB-free part of the config, shared with proxy.ts. Env: AUTH_GOOGLE_ID/SECRET, AUTH_MICROSOFT_ENTRA_ID_ID/SECRET/ISSUER.
  * The password (Credentials) provider needs the database, so auth.ts adds it.
@@ -39,14 +76,9 @@ export const authConfig = {
   callbacks: {
     // Edge role comes from the cookie token and may be stale up to 24h; requireUser() is the authoritative gate.
     authorized({ auth, request }) {
-      const { pathname } = request.nextUrl;
-      if (pathname === "/signin") return true;
-      // "/" is the public landing page; signed-in people skip it and land on the board unless they ask for `/?preview`.
-      if (pathname === "/") {
-        const skip = auth?.user?.appRole && !request.nextUrl.searchParams.has("preview");
-        return skip ? Response.redirect(new URL("/requests", request.nextUrl)) : true;
-      }
-      return !!auth?.user?.appRole;
+      const { pathname, searchParams } = request.nextUrl;
+      const d = routeDecision(pathname, routeKind(auth?.user), { preview: searchParams.has("preview") });
+      return typeof d === "string" ? Response.redirect(new URL(d, request.nextUrl)) : d;
     },
     session({ session, token }) {
       if (token.uid && token.appRole && token.jobRole) {
@@ -55,6 +87,9 @@ export const authConfig = {
         session.user.jobRole = token.jobRole;
         session.user.loginEmail = token.loginEmail;
         session.user.pwv = token.pwv;
+      } else if (token.aid) {
+        session.user.applicantId = token.aid;
+        session.user.loginEmail = token.loginEmail;
       }
       return session;
     },

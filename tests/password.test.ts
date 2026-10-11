@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole } from "@prisma/client";
 import { hashPassword, verifyPassword, checkNewPassword, MIN_PASSWORD_LENGTH } from "@/lib/password";
-import { authenticateWithPassword, LOCK_AFTER, LOCK_MINUTES } from "@/lib/passwordAuth";
+import { authenticateWithPassword, LOCK_AFTER, LOCK_MINUTES, type PasswordIdentity } from "@/lib/passwordAuth";
 import { AdminError, setUserPassword, changeOwnPassword } from "@/lib/admin";
 import { loadActiveUser, bindSignInToken, refreshJwt } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
+
+const userIdOf = (r: PasswordIdentity | null) => (r?.kind === "user" ? r.user.id : undefined);
 
 type Token = { uid?: string; loginEmail?: string; pwv?: number };
 
@@ -77,35 +79,65 @@ describe("password sign-in (db)", () => {
 
   it("signs in with the right email (any case, spaces trimmed) and password", async () => {
     const u = await mk();
-    const r = await authenticateWithPassword(db.prisma, `  ${u.email!.toUpperCase()} `, "initial-password-1");
-    expect(r?.id).toBe(u.id);
+    const r = await authenticateWithPassword(db.raw, `  ${u.email!.toUpperCase()} `, "initial-password-1");
+    expect(r?.kind === "user" && r.user.id).toBe(u.id);
   });
 
   it("rejects a wrong password, an unknown email, no password set, and inactive users", async () => {
     const u = await mk();
-    expect(await authenticateWithPassword(db.prisma, u.email!, "wrong-password-1")).toBeNull();
-    expect(await authenticateWithPassword(db.prisma, "nobody@clogent.co.id", "initial-password-1")).toBeNull();
+    expect(await authenticateWithPassword(db.raw, u.email!, "wrong-password-1")).toBeNull();
+    expect(await authenticateWithPassword(db.raw, "nobody@clogent.co.id", "initial-password-1")).toBeNull();
     const none = await mk({}, null);
-    expect(await authenticateWithPassword(db.prisma, none.email!, "initial-password-1")).toBeNull();
+    expect(await authenticateWithPassword(db.raw, none.email!, "initial-password-1")).toBeNull();
     const off = await mk({ active: false });
-    expect(await authenticateWithPassword(db.prisma, off.email!, "initial-password-1")).toBeNull();
+    expect(await authenticateWithPassword(db.raw, off.email!, "initial-password-1")).toBeNull();
   });
 
   it("accepts an active user on any email domain", async () => {
     const u = await mk({ email: `${uniq("ext")}@gmail.com` });
-    expect((await authenticateWithPassword(db.prisma, u.email!, "initial-password-1"))?.id).toBe(u.id);
+    const r = await authenticateWithPassword(db.raw, u.email!, "initial-password-1");
+    expect(r?.kind === "user" && r.user.id).toBe(u.id);
   });
 
   it(`locks for ${LOCK_MINUTES} minutes after ${LOCK_AFTER} failures, even for the right password; success resets`, async () => {
     const u = await mk();
     const t0 = new Date("2026-10-09T10:00:00Z");
-    for (let i = 0; i < LOCK_AFTER; i++) expect(await authenticateWithPassword(db.prisma, u.email!, "nope-nope-nope", t0)).toBeNull();
-    expect(await authenticateWithPassword(db.prisma, u.email!, "initial-password-1", t0)).toBeNull();
+    for (let i = 0; i < LOCK_AFTER; i++) expect(await authenticateWithPassword(db.raw, u.email!, "nope-nope-nope", t0)).toBeNull();
+    expect(await authenticateWithPassword(db.raw, u.email!, "initial-password-1", t0)).toBeNull();
     const later = new Date(t0.getTime() + LOCK_MINUTES * 60_000 + 1000);
-    expect((await authenticateWithPassword(db.prisma, u.email!, "initial-password-1", later))?.id).toBe(u.id);
+    const r = await authenticateWithPassword(db.raw, u.email!, "initial-password-1", later);
+    expect(r?.kind === "user" && r.user.id).toBe(u.id);
     const row = await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } });
     expect(row.failedLogins).toBe(0);
     expect(row.lockedUntil).toBeNull();
+  });
+
+  it("applicant password sign-in returns kind applicant; 5 wrong → locked 15 min", async () => {
+    const email = `${uniq("appl")}@gmail.com`;
+    const a = await db.raw.applicant.create({ data: { email, name: "Appl", passwordHash: await hashPassword("applicant-pass-1") } });
+    const ok = await authenticateWithPassword(db.raw, ` ${email.toUpperCase()} `, "applicant-pass-1");
+    expect(ok?.kind === "applicant" && ok.applicant.id).toBe(a.id);
+
+    const t0 = new Date("2026-10-11T10:00:00Z");
+    for (let i = 0; i < LOCK_AFTER; i++) expect(await authenticateWithPassword(db.raw, email, "wrong-pass-123", t0)).toBeNull();
+    const locked = await db.raw.applicant.findUniqueOrThrow({ where: { id: a.id } });
+    expect(locked.lockedUntil?.getTime()).toBe(t0.getTime() + LOCK_MINUTES * 60_000);
+    expect(await authenticateWithPassword(db.raw, email, "applicant-pass-1", t0)).toBeNull();
+    const later = new Date(t0.getTime() + LOCK_MINUTES * 60_000 + 1000);
+    expect((await authenticateWithPassword(db.raw, email, "applicant-pass-1", later))?.kind).toBe("applicant");
+    expect(await db.raw.applicant.findUniqueOrThrow({ where: { id: a.id } })).toMatchObject({ failedLogins: 0, lockedUntil: null });
+  });
+
+  it("an applicant without a password (Google-only) is refused like an unknown email; a User row wins over an applicant row", async () => {
+    const email = `${uniq("goog")}@gmail.com`;
+    await db.raw.applicant.create({ data: { email, name: "G", emailVerifiedAt: new Date() } });
+    expect(await authenticateWithPassword(db.raw, email, "anything-at-all")).toBeNull();
+
+    const both = `${uniq("both")}@gmail.com`;
+    await db.raw.applicant.create({ data: { email: both, name: "B", passwordHash: await hashPassword("applicant-pass-1") } });
+    const u = await mk({ email: both }, null);
+    expect(await authenticateWithPassword(db.raw, both, "applicant-pass-1")).toBeNull();
+    expect((await db.raw.user.findUniqueOrThrow({ where: { id: u.id } })).failedLogins).toBe(0);
   });
 
   it("setUserPassword: admin only, needs a login email, validates, bumps the version and clears a lock", async () => {
@@ -123,8 +155,8 @@ describe("password sign-in (db)", () => {
     expect(row.passwordVersion).toBe(1);
     expect(row.failedLogins).toBe(0);
     expect(row.lockedUntil).toBeNull();
-    expect(await authenticateWithPassword(db.prisma, u.email!, "initial-password-1")).toBeNull();
-    expect((await authenticateWithPassword(db.prisma, u.email!, "another-password-1"))?.id).toBe(u.id);
+    expect(await authenticateWithPassword(db.raw, u.email!, "initial-password-1")).toBeNull();
+    expect(userIdOf(await authenticateWithPassword(db.raw, u.email!, "another-password-1"))).toBe(u.id);
   });
 
   it("setUserPassword flags the user to change it; changeOwnPassword clears the flag", async () => {
@@ -144,7 +176,7 @@ describe("password sign-in (db)", () => {
     const none = await mk({}, null);
     expect(await code(changeOwnPassword(db.prisma, none.id, "", "brand-new-password"))).toBe("VALIDATION");
     await changeOwnPassword(db.prisma, u.id, "initial-password-1", "brand-new-password");
-    expect((await authenticateWithPassword(db.prisma, u.email!, "brand-new-password"))?.id).toBe(u.id);
+    expect(userIdOf(await authenticateWithPassword(db.raw, u.email!, "brand-new-password"))).toBe(u.id);
     expect((await db.prisma.user.findUniqueOrThrow({ where: { id: u.id } })).passwordVersion).toBe(1);
   });
 

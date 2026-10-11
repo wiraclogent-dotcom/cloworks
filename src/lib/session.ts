@@ -2,7 +2,9 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma, scopedDb, type ScopedDb } from "./db";
-import { isUnauthenticated, PasswordChangeRequiredError, requireUserWith, type SessionUser } from "./session-core";
+import {
+  isUnauthenticated, loadSessionApplicant, PasswordChangeRequiredError, requireUserWith, type SessionApplicant, type SessionUser,
+} from "./session-core";
 import { loadActiveUserOnce } from "./activeUser";
 
 /**
@@ -35,7 +37,18 @@ export async function requireUserOrRedirect(): Promise<SessionUser> {
   return user;
 }
 
-export type { ScopedDb };
+export type { ScopedDb, SessionApplicant };
+
+/**
+ * For applicant-only pages (/lobby, /verify). Memoised per request. A member session (including an applicant whose
+ * token was just upgraded after approval) goes to /requests; no or invalid session goes to /signin.
+ */
+export const requireApplicantOrRedirect: () => Promise<SessionApplicant> = cache(async () => {
+  const r = await loadSessionApplicant(prisma, await auth());
+  if (r.kind === "member") redirect("/requests");
+  if (r.kind === "none") redirect("/signin");
+  return r.applicant;
+});
 
 /** Database client scoped to the user's workspace. */
 export const dbFor = (user: SessionUser): ScopedDb => scopedDb(user.workspaceId);
