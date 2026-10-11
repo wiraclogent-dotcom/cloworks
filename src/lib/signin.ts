@@ -11,7 +11,7 @@ export function emailDomainOf(email: string): string | null {
 export type SignInResult =
   | { ok: true; kind: "user"; user: User }
   | { ok: true; kind: "applicant"; applicant: Applicant }
-  | { ok: false; reason: "no-email" | "inactive" | "untrusted" };
+  | { ok: false; reason: "no-email" | "inactive" | "untrusted" | "refused" };
 
 /** Who an email belongs to right now. Never creates anything. */
 export type ResolveResult =
@@ -58,9 +58,9 @@ export async function decideSignIn(
     return { ok: true, kind: "applicant", applicant };
   } catch (e) {
     if (!(e instanceof JoinError)) throw e;
-    // INACTIVE_MEMBER: a deactivated User appeared meanwhile. VALIDATION: unusable email, or an active User / changed
-    // row appeared meanwhile; refuse this attempt rather than guess.
-    return { ok: false, reason: e.code === "INACTIVE_MEMBER" ? "inactive" : "no-email" };
+    // INACTIVE_MEMBER: a deactivated User appeared meanwhile. Anything else (unusable email, or an active User /
+    // changed row appeared meanwhile): refuse this attempt rather than guess.
+    return { ok: false, reason: e.code === "INACTIVE_MEMBER" ? "inactive" : "refused" };
   }
 }
 

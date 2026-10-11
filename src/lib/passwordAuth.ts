@@ -29,8 +29,8 @@ export async function authenticateWithPassword(db: Db, rawEmail: string, passwor
   }
 
   const applicant = await db.applicant.findUnique({ where: { email } });
-  if (applicant && (await checkPassword(db.applicant, applicant, password, now))) return { kind: "applicant", applicant };
-  return null;
+  if (!applicant) return refuse(password); // unknown email: same hashing work as a known one (no enumeration)
+  return (await checkPassword(db.applicant, applicant, password, now)) ? { kind: "applicant", applicant } : null;
 }
 
 /** Same work as a real check, so an unknown email takes as long as a known one. */
