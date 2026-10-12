@@ -679,6 +679,52 @@
 @keyframes bar-grow { from { transform: scaleX(0); } }
 .animate-bar { transform-origin: left; animation: bar-grow 0.9s var(--ease-out) 0.15s both; }
 
+/*
+ * The welcome card illustration (WelcomeIllustration.tsx). SVG parts animate around their own box (transform-box).
+ * The travelling card loops every 9s: Requested (0–22%) → On progress (34–56%) → Done (68–92%), lifting between
+ * columns, its status bar recolouring on arrival; the sparkle pops when it lands in Done.
+ */
+.wi-halo, .wi-rays, .wi-twinkle, .wi-spark { transform-box: fill-box; transform-origin: center; }
+.wi-halo { animation: wi-halo 4.5s ease-in-out infinite; }
+.wi-rays { animation: wi-spin 30s linear infinite; }
+.wi-twinkle { animation: wi-twinkle 3.2s ease-in-out infinite; }
+.wi-cloud { animation: wi-cloud 10s ease-in-out infinite alternate; }
+.wi-shoot { opacity: 0; animation: wi-shoot 8s ease-out 2s infinite; }
+.wi-travel { animation: wi-travel 9s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
+.wi-travel-bar { fill: var(--status-requested-accent); animation: wi-travel-bar 9s steps(1, end) infinite; }
+.wi-spark { opacity: 0; animation: wi-spark 9s var(--ease-out) infinite; }
+
+@keyframes wi-halo { 50% { transform: scale(1.14); } }
+@keyframes wi-spin { to { transform: rotate(360deg); } }
+@keyframes wi-twinkle { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.2; transform: scale(0.55); } }
+@keyframes wi-cloud { from { transform: translateX(-6px); } to { transform: translateX(16px); } }
+@keyframes wi-shoot {
+  0%, 86% { opacity: 0; transform: translate(0, 0); }
+  88% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-70px, 34px); }
+}
+@keyframes wi-travel {
+  0%, 22% { transform: translate(0, 0); opacity: 1; }
+  28% { transform: translate(29px, -9px); }
+  34%, 56% { transform: translate(58px, 0); }
+  62% { transform: translate(87px, -9px); }
+  68%, 92% { transform: translate(116px, 0); opacity: 1; }
+  96% { transform: translate(116px, 0); opacity: 0; }
+  97% { transform: translate(0, 0); opacity: 0; }
+  100% { transform: translate(0, 0); opacity: 1; }
+}
+@keyframes wi-travel-bar {
+  0% { fill: var(--status-requested-accent); }
+  33% { fill: var(--status-in-progress-accent); }
+  67% { fill: var(--status-done-accent); }
+  97% { fill: var(--status-requested-accent); }
+}
+@keyframes wi-spark {
+  0%, 67% { opacity: 0; transform: scale(0.2); }
+  71% { opacity: 1; transform: scale(1.15); }
+  80%, 100% { opacity: 0; transform: scale(1.4); }
+}
+
 /* Confetti burst (<Celebrate>): each piece flies out along its --dx/--dy and spins, then fades. */
 @keyframes confetti {
   0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
@@ -709,7 +755,8 @@
   }
   .reveal,
   .animate-float,
-  .animate-mesh {
+  .animate-mesh,
+  [class*="wi-"] {
     animation: none !important;
   }
   .lift:hover {
