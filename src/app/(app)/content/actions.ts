@@ -17,6 +17,8 @@ import {
   createPostWith, updatePostWith, setPostMediaWith, movePostWith, deletePostWith, submitPostWith, sendBackPostWith,
   addContentCommentWith, type PostPatch, type PostMediaEntry,
 } from "@/lib/content/posts";
+import { approveContentPostWith, loadApproveForm, type ApproveInput, type ApproveFormData } from "@/lib/content/approve";
+import { CreateRequestError } from "@/lib/createRequest";
 import { cloudinaryConfig } from "@/lib/media/config";
 import { signUpload, type SignedUpload } from "@/lib/media/sign";
 import { cloudinaryClient } from "@/lib/media/client";
@@ -30,6 +32,11 @@ export type ContentActionResult<T = object> =
 function failure(e: unknown): { ok: false; code: ContentErrorCode | MediaErrorCode; message: string; fieldErrors?: Record<string, string> } {
   if (e instanceof ContentError) return { ok: false, code: e.code, message: e.message, fieldErrors: e.fieldErrors };
   if (e instanceof MediaError) return { ok: false, code: e.code, message: e.message };
+  if (e instanceof CreateRequestError) {
+    return e.code === "FORBIDDEN"
+      ? { ok: false, code: "FORBIDDEN", message: e.message }
+      : { ok: false, code: "INVALID", message: e.message, fieldErrors: e.fieldErrors };
+  }
   throw e;
 }
 
@@ -93,6 +100,13 @@ export async function submitPost(id: string): Promise<ContentActionResult> {
 }
 export async function sendBackPost(id: string, note: string): Promise<ContentActionResult> {
   return run(async (db, u) => { await sendBackPostWith(db, u, id, note); });
+}
+export async function loadApprove(id: string): Promise<ContentActionResult<{ form: ApproveFormData }>> {
+  return run(async (db, u) => ({ form: await loadApproveForm(db, u, id) }));
+}
+export async function approvePost(id: string, input: ApproveInput): Promise<ContentActionResult<{ requestId: string }>> {
+  // Notifications are wired in a later step.
+  return run((db, u) => approveContentPostWith(db, u, id, input));
 }
 export async function addContentComment(id: string, body: string): Promise<ContentActionResult<{ commentId: string }>> {
   return run(async (db, u) => {
