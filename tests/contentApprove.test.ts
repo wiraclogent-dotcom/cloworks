@@ -4,6 +4,8 @@ import { ContentError } from "@/lib/content/errors";
 import { CreateRequestError } from "@/lib/createRequest";
 import { createChannelWith } from "@/lib/content/channels";
 import { approveDefaults, approveContentPostWith, loadApproveForm, type ApproveInput } from "@/lib/content/approve";
+import { setPostMediaWith } from "@/lib/content/posts";
+import { transitionRequestWith } from "@/lib/transition";
 import type { ContentActor } from "@/lib/content/permissions";
 
 const NOW = new Date("2026-10-12T03:00:00Z"); // 10:00 Jakarta
@@ -104,6 +106,17 @@ describe("approve content post", () => {
     const p = await db.prisma.contentPost.findUniqueOrThrow({ where: { id } });
     expect([p.status, p.requestId, p.approvedById]).toEqual(["APPROVED", requestId, lead.id]);
     expect(p.approvedAt?.toISOString()).toBe(NOW.toISOString());
+  });
+
+  it("after a cancel, a mock-up the request's attachments still use is not returned for destruction", async () => {
+    const id = await submitted({ media: ["IMAGE"] });
+    const [link] = await db.prisma.contentPostMedia.findMany({ where: { postId: id } });
+    const { requestId } = await approveContentPostWith(db.prisma, lead, id, input(), NOW);
+    await transitionRequestWith(db.prisma, lead, requestId, "CANCELLED", {}, async () => {});
+    expect((await db.prisma.contentPost.findUniqueOrThrow({ where: { id } })).status).toBe("DRAFT");
+    const { removedMediaIds } = await setPostMediaWith(db.prisma, author, id, []);
+    expect(removedMediaIds).not.toContain(link.mediaId);
+    expect(removedMediaIds).toEqual([]);
   });
 
   it("omits the caption heading when there is no caption", async () => {

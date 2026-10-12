@@ -1,5 +1,5 @@
 import type { Prisma, RequestStatus } from "@prisma/client";
-import { nextStatus, type ContentEvent } from "./workflow";
+import { isEditable, nextStatus, type ContentEvent } from "./workflow";
 
 // What a request moving from -> to means for its linked post; null = no effect (REQUESTED, FIRST_LOOK).
 function eventFor(from: RequestStatus, to: RequestStatus): ContentEvent | null {
@@ -17,6 +17,7 @@ function eventFor(from: RequestStatus, to: RequestStatus): ContentEvent | null {
 export async function syncContentPostForRequest(
   tx: Prisma.TransactionClient, requestId: string, from: RequestStatus, to: RequestStatus, now: Date,
 ): Promise<{ postId: string; authorId: string; cancelled: boolean } | null> {
+  if (from === "CANCELLED" && to === "REQUESTED") return relinkRestored(tx, requestId);
   const ev = eventFor(from, to);
   if (!ev) return null;
   const post = await tx.contentPost.findFirst({ where: { requestId }, select: { id: true, status: true, authorId: true } });
@@ -28,8 +29,22 @@ export async function syncContentPostForRequest(
   const data: Prisma.ContentPostUncheckedUpdateManyInput = { status };
   if (ev === "requestDone") data.doneAt = now;
   if (ev === "requestReopened") data.doneAt = null;
-  if (cancelled) Object.assign(data, { requestId: null, approvedById: null, approvedAt: null, doneAt: null });
+  if (cancelled) Object.assign(data, { requestId: null, cancelledRequestId: requestId, approvedById: null, approvedAt: null, doneAt: null });
   // Pin the status we validated against so a concurrent change to the post is not overwritten.
   const res = await tx.contentPost.updateMany({ where: { id: post.id, status: post.status }, data });
   return res.count === 1 ? { postId: post.id, authorId: post.authorId, cancelled } : null;
+}
+
+/**
+ * A cancelled request was restored: relink the post the cancel unlinked, unless it has moved on since (resubmitted,
+ * or approved into a new request, which clears `cancelledRequestId`).
+ */
+async function relinkRestored(tx: Prisma.TransactionClient, requestId: string) {
+  const post = await tx.contentPost.findFirst({ where: { cancelledRequestId: requestId }, select: { id: true, status: true, authorId: true, requestId: true } });
+  if (!post || post.requestId || !isEditable(post.status)) return null;
+  const res = await tx.contentPost.updateMany({
+    where: { id: post.id, status: post.status, requestId: null },
+    data: { status: "APPROVED", requestId, cancelledRequestId: null },
+  });
+  return res.count === 1 ? { postId: post.id, authorId: post.authorId, cancelled: false } : null;
 }

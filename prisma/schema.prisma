@@ -355,6 +355,7 @@ model Notification {
   @@index([userId, readAt])
   @@index([workspaceId])
   @@index([userId, createdAt])
+  @@index([contentPostId])
 }
 
 enum ProjectStage {
@@ -630,26 +631,28 @@ enum ContentStatus {
 }
 
 model ContentPost {
-  id           String         @id @default(cuid())
-  channelId    String
-  surface      ContentSurface
-  kind         ContentKind    @default(PLANNED)
-  status       ContentStatus  @default(IDEA) // ignored for PUBLISHED
-  position     Float // manual order within (channel, surface, kind); higher = nearer the top
-  plannedAt    DateTime?
-  publishedAt  DateTime? // PUBLISHED only
-  format       ContentFormat  @default(SINGLE)
-  caption      String?
-  brief        String?
-  typeId       String? // suggested request type
-  authorId     String
-  submittedAt  DateTime?
-  approvedById String?
-  approvedAt   DateTime?
-  doneAt       DateTime? // used by the later cleanup job
-  requestId    String?        @unique
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  channelId          String
+  surface            ContentSurface
+  kind               ContentKind    @default(PLANNED)
+  status             ContentStatus  @default(IDEA) // ignored for PUBLISHED
+  position           Float // manual order within (channel, surface, kind); higher = nearer the top
+  plannedAt          DateTime?
+  publishedAt        DateTime? // PUBLISHED only
+  format             ContentFormat  @default(SINGLE)
+  caption            String?
+  brief              String?
+  typeId             String? // suggested request type
+  authorId           String
+  submittedAt        DateTime?
+  approvedById       String?
+  approvedAt         DateTime?
+  doneAt             DateTime? // used by the later cleanup job
+  requestId          String?        @unique
+  // The request a cancel unlinked; restoring that request relinks the post while it is still editable and unlinked.
+  cancelledRequestId String?        @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   channel    SocialChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
   type       RequestType?       @relation(fields: [typeId], references: [id])

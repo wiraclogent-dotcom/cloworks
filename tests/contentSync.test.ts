@@ -82,6 +82,35 @@ describe("request status drives the content post", () => {
     expect(await post(postId)).toMatchObject({ status: "APPROVED", requestId: second });
   });
 
+  it("restoring a cancelled request relinks the post it was cancelled from", async () => {
+    const { postId, requestId } = await approved();
+    await move(requestId, "CANCELLED");
+    expect(await post(postId)).toMatchObject({ status: "DRAFT", requestId: null, cancelledRequestId: requestId });
+    await move(requestId, "REQUESTED");
+    expect(await post(postId)).toMatchObject({ status: "APPROVED", requestId, cancelledRequestId: null });
+    // The relinked post follows the request again.
+    await move(requestId, "ON_PROGRESS");
+    expect((await post(postId)).status).toBe("IN_PRODUCTION");
+  });
+
+  it("restoring leaves a post that was resubmitted since the cancel alone", async () => {
+    const { postId, requestId } = await approved();
+    await move(requestId, "CANCELLED");
+    await submit(postId);
+    await move(requestId, "REQUESTED");
+    expect(await post(postId)).toMatchObject({ status: "SUBMITTED", requestId: null });
+  });
+
+  it("restoring the old request leaves a post approved into a new one linked to the new one", async () => {
+    const { postId, requestId } = await approved();
+    await move(requestId, "CANCELLED");
+    await submit(postId);
+    const second = await approve(postId);
+    expect(await post(postId)).toMatchObject({ status: "APPROVED", requestId: second, cancelledRequestId: null });
+    await move(requestId, "REQUESTED");
+    expect(await post(postId)).toMatchObject({ status: "APPROVED", requestId: second });
+  });
+
   it("cancelling a DONE request clears doneAt", async () => {
     const { postId, requestId } = await approved();
     await db.prisma.request.update({ where: { id: requestId }, data: { assigneeId: lead.id } });

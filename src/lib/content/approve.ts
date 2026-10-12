@@ -154,7 +154,7 @@ export async function approveContentPostWith(
 
       const r = await tx.contentPost.updateMany({
         where: { id: postId, status: "SUBMITTED", requestId: null },
-        data: { status: "APPROVED", requestId: req.id, approvedById: user.id, approvedAt: now },
+        data: { status: "APPROVED", requestId: req.id, cancelledRequestId: null, approvedById: user.id, approvedAt: now },
       });
       if (r.count !== 1) throw new ContentError("CONFLICT", STALE);
       return { requestId: req.id };

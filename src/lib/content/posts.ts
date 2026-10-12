@@ -100,14 +100,22 @@ export async function updatePostWith(db: ScopedDb, user: ContentActor, id: strin
   return { status };
 }
 
-/** Ids that no other post or channel avatar still points at (safe to destroy once unlinked from `postId`). */
+/**
+ * Ids that no other post, channel avatar or request attachment still points at (safe to destroy once unlinked from
+ * `postId`). Attachments copied at approval keep their Cloudinary url after a cancel, so they count as a use.
+ */
 async function orphanedMedia(db: ScopedDb, postId: string, mediaIds: string[]): Promise<string[]> {
   if (!mediaIds.length) return [];
   const rows = await db.media.findMany({
     where: { id: { in: mediaIds } },
-    select: { id: true, postLinks: { where: { postId: { not: postId } }, select: { id: true } }, channels: { select: { id: true } } },
+    select: { id: true, publicId: true, postLinks: { where: { postId: { not: postId } }, select: { id: true } }, channels: { select: { id: true } } },
   });
   const used = new Set(rows.filter((m) => m.postLinks.length || m.channels.length).map((m) => m.id));
+  const rest = rows.filter((m) => !used.has(m.id));
+  if (rest.length) {
+    const attached = await db.attachment.findMany({ where: { OR: rest.map((m) => ({ url: { contains: m.publicId } })) }, select: { url: true } });
+    for (const m of rest) if (attached.some((a) => a.url.includes(m.publicId))) used.add(m.id);
+  }
   return mediaIds.filter((m) => !used.has(m));
 }
 
