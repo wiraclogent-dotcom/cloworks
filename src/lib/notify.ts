@@ -5,10 +5,16 @@ import { createMailerFromEnv, type Mailer } from "./mailer";
 
 export type { Mailer } from "./mailer";
 export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE" | "DESIGN_SENT" | "ATTACHMENT";
-/** `email: false` stores the in-app row only (default: email it too when a mailer is configured). */
+/** `email: false` stores the in-app row only (default: email it too when the type is in EMAILED_TYPES and a mailer is configured). */
 export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string; email?: boolean };
 export type Notifier = (input: NotifyInput) => Promise<void>;
 
+
+/**
+ * Types that are also emailed: the ones that need someone to act. Everything else only lands in the bell, so routine
+ * traffic cannot use up the provider's daily cap that password resets and invites share.
+ */
+const EMAILED_TYPES: ReadonlySet<NotificationType> = new Set(["ASSIGNED", "MENTION", "DESIGN_SENT"]);
 
 /** Overall cap on one notifyWith call so a hung mail provider cannot freeze the user action. */
 export const NOTIFY_DEADLINE_MS = 5000;
@@ -62,7 +68,7 @@ export function safeBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-/** Best-effort: never throws. Stores a notification row for every recipient (the in-app bell) and emails those with an address when email is configured, unless `email: false`. */
+/** Best-effort: never throws. Stores a notification row for every recipient (the in-app bell) and emails those with an address when email is configured and the type is in EMAILED_TYPES, unless `email: false`. */
 export async function notifyWith(
   db: PrismaClient,
   mailer: Mailer,
@@ -85,7 +91,7 @@ export async function notifyWith(
       users.map(async (u) => {
         try {
           const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
-          if (!u.email || input.email === false) return;
+          if (!u.email || input.email === false || !EMAILED_TYPES.has(input.type)) return;
           await mailer.send({ to: u.email, subject, text });
           await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
         } catch (e) {

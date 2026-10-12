@@ -121,6 +121,23 @@ describe("notifications", () => {
       expect(r[0].emailedAt).toBeNull();
       expect(sent).toHaveLength(0);
     });
+
+    // Email is kept for events that need someone to act; the rest only lands in the bell, which keeps
+    // routine traffic from using up the provider's daily cap that password resets and invites share.
+    it.each(["ASSIGNED", "MENTION", "DESIGN_SENT"] as const)("%s is emailed", async (type) => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ type }));
+      expect(sent).toHaveLength(1);
+      expect((await rows())[0].emailedAt).toBeInstanceOf(Date);
+    });
+    it.each(["COMMENT", "STATUS", "DEADLINE", "ATTACHMENT"] as const)("%s is in-app only", async (type) => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ type }));
+      const r = await rows();
+      expect(r).toHaveLength(1);
+      expect(r[0]).toMatchObject({ userId: ids.dimas, type, emailedAt: null });
+      expect(sent).toHaveLength(0);
+    });
   });
 
   describe("notifyWith deadline and parallelism", () => {
