@@ -20,7 +20,7 @@ order: 5
 
 ## Draft a post
 
-1. Select **New post**, then choose what you are making.
+1. Open the **Feed**, **Reels** or **Stories** tab you are planning for, then select the **+** tile at the top of the grid. Cloworks adds a new post as an **Idea** in that tab and opens it in the side panel.
 2. Add media: a mock-up or reference. Images can be up to 10 MB. Videos can be up to 100 MB and 90 seconds. Use JPG, PNG, WebP, HEIC, MP4 or MOV.
 3. Write the **Brief**. This is the message for the creative team.
 4. Write the **Caption draft** if you have one.
@@ -32,7 +32,7 @@ You can edit a post while it is an idea, a draft, or sent back with changes requ
 
 ### Date warning
 
-A post shows a ⚠ **Date out of order** warning when its date does not fit the grid order. For example, a post sits above a post with an earlier date. To fix it, change the post date, or drag the post to the right place.
+A post shows a ⚠ **Date out of order** warning when its date does not fit the grid order. For example, a post sits above a post with an earlier date. To fix it, open the post and select **Set to** *date* in the warning to take a date that fits, change the post date yourself, or drag the post to the right place.
 
 ### Reorder by dragging
 
@@ -51,7 +51,7 @@ A lead or admin opens a submitted post and chooses one of two actions.
 
 ## Follow the request
 
-After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. If the request is cancelled, the post goes back to **Draft**, so you can edit it and submit it again. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
+After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. While the post is **In production** or **Done**, leads, admins, people who can draft posts, and the request's assignee can add the finished design under **Final files** in the post. If the request is cancelled, the post goes back to **Draft**, so you can edit it and submit it again. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
 
 ## Already posted tiles
 
