@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { UNAUTH_MESSAGE, withUser } from "@/lib/actionUser";
@@ -226,13 +227,18 @@ export async function previewMerge(_prev: MergeFormState, fd: FormData): Promise
 
 /** Merge step 2: moves the duplicate's history onto the survivor and removes the duplicate. */
 export async function mergePerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
-  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+  let survivor: string | null = null;
+  const result = await withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
     const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
         const { intoName } = await mergeUsers(db, actor, s(fd, "fromId"), s(fd, "intoId"));
+        survivor = intoName;
         return `Merged into ${intoName}.`;
       }),
     );
   }, () => adminUnauth(fd));
+  // The duplicate's row is gone, so its own success message would never be seen: show it on the page instead.
+  if (survivor !== null) redirect(`/admin/users?merged=${encodeURIComponent(survivor)}`);
+  return result;
 }

@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { enumLabel } from "@/lib/adminChips";
+import { personLabel } from "@/lib/personLabel";
 import type { MergeFormState } from "@/lib/adminForm";
 import type { MergeCounts, MergePreview } from "@/lib/mergeUsers";
 import { addPerson, mergePerson, previewMerge, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
@@ -169,22 +170,28 @@ export function mergeSummary(p: MergePreview): string {
     parts.push(`${list[0].toUpperCase()}${list.slice(1)} ${one ? "moves" : "move"} to ${p.into.name}.`);
   }
   if (p.movesLogin && !p.into.active) parts.push(`${p.into.name} becomes active.`);
+  if (p.movesLogin && (p.from.appRole !== p.into.appRole || p.from.jobRole !== p.into.jobRole)) {
+    const roles = (r: { appRole: string; jobRole: string }) => `${label(r.appRole)} · ${label(r.jobRole)}`;
+    parts.push(`${p.into.name} keeps ${roles(p.into)} (${p.from.name} was ${roles(p.from)}).`);
+  }
   return parts.join(" ");
 }
 
 /** Two steps: pick the person to keep and review what moves, then confirm. The person being edited is the one removed. */
-export function MergeForm({ u, others }: { u: UserRowData; others: { id: string; name: string }[] }) {
+export function MergeForm({ u, others }: { u: UserRowData; others: { id: string; name: string; fullName: string }[] }) {
   const [state, run, pending] = useActionState<MergeFormState, FormData>(previewMerge, null);
+  const [, startTransition] = useTransition();
   const [intoId, setIntoId] = useState(""); // controlled: React resets uncontrolled fields after a form action
   const id = `merge-${u.id}`;
   return (
     <div className="space-y-3">
-      <form action={run} className="space-y-3">
+      {/* onSubmit, not action: React resets a form after a function action, which would blank the chosen person. */}
+      <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => run(fd)); }}>
         <input type="hidden" name="fromId" value={u.id} />
         <Labeled id={`${id}-into`} label="Merge into…">
           <select id={`${id}-into`} name="intoId" required className={selectControl} value={intoId} onChange={(e) => setIntoId(e.target.value)}>
             <option value="" disabled>Choose a person</option>
-            {others.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+            {others.map((o) => <option key={o.id} value={o.id}>{personLabel(o)}</option>)}
           </select>
         </Labeled>
         <Button type="submit" variant="secondary" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>

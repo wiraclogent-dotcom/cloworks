@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import type { AppRole, JobRole } from "@prisma/client";
 import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
 
 const act = vi.hoisted(() => ({
@@ -19,6 +20,7 @@ const joinAdmin = vi.hoisted(() => ({ loadJoinAdmin: vi.fn(), requestBaseUrl: vi
 vi.mock("@/lib/joinDeps", () => joinAdmin);
 
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
+import { mergeSummary } from "@/app/(app)/admin/users/UserForms";
 
 const when = (s: string) => new Date(s);
 const pending = [
@@ -124,7 +126,7 @@ describe("Members page", () => {
     expect(screen.getByText("for Yosi")).toBeTruthy();
     expect(screen.getAllByText(/^for /)).toHaveLength(1);
     const pick = screen.getByLabelText("Existing person (optional)") as HTMLSelectElement;
-    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["New person", "Yosi", "Maya"]);
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["New person", "Yosi — Yosi Pratama", "Maya — Maya K"]);
     expect(pick.value).toBe("");
     expect(prismaMock.user.findMany.mock.calls.every(([q]) => q.where.email === null)).toBe(true);
   });
@@ -149,7 +151,7 @@ describe("Members page", () => {
     render(await UsersContent({ tab: "requests" }));
     const row = screen.getByRole("listitem", { name: "Andi" });
     const pick = within(row).getByLabelText("This is…") as HTMLSelectElement;
-    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["A new person", "Yosi", "Maya"]);
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["A new person", "Yosi — Yosi Pratama", "Maya — Maya K"]);
     fireEvent.change(pick, { target: { value: "u1" } });
     fireEvent.click(within(row).getByRole("button", { name: "Approve Andi" }));
     await waitFor(() => expect(act.approveRequest).toHaveBeenCalledTimes(1));
@@ -161,13 +163,13 @@ describe("Members page", () => {
     act.previewMerge.mockResolvedValueOnce({ ok: false, error: "Both people have a login. Clear one login email first." });
     act.previewMerge.mockResolvedValueOnce({
       ok: true,
-      preview: { from: { id: "u1", name: "Yosi", email: null }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: false }, counts, movesLogin: true },
+      preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: false, appRole: "LEAD", jobRole: "DESIGNER" }, counts, movesLogin: true },
     });
     act.mergePerson.mockResolvedValue({ ok: true, message: "Merged.", values: {}, nonce: "m" });
     render(await UsersContent({}));
     const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
-    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["Choose a person", "Rina"]); // not Yosi himself
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["Choose a person", "Rina — Rina S"]); // not Yosi himself
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
     expect((await within(details).findByRole("alert")).textContent).toBe("Error: Both people have a login. Clear one login email first.");
@@ -185,7 +187,7 @@ describe("Members page", () => {
     const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0 };
     act.previewMerge.mockResolvedValue({
       ok: true,
-      preview: { from: { id: "u1", name: "Yosi", email: null }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true }, counts: zero, movesLogin: true },
+      preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
     });
     render(await UsersContent({}));
     const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
@@ -196,6 +198,60 @@ describe("Members page", () => {
     expect(within(details).getByText("Yosi will be removed. Their login moves to Rina.")).toBeTruthy();
     fireEvent.change(pick, { target: { value: "" } });
     expect(within(details).queryByRole("button", { name: /^Merge Yosi into/ })).toBeNull();
+  });
+
+  it("Requests: picking a person in the approval form fills App role and Job role with theirs (still editable)", async () => {
+    act.approveRequest.mockResolvedValue({ ok: true, message: "Approved.", values: {}, nonce: "x" });
+    render(await UsersContent({ tab: "requests" }));
+    const row = screen.getByRole("listitem", { name: "Andi" });
+    const app = within(row).getByLabelText("App role") as HTMLSelectElement;
+    const job = within(row).getByLabelText("Job role") as HTMLSelectElement;
+    expect([app.value, job.value]).toEqual(["REQUESTER", "OTHER"]);
+    fireEvent.change(within(row).getByLabelText("This is…"), { target: { value: "u2" } });
+    expect([app.value, job.value]).toEqual(["CREATIVE", "SOCIAL_MEDIA"]);
+    fireEvent.change(job, { target: { value: "DESIGNER" } });
+    fireEvent.click(within(row).getByRole("button", { name: "Approve Andi" }));
+    await waitFor(() => expect(act.approveRequest).toHaveBeenCalledTimes(1));
+    const fd = act.approveRequest.mock.calls[0][1] as FormData;
+    expect([fd.get("linkUserId"), fd.get("appRole"), fd.get("jobRole")]).toEqual(["u2", "CREATIVE", "DESIGNER"]);
+  });
+
+  it("Merge: the select keeps the chosen person after a review, and a second review still submits", async () => {
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0 };
+    act.previewMerge.mockResolvedValue({
+      ok: true,
+      preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
+    });
+    render(await UsersContent({}));
+    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
+    fireEvent.change(pick, { target: { value: "u3" } });
+    fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
+    await within(details).findByRole("button", { name: "Merge Yosi into Rina" });
+    expect(pick.value).toBe("u3");
+    fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
+    await waitFor(() => expect(act.previewMerge).toHaveBeenCalledTimes(2));
+    expect((act.previewMerge.mock.calls[1][1] as FormData).get("intoId")).toBe("u3");
+  });
+
+  it("Merge summary discloses a role change only when the login moves and roles differ", async () => {
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0 };
+    const preview = (movesLogin: boolean, fromRoles: [AppRole, JobRole]) => ({
+      ok: true as const,
+      preview: { from: { id: "u1", name: "Yosiananda", email: null, appRole: fromRoles[0], jobRole: fromRoles[1] }, into: { id: "u3", name: "Yosi", email: "y@clogent.co.id", active: true, appRole: "CREATIVE" as const, jobRole: "DESIGNER" as const }, counts: zero, movesLogin },
+    });
+    expect(mergeSummary(preview(true, ["ADMIN", "OTHER"]).preview)).toBe("Yosiananda will be removed. Their login moves to Yosi. Yosi keeps Creative · Designer (Yosiananda was Admin · Other).");
+    expect(mergeSummary(preview(true, ["CREATIVE", "DESIGNER"]).preview)).toBe("Yosiananda will be removed. Their login moves to Yosi.");
+    expect(mergeSummary(preview(false, ["ADMIN", "OTHER"]).preview)).toBe("Yosiananda will be removed.");
+  });
+
+  it("Merge notice: ?merged shows 'Merged into X.' as text; empty shows nothing", async () => {
+    const { unmount } = render(await UsersContent({ merged: "<b>Yosi</b>" }));
+    expect(screen.getByRole("status").textContent).toBe("Merged into <b>Yosi</b>.");
+    expect(document.querySelector("b")).toBeNull();
+    unmount();
+    render(await UsersContent({ merged: "" }));
+    expect(screen.queryByText(/^Merged into/)).toBeNull();
   });
 
   it("Invited: revoke asks for confirmation, resend submits the invite id", async () => {

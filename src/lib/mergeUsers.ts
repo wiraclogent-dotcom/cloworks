@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient, User } from "@prisma/client";
+import type { AppRole, JobRole, Prisma, PrismaClient, User } from "@prisma/client";
 import { AdminError, assertAdmin, countSignInCapableAdmins, lockRoster, MAX_ALIAS_LEN, MAX_ALIASES, type Actor } from "./admin";
 import { normalizeName } from "./import/aliases";
 
@@ -11,8 +11,8 @@ export type MergeCounts = Record<
 >;
 
 export type MergePreview = {
-  from: { id: string; name: string; email: string | null };
-  into: { id: string; name: string; email: string | null; active: boolean };
+  from: { id: string; name: string; email: string | null; appRole: AppRole; jobRole: JobRole };
+  into: { id: string; name: string; email: string | null; active: boolean; appRole: AppRole; jobRole: JobRole };
   counts: MergeCounts;
   movesLogin: boolean;
 };
@@ -85,8 +85,8 @@ async function countsFor(tx: Tx, id: string): Promise<MergeCounts> {
 export async function mergePreview(db: PrismaClient, actor: Actor, fromId: string, intoId: string): Promise<MergePreview> {
   const { from, into, movesLogin } = await loadAndGuard(db, actor, fromId, intoId);
   return {
-    from: { id: from.id, name: from.name, email: from.email },
-    into: { id: into.id, name: into.name, email: into.email, active: into.active },
+    from: { id: from.id, name: from.name, email: from.email, appRole: from.appRole, jobRole: from.jobRole },
+    into: { id: into.id, name: into.name, email: into.email, active: into.active, appRole: into.appRole, jobRole: into.jobRole },
     counts: await countsFor(db, from.id),
     movesLogin,
   };

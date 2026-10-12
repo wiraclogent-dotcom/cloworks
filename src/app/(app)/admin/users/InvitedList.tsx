@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AdminFormState } from "@/lib/adminForm";
-import { AdminForm, ConfirmAction, Labeled, control, selectControl, type FormCtx } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction, Labeled, control, type FormCtx } from "@/components/admin/AdminForm";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -11,10 +11,8 @@ import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { enumLabel } from "@/lib/adminChips";
+import { PersonRoleFields } from "./PersonRoleFields";
 import { inviteMember, resendMemberInvite, revokeMemberInvite } from "./actions";
-
-const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
-const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
 
 export type InviteRow = { id: string; email: string; appRole: string; jobRole: string; invitedBy: string; linkedName: string | null; expiresOn: string; expired: boolean };
 
@@ -88,40 +86,14 @@ function ResendForm({ id, email }: { id: string; email: string }) {
   );
 }
 
-/** Email, optional existing person, and roles; choosing a person fills the role selects with theirs (still editable). */
+/** Email, then the shared person + role fields. */
 function InviteFields({ linkable, v, idFor, aria }: { linkable: LinkablePerson[]; v: FormCtx["v"]; idFor: FormCtx["idFor"]; aria: FormCtx["aria"] }) {
-  const [userId, setUserId] = useState(v("userId"));
-  const [appRole, setAppRole] = useState(v("appRole", "REQUESTER"));
-  const [jobRole, setJobRole] = useState(v("jobRole", "OTHER"));
-  const pick = (id: string) => {
-    setUserId(id);
-    const p = linkable.find((x) => x.id === id);
-    if (p) {
-      setAppRole(p.appRole);
-      setJobRole(p.jobRole);
-    }
-  };
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Labeled id={idFor("email")} label="Email">
         <input id={idFor("email")} name="email" type="email" autoComplete="off" required className={control} defaultValue={v("email")} {...aria()} />
       </Labeled>
-      <Labeled id={idFor("userId")} label="Existing person (optional)">
-        <select id={idFor("userId")} name="userId" className={selectControl} value={userId} onChange={(e) => pick(e.target.value)}>
-          <option value="">New person</option>
-          {linkable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
-      </Labeled>
-      <Labeled id={idFor("appRole")} label="App role">
-        <select id={idFor("appRole")} name="appRole" className={selectControl} value={appRole} onChange={(e) => setAppRole(e.target.value)}>
-          {APP_ROLES.map((r) => <option key={r} value={r}>{enumLabel(r)}</option>)}
-        </select>
-      </Labeled>
-      <Labeled id={idFor("jobRole")} label="Job role">
-        <select id={idFor("jobRole")} name="jobRole" className={selectControl} value={jobRole} onChange={(e) => setJobRole(e.target.value)}>
-          {JOB_ROLES.map((r) => <option key={r} value={r}>{enumLabel(r)}</option>)}
-        </select>
-      </Labeled>
+      <PersonRoleFields linkable={linkable} v={v} idFor={idFor} name="userId" label="Existing person (optional)" noneLabel="New person" />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chip } from "@/components/ui/Chip";
 import { tableClass } from "@/components/ui/table";
@@ -25,7 +26,7 @@ const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "
 const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
 
 /** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. `tab`: members | invited | requests. */
-export async function UsersContent({ tab }: { tab?: string } = {}) {
+export async function UsersContent({ tab, merged }: { tab?: string; merged?: string } = {}) {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
   const current = parseMemberTab(tab);
@@ -50,6 +51,7 @@ export async function UsersContent({ tab }: { tab?: string } = {}) {
     <>
       <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
         description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
+      {merged && <Alert tone="success" className="mb-4">Merged into {merged}.</Alert>}
       <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
       <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
       {panel}
@@ -125,7 +127,7 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />
                       <ActiveToggle u={u} />
-                      <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name }))} />
+                      <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name, fullName: o.fullName }))} />
                     </div>
                   </details>
                 </td>

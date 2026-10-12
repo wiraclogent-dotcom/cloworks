@@ -293,16 +293,17 @@ describe("mergeUsers", () => {
   });
 
   it("preview reports counts and writes nothing", async () => {
-    const from = await person({ email: `${uniq("prev")}@clogent.co.id` });
-    const into = await person();
+    const from = await person({ email: `${uniq("prev")}@clogent.co.id`, appRole: "ADMIN", jobRole: "OTHER" });
+    const into = await person({ appRole: "CREATIVE", jobRole: "DESIGNER" });
     await seedEverything(from.id);
     const p = await mergePreview(db.prisma, admin, from.id, into.id);
     expect(p).toEqual({
-      from: { id: from.id, name: from.name, email: from.email },
-      into: { id: into.id, name: into.name, email: null, active: true },
+      from: { id: from.id, name: from.name, email: from.email, appRole: from.appRole, jobRole: from.jobRole },
+      into: { id: into.id, name: into.name, email: null, active: true, appRole: into.appRole, jobRole: into.jobRole },
       counts: SEEDED,
       movesLogin: true,
     });
+    expect([p.from.appRole, p.from.jobRole, p.into.appRole, p.into.jobRole]).toEqual(["ADMIN", "OTHER", "CREATIVE", "DESIGNER"]);
     expect(await countsFor(from.id)).toEqual(SEEDED);
     expect(await countsFor(into.id)).toEqual(ZERO);
     expect(await db.raw.user.findUnique({ where: { id: from.id } })).not.toBeNull();

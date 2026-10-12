@@ -4,6 +4,8 @@ const admin = { id: "a", appRole: "ADMIN" as const, jobRole: "OTHER" as const, w
 const scoped = { scoped: true };
 const session = vi.hoisted(() => ({ unauth: false }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+const nav = vi.hoisted(() => ({ redirect: vi.fn((url: string) => { throw new Error(`NEXT_REDIRECT ${url}`); }) }));
+vi.mock("next/navigation", () => nav);
 vi.mock("@/lib/session", async () => {
   const { UnauthenticatedError } = await vi.importActual<typeof import("@/lib/session-core")>("@/lib/session-core");
   return {
@@ -69,17 +71,17 @@ describe("previewMerge", () => {
 });
 
 describe("mergePerson", () => {
-  it("merges, reports the survivor and revalidates", async () => {
-    lib.mergeUsers.mockResolvedValue({ intoId: "i", intoName: "Sari" });
-    const r = await mergePerson(null, fd({ fromId: "f", intoId: "i" }));
+  it("merges, revalidates and redirects to the People page with the survivor's name", async () => {
+    lib.mergeUsers.mockResolvedValue({ intoId: "i", intoName: "Sari & Co" });
+    await expect(mergePerson(null, fd({ fromId: "f", intoId: "i" }))).rejects.toThrow("NEXT_REDIRECT /admin/users?merged=Sari%20%26%20Co");
     expect(lib.mergeUsers).toHaveBeenCalledWith(scoped, admin, "f", "i");
-    expect(r).toMatchObject({ ok: true, message: "Merged into Sari." });
     expect(revalidatePath).toHaveBeenCalledWith("/admin/users");
   });
   it("shows an AdminError as a failure and does not revalidate", async () => {
     lib.mergeUsers.mockRejectedValue(new AdminError("CONFLICT", "nope"));
     expect(await mergePerson(null, fd({ fromId: "f", intoId: "i" }))).toMatchObject({ ok: false, code: "CONFLICT", message: "nope" });
     expect(revalidatePath).not.toHaveBeenCalled();
+    expect(nav.redirect).not.toHaveBeenCalled();
   });
   it("unauthenticated gets the unauth result", async () => {
     session.unauth = true;
