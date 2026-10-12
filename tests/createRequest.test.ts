@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
-import { createRequestWith, CreateRequestError, type CreateRequestInput } from "@/lib/createRequest";
+import { createRequestWith, validateRequestInput, insertRequestTx, CreateRequestError, type CreateRequestInput } from "@/lib/createRequest";
 import { seed } from "../prisma/seedCore";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
@@ -152,5 +152,32 @@ describe("createRequestWith", () => {
     const r = await db.prisma.request.findUniqueOrThrow({ where: { id } });
     expect(r.requesterId).toBe(user.id);
     expect(r.status).toBe("REQUESTED");
+  });
+});
+
+describe("validateRequestInput + insertRequestTx", () => {
+  it("stores requester and status-event actor separately and honours outputCount", async () => {
+    const author = await db.prisma.user.findFirstOrThrow({ where: { name: "Rahmat" } });
+    const v = await validateRequestInput(db.prisma, { ...base, title: "  Carousel  ", needsMotion: true }, now);
+    expect(v.title).toBe("Carousel");
+    const { id } = await db.prisma.$transaction((tx) =>
+      insertRequestTx(tx, v, { requesterId: author.id, actorId: user.id, outputCount: 3, now }),
+    );
+    const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { statusEvents: true } });
+    expect(r.requesterId).toBe(author.id);
+    expect(r.outputCount).toBe(3);
+    expect(r.status).toBe("REQUESTED");
+    expect(r.includeKpi).toBe(true);
+    expect(r.needsMotion).toBe(true);
+    expect(r.statusEvents).toHaveLength(1);
+    expect(r.statusEvents[0].actorId).toBe(user.id);
+  });
+  it("defaults outputCount to 1 and validate throws VALIDATION", async () => {
+    const v = await validateRequestInput(db.prisma, base, now);
+    const { id } = await db.prisma.$transaction((tx) => insertRequestTx(tx, v, { requesterId: user.id, actorId: user.id, now }));
+    expect((await db.prisma.request.findUniqueOrThrow({ where: { id } })).outputCount).toBe(1);
+    const err = await validateRequestInput(db.prisma, { ...base, title: "" }, now).catch((e) => e);
+    expect(err).toBeInstanceOf(CreateRequestError);
+    expect(err.code).toBe("VALIDATION");
   });
 });
