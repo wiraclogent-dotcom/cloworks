@@ -3,7 +3,6 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chip } from "@/components/ui/Chip";
 import { tableClass } from "@/components/ui/table";

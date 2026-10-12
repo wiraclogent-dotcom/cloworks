@@ -173,12 +173,29 @@ describe("Members page", () => {
     expect((await within(details).findByRole("alert")).textContent).toBe("Error: Both people have a login. Clear one login email first.");
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
     fireEvent.click(await within(details).findByRole("button", { name: "Merge Yosi into Rina" }));
-    expect(within(details).getByText("Yosi will be removed. their login, 3 requests, 1 comment move to Rina. Rina becomes active.")).toBeTruthy();
+    expect(within(details).getByText("Yosi will be removed. Their login, 3 requests and 1 comment move to Rina. Rina becomes active.")).toBeTruthy();
     expect(act.mergePerson).not.toHaveBeenCalled();
     fireEvent.click(within(details).getByRole("button", { name: "Merge" }));
     await waitFor(() => expect(act.mergePerson).toHaveBeenCalledTimes(1));
     const fd = act.mergePerson.mock.calls[0][1] as FormData;
     expect([fd.get("fromId"), fd.get("intoId")]).toEqual(["u1", "u3"]);
+  });
+
+  it("Merge: changing the target after a review removes the stale confirmation; single items read 'moves'", async () => {
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0 };
+    act.previewMerge.mockResolvedValue({
+      ok: true,
+      preview: { from: { id: "u1", name: "Yosi", email: null }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true }, counts: zero, movesLogin: true },
+    });
+    render(await UsersContent({}));
+    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const pick = within(details).getByLabelText("Merge into…");
+    fireEvent.change(pick, { target: { value: "u3" } });
+    fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
+    fireEvent.click(await within(details).findByRole("button", { name: "Merge Yosi into Rina" }));
+    expect(within(details).getByText("Yosi will be removed. Their login moves to Rina.")).toBeTruthy();
+    fireEvent.change(pick, { target: { value: "" } });
+    expect(within(details).queryByRole("button", { name: /^Merge Yosi into/ })).toBeNull();
   });
 
   it("Invited: revoke asks for confirmation, resend submits the invite id", async () => {

@@ -163,7 +163,11 @@ function countList(c: MergeCounts): string[] {
 export function mergeSummary(p: MergePreview): string {
   const items = [...(p.movesLogin ? ["their login"] : []), ...countList(p.counts)];
   const parts = [`${p.from.name} will be removed.`];
-  if (items.length) parts.push(`${items.join(", ")} move to ${p.into.name}.`);
+  if (items.length) {
+    const list = items.length > 1 ? `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}` : items[0];
+    const one = items.length === 1 && (items[0] === "their login" || items[0].startsWith("1 "));
+    parts.push(`${list[0].toUpperCase()}${list.slice(1)} ${one ? "moves" : "move"} to ${p.into.name}.`);
+  }
   if (p.movesLogin && !p.into.active) parts.push(`${p.into.name} becomes active.`);
   return parts.join(" ");
 }
@@ -186,7 +190,7 @@ export function MergeForm({ u, others }: { u: UserRowData; others: { id: string;
         <Button type="submit" variant="secondary" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>
       </form>
       {state && !state.ok && <Alert tone="danger">Error: {state.error}</Alert>}
-      {state?.ok && (
+      {state?.ok && state.preview.into.id === intoId && (
         <ConfirmAction action={mergePerson} prefix={`${id}-confirm`} hidden={{ fromId: u.id, intoId: state.preview.into.id }}
           triggerLabel="Merge" triggerAriaLabel={`Merge ${u.name} into ${state.preview.into.name}`}
           question={mergeSummary(state.preview)} confirmLabel="Merge" />
