@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { AdminError, type Actor } from "@/lib/admin";
-import { acceptInvite, createInvite, describeInvite, resendInvite, revokeInvite } from "@/lib/invites";
+import { INVITE_STALE_MESSAGE, acceptInvite, createInvite, describeInvite, resendInvite, revokeInvite } from "@/lib/invites";
+import { resolveSignIn } from "@/lib/signin";
 import { pickShortName } from "@/lib/shortName";
 import { hashToken } from "@/lib/joinTokens";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -160,7 +161,7 @@ describe("invites", () => {
     const ap = await db.raw.applicant.create({ data: { email, name: "Andi", passwordHash: hash, requestedWorkspaceId: "clogent", requestedAt: new Date(), requestSource: "LINK" } });
     const { token } = await invite(email);
     const res = await acceptInvite(db.raw, token, { applicantId: ap.id });
-    expect(res).toEqual({ userId: ap.id, email });
+    expect(res).toEqual({ userId: ap.id, email, linked: false });
     const u = await db.raw.user.findUniqueOrThrow({ where: { id: ap.id } });
     expect(u).toMatchObject({ email, fullName: "Andi", appRole: "CREATIVE", jobRole: "DESIGNER", passwordHash: hash });
     expect(await db.raw.applicant.findUnique({ where: { id: ap.id } })).toBeNull();
@@ -256,5 +257,84 @@ describe("invite link column", () => {
     await db.prisma.user.delete({ where: { id: u.id } });
     const after = await db.raw.invite.findUniqueOrThrow({ where: { id: inv.id } });
     expect(after.userId).toBeNull();
+  });
+});
+
+describe("linked invites", () => {
+  const person = (extra: Record<string, unknown> = {}) =>
+    db.prisma.user.create({ data: { name: uniq("Person"), fullName: "Full Person", appRole: "REQUESTER", jobRole: "OTHER", ...extra } });
+  const linkedInvite = async (userId: string, email = `${uniq("li")}@gmail.com`) => {
+    const { sent, mailer } = rec();
+    const { id } = await createInvite(db.prisma, admin, mailer, { email, appRole: "CREATIVE", jobRole: "DESIGNER", userId }, BASE);
+    return { id, email, token: tokenOf(sent[0]) };
+  };
+
+  it("createInvite stores userId; refuses a person with a login; resend with another userId updates it", async () => {
+    const a = await person();
+    const b = await person();
+    const { id, email } = await linkedInvite(a.id);
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id } })).userId).toBe(a.id);
+    const withEmail = await person({ email: `${uniq("has")}@gmail.com` });
+    const { mailer } = rec();
+    expect(await code(createInvite(db.prisma, admin, mailer, { email: `${uniq("z")}@gmail.com`, appRole: "CREATIVE", jobRole: "DESIGNER", userId: withEmail.id }, BASE))).toBe("VALIDATION");
+    await createInvite(db.prisma, admin, mailer, { email, appRole: "CREATIVE", jobRole: "DESIGNER", userId: b.id }, BASE);
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id } })).userId).toBe(b.id);
+  });
+
+  it("describeInvite shows linkedName; null when unlinked", async () => {
+    const p = await person();
+    const { token } = await linkedInvite(p.id);
+    expect((await describeInvite(db.raw, token))?.linkedName).toBe(p.name);
+    const plain = await invite(`${uniq("pl")}@gmail.com`);
+    expect((await describeInvite(db.raw, plain.token))?.linkedName).toBeNull();
+  });
+
+  it("accept attaches the login to the person: no new User, roster names kept, roles from the invite", async () => {
+    const p = await person({ active: false });
+    const { token, email } = await linkedInvite(p.id, `${uniq("Mixed")}@Case.test`);
+    const before = await db.raw.user.count();
+    const res = await acceptInvite(db.raw, token, { name: "Typed Name", password: PASSWORD });
+    expect(res).toMatchObject({ userId: p.id, linked: true, email: email.toLowerCase() });
+    expect(await db.raw.user.count()).toBe(before);
+    const after = await db.raw.user.findUniqueOrThrow({ where: { id: p.id } });
+    expect(after).toMatchObject({ email: email.toLowerCase(), name: p.name, fullName: "Full Person", appRole: "CREATIVE", jobRole: "DESIGNER", active: true });
+    expect(await verifyPassword(PASSWORD, after.passwordHash!)).toBe(true);
+  });
+
+  it("accept needs no name for a linked invite", async () => {
+    const p = await person();
+    const { token } = await linkedInvite(p.id);
+    expect(await acceptInvite(db.raw, token, { name: "", password: PASSWORD })).toMatchObject({ userId: p.id, linked: true });
+  });
+
+  it("applicant accept keeps the Google-style null hash, deletes the applicant and resolves the sign-in to the person", async () => {
+    const p = await person();
+    const { token, email } = await linkedInvite(p.id);
+    const ap = await db.raw.applicant.create({ data: { email, name: "Andi", passwordHash: null } });
+    const res = await acceptInvite(db.raw, token, { applicantId: ap.id });
+    expect(res).toMatchObject({ userId: p.id, linked: true });
+    expect((await db.raw.user.findUniqueOrThrow({ where: { id: p.id } })).passwordHash).toBeNull();
+    expect(await db.raw.applicant.findUnique({ where: { id: ap.id } })).toBeNull();
+    const r = await resolveSignIn(db.raw, { email });
+    expect(r).toMatchObject({ ok: true, kind: "user" });
+    if (r.ok && r.kind === "user") expect(r.user.id).toBe(p.id);
+  });
+
+  it("stale link (person got an email since): NOT_FOUND with the stale copy and the invite stays open", async () => {
+    const p = await person();
+    const { token, email } = await linkedInvite(p.id);
+    await db.raw.user.update({ where: { id: p.id }, data: { email: `${uniq("took")}@gmail.com` } });
+    const err = await acceptInvite(db.raw, token, { name: "X", password: PASSWORD }).catch((e) => e);
+    expect(err).toBeInstanceOf(AdminError);
+    expect(err).toMatchObject({ code: "NOT_FOUND", message: INVITE_STALE_MESSAGE });
+    expect((await db.raw.invite.findFirstOrThrow({ where: { email } })).acceptedAt).toBeNull();
+  });
+
+  it("a deleted person unlinks the invite (onDelete SetNull); it then behaves as a plain invite", async () => {
+    const p = await person();
+    const { token } = await linkedInvite(p.id);
+    await db.raw.user.delete({ where: { id: p.id } });
+    expect((await describeInvite(db.raw, token))?.linkedName).toBeNull();
+    expect(await acceptInvite(db.raw, token, { name: "Fresh Face", password: PASSWORD })).toMatchObject({ linked: false });
   });
 });

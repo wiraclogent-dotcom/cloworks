@@ -6,6 +6,7 @@ import { ENTER_PATH } from "@/lib/auth.config";
 import { signIn } from "@/lib/auth";
 import { AdminError } from "@/lib/admin";
 import { failed, field, isInviteToken, rememberOf, type AuthFormState } from "@/lib/authForm";
+import { INVITE_STALE_MESSAGE } from "@/lib/invites";
 import { acceptInviteBy } from "@/lib/joinDeps";
 import { currentVisitor } from "@/lib/session";
 
@@ -13,7 +14,7 @@ const GONE = "This invite has expired or was already used. Ask your admin for a 
 
 /** AdminError → fixed copy (the library's messages are fixed text; they never carry the full invited email). */
 function copyFor(e: AdminError): string {
-  if (e.code === "NOT_FOUND") return GONE;
+  if (e.code === "NOT_FOUND") return e.message === INVITE_STALE_MESSAGE ? e.message : GONE;
   if (e.code === "VALIDATION" || e.code === "FORBIDDEN" || e.code === "CONFLICT") return e.message;
   return "Something went wrong. Try again.";
 }

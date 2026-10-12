@@ -375,6 +375,13 @@ describe("/join/invite/[token]", () => {
     await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
     expect(lib.acceptInvite).not.toHaveBeenCalled();
   });
+  it("shows the stale-link copy as-is; any other NOT_FOUND keeps the expired copy", async () => {
+    const { INVITE_STALE_MESSAGE } = await vi.importActual<typeof import("@/lib/invites")>("@/lib/invites");
+    lib.acceptInvite.mockRejectedValue(new AdminError("NOT_FOUND", INVITE_STALE_MESSAGE));
+    expect(await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1" }))).toMatchObject({ error: INVITE_STALE_MESSAGE });
+    lib.acceptInvite.mockRejectedValue(new AdminError("NOT_FOUND", "whatever"));
+    expect(await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1" }))).toMatchObject({ error: expect.stringContaining("expired or was already used") });
+  });
   it("maps refusals to copy; a stale applicant session is told to sign in again", async () => {
     currentVisitor.mockResolvedValue(applicant);
     lib.acceptInvite.mockRejectedValue(new AdminError("VALIDATION", "This invite is for a***@gmail.com"));

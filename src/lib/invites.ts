@@ -1,8 +1,8 @@
 import { AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type Invite, type JobRole, type PrismaClient } from "@prisma/client";
 import type { ScopedDb } from "./db";
 import type { Mailer } from "./mailer";
-import { AdminError, isUniqueViolation, lockRoster, normalizeEmail, type Actor } from "./admin";
-import { can } from "./permissions";
+import { AdminError, assertAdmin, isUniqueViolation, lockRoster, normalizeEmail, type Actor } from "./admin";
+import { assertLinkable, attachLogin } from "./linkPerson";
 import { INVITE_TTL_MS, hashToken, maskEmail, newToken } from "./joinTokens";
 import { inviteEmail } from "./joinEmails";
 import { checkNewPassword, hashPassword } from "./password";
@@ -11,9 +11,8 @@ import { JOB_ROLE_LABEL, ROLE_LABEL } from "./settings/account";
 
 const MAX_NAME_LEN = 100;
 
-function assertAdmin(actor: Actor) {
-  if (!actor || !can(actor.appRole, "admin.manage")) throw new AdminError("FORBIDDEN", "Only admins can do this");
-}
+/** Shown when an invite's linked person got a login or was removed since the invite was sent. */
+export const INVITE_STALE_MESSAGE = "This invite no longer matches a person. Ask your admin for a new one.";
 
 function assertRoles(appRole: unknown, jobRole: unknown) {
   if (!Object.values(AppRoleEnum).includes(appRole as AppRole)) throw new AdminError("VALIDATION", `Unknown app role "${String(appRole)}"`);
@@ -30,7 +29,7 @@ export const roleLabel = (inv: Pick<Invite, "appRole" | "jobRole">) => (inv.jobR
  * The email goes out FIRST: if it fails (bad address, provider down) nothing is written, the current link and roles
  * keep working, and the admin gets VALIDATION naming the address.
  */
-async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole }) {
+async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole; userId?: string }) {
   const token = newToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
   const [inv, inviter, workspace] = await Promise.all([
@@ -66,7 +65,7 @@ export async function createInvite(
   db: ScopedDb,
   actor: Actor,
   mailer: Mailer,
-  input: { email: string; appRole: AppRole; jobRole: JobRole },
+  input: { email: string; appRole: AppRole; jobRole: JobRole; userId?: string },
   baseUrl: string,
 ): Promise<{ id: string }> {
   assertAdmin(actor);
@@ -76,7 +75,11 @@ export async function createInvite(
   if (member?.active) throw new AdminError("CONFLICT", `${email} is already a member`);
   if (member) throw new AdminError("CONFLICT", `${email} belongs to a deactivated member — reactivate them instead`);
 
-  const roles = { appRole: input.appRole, jobRole: input.jobRole };
+  if (input.userId) {
+    const person = await db.user.findFirst({ where: { id: input.userId, email: null }, select: { id: true } });
+    if (!person) throw new AdminError("VALIDATION", "That person already has a login or no longer exists.");
+  }
+  const roles = { appRole: input.appRole, jobRole: input.jobRole, ...(input.userId ? { userId: input.userId } : {}) };
   const open = await db.invite.findFirst({ where: { email, ...openWhere }, select: { id: true } });
   if (open) {
     await issue(db, actor, mailer, open.id, baseUrl, roles);
@@ -120,6 +123,8 @@ export type InviteView = {
   jobRole: JobRole;
   maskedEmail: string;
   email: string;
+  /** Roster name of the person this invite attaches to, or null for a new member. */
+  linkedName: string | null;
 };
 
 /** What the invite page shows for a raw token; null when no invite has that token. */
@@ -127,7 +132,7 @@ export async function describeInvite(db: PrismaClient, token: string, now: Date 
   if (!token) return null;
   const inv = await db.invite.findUnique({
     where: { tokenHash: hashToken(token) },
-    include: { workspace: { select: { name: true } }, invitedBy: { select: { fullName: true, name: true } } },
+    include: { workspace: { select: { name: true } }, user: { select: { name: true } }, invitedBy: { select: { fullName: true, name: true } } },
   });
   if (!inv) return null;
   const status = inv.acceptedAt || inv.revokedAt ? "used" : inv.expiresAt <= now ? "expired" : "open";
@@ -139,6 +144,7 @@ export async function describeInvite(db: PrismaClient, token: string, now: Date 
     jobRole: inv.jobRole,
     maskedEmail: maskEmail(inv.email),
     email: inv.email,
+    linkedName: inv.user?.name ?? null,
   };
 }
 
@@ -159,16 +165,15 @@ export async function acceptInvite(
   token: string,
   who: { applicantId: string } | { name: string; password: string },
   now: Date = new Date(),
-): Promise<{ userId: string; email: string }> {
-  let fresh: { display: string; passwordHash: string } | null = null;
+): Promise<{ userId: string; email: string; linked: boolean }> {
+  let passwordHash: string | null = null;
   if (!("applicantId" in who)) {
-    const display = (who.name ?? "").trim().replace(/\s+/g, " ");
-    if (!display || display.length > MAX_NAME_LEN) throw new AdminError("VALIDATION", `Name must be 1 to ${MAX_NAME_LEN} characters`);
     const problem = checkNewPassword(who.password ?? "");
     if (problem) throw new AdminError("VALIDATION", problem);
-    fresh = { display, passwordHash: await hashPassword(who.password) };
+    passwordHash = await hashPassword(who.password);
   }
   const gone = () => new AdminError("NOT_FOUND", "This invite has expired or was already used. Ask your admin for a new one.");
+  const stale = () => new AdminError("NOT_FOUND", INVITE_STALE_MESSAGE);
 
   try {
     return await db.$transaction(async (tx) => {
@@ -189,9 +194,24 @@ export async function acceptInvite(
         throw new AdminError("FORBIDDEN", "This email belongs to a deactivated account. Contact your admin.");
       if (existing) throw new AdminError("CONFLICT", "This email already has an account. Sign in instead.");
 
+      if (inv.userId) {
+        // Linked invite: the login goes onto the existing roster person (typed name ignored, no new User).
+        let hash = passwordHash;
+        if ("applicantId" in who) {
+          const ap = await tx.applicant.findUnique({ where: { id: who.applicantId } });
+          if (!ap) throw gone();
+          if (ap.email.toLowerCase() !== email) throw new AdminError("VALIDATION", `This invite is for ${maskEmail(email)}`);
+          hash = ap.passwordHash;
+        }
+        await lockRoster(tx);
+        await assertLinkable(tx, inv.workspaceId, inv.userId, stale);
+        await tx.applicant.deleteMany({ where: { email } });
+        await attachLogin(tx, inv.userId, { email, passwordHash: hash, appRole: inv.appRole, jobRole: inv.jobRole });
+        return { userId: inv.userId, email, linked: true };
+      }
+
       let id: string | undefined;
       let display: string;
-      let passwordHash: string | null;
       if ("applicantId" in who) {
         const ap = await tx.applicant.findUnique({ where: { id: who.applicantId } });
         if (!ap) throw gone();
@@ -200,8 +220,8 @@ export async function acceptInvite(
         display = ap.name.trim() || email.split("@")[0];
         passwordHash = ap.passwordHash;
       } else {
-        display = fresh!.display;
-        passwordHash = fresh!.passwordHash;
+        display = (who.name ?? "").trim().replace(/\s+/g, " ");
+        if (!display || display.length > MAX_NAME_LEN) throw new AdminError("VALIDATION", `Name must be 1 to ${MAX_NAME_LEN} characters`);
       }
 
       await tx.applicant.deleteMany({ where: { email } });
@@ -221,7 +241,7 @@ export async function acceptInvite(
         },
         select: { id: true },
       });
-      return { userId: user.id, email };
+      return { userId: user.id, email, linked: false };
     });
   } catch (e) {
     // A User with this email (or id) appeared concurrently.
