@@ -102,8 +102,8 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
   const published = post.kind === "PUBLISHED";
   return (
     <aside aria-label="Post details"
-      className={cn("flex flex-col gap-4 bg-surface p-4 max-lg:fixed max-lg:inset-0 max-lg:z-40 max-lg:overflow-y-auto",
-        "lg:rounded-xl lg:border lg:border-border lg:shadow-card")}>
+      className={cn("flex flex-col gap-4 bg-surface p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
+        "xl:rounded-xl xl:border xl:border-border xl:shadow-card")}>
       <header className="flex items-center gap-2">
         {approveForm ? <h2 className="text-sm font-semibold text-foreground">Approve &amp; create request</h2> : (
           <>

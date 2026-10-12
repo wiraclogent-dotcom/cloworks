@@ -28,7 +28,8 @@ export function ContentPlanLayout({ view, brands, panel }: { view: ContentPlanVi
       <div className="min-w-0 rounded-xl bg-surface-muted px-3 py-6 sm:px-6">
         <PhonePreview channel={channel} tab={tab} planned={view.planned} published={view.published} canDraft={can.draft} selectedId={postId} />
       </div>
-      {panel ? <div className="min-w-0 lg:col-span-2 xl:col-span-1">{panel}</div> : null}
+      {/* Below xl the panel is a full-screen sheet (PostPanel), so it never stacks under the phone. */}
+      {panel ? <div className="min-w-0">{panel}</div> : null}
     </div>
   );
 }

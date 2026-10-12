@@ -139,6 +139,13 @@ describe("Content Plan page", () => {
     expect(screen.getByRole("button", { name: /Add channel/ })).toBeTruthy();
   });
 
+  it("puts the panel in a third column only from xl, so below xl it is never stacked under the phone", () => {
+    render(<ContentPlanLayout view={view()} brands={[]} panel={<aside aria-label="Post details" />} />);
+    const grid = screen.getByLabelText("Post details").parentElement!.parentElement!;
+    expect(grid.className).toContain("xl:grid-cols-[13.5rem_minmax(0,1fr)_minmax(0,26rem)]");
+    expect(screen.getByLabelText("Post details").parentElement!.className).not.toMatch(/(^|\s)lg:col-span/);
+  });
+
   it("empty state for everyone else", () => {
     show(view({ channels: [], channel: null, planned: [], published: [], can: { draft: true, approve: false, manageChannels: false } }));
     expect(screen.getByText("No channels yet")).toBeTruthy();

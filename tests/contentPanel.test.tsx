@@ -208,6 +208,15 @@ describe("PostPanel", () => {
     expect(screen.getByRole("link", { name: /View request/ }).getAttribute("href")).toBe("/requests/r1");
   });
 
+  it("is a full-screen sheet below xl and a card from xl", () => {
+    show(panel());
+    const cls = screen.getByRole("complementary", { name: "Post details" }).className;
+    expect(cls).toContain("max-xl:fixed");
+    expect(cls).toContain("max-xl:inset-0");
+    expect(cls).toContain("xl:rounded-xl");
+    expect(cls).not.toMatch(/(^|\s)(max-)?lg:/);
+  });
+
   it("closes with a link that drops the post", () => {
     show(panel());
     expect(screen.getByRole("link", { name: "Close" }).getAttribute("href")).toBe("/content?channel=c1");
