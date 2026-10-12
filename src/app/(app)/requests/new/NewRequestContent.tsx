@@ -2,6 +2,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { Alert } from "@/components/ui/Alert";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { listCreativeTeam } from "@/lib/team";
 import { NewRequestForm } from "./NewRequestForm";
 
 export function FormSkeleton() {
@@ -23,9 +24,10 @@ export async function NewRequestContent() {
   if (!can(user.appRole, "request.create")) {
     return <Alert tone="danger">You are not allowed to create requests.</Alert>;
   }
-  const [brands, divisions] = await Promise.all([
+  const [brands, divisions, team] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    listCreativeTeam(db),
   ]);
-  return <NewRequestForm brands={brands} divisions={divisions} />;
+  return <NewRequestForm brands={brands} divisions={divisions} assignees={team} />;
 }

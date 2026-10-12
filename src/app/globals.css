@@ -509,14 +509,16 @@
  *   data-page-wide              no cap (board, calendar, timeline, table)
  *   data-page-width="medium"    72rem: two-column details and forms, help articles
  *   data-page-width="narrow"    48rem: single-column forms and lists
+ * Only the visible page counts: Next keeps recently visited pages mounted but hidden (React <Activity> sets an inline
+ * `display: none !important`), and a hidden Settings page must not keep capping the board after going back.
  */
-.app-content:has([data-page-wide]) {
+.app-content:has([data-page-wide]:not([style*="display: none"], [style*="display: none"] *)) {
   max-width: none;
 }
-.app-content:has([data-page-width="medium"]) {
+.app-content:has([data-page-width="medium"]:not([style*="display: none"], [style*="display: none"] *)) {
   max-width: 72rem;
 }
-.app-content:has([data-page-width="narrow"]) {
+.app-content:has([data-page-width="narrow"]:not([style*="display: none"], [style*="display: none"] *)) {
   max-width: 48rem;
 }
 

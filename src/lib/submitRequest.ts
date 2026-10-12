@@ -1,4 +1,5 @@
 import type { AppRole, PrismaClient } from "@prisma/client";
+import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 import { CreateRequestError, DEFAULT_TYPE_NAME, VIDEO_TYPE_NAME, createRequestWith, type CreateRequestInput } from "./createRequest";
 
 /** Step 1 of the form, "What do you need?". Each kind files the request as a type plus the motion flag. */
@@ -19,6 +20,8 @@ export type SubmittedValues = {
   brandId: string;
   divisionId: string;
   deadline: string;
+  /** Optional assignee picked on the form ("" = leave unassigned). */
+  assigneeId: string;
   /** The "What do you need?" cards; "" when nothing (or something unknown) was picked. */
   workKind: WorkKind | "";
 };
@@ -39,7 +42,7 @@ export function extractValues(fd: FormData): SubmittedValues {
   };
   return {
     title: str("title"), briefUrl: str("briefUrl"), notes: str("notes"), brandId: str("brandId"),
-    divisionId: str("divisionId"), deadline: str("deadline"),
+    divisionId: str("divisionId"), deadline: str("deadline"), assigneeId: str("assigneeId"),
     workKind: WORK_KINDS.find((k) => k === str("workKind")) ?? "",
   };
 }
@@ -49,6 +52,7 @@ export async function submitRequestWith(
   db: PrismaClient,
   user: { id: string; appRole: AppRole },
   fd: FormData,
+  notifier: Notifier = notifierFor(db),
 ): Promise<{ ok: true; id: string } | NonNullable<SubmitState>> {
   const values = extractValues(fd);
   const plan = values.workKind ? WORK_KIND_PLAN[values.workKind] : null;
@@ -65,11 +69,19 @@ export async function submitRequestWith(
     divisionId: values.divisionId,
     deadline: values.deadline || null,
     needsMotion: plan?.needsMotion ?? false,
+    assigneeId: values.assigneeId || null,
     // No kind picked: an empty typeId can never resolve, so nothing is created but the other fields are still checked.
     ...(plan ? (type ? { typeId: type.id } : {}) : { typeId: "" }),
   };
   try {
     const { id } = await createRequestWith(db, user, input);
+    // Assigned on the form: tell the designer, as a later assignment would.
+    const assigneeId = input.assigneeId;
+    if (assigneeId && assigneeId !== user.id)
+      await bestEffort(async () => {
+        const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
+        await notifier({ actorId: user.id, userIds: [assigneeId], requestId: id, type: "ASSIGNED", message: buildMessage("ASSIGNED", actor?.name ?? "Someone", input.title.trim()) });
+      });
     return { ok: true, id };
   } catch (e) {
     if (!(e instanceof CreateRequestError)) throw e;

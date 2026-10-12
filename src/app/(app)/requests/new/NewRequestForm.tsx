@@ -86,7 +86,7 @@ function WhatHappensNext({ assignee }: { assignee: string }) {
   );
 }
 
-export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions: Opt[] }) {
+export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: Opt[]; divisions: Opt[]; assignees?: Opt[] }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequest, null);
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
@@ -99,11 +99,11 @@ export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
   // Errors with no rendered field (e.g. "form", unknown detail keys) go in the banner.
-  const rendered = new Set(["workKind", "title", "briefUrl", "notes", "brandId", "divisionId", "deadline"]);
+  const rendered = new Set(["workKind", "title", "briefUrl", "notes", "brandId", "divisionId", "assigneeId", "deadline"]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
   const hasFieldErrors = Object.keys(errs).length > 0;
   const generic = state && !state.ok ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
-  const LABELS: Record<string, string> = { workKind: "What do you need", title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", deadline: "Deadline" };
+  const LABELS: Record<string, string> = { workKind: "What do you need", title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", assigneeId: "Assignee", deadline: "Deadline" };
   const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? "");
 
   // React 19 resets uncontrolled fields after the action; the key remounts them with defaults from the echoed values.
@@ -154,6 +154,15 @@ export function NewRequestForm({ brands, divisions }: { brands: Opt[]; divisions
               {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </Field>
+          <div className="sm:col-span-2">
+            <Field id="assigneeId" label="Assignee" hint="Optional. Leave it unassigned and a lead will pick someone." error={errs.assigneeId}>
+              <select {...props("assigneeId", "select")} defaultValue={v?.assigneeId ?? ""}
+                aria-describedby={[errs.assigneeId ? "assigneeId-error" : "", "assigneeId-hint"].filter(Boolean).join(" ")}>
+                <option value="">Unassigned</option>
+                {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </select>
+            </Field>
+          </div>
         </div>
       </Card>
 

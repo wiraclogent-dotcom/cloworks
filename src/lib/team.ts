@@ -5,7 +5,7 @@ import type { JobRole, PrismaClient } from "@prisma/client";
  * leads (e.g. social media) are not on the team even though they can work requests. Sorted by name.
  */
 /** Who is on the creative team; shared by every team list so they all agree. */
-const CREATIVE_TEAM = { active: true, jobRole: "DESIGNER", appRole: { not: "REQUESTER" } } as const;
+export const CREATIVE_TEAM = { active: true, jobRole: "DESIGNER", appRole: { not: "REQUESTER" } } as const;
 
 export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: string; name: string }[]> {
   return db.user.findMany({
