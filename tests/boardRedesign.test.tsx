@@ -188,6 +188,10 @@ describe("filter pills", () => {
     const clear = screen.getByRole("link", { name: "Clear filters" });
     expect(clear.getAttribute("href")).toBe("/c");
     expect(clear.className).not.toMatch(/bg-primary/);
-    expect(screen.getByRole("link", { name: "My requests" }).className).toMatch(/rounded-full/);
+    // The toolbar row matches the view switcher: My requests is a segment in a muted tray, search and Filters share that surface.
+    const mine = screen.getByRole("link", { name: "My requests" });
+    expect(mine.className).toMatch(/rounded-lg/);
+    expect(mine.parentElement!.className).toMatch(/bg-surface-muted/);
+    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-surface-muted|bg-surface-muted.*rounded-xl/);
   });
 });
