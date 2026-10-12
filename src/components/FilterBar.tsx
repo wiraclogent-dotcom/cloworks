@@ -5,6 +5,7 @@ import type { ViewParams } from "@/app/(app)/requests/params";
 import { STATUS_LABEL } from "./status";
 import { buttonClass } from "./ui/Button";
 import { cn, focusRing } from "./ui/cn";
+import { SEGMENT_TRAY, segmentClass } from "./ui/SegmentedControl";
 
 type Opt = { id: string; name: string };
 
@@ -14,16 +15,21 @@ const pill = (active = false) => cn(
   active ? "border-ring bg-accent text-accent-foreground" : "border-input bg-surface text-foreground",
   focusRing,
 );
-/** "My requests" / "My work": a link that toggles its URL flag, Aqua-tinted with a check while on. */
+/**
+ * Toolbar field (search, Filters): the same 40px muted, rounded-xl surface as the view switcher's tray, so the whole
+ * toolbar row reads as one set. `active` raises it like a selected segment.
+ */
+const toolbarField = (active = false) => cn(
+  "h-10 rounded-xl text-[13px] font-medium transition-colors duration-150 ease-out",
+  active ? "bg-surface text-foreground shadow-card ring-1 ring-ring" : "bg-surface-muted text-foreground-secondary hover:text-foreground",
+  focusRing,
+);
+
+/** "My requests" / "My work": a segment that toggles its URL flag, raised with a check while on. */
 function Toggle({ href, on, icon, children }: { href: string; on: boolean; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <Link href={href} aria-current={on ? "true" : undefined}
-      className={cn(
-        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 ease-out",
-        on ? "border-ring bg-accent text-accent-foreground" : "border-border-strong bg-surface text-foreground hover:bg-surface-muted",
-        focusRing,
-      )}>
-      {on ? <Check aria-hidden="true" strokeWidth={2} data-icon="check" className="size-3.5" /> : icon}
+    <Link href={href} aria-current={on ? "true" : undefined} className={segmentClass(on)}>
+      {on ? <Check aria-hidden="true" strokeWidth={2} data-icon="check" /> : icon}
       {children}
     </Link>
   );
@@ -34,7 +40,7 @@ const LABEL = "flex flex-col gap-1 text-xs font-medium text-foreground-secondary
 
 /**
  * Plain GET form: works without JS and keeps the URL shareable. One toolbar row: the search box and a Filters
- * button; the dropdowns, Apply, My requests and Clear live in the Filters panel (a native <details>, so it opens
+ * button, with the My requests / My work quick filters in front; the dropdowns, Apply and Clear live in the Filters panel (a native <details>, so it opens
  * without JS and its fields are still submitted when it is closed).
  */
 export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref, clearHref }: {
@@ -46,7 +52,7 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
   const all = Object.keys(STATUS_LABEL) as RequestStatus[];
   /** The calendar and timeline only show open work, so closed statuses are not offered there. */
   const statuses = p.view === "calendar" || p.view === "timeline" ? all.filter((s) => s !== "DONE" && s !== "CANCELLED") : all;
-  const activeCount = [p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.work].filter(Boolean).length;
+  const activeCount = [p.status, p.brandId, p.divisionId, p.assigneeId, p.motion].filter(Boolean).length;
   const select = (name: string, label: string, value: string | undefined, opts: Opt[]) => (
     <label className={LABEL}>
       {label}
@@ -68,14 +74,19 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
       {/* Keep the table sort when filtering (same rules as hrefWith: the default, newest requested first, is not repeated). */}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="sort" value={p.sort} />}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="dir" value={p.dir} />}
+      {/* Quick scopes sit in the toolbar, not the panel: one click, and visible while on. */}
+      <div role="group" aria-label="Quick filters" className={SEGMENT_TRAY}>
+        <Toggle href={mineHref} on={p.mine} icon={<UserRound aria-hidden="true" strokeWidth={1.75} />}>My requests</Toggle>
+        {workHref && <Toggle href={workHref} on={p.work} icon={<Brush aria-hidden="true" strokeWidth={1.75} />}>My work</Toggle>}
+      </div>
       <label className="relative block">
         <span className="sr-only">Search</span>
-        <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-foreground-secondary" />
-        <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={cn(pill(), "w-56 pr-3 pl-8 placeholder:text-placeholder")} />
+        <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground-secondary" />
+        <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={cn(toolbarField(!!p.q), "w-56 pr-3 pl-9 font-normal text-foreground placeholder:text-placeholder")} />
       </label>
       <details className="group relative">
-        <summary className={cn(pill(activeCount > 0), "flex cursor-pointer list-none items-center gap-1.5 px-3 [&::-webkit-details-marker]:hidden")}>
-          <SlidersHorizontal aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+        <summary className={cn(toolbarField(activeCount > 0), "flex cursor-pointer list-none items-center gap-1.5 px-3 [&::-webkit-details-marker]:hidden")}>
+          <SlidersHorizontal aria-hidden="true" strokeWidth={1.75} className="size-4" />
           Filters{activeCount > 0 ? <span className="tabular-nums">· {activeCount}</span> : null}
         </summary>
         <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-raised">
@@ -92,10 +103,8 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
               <option value="no">No motion</option>
             </select>
           </label>
-          <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
             <button type="submit" className={buttonClass({ variant: "primary", size: "sm" })}>Apply</button>
-            <Toggle href={mineHref} on={p.mine} icon={<UserRound aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}>My requests</Toggle>
-            {workHref && <Toggle href={workHref} on={p.work} icon={<Brush aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}>My work</Toggle>}
             <Link href={clearHref} className={buttonClass({ variant: "ghost", size: "sm" })}><X aria-hidden="true" strokeWidth={1.75} />Clear filters</Link>
           </div>
         </div>
