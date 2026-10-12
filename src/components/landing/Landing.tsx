@@ -1,16 +1,18 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { BellRing, CalendarDays, CirclePlay, FolderKanban, LayoutGrid, MessageSquareText, Table2 } from "lucide-react";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chip } from "@/components/ui/Chip";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
+import { BrandArt } from "@/components/ui/BrandArt";
+import type { ArtName } from "@/lib/brand/art";
 import { cn } from "@/components/ui/cn";
 import { HeroBoard } from "./HeroBoard";
 import { HowItWorks } from "./HowItWorks";
 
-const display = "font-[family-name:var(--font-display)] tracking-[-0.02em]";
+const display = "font-display tracking-[-0.02em]";
 const signInLight =
   "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-[15px] font-semibold text-brand-deep-blue " +
   "shadow-card transition-colors hover:bg-brand-aqua-tint focus-visible:outline-white";
@@ -31,13 +33,13 @@ const NAV = [
 const CREW = ["Nadia", "Raka", "Sari", "Dimas"];
 
 
-const TOOLS: { icon: ReactNode; title: string; body: string }[] = [
-  { icon: <LayoutGrid />, title: "Board", body: "Drag cards between columns, on desktop or by touch. Keyboard works too." },
-  { icon: <Table2 />, title: "Table", body: "Filter by status, brand, division, assignee or motion, then sort by deadline." },
-  { icon: <CalendarDays />, title: "Calendar", body: "Deadlines by day, so a busy week is visible before it arrives." },
-  { icon: <FolderKanban />, title: "Projects", body: "Group requests for a campaign and follow them on a timeline." },
-  { icon: <MessageSquareText />, title: "Comments and links", body: "Feedback, @mentions and file links live on the request itself." },
-  { icon: <BellRing />, title: "Email updates", body: "Get an email when you're assigned, mentioned, or your request moves." },
+const TOOLS: { icon: ReactNode; title: string; body: string; tone: string }[] = [
+  { icon: <LayoutGrid />, title: "Board", tone: "in-progress", body: "Drag cards between columns, on desktop or by touch. Keyboard works too." },
+  { icon: <Table2 />, title: "Table", tone: "tag-clogent", body: "Filter by status, brand, division, assignee or motion, then sort by deadline." },
+  { icon: <CalendarDays />, title: "Calendar", tone: "due-soon", body: "Deadlines by day, so a busy week is visible before it arrives." },
+  { icon: <FolderKanban />, title: "Projects", tone: "first-look", body: "Group requests for a campaign and follow them on a timeline." },
+  { icon: <MessageSquareText />, title: "Comments and links", tone: "done", body: "Feedback, @mentions and file links live on the request itself." },
+  { icon: <BellRing />, title: "Email updates", tone: "needs-motion", body: "Get an email when you're assigned, mentioned, or your request moves." },
 ];
 
 /** Example deliverables for the "From brief to feed" strip (generated sample images in public/landing). */
@@ -150,13 +152,14 @@ function TeamKpi() {
   );
 }
 
-const ROLES: { who: string; title: string; body: string; points: string[]; visual: ReactNode }[] = [
+const ROLES: { who: string; title: string; body: string; points: string[]; visual: ReactNode; art: ArtName }[] = [
   {
     who: "Social media",
     title: "Brief once. Know where it is.",
     body: "Send a request in a minute and follow it to done. No more asking in the group chat whether the post is ready.",
     points: ["See every request you sent and its status", "Review on First look and leave feedback in one place", "The brief calendar shows which days you've sent briefs"],
     visual: <BriefWeek />,
+    art: "role-social",
   },
   {
     who: "Designers",
@@ -164,6 +167,7 @@ const ROLES: { who: string; title: string; body: string; points: string[]; visua
     body: "Everything assigned to you is in one list, with the brief, the brand and the deadline on the card.",
     points: ["Due-soon and late work is marked before it slips", "Motion jobs are flagged so you can plan the time", "Move a card and the requester is told"],
     visual: <DesignerQueue />,
+    art: "step-make",
   },
   {
     who: "Leads",
@@ -171,6 +175,7 @@ const ROLES: { who: string; title: string; body: string; points: string[]; visua
     body: "Assign new work to whoever has room, and track each person's finished work against their monthly target.",
     points: ["Team KPI by month, with each person's progress", "A timeline of who is busy before you assign", "Manage people, brands and divisions in Admin"],
     visual: <TeamKpi />,
+    art: "role-lead",
   },
 ];
 
@@ -205,30 +210,43 @@ export function Landing() {
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--brand-aqua)_18%,transparent),transparent_70%),radial-gradient(40%_40%_at_85%_30%,color-mix(in_srgb,var(--brand-deep-blue)_14%,transparent),transparent_70%),radial-gradient(35%_35%_at_10%_40%,color-mix(in_srgb,var(--status-in-progress-accent)_12%,transparent),transparent_70%)]" />
         <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-50 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
 
-        <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-14 sm:px-6 sm:pt-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 id="hero-title" className={cn(display, "text-[2.5rem] leading-[1.08] font-bold text-heading sm:text-6xl lg:text-[4.25rem]")}>
-              Every creative request,
-              <span className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16">
+          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-6">
+            <div className="text-center lg:text-left">
+              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-[13px] font-medium text-foreground-secondary shadow-card backdrop-blur">
+                <span aria-hidden="true" className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-brand-aqua opacity-60" /><span className="relative size-2 rounded-full bg-brand-aqua" /></span>
+                Clogent&apos;s creative studio, in one board
+              </p>
+              <h1 id="hero-title" style={{ "--i": 1 } as CSSProperties} className={cn(display, "animate-rise mt-5 text-[2.5rem] leading-[1.06] font-bold text-heading sm:text-6xl lg:text-[4rem]")}>
+                Every creative request,{" "}
                 <span className="bg-gradient-to-r from-brand-gradient-from via-brand-gradient-via to-brand-gradient-to bg-clip-text text-transparent">from brief to done.</span>
-                <span aria-hidden="true" className="inline-flex -space-x-2.5 align-middle">
-                  {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-10 text-sm sm:size-12" />)}
+              </h1>
+              <p style={{ "--i": 2 } as CSSProperties} className="animate-rise mx-auto mt-6 max-w-xl text-base leading-relaxed text-foreground-secondary sm:text-lg lg:mx-0">
+                Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
+                picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
+              </p>
+              <div style={{ "--i": 3 } as CSSProperties} className="animate-rise mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+                <Link href="/signin" className={cn(ctaPrimary, "press h-11 px-5 text-[15px]")}>Sign in to Cloworks</Link>
+                <a href="#how" className="press inline-flex h-11 items-center gap-2 rounded-lg border border-border-strong bg-surface px-5 text-[15px] font-medium text-foreground shadow-card transition-colors hover:bg-surface-muted [&_svg]:size-4">
+                  <CirclePlay aria-hidden="true" />See how it works
+                </a>
+              </div>
+              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-[13px] text-foreground-secondary lg:justify-start">
+                <span aria-hidden="true" className="inline-flex -space-x-2.5">
+                  {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-9 text-xs" />)}
                 </span>
-              </span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-foreground-secondary sm:text-lg">
-              Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
-              picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link href="/signin" className={cn(ctaPrimary, "h-11 px-5 text-[15px]")}>Sign in to Cloworks</Link>
-              <a href="#how" className="inline-flex h-11 items-center gap-2 rounded-lg border border-border-strong bg-surface px-5 text-[15px] font-medium text-foreground shadow-card transition-colors hover:bg-surface-muted [&_svg]:size-4">
-                <CirclePlay aria-hidden="true" />See how it works
-              </a>
+                Briefs, designs and reels for every Clogent brand
+              </div>
+            </div>
+
+            {/* The studio in clay: floats gently over a slow-drifting Aqua and Deep Blue glow. */}
+            <div aria-hidden="true" className="animate-pop relative mx-auto w-full max-w-[560px]" style={{ "--i": 2 } as CSSProperties}>
+              <div className="animate-mesh absolute inset-[8%] -z-10 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand-aqua)_35%,transparent),transparent),radial-gradient(closest-side,color-mix(in_srgb,var(--brand-deep-blue)_22%,transparent),transparent),radial-gradient(closest-side,color-mix(in_srgb,var(--chart-cat-4)_18%,transparent),transparent)] bg-no-repeat blur-2xl" />
+              <BrandArt name="hero" width={560} priority sizes="(min-width: 1024px) 560px, 90vw" className="animate-float w-full" />
             </div>
           </div>
 
-          <div className="relative mx-auto mt-14 max-w-5xl sm:mt-16">
+          <div className="reveal relative mx-auto mt-14 max-w-5xl sm:mt-16">
             <div aria-hidden="true" className="absolute -inset-x-6 -top-6 bottom-0 -z-10 rounded-[28px] bg-gradient-to-b from-brand-aqua/20 to-transparent blur-2xl" />
             <HeroBoard />
           </div>
@@ -248,10 +266,10 @@ export function Landing() {
           </div>
           <ul className="-mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
             {FEED.map((post, i) => (
-              <li key={post.src} className={cn("w-[62%] shrink-0 snap-start sm:w-[38%] lg:w-auto", i % 2 === 1 && "lg:translate-y-8")}>
+              <li key={post.src} className={cn("reveal w-[62%] shrink-0 snap-start sm:w-[38%] lg:w-auto", i % 2 === 1 && "lg:translate-y-8")}>
                 <figure>
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-lg bg-surface-muted shadow-card">
-                    <Image src={post.src} alt={post.alt} fill sizes="(min-width: 1024px) 180px, (min-width: 640px) 38vw, 62vw" className="object-cover" />
+                  <div className="lift group relative aspect-[4/5] overflow-hidden rounded-lg bg-surface-muted shadow-card">
+                    <Image src={post.src} alt={post.alt} fill sizes="(min-width: 1024px) 180px, (min-width: 640px) 38vw, 62vw" className="object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-105" />
                     <span className="absolute top-2 left-2 rounded-md bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">{post.format}</span>
                   </div>
                   <figcaption className="mt-3">
@@ -278,7 +296,7 @@ export function Landing() {
           </h2>
           <div className="mt-14 space-y-20 sm:space-y-24">
             {ROLES.map((role, i) => (
-              <article key={role.who} className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+              <article key={role.who} className="reveal grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
                 <div className={cn(i % 2 === 1 && "lg:order-2")}>
                   <p className="text-sm font-semibold text-link">{role.who}</p>
                   <h3 className={cn(display, "mt-2 text-2xl leading-tight font-bold text-heading sm:text-[2rem]")}>{role.title}</h3>
@@ -292,7 +310,11 @@ export function Landing() {
                     ))}
                   </ul>
                 </div>
-                <div className={cn("w-full max-w-lg lg:max-w-none", i % 2 === 1 && "lg:order-1")}>{role.visual}</div>
+                <div className={cn("relative w-full max-w-lg pt-10 lg:max-w-none", i % 2 === 1 && "lg:order-1")}>
+                  <BrandArt name={role.art} width={160} style={{ "--float-delay": `${i * -2}s` } as CSSProperties}
+                    className={cn("animate-float absolute -top-6 z-10 size-28 object-contain drop-shadow-xl sm:size-36", i % 2 === 1 ? "-left-4" : "-right-4")} />
+                  {role.visual}
+                </div>
               </article>
             ))}
           </div>
@@ -306,9 +328,9 @@ export function Landing() {
           </h2>
           <dl className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
             {TOOLS.map((t) => (
-              <div key={t.title} className="border-t border-border pt-4">
-                <dt className="flex items-center gap-2 text-base font-semibold text-heading">
-                  <span aria-hidden="true" className="text-link [&_svg]:size-[18px]">{t.icon}</span>
+              <div key={t.title} className="reveal lift rounded-xl border border-border bg-background p-5">
+                <dt className="flex flex-col gap-3 text-base font-semibold text-heading">
+                  <span aria-hidden="true" data-tone={t.tone} className="flex size-11 items-center justify-center rounded-xl bg-tone-tint text-tone-text [&_svg]:size-5">{t.icon}</span>
                   {t.title}
                 </dt>
                 <dd className="mt-1.5 text-sm leading-relaxed text-foreground-secondary">{t.body}</dd>
@@ -318,13 +340,15 @@ export function Landing() {
         </div>
       </section>
 
-      <section aria-labelledby="cta-title" className="bg-brand-deep-blue text-white">
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-end md:justify-between">
-          <div>
+      <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-brand-deep-blue text-white">
+        <div aria-hidden="true" className="animate-mesh absolute inset-0 -z-10 bg-[radial-gradient(40%_80%_at_0%_0%,color-mix(in_srgb,var(--brand-aqua)_45%,transparent),transparent),radial-gradient(35%_70%_at_100%_100%,color-mix(in_srgb,var(--brand-aqua)_30%,transparent),transparent),radial-gradient(30%_60%_at_60%_0%,color-mix(in_srgb,var(--brand-gradient-via)_40%,transparent),transparent)] bg-no-repeat" />
+        <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between">
+          <BrandArt name="celebrate" width={140} className="animate-float hidden size-32 object-contain md:order-2 md:block" />
+          <div className="md:order-1">
             <h2 id="cta-title" className={cn(display, "text-3xl leading-tight font-bold sm:text-[2.75rem]")}>Got something to brief?</h2>
-            <p className="mt-3 text-base text-white/80">Sign in with your Clogent account. No password yet? Ask Wira to set one.</p>
+            <p className="mt-3 text-base text-white/80">Sign in with your Clogent account. New here? Ask your workspace lead for a join link.</p>
           </div>
-          <Link href="/signin" className={signInLight}>Sign in to Cloworks</Link>
+          <Link href="/signin" className={cn(signInLight, "press shrink-0 whitespace-nowrap md:order-3")}>Sign in to Cloworks</Link>
         </div>
       </section>
       </main>

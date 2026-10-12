@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { DropdownMenu } from "radix-ui";
 import { Bell } from "lucide-react";
+import { BrandArt } from "@/components/ui/BrandArt";
 import type { InboxItem } from "@/lib/inbox";
 import { notificationHref } from "@/lib/notificationLinks";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
@@ -97,7 +98,10 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
                 {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : items.length === 0 ? (
-              <p className="px-2.5 py-6 text-center text-sm text-foreground-secondary">You&apos;re all caught up.</p>
+              <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-foreground-secondary">
+                <BrandArt name="empty-notifications" width={88} className="animate-float mb-1 size-22 object-contain" />
+                You&apos;re all caught up.
+              </div>
             ) : (
               items.map((n) => (
                 <DropdownMenu.Item key={n.id} onSelect={() => void select(n)} className={cn(rowClass, n.readAt === null && unreadRow)}>

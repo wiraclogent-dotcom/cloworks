@@ -15,7 +15,7 @@ type Props = { href: string; label: string; icon: ReactNode };
  */
 function NavLinkView({ href, label, icon, active }: Props & { active: boolean }) {
   return (
-    <Link href={href} aria-current={active ? "page" : undefined} title={label}
+    <Link href={href} transitionTypes={["nav"]} aria-current={active ? "page" : undefined} title={label}
       className={cn(
         "sb-item flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors duration-150 ease-out",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring [&_svg]:size-[18px] [&_svg]:shrink-0",

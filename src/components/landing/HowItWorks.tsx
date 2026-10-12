@@ -4,7 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { BrandTag, Chip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
 
-const display = "font-[family-name:var(--font-display)] tracking-[-0.02em]";
+const display = "font-display tracking-[-0.02em]";
 
 /* ---------- one small illustration per step: a decorative slice of the screen used at that step ---------- */
 

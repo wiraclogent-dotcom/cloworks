@@ -2,6 +2,7 @@ import { requireScope } from "@/lib/session";
 import { countNotificationsWith, listNotificationsWith, unreadCountWith } from "@/lib/inbox";
 import { pageWindow, parsePage, rangeText, TABLE_PAGE_SIZE } from "@/lib/paging";
 import { Pagination } from "@/components/Pagination";
+import { BrandArt } from "@/components/ui/BrandArt";
 import { MarkAllButton } from "./MarkAllButton";
 import { NotificationLink } from "./NotificationLink";
 
@@ -19,8 +20,9 @@ export async function NotificationsContent({ searchParams }: { searchParams: Pro
         <MarkAllButton disabled={unread === 0} />
       </div>
       {items.length === 0 ? (
-        <div className="px-4 py-12 text-center">
-          <p className="text-sm font-medium">No notifications yet.</p>
+        <div className="animate-rise flex flex-col items-center px-4 py-12 text-center">
+          <BrandArt name="empty-notifications" width={144} className="animate-float mb-2 size-36 object-contain" />
+          <p className="font-display text-lg font-semibold">No notifications yet.</p>
           <p className="mt-1 text-sm text-foreground-secondary">You&apos;ll hear here when someone comments, mentions you, assigns you, or sends a design on your requests.</p>
         </div>
       ) : (

@@ -86,7 +86,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
       </div>
       {board ? (
         board.every((c) => c.total === 0) && filtered ? (
-          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
+          <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
             description="Try another search or clear the filters."
             action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
         ) : (

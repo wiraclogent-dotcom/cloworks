@@ -46,7 +46,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   const subject = await db.user.findUnique({ where: { id: subjectId }, select: { id: true, name: true, jobRole: true } });
   if (!subject) {
     return (
-      <EmptyState role="alert" titleAs="h1" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
+      <EmptyState role="alert" titleAs="h1" art="empty-search" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
         action={<Link href="/dashboard/team" className={buttonClass({ variant: "secondary" })}><ArrowLeft aria-hidden="true" />Back to team</Link>} />
     );
   }
@@ -78,7 +78,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
         </>} />
 
       {isEmpty ? (
-        <EmptyState icon={<ChartColumn />} title={`No KPI data for ${monthLabel(month)}`}
+        <EmptyState art="empty-kpi" icon={<ChartColumn />} title={`No KPI data for ${monthLabel(month)}`}
           description={`No target and no finished work for ${monthLabel(month)} yet. ${canTeam ? "Set a target on the Team KPI page." : "Ask your lead to set a monthly target."}`} />
       ) : (
         <div className="space-y-5">
