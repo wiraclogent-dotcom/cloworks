@@ -28,6 +28,7 @@ export function signUpload(cfg: CloudinaryConfig, workspaceId: string, purpose: 
     asset_folder: folder,
     timestamp: String(timestamp),
     allowed_formats: ALLOWED_FORMATS.join(","),
+    overwrite: "false", // a signature cannot be reused to replace a registered asset
   };
   if (kind === "video") signed.transformation = VIDEO_INCOMING_TRANSFORMATION;
   const signature = signParams(signed, cfg.apiSecret);

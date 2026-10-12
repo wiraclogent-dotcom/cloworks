@@ -15,6 +15,7 @@ const TRANSFORM: Record<MediaPreset, string> = {
 /** Delivery URL for a stored asset. `poster` is the first frame of a video as a jpg. */
 export function mediaUrl(m: { publicId: string; type: MediaType }, preset: MediaPreset, cloudName: string): string {
   const base = `https://res.cloudinary.com/${cloudName}`;
+  if (preset === "poster" && m.type === "IMAGE") preset = "grid-3x4";
   if (preset === "poster") return `${base}/video/upload/${TRANSFORM.poster},f_auto,q_auto/so_0/${m.publicId}.jpg`;
   const kind = m.type === "VIDEO" ? "video" : "image";
   return `${base}/${kind}/upload/${TRANSFORM[preset]},f_auto,q_auto/${m.publicId}`;

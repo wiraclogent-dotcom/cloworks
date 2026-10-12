@@ -23,6 +23,8 @@ describe("mediaUrl", () => {
       .toBe("https://res.cloudinary.com/demo/image/upload/c_fill,ar_3:4,w_360,f_auto,q_auto/clowork/w/content/abc");
     expect(mediaUrl({ publicId: "clowork/w/content/vid", type: "VIDEO" }, "poster", "demo"))
       .toBe("https://res.cloudinary.com/demo/video/upload/c_fill,ar_3:4,w_360,f_auto,q_auto/so_0/clowork/w/content/vid.jpg");
+    expect(mediaUrl({ publicId: "p", type: "IMAGE" }, "poster", "demo"))
+      .toBe("https://res.cloudinary.com/demo/image/upload/c_fill,ar_3:4,w_360,f_auto,q_auto/p");
     expect(mediaUrl({ publicId: "p", type: "VIDEO" }, "reel-9x16", "demo"))
       .toBe("https://res.cloudinary.com/demo/video/upload/c_fill,ar_9:16,w_360,f_auto,q_auto/p");
   });
@@ -39,7 +41,7 @@ describe("signUpload", () => {
     expect(r.params.public_id).toBe(r.publicId);
     expect(r.timestamp).toBe(1_700_000_000);
     expect(r.uploadUrl).toBe("https://api.cloudinary.com/v1_1/demo/image/upload");
-    const literal = `allowed_formats=jpg,png,webp,heic,mp4,mov&asset_folder=clowork/ws1/content&public_id=${r.publicId}&timestamp=1700000000s3cret`;
+    const literal = `allowed_formats=jpg,png,webp,heic,mp4,mov&asset_folder=clowork/ws1/content&overwrite=false&public_id=${r.publicId}&timestamp=1700000000s3cret`;
     expect(r.signature).toBe(createHash("sha1").update(literal).digest("hex"));
     expect(r.params).toMatchObject({ api_key: "key123", signature: r.signature, timestamp: "1700000000" });
   });
@@ -47,7 +49,7 @@ describe("signUpload", () => {
     const r = signUpload(CFG, "ws1", "content", "video", NOW);
     expect(r.params.transformation).toBe("c_limit,w_1280,h_1280,q_auto");
     expect(r.uploadUrl).toBe("https://api.cloudinary.com/v1_1/demo/video/upload");
-    const literal = `allowed_formats=jpg,png,webp,heic,mp4,mov&asset_folder=clowork/ws1/content&public_id=${r.publicId}&timestamp=1700000000&transformation=c_limit,w_1280,h_1280,q_auto` + "s3cret";
+    const literal = `allowed_formats=jpg,png,webp,heic,mp4,mov&asset_folder=clowork/ws1/content&overwrite=false&public_id=${r.publicId}&timestamp=1700000000&transformation=c_limit,w_1280,h_1280,q_auto` + "s3cret";
     expect(r.signature).toBe(createHash("sha1").update(literal).digest("hex"));
   });
   it("gives each upload a fresh id", () => {
@@ -108,7 +110,20 @@ describe("media registration", () => {
     const c = { getResource, destroy: vi.fn() } as CloudinaryClient;
     expect(await code(registerMediaWith(db.prisma, c, user, { publicId: "clowork/other/content/a", type: "IMAGE" }))).toBe("INVALID");
     expect(await code(registerMediaWith(db.prisma, c, user, { publicId: `clowork/${db.workspaceId}x/a`, type: "IMAGE" }))).toBe("INVALID");
+    for (const publicId of [`clowork/${db.workspaceId}/../other/content/a`, `clowork/${db.workspaceId}/content/../../x`, `clowork/${db.workspaceId}/content/a/b`, `clowork/${db.workspaceId}/other/a`]) {
+      expect(await code(registerMediaWith(db.prisma, c, user, { publicId, type: "IMAGE" }))).toBe("INVALID");
+    }
     expect(getResource).not.toHaveBeenCalled();
+  });
+  it("rejects a video wider or taller than the incoming transformation allows, and one without a duration", async () => {
+    expect(await code(registerMediaWith(db.prisma, fake({ bytes: 1, width: 1281, height: 720, format: "mp4", duration: 5 }), user, { publicId: pid("big"), type: "VIDEO" }))).toBe("INVALID");
+    expect(await code(registerMediaWith(db.prisma, fake({ bytes: 1, width: 720, height: 1281, format: "mp4", duration: 5 }), user, { publicId: pid("big"), type: "VIDEO" }))).toBe("INVALID");
+    expect(await code(registerMediaWith(db.prisma, fake({ bytes: 1, width: 720, height: 1280, format: "mp4" }), user, { publicId: pid("nodur"), type: "VIDEO" }))).toBe("INVALID");
+  });
+  it("returns the existing row when the public_id is registered twice", async () => {
+    const first = await registerMediaWith(db.prisma, fake({ bytes: 1, width: 1, height: 1, format: "jpg" }), user, { publicId: pid("twice"), type: "IMAGE" });
+    const second = await registerMediaWith(db.prisma, fake(null), user, { publicId: pid("twice"), type: "IMAGE" });
+    expect(second.id).toBe(first.id);
   });
   it("NOT_FOUND when Cloudinary has no such resource", async () => {
     expect(await code(registerMediaWith(db.prisma, fake(null), user, { publicId: pid(), type: "IMAGE" }))).toBe("NOT_FOUND");

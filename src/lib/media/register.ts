@@ -18,21 +18,28 @@ export class MediaError extends Error {
 export async function registerMediaWith(
   db: ScopedDb, client: CloudinaryClient, user: { id: string; workspaceId: string }, input: { publicId: string; type: MediaType },
 ): Promise<Media> {
-  if (!input.publicId.startsWith(`clowork/${user.workspaceId}/`)) throw new MediaError("INVALID", "That file does not belong to this workspace.");
+  // Exactly the shape signUpload issues: no "..", no extra segments, so the id cannot resolve into another workspace.
+  const escaped = user.workspaceId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (!new RegExp(`^clowork/${escaped}/(content|avatar)/[A-Za-z0-9_-]+$`).test(input.publicId)) throw new MediaError("INVALID", "That file does not belong to this workspace.");
+  const existing = await db.media.findFirst({ where: { publicId: input.publicId } });
+  if (existing) return existing; // double submit
   const res = await client.getResource(input.publicId, input.type);
   if (!res) throw new MediaError("NOT_FOUND", "The uploaded file was not found.");
   if (!(ALLOWED_FORMATS as readonly string[]).includes(res.format)) throw new MediaError("INVALID", "That file format is not supported.");
   const formats: readonly string[] = input.type === "VIDEO" ? VIDEO_FORMATS : IMAGE_FORMATS;
   if (!formats.includes(res.format)) throw new MediaError("INVALID", "The file does not match the expected type.");
+  // A video that skipped the incoming transformation (e.g. an image signature posted to /video/upload) is oversized.
+  if (input.type === "VIDEO" && (res.width > 1280 || res.height > 1280)) throw new MediaError("INVALID", "The video was not processed by the upload.");
   if (input.type === "IMAGE" && res.bytes > MAX_IMAGE_BYTES) throw new MediaError("TOO_LARGE", "Images can be at most 10 MB.");
   if (input.type === "VIDEO") {
     if (res.bytes > MAX_VIDEO_BYTES) throw new MediaError("TOO_LARGE", "Videos can be at most 100 MB.");
-    if ((res.duration ?? 0) > MAX_VIDEO_SECONDS) throw new MediaError("TOO_LARGE", "Videos can be at most 90 seconds.");
+    if (res.duration == null) throw new MediaError("INVALID", "The video has no duration.");
+    if (res.duration > MAX_VIDEO_SECONDS) throw new MediaError("TOO_LARGE", "Videos can be at most 90 seconds.");
   }
   return db.media.create({
     data: {
       publicId: input.publicId, type: input.type, width: res.width, height: res.height, bytes: res.bytes,
-      durationSec: input.type === "VIDEO" ? (res.duration ?? null) : null, uploadedById: user.id,
+      durationSec: input.type === "VIDEO" ? res.duration : null, uploadedById: user.id,
     },
   });
 }
