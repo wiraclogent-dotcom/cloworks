@@ -77,4 +77,12 @@ describe("timeline params", () => {
     expect(toFilter(parseParams({ assignee: "someone" }), "me").assigneeId).toBe("someone");
     expect(hrefWith(p, {})).toContain("work=1");
   });
+  it("?scope= keeps only known summary scopes and is carried by hrefWith", () => {
+    expect(parseParams({ scope: "overdue" }).scope).toBe("overdue");
+    expect(parseParams({ scope: "nope" }).scope).toBeUndefined();
+    const p = parseParams({ view: "table", scope: "due-today" });
+    expect(toFilter(p, "me").scope).toBe("due-today");
+    expect(hrefWith(p, {})).toBe("/requests?view=table&scope=due-today");
+    expect(hrefWith(p, { scope: undefined })).toBe("/requests?view=table");
+  });
 });

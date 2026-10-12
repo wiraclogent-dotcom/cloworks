@@ -2,6 +2,7 @@ import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
 import { daysLeft } from "./daysLeft";
 import { VIDEO_TYPE_NAME, jakartaDate } from "./createRequest";
 import { isOpenStatus } from "./reschedule";
+import { scopeWhere, type OverviewScope } from "./todayOverview";
 import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, TABLE_PAGE_SIZE, pageWindow, type PageWindow } from "./paging";
 
 export type RequestFilter = {
@@ -14,6 +15,9 @@ export type RequestFilter = {
   needsMotion?: boolean;
   /** "My requests": only requests this user filed. */
   mine?: { userId: string };
+  /** A summary tile's list (Open / Due today / Overdue / Done today), evaluated at `now`. */
+  scope?: OverviewScope;
+  now?: Date;
 };
 
 export type RequestRow = {
@@ -64,6 +68,7 @@ function filterClauses(filter: RequestFilter): Prisma.RequestWhereInput[] {
   const q = filter.q?.trim();
   if (q) and.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { notes: { contains: q, mode: "insensitive" } }] });
   if (filter.mine) and.push({ requesterId: filter.mine.userId });
+  if (filter.scope) and.push(scopeWhere(filter.scope, filter.now));
   return and;
 }
 

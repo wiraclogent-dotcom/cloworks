@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight, CircleCheckBig, Clock, Inbox, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
-import { dayPeriodFor, greetingFor, summarySentence, type DayPeriod, type TodayOverview as Overview } from "@/lib/todayOverview";
+import { SCOPE_LABEL, dayPeriodFor, greetingFor, summarySentence, type DayPeriod, type TodayOverview as Overview } from "@/lib/todayOverview";
 import { WelcomeIllustration } from "./WelcomeIllustration";
 import { cn, focusRing } from "./ui/cn";
 
@@ -49,10 +49,11 @@ export function TodayOverview({ name, now, overview }: { name: string; now: Date
         </div>
       </div>
       <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
-        <li className="flex min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>
-        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<Clock aria-hidden="true" />} label="Due today" value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
-        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label="Overdue" value={overview.overdue} emphasis="text-danger" /></li>
-        <li className="flex min-w-0"><Tile href="/requests?view=table&status=DONE" icon={<CircleCheckBig aria-hidden="true" />} label="Done today" value={overview.doneToday} /></li>
+        {/* Each tile opens exactly the requests it counts (?scope=, same definition as the count), most urgent first. */}
+        <li className="flex min-w-0"><Tile href="/requests?view=table&scope=open&sort=deadline" icon={<Inbox aria-hidden="true" />} label={SCOPE_LABEL.open} value={overview.open} /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&scope=due-today&sort=deadline" icon={<Clock aria-hidden="true" />} label={SCOPE_LABEL["due-today"]} value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&scope=overdue&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label={SCOPE_LABEL.overdue} value={overview.overdue} emphasis="text-danger" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&scope=done-today" icon={<CircleCheckBig aria-hidden="true" />} label={SCOPE_LABEL["done-today"]} value={overview.doneToday} /></li>
       </ul>
     </section>
   );

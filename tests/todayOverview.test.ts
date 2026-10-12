@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { jakartaDayStart, dayPeriodFor, greetingFor, summarySentence, todayOverview } from "@/lib/todayOverview";
+import { jakartaDayStart, dayPeriodFor, greetingFor, summarySentence, scopeWhere, todayOverview } from "@/lib/todayOverview";
 
 describe("jakartaDayStart", () => {
   it("is midnight in Jakarta, which is 17:00 UTC the day before", () => {
@@ -39,19 +39,17 @@ describe("summarySentence", () => {
 });
 
 describe("todayOverview", () => {
-  it("counts open, due, late and done-today from the right tables and windows", async () => {
+  it("counts each tile with its scopeWhere, never cancelled requests", async () => {
     const calls: unknown[] = [];
-    const db = {
-      request: { count: async (args: unknown) => { calls.push(args); return calls.length; } },
-      statusEvent: { count: async (args: unknown) => { calls.push(args); return 40; } },
-    };
+    const db = { request: { count: async (args: unknown) => { calls.push(args); return calls.length; } }, statusEvent: {} };
     const now = new Date("2026-10-08T03:00:00Z");
-    const result = await todayOverview(db as never, now);
-    expect(result).toEqual({ open: 1, dueToday: 2, overdue: 3, doneToday: 40 });
+    expect(await todayOverview(db as never, now)).toEqual({ open: 1, dueToday: 2, overdue: 3, doneToday: 4 });
     const start = new Date("2026-10-07T17:00:00.000Z");
     const end = new Date("2026-10-08T17:00:00.000Z");
-    expect(calls[1]).toEqual({ where: { status: { in: ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"] }, deadline: { gte: start, lt: end } } });
-    expect(calls[2]).toEqual({ where: { status: { in: ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"] }, deadline: { lt: start } } });
-    expect(calls[3]).toEqual({ where: { to: "DONE", at: { gte: start, lt: end } } });
+    const notCancelled = { status: { not: "CANCELLED" } };
+    expect(calls[1]).toEqual({ where: { AND: [{ status: { in: ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"] }, deadline: { gte: start, lt: end } }, notCancelled] } });
+    expect(calls[2]).toEqual({ where: { AND: [{ status: { in: ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"] }, deadline: { lt: start } }, notCancelled] } });
+    expect(calls[3]).toEqual({ where: { AND: [{ statusEvents: { some: { to: "DONE", at: { gte: start, lt: end } } } }, notCancelled] } });
+    expect(calls[3]).toEqual({ where: { AND: [scopeWhere("done-today", now), notCancelled] } });
   });
 });
