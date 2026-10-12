@@ -258,4 +258,34 @@ describe("content posts", () => {
     expect((await code(updatePostWith(db.prisma, creative, id, { brief: 5 as unknown as string })))?.fieldErrors?.brief).toBeTruthy();
     await updatePostWith(db.prisma, creative, id, { brief: "x".repeat(5000), caption: "x".repeat(2200) });
   });
+
+  it("rows from another workspace are NOT_FOUND: channel, media and request type", async () => {
+    const ws = await db.raw.workspace.create({ data: { name: "Other posts", slug: "other-posts-ws" } });
+    const brand = await db.raw.brand.create({ data: { name: "Foreign", workspaceId: ws.id } });
+    const channel = await db.raw.socialChannel.create({
+      data: { brandId: brand.id, platform: "INSTAGRAM", handle: "foreign", displayName: "F", position: 1, workspaceId: ws.id },
+    });
+    const media = await db.raw.media.create({
+      data: { publicId: "clowork/other/content/f", type: "IMAGE", width: 1, height: 1, bytes: 1, uploadedById: lead.id, workspaceId: ws.id },
+    });
+    const type = await db.raw.requestType.create({ data: { name: "Foreign type", workspaceId: ws.id } });
+
+    expect((await code(createPostWith(db.prisma, creative, { channelId: channel.id, surface: "FEED", kind: "PLANNED" })))?.code).toBe("NOT_FOUND");
+    const { id } = await feed(creative);
+    expect((await code(setPostMediaWith(db.prisma, creative, id, [{ mediaId: media.id, role: "MOCKUP" }])))?.code).toBe("NOT_FOUND");
+    expect((await code(updatePostWith(db.prisma, creative, id, { typeId: type.id })))?.code).toBe("NOT_FOUND");
+    expect(await db.prisma.contentPostMedia.count({ where: { postId: id } })).toBe(0);
+    expect((await post(id)).typeId).toBeNull();
+  });
+
+  it("create validates surface and kind; update validates format", async () => {
+    const mk = (surface: string, kind: string) =>
+      code(createPostWith(db.prisma, creative, { channelId, surface: surface as "FEED", kind: kind as "PLANNED" }));
+    expect((await mk("TIKTOK", "PLANNED"))?.code).toBe("INVALID");
+    expect((await mk("FEED", "ARCHIVED"))?.code).toBe("INVALID");
+    const { id } = await feed(creative);
+    expect((await code(updatePostWith(db.prisma, creative, id, { format: "GIF" as "SINGLE" })))?.fieldErrors?.format).toBeTruthy();
+    await updatePostWith(db.prisma, creative, id, { format: "VIDEO" });
+    expect((await post(id)).format).toBe("VIDEO");
+  });
 });

@@ -14,6 +14,8 @@ export const MAX_CONTENT_COMMENT = 2000;
 export const MAX_BRIEF = 5000; // matches request notes
 export const MAX_CAPTION = 2200; // Instagram's limit
 const FORMATS: readonly ContentFormat[] = ["SINGLE", "CAROUSEL", "VIDEO"];
+const SURFACES: readonly ContentSurface[] = ["FEED", "REEL", "STORY"];
+const KINDS: readonly ContentKind[] = ["PLANNED", "PUBLISHED"];
 
 /** A Jakarta calendar day, stored as midnight Jakarta time (same as createRequestWith). */
 const jakartaMidnight = (d: string) => new Date(`${d}T00:00:00+07:00`);
@@ -38,6 +40,8 @@ export async function createPostWith(
   input: { channelId: string; surface: ContentSurface; kind: ContentKind; publishedAt?: string },
 ): Promise<{ id: string }> {
   assertDrafter(user);
+  if (!SURFACES.includes(input.surface)) throw new ContentError("INVALID", "Pick feed, reel or story.");
+  if (!KINDS.includes(input.kind)) throw new ContentError("INVALID", "Pick planned or published.");
   if (!(await db.socialChannel.findFirst({ where: { id: input.channelId }, select: { id: true } }))) throw new ContentError("NOT_FOUND", "Channel not found.");
   if (input.kind === "PUBLISHED") {
     if (!input.publishedAt || !isRealDate(input.publishedAt)) {

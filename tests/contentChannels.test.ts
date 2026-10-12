@@ -100,4 +100,28 @@ describe("content channels", () => {
     await deleteChannelWith(db.prisma, lead, free.id);
     expect(await db.prisma.socialChannel.findFirst({ where: { id: free.id } })).toBeNull();
   });
+
+  it("a handle taken between the check and the write is INVALID with fieldErrors.handle", async () => {
+    await createChannelWith(db.prisma, lead, input("race.handle"));
+    const other = await createChannelWith(db.prisma, lead, input("race.other"));
+    // Hide the duplicate from the pre-check, so the unique index is what catches it.
+    const blind = new Proxy(db.prisma, {
+      get(t, k, r) {
+        if (k !== "socialChannel") return Reflect.get(t, k, r);
+        const sc = t.socialChannel;
+        return new Proxy(sc, {
+          get(s, m, r2) {
+            if (m === "findFirst") {
+              return (a: { where?: { handle?: string } }) => (a?.where?.handle ? Promise.resolve(null) : s.findFirst(a as never));
+            }
+            return Reflect.get(s, m, r2);
+          },
+        });
+      },
+    }) as typeof db.prisma;
+    const created = await code(createChannelWith(blind, lead, input("race.handle")));
+    expect(created).toMatchObject({ code: "INVALID", fieldErrors: { handle: "That handle is already used" } });
+    const updated = await code(updateChannelWith(blind, lead, other.id, input("race.handle")));
+    expect(updated).toMatchObject({ code: "INVALID", fieldErrors: { handle: "That handle is already used" } });
+  });
 });
