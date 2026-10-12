@@ -16,7 +16,7 @@ export const STATUS_LABEL: Record<ContentStatus, string> = {
   DONE: "Done",
 };
 
-const STATUS_TONE: Record<ContentStatus, Tone> = {
+export const STATUS_TONE: Record<ContentStatus, Tone> = {
   IDEA: "tag-neutral",
   DRAFT: "requested",
   SUBMITTED: "first-look",
