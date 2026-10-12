@@ -2,8 +2,10 @@ import { after } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
+import { safeBaseUrl } from "./emailLayout";
 
 export type { Mailer } from "./mailer";
+export { safeBaseUrl } from "./emailLayout";
 export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE" | "DESIGN_SENT" | "ATTACHMENT";
 /** `email: false` stores the in-app row only (default: email it too when the type is in EMAILED_TYPES and a mailer is configured). */
 export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string; email?: boolean };
@@ -54,17 +56,6 @@ export function buildMessage(
       ? `${a} moved the deadline of “${t}” from ${cleanLine(change.from, 40)} to ${cleanLine(change.to, 40)}`
       : `${a} set the deadline of “${t}” to ${cleanLine(change?.to ?? "", 40)}`;
     case "STATUS": return `${a} moved “${t}” from ${(STATUS_LABEL as Record<string, string>)[change?.from ?? ""] ?? change?.from} to ${(STATUS_LABEL as Record<string, string>)[change?.to ?? ""] ?? change?.to}`;
-  }
-}
-
-export function safeBaseUrl(raw: string | undefined): string | null {
-  if (!raw) return null;
-  try {
-    const u = new URL(raw.trim());
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    return u.origin + u.pathname.replace(/\/+$/, "");
-  } catch {
-    return null;
   }
 }
 
