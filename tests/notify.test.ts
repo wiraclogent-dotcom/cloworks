@@ -205,6 +205,12 @@ describe("notifications", () => {
       expect(JSON.parse(init.body as string)).toEqual({ from: "T <n@x.com>", to: ["a@b.c"], subject: "s", text: "t" });
       expect(init.signal).toBeDefined();
     });
+    it("includes html in the Resend body when given", async () => {
+      const f = vi.fn(async () => ({ ok: true, status: 200 }));
+      await createMailerFromEnv({ RESEND_API_KEY: "key1", EMAIL_FROM: "T <n@x.com>" }, f).send({ to: "a@b.c", subject: "s", text: "t", html: "<p>h</p>" });
+      const [, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+      expect(JSON.parse(init.body as string)).toEqual({ from: "T <n@x.com>", to: ["a@b.c"], subject: "s", text: "t", html: "<p>h</p>" });
+    });
     it("throws on a non-2xx response", async () => {
       const f = vi.fn(async () => ({ ok: false, status: 500 }));
       await expect(createMailerFromEnv({ RESEND_API_KEY: "k", EMAIL_FROM: "f" }, f).send({ to: "a@b.c", subject: "s", text: "t" })).rejects.toThrow(/500/);

@@ -1,5 +1,5 @@
 export interface Mailer {
-  send(msg: { to: string; subject: string; text: string }): Promise<void>;
+  send(msg: { to: string; subject: string; text: string; html?: string }): Promise<void>;
 }
 
 type Env = Record<string, string | undefined>;
@@ -25,11 +25,11 @@ export function createMailerFromEnv(env: Env = process.env, fetchImpl: FetchLike
     };
   }
   return {
-    async send({ to, subject, text }) {
+    async send({ to, subject, text, html }) {
       const res = await fetchImpl(RESEND_URL, {
         method: "POST",
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ from, to: [to], subject, text }),
+        body: JSON.stringify({ from, to: [to], subject, text, ...(html ? { html } : {}) }),
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (!res.ok) throw new Error(`Resend responded ${res.status}`);
