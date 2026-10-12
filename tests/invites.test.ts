@@ -281,6 +281,14 @@ describe("linked invites", () => {
     expect((await db.raw.invite.findUniqueOrThrow({ where: { id } })).userId).toBe(b.id);
   });
 
+  it("re-inviting the same email without a person clears the old link", async () => {
+    const p = await person();
+    const { id, email } = await linkedInvite(p.id);
+    const { mailer } = rec();
+    await createInvite(db.prisma, admin, mailer, { email, appRole: "CREATIVE", jobRole: "DESIGNER" }, BASE);
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id } })).userId).toBeNull();
+  });
+
   it("describeInvite shows linkedName; null when unlinked", async () => {
     const p = await person();
     const { token } = await linkedInvite(p.id);

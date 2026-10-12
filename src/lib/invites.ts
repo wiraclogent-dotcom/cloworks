@@ -1,4 +1,4 @@
-import { AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type Invite, type JobRole, type PrismaClient } from "@prisma/client";
+import { AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type Applicant, type Invite, type JobRole, type PrismaClient } from "@prisma/client";
 import type { ScopedDb } from "./db";
 import type { Mailer } from "./mailer";
 import { AdminError, assertAdmin, isUniqueViolation, lockRoster, normalizeEmail, type Actor } from "./admin";
@@ -29,7 +29,7 @@ export const roleLabel = (inv: Pick<Invite, "appRole" | "jobRole">) => (inv.jobR
  * The email goes out FIRST: if it fails (bad address, provider down) nothing is written, the current link and roles
  * keep working, and the admin gets VALIDATION naming the address.
  */
-async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole; userId?: string }) {
+async function issue(db: ScopedDb, actor: Actor, mailer: Mailer, inviteId: string, baseUrl: string, roles?: { appRole: AppRole; jobRole: JobRole; userId?: string | null }) {
   const token = newToken();
   const expiresAt = new Date(Date.now() + INVITE_TTL_MS);
   const [inv, inviter, workspace] = await Promise.all([
@@ -79,7 +79,7 @@ export async function createInvite(
     const person = await db.user.findFirst({ where: { id: input.userId, email: null }, select: { id: true } });
     if (!person) throw new AdminError("VALIDATION", "That person already has a login or no longer exists.");
   }
-  const roles = { appRole: input.appRole, jobRole: input.jobRole, ...(input.userId ? { userId: input.userId } : {}) };
+  const roles = { appRole: input.appRole, jobRole: input.jobRole, userId: input.userId ?? null };
   const open = await db.invite.findFirst({ where: { email, ...openWhere }, select: { id: true } });
   if (open) {
     await issue(db, actor, mailer, open.id, baseUrl, roles);
@@ -149,13 +149,18 @@ export async function describeInvite(db: PrismaClient, token: string, now: Date 
 }
 
 /**
- * Accepts an open, unexpired invite and creates the member, in one transaction.
+ * Accepts an open, unexpired invite and creates the member (or logs in the linked person), in one transaction.
  *
  * - `{ applicantId }`: the caller's own applicant session. Its email must equal the invite email; the User reuses the
  *   applicant's id, name and password hash.
  * - `{ name, password }`: anonymous holder of the token (the token proves the inbox). Any applicant row for the email
  *   is deleted and the User gets a FRESH id — an unverified applicant's id may sit in a squatter's session, and
  *   reusing it would make that session a member.
+ *
+ * A linked invite (`userId`) attaches the login to that existing roster person instead of creating a User (`linked:
+ * true`): the typed name is ignored, the person keeps their id and names, and an applicant's password hash (possibly
+ * null) is carried over. The linked person must still be in the workspace with no email, else NOT_FOUND with
+ * INVITE_STALE_MESSAGE and the invite is not consumed.
  *
  * NOT_FOUND when the invite is unknown, accepted, revoked or expired (also for the loser of a concurrent accept).
  * FORBIDDEN when the email belongs to a deactivated User; CONFLICT when it already belongs to an active one.
@@ -194,35 +199,26 @@ export async function acceptInvite(
         throw new AdminError("FORBIDDEN", "This email belongs to a deactivated account. Contact your admin.");
       if (existing) throw new AdminError("CONFLICT", "This email already has an account. Sign in instead.");
 
+      let ap: Applicant | null = null;
+      if ("applicantId" in who) {
+        ap = await tx.applicant.findUnique({ where: { id: who.applicantId } });
+        if (!ap) throw gone();
+        if (ap.email.toLowerCase() !== email) throw new AdminError("VALIDATION", `This invite is for ${maskEmail(email)}`);
+        passwordHash = ap.passwordHash;
+      }
+
       if (inv.userId) {
         // Linked invite: the login goes onto the existing roster person (typed name ignored, no new User).
-        let hash = passwordHash;
-        if ("applicantId" in who) {
-          const ap = await tx.applicant.findUnique({ where: { id: who.applicantId } });
-          if (!ap) throw gone();
-          if (ap.email.toLowerCase() !== email) throw new AdminError("VALIDATION", `This invite is for ${maskEmail(email)}`);
-          hash = ap.passwordHash;
-        }
         await lockRoster(tx);
         await assertLinkable(tx, inv.workspaceId, inv.userId, stale);
         await tx.applicant.deleteMany({ where: { email } });
-        await attachLogin(tx, inv.userId, { email, passwordHash: hash, appRole: inv.appRole, jobRole: inv.jobRole });
+        await attachLogin(tx, inv.userId, { email, passwordHash, appRole: inv.appRole, jobRole: inv.jobRole });
         return { userId: inv.userId, email, linked: true };
       }
 
-      let id: string | undefined;
-      let display: string;
-      if ("applicantId" in who) {
-        const ap = await tx.applicant.findUnique({ where: { id: who.applicantId } });
-        if (!ap) throw gone();
-        if (ap.email.toLowerCase() !== email) throw new AdminError("VALIDATION", `This invite is for ${maskEmail(email)}`);
-        id = ap.id;
-        display = ap.name.trim() || email.split("@")[0];
-        passwordHash = ap.passwordHash;
-      } else {
-        display = (who.name ?? "").trim().replace(/\s+/g, " ");
-        if (!display || display.length > MAX_NAME_LEN) throw new AdminError("VALIDATION", `Name must be 1 to ${MAX_NAME_LEN} characters`);
-      }
+      const id = ap?.id;
+      const display = ap ? ap.name.trim() || email.split("@")[0] : ("name" in who ? (who.name ?? "") : "").trim().replace(/\s+/g, " ");
+      if (!ap && (!display || display.length > MAX_NAME_LEN)) throw new AdminError("VALIDATION", `Name must be 1 to ${MAX_NAME_LEN} characters`);
 
       await tx.applicant.deleteMany({ where: { email } });
       // Serialise with other roster writes (approvals, accepts) so two people can't pick the same short name.
