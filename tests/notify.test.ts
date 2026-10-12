@@ -127,6 +127,15 @@ describe("notifications", () => {
       await notifyWith(db.prisma, mailer, input({ requestId: evilId, message }), { baseUrl: "https://t.example.com" });
       expect(sent[0].html).toContain("&lt;img");
       expect(sent[0].html).not.toContain("<img src=x");
+      expect(sent[0].html).toContain("&gt;&lt;img src=x onerror=alert(1)&gt;");
+    });
+    it("caps the subject for a long title but keeps the full message in html and text", async () => {
+      const { sent, mailer } = recorder();
+      const message = "Dimas assigned you to " + "y".repeat(300);
+      await notifyWith(db.prisma, mailer, input({ requestId: evilId, message }), { baseUrl: "https://t.example.com" });
+      expect(sent[0].subject.length).toBeLessThanOrEqual(160);
+      expect(sent[0].html).toContain(message);
+      expect(sent[0].text).toContain(message);
     });
     it("neutralizes header injection and caps the subject", async () => {
       const { sent, mailer } = recorder();
