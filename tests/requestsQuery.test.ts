@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { RequestStatus } from "@prisma/client";
 import { listRequests, listCalendarRequests, listTimelineRequests } from "@/lib/requests";
+import { OVERVIEW_SCOPES, todayOverview } from "@/lib/todayOverview";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("listRequests", () => {
@@ -78,6 +79,16 @@ describe("listRequests", () => {
     expect((await keys({ mine: { userId: u.cre2 } }))).toEqual([]);
     expect((await keys({ mine: { userId: u.req2 } })).sort()).toEqual(["nodl-new", "other"]);
     expect((await keys({ mine: { userId: u.cre } }))).toEqual([]);
+  });
+  it("each summary tile's list (?scope=) holds exactly the requests its number counts", async () => {
+    const now = new Date("2026-10-10T03:00:00Z"); // Jakarta 10 Oct: "soon" is due today, nothing is overdue yet
+    await db.prisma.statusEvent.create({ data: { requestId: ids["Poster Launch"], from: "FIRST_LOOK", to: "DONE", actorId: u.cre, at: now } });
+    const counts = await todayOverview(db.prisma, now);
+    const byScope = { "open": counts.open, "due-today": counts.dueToday, "overdue": counts.overdue, "done-today": counts.doneToday };
+    for (const scope of OVERVIEW_SCOPES) expect((await keys({ scope, now })).length, scope).toBe(byScope[scope]);
+    expect(await keys({ scope: "due-today", now })).toEqual(["soon"]);
+    expect(await keys({ scope: "done-today", now })).toEqual(["Poster Launch"]);
+    expect((await keys({ scope: "overdue", now: new Date("2026-10-21T03:00:00Z") })).sort()).toEqual(["late", "soon"]);
   });
   it("combines filters with AND", async () => {
     expect(await keys({ mine: { userId: u.req2 }, status: "FIRST_LOOK" })).toEqual(["nodl-new"]);

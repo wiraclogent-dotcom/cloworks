@@ -55,8 +55,8 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     listCreativeTeam(db),
   ]);
-  const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false, work: false }, {});
-  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine || p.work);
+  const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false, work: false, scope: undefined }, {});
+  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine || p.work || p.scope);
   return (
     <>
       <PageHeader title="Requests"
@@ -80,6 +80,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
             mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
             workHref={user.jobRole === "DESIGNER" ? hrefWith(p, { work: p.work ? undefined : "1", assignee: undefined }) : undefined}
+            scopeClearHref={p.scope ? hrefWith(p, { scope: undefined }) : undefined}
             clearHref={clearHref} />
         </div>
       </div>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
 import { Brush, Check, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
+import { SCOPE_LABEL } from "@/lib/todayOverview";
 import type { ViewParams } from "@/app/(app)/requests/params";
 import { STATUS_LABEL } from "./status";
 import { buttonClass } from "./ui/Button";
@@ -43,10 +44,12 @@ const LABEL = "flex flex-col gap-1 text-xs font-medium text-foreground-secondary
  * button, with the My requests / My work quick filters in front; the dropdowns, Apply and Clear live in the Filters panel (a native <details>, so it opens
  * without JS and its fields are still submitted when it is closed).
  */
-export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref, clearHref }: {
+export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref, scopeClearHref, clearHref }: {
   p: ViewParams; brands: Opt[]; divisions: Opt[]; assignees: Opt[]; mineHref: string;
   /** Designers only: toggles "My work" (requests assigned to me). */
   workHref?: string;
+  /** Set while a summary tile's list is shown (?scope=): removes just that. */
+  scopeClearHref?: string;
   clearHref: string;
 }) {
   const all = Object.keys(STATUS_LABEL) as RequestStatus[];
@@ -65,15 +68,23 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
   return (
     // Keyed on the filters: Clear filters / My requests are soft navigations that reuse this form, and uncontrolled
     // fields ignore a new defaultValue, so a remount is what shows the new values (and closes the panel).
-    <form key={JSON.stringify([p.q, p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.work, p.view])} method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
+    <form key={JSON.stringify([p.q, p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.work, p.scope, p.view])} method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
       {p.view !== "board" && <input type="hidden" name="view" value={p.view} />}
       {p.view === "calendar" && <input type="hidden" name="month" value={p.month} />}
       {p.view === "timeline" && <input type="hidden" name="week" value={p.week} />}
       {p.mine && <input type="hidden" name="mine" value="1" />}
       {p.work && <input type="hidden" name="work" value="1" />}
+      {p.scope && <input type="hidden" name="scope" value={p.scope} />}
       {/* Keep the table sort when filtering (same rules as hrefWith: the default, newest requested first, is not repeated). */}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="sort" value={p.sort} />}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="dir" value={p.dir} />}
+      {p.scope && scopeClearHref && (
+        <div className={SEGMENT_TRAY}>
+          <Link href={scopeClearHref} className={segmentClass(true)} aria-label={`Showing ${SCOPE_LABEL[p.scope]}. Show all requests`}>
+            {SCOPE_LABEL[p.scope]}<X aria-hidden="true" strokeWidth={1.75} />
+          </Link>
+        </div>
+      )}
       {/* Quick scopes sit in the toolbar, not the panel: one click, and visible while on. */}
       <div role="group" aria-label="Quick filters" className={SEGMENT_TRAY}>
         <Toggle href={mineHref} on={p.mine} icon={<UserRound aria-hidden="true" strokeWidth={1.75} />}>My requests</Toggle>

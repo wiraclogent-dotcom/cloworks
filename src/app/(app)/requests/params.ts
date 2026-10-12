@@ -3,6 +3,7 @@ import { parseMore, parsePage, type MoreLimits } from "@/lib/paging";
 import { parseMonth } from "@/lib/calendar";
 import { parseWeek } from "@/lib/workload";
 import { SORT_KEYS, type RequestFilter, type SortKey } from "@/lib/requests";
+import { OVERVIEW_SCOPES, type OverviewScope } from "@/lib/todayOverview";
 
 const STATUSES: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED"];
 export type RawParams = Record<string, string | string[] | undefined>;
@@ -17,7 +18,10 @@ export type ViewParams = {
   /** ?motion=yes|no (anything else = any). */
   motion?: "yes" | "no";
   /** ?mine=1: requests I filed. ?work=1: requests assigned to me (designers). */
-  mine: boolean; work: boolean; sort: SortKey; dir: "asc" | "desc";
+  mine: boolean; work: boolean;
+  /** ?scope=open|due-today|overdue|done-today: the list a summary tile opens. */
+  scope?: OverviewScope;
+  sort: SortKey; dir: "asc" | "desc";
   /** Per-column board limits from ?more=STATUS:n (whitelisted, capped). */
   more: MoreLimits;
   /** Table page, 1-based; clamped to the real page count by the query. */
@@ -52,6 +56,7 @@ export function parseParams(raw: RawParams, now: Date = new Date()): ViewParams 
     motion: one(raw.motion) === "yes" ? "yes" : one(raw.motion) === "no" ? "no" : undefined,
     mine: one(raw.mine) === "1",
     work: one(raw.work) === "1",
+    scope: OVERVIEW_SCOPES.find((s) => s === one(raw.scope)),
     sort: SORT_KEYS.find((k) => k === sort) ?? "requested",
     // Newest first unless a sort is chosen; with a chosen sort, ascending unless asked for descending.
     dir: one(raw.dir) === "desc" ? "desc" : one(raw.dir) === "asc" ? "asc" : sort === undefined ? "desc" : "asc",
@@ -65,14 +70,15 @@ export function toFilter(p: ViewParams, userId: string): RequestFilter {
     status: p.status, assigneeId: p.work ? userId : p.assigneeId, brandId: p.brandId, divisionId: p.divisionId, q: p.q,
     needsMotion: p.motion === "yes" ? true : p.motion === "no" ? false : undefined,
     mine: p.mine ? { userId } : undefined,
+    scope: p.scope,
   };
 }
 
 /** Builds a /requests URL from the current params with overrides (undefined removes a key). `page` and `more` are never carried over: they only appear when passed explicitly, so changing a filter, sort or view resets them. */
-export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "month" | "week" | "status" | "assignee" | "brand" | "division" | "q" | "motion" | "mine" | "work" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
+export function hrefWith(p: ViewParams, over: Partial<Record<"view" | "month" | "week" | "status" | "assignee" | "brand" | "division" | "q" | "motion" | "mine" | "work" | "scope" | "sort" | "dir" | "more" | "page", string | undefined>>): string {
   const cur: Record<string, string | undefined> = {
     view: p.view === "board" ? undefined : p.view, month: p.view === "calendar" ? p.month : undefined, week: p.view === "timeline" ? p.week : undefined, status: p.status, assignee: p.assigneeId, brand: p.brandId, division: p.divisionId,
-    q: p.q, mine: p.mine ? "1" : undefined, work: p.work ? "1" : undefined, sort: p.view === "table" ? p.sort : undefined,
+    q: p.q, mine: p.mine ? "1" : undefined, work: p.work ? "1" : undefined, scope: p.scope, sort: p.view === "table" ? p.sort : undefined,
     dir: p.view === "table" ? p.dir : undefined, motion: p.motion,
   };
   const merged = { ...cur, ...over };
