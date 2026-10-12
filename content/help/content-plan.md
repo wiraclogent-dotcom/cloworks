@@ -16,7 +16,7 @@ order: 5
 
 1. Open **Content Plan** from the sidebar.
 2. Pick a brand channel under **Channels**.
-3. Use the tabs to switch between the **Feed**, **Reel** and **Story** views. Select a post to open it in a side panel with a phone preview.
+3. Use the tabs to switch between the **Feed**, **Reels** and **Stories** views. Select a post to open it in a side panel with a phone preview.
 
 ## Draft a post
 
@@ -51,7 +51,7 @@ A lead or admin opens a submitted post and chooses one of two actions.
 
 ## Follow the request
 
-After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
+After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. If the request is cancelled, the post goes back to **Draft**, so you can edit it and submit it again. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
 
 ## Already posted tiles
 
@@ -63,5 +63,5 @@ Leads and admins manage channels from the **Channels** list.
 
 1. Select **Add channel**.
 2. Choose the **Brand**, then enter a **Display name** and **Instagram handle**. Add an **Avatar** if you like.
-3. To change a channel, select it and use **Manage selected channel**: **Edit**, **Move up**, **Move down**, or **Delete**.
+3. To change a channel, use the manage (gear) button on a channel: **Edit**, **Move up**, **Move down**, or **Delete**.
 4. To remove an avatar, select **Remove avatar**.
