@@ -321,6 +321,18 @@ describe("/join/invite/[token]", () => {
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect((document.querySelector('input[name="next"]') as HTMLInputElement).value).toBe("/join/invite/tok");
   });
+  it("linked invite: heading names the person, password form has no name field, applicant button unchanged", async () => {
+    lib.describeInvite.mockResolvedValue({ ...open, linkedName: "Yosi" });
+    render(await InviteView({ params }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Wira invited you to join Clogent as Yosi");
+    expect(screen.queryByLabelText("Your name")).toBeNull();
+    expect(document.querySelector('input[name="name"]')).toBeNull();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
+    cleanup();
+    currentVisitor.mockResolvedValue(applicant);
+    render(await InviteView({ params }));
+    expect(screen.getByRole("button", { name: "Accept invite" })).toBeTruthy();
+  });
   it("opts out of prerendering before reading the clock (describeInvite defaults now = new Date())", async () => {
     lib.describeInvite.mockResolvedValue(open);
     render(await InviteView({ params }));

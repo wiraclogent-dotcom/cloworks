@@ -2,6 +2,7 @@
 
 import { AdminForm, ConfirmAction, Labeled, selectControl } from "@/components/admin/AdminForm";
 import { Chip } from "@/components/ui/Chip";
+import type { LinkablePerson } from "@/lib/linkPerson";
 import { enumLabel } from "@/lib/adminChips";
 import { approveRequest, rejectRequest, undoRejectRequest } from "./actions";
 
@@ -25,7 +26,7 @@ function Who({ r }: { r: RequestRow }) {
   );
 }
 
-export function RequestsList({ pending, rejected }: { pending: RequestRow[]; rejected: RequestRow[] }) {
+export function RequestsList({ pending, rejected, linkable }: { pending: RequestRow[]; rejected: RequestRow[]; linkable: LinkablePerson[] }) {
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
@@ -41,6 +42,12 @@ export function RequestsList({ pending, rejected }: { pending: RequestRow[]; rej
                     hidden={{ applicantId: r.applicantId }} className="space-y-2">
                     {({ v, idFor }) => (
                       <div className="flex flex-wrap items-end gap-3">
+                        <Labeled id={idFor("linkUserId")} label="This is…">
+                          <select id={idFor("linkUserId")} name="linkUserId" className={selectControl} defaultValue={v("linkUserId")}>
+                            <option value="">A new person</option>
+                            {linkable.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          </select>
+                        </Labeled>
                         <Labeled id={idFor("appRole")} label="App role">
                           <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", "REQUESTER")}>
                             {APP_ROLES.map((x) => <option key={x} value={x}>{enumLabel(x)}</option>)}

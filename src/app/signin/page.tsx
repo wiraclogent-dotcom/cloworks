@@ -5,7 +5,7 @@ import { signIn } from "@/lib/auth";
 import { oauthProviderIds } from "@/lib/auth.config";
 import { first } from "@/lib/authForm";
 import { safeNext } from "@/lib/joinTokens";
-import { PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
+import { LINKED_MESSAGE, PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { passwordSignIn } from "./actions";
@@ -18,7 +18,7 @@ import { brandSubmit, providerButton } from "@/components/auth/styles";
 /** Tab title: "Sign in · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Sign in" };
 
-type SP = Promise<{ error?: string | string[]; changed?: string | string[]; next?: string | string[] }>;
+type SP = Promise<{ error?: string | string[]; changed?: string | string[]; linked?: string | string[]; next?: string | string[] }>;
 
 /** The sanitised `next` (a join or lobby path), or undefined. */
 const nextOf = (raw: string | string[] | undefined) => {
@@ -31,7 +31,8 @@ function Notice({ searchParams }: { searchParams: SP }) {
   const sp = use(searchParams);
   const notice = signInErrorMessage(sp.error);
   if (notice) return <Alert tone="danger">{notice}</Alert>;
-  return sp.changed ? <Alert tone="success">{PASSWORD_CHANGED_MESSAGE}</Alert> : null;
+  if (sp.changed) return <Alert tone="success">{PASSWORD_CHANGED_MESSAGE}</Alert>;
+  return sp.linked ? <Alert tone="info">{LINKED_MESSAGE}</Alert> : null;
 }
 
 /** Carries `?next=` into a form (sanitised here and again by the action). */

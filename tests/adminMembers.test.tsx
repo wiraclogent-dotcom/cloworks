@@ -6,6 +6,7 @@ const act = vi.hoisted(() => ({
   inviteMember: vi.fn(), resendMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn(),
   undoRejectRequest: vi.fn(), resetInviteLink: vi.fn(), toggleInviteLink: vi.fn(),
   saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(),
+  previewMerge: vi.fn(), mergePerson: vi.fn(),
 }));
 vi.mock("@/app/(app)/admin/users/actions", () => act);
 const requireUser = vi.fn();
@@ -26,16 +27,25 @@ const pending = [
   { applicantId: "p3", name: "Tono", email: "tono@gmail.com", source: "LINK", requestedAt: when("2026-10-08T08:00:00Z"), rejectedAt: null },
 ];
 const rejected = [{ applicantId: "r1", name: "Rudi", email: "rudi@gmail.com", source: "LINK", requestedAt: when("2026-10-01T08:00:00Z"), rejectedAt: when("2026-10-02T08:00:00Z") }];
+const linkable = [
+  { id: "u1", name: "Yosi", fullName: "Yosi Pratama", appRole: "LEAD", jobRole: "DESIGNER", active: true },
+  { id: "u2", name: "Maya", fullName: "Maya K", appRole: "CREATIVE", jobRole: "SOCIAL_MEDIA", active: false },
+];
+const roster = [
+  { id: "u1", name: "Yosi", fullName: "Yosi Pratama", title: null, appRole: "LEAD", jobRole: "DESIGNER", aliases: [], email: null, active: true, passwordHash: null },
+  { id: "u3", name: "Rina", fullName: "Rina S", title: null, appRole: "CREATIVE", jobRole: "DESIGNER", aliases: [], email: "rina@clogent.co.id", active: true, passwordHash: "x" },
+];
 const future = new Date(Date.now() + 5 * 864e5);
 const past = new Date(Date.now() - 2 * 864e5);
 
 beforeEach(() => {
   vi.clearAllMocks();
   requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w1" });
-  prismaMock.user.findMany.mockResolvedValue([]);
+  // The linkable query filters on email = null; the roster query does not.
+  prismaMock.user.findMany.mockImplementation(async (q: { where?: { email?: null } }) => (q?.where && "email" in q.where ? linkable : roster));
   prismaMock.invite.findMany.mockResolvedValue([
-    { id: "i1", email: "new@gmail.com", appRole: "CREATIVE", jobRole: "DESIGNER", expiresAt: future, invitedBy: { name: "Wira" } },
-    { id: "i2", email: "old@gmail.com", appRole: "REQUESTER", jobRole: "OTHER", expiresAt: past, invitedBy: { name: "Wira" } },
+    { id: "i1", email: "new@gmail.com", appRole: "CREATIVE", jobRole: "DESIGNER", expiresAt: future, invitedBy: { name: "Wira" }, user: { name: "Yosi" } },
+    { id: "i2", email: "old@gmail.com", appRole: "REQUESTER", jobRole: "OTHER", expiresAt: past, invitedBy: { name: "Wira" }, user: null },
   ]);
   joinAdmin.requestBaseUrl.mockResolvedValue("https://cloworks.test");
   joinAdmin.loadJoinAdmin.mockResolvedValue({
@@ -107,7 +117,68 @@ describe("Members page", () => {
     expect(screen.getByRole("button", { name: "Revoke invite for old@gmail.com" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Send invite" })).toBeTruthy();
     expect(prismaMock.invite.findMany.mock.calls[0][0].where).toMatchObject({ acceptedAt: null, revokedAt: null });
-    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it("Invited: a linked invite says who it is for; the picker lists only linkable people", async () => {
+    render(await UsersContent({ tab: "invited" }));
+    expect(screen.getByText("for Yosi")).toBeTruthy();
+    expect(screen.getAllByText(/^for /)).toHaveLength(1);
+    const pick = screen.getByLabelText("Existing person (optional)") as HTMLSelectElement;
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["New person", "Yosi", "Maya"]);
+    expect(pick.value).toBe("");
+    expect(prismaMock.user.findMany.mock.calls.every(([q]) => q.where.email === null)).toBe(true);
+  });
+
+  it("Invited: choosing a person sets the role selects to theirs, and submits userId", async () => {
+    act.inviteMember.mockResolvedValue({ ok: true, message: "Invite sent.", values: {}, nonce: "n" });
+    render(await UsersContent({ tab: "invited" }));
+    const app = screen.getByLabelText("App role") as HTMLSelectElement;
+    const job = screen.getByLabelText("Job role") as HTMLSelectElement;
+    expect([app.value, job.value]).toEqual(["REQUESTER", "OTHER"]);
+    fireEvent.change(screen.getByLabelText("Existing person (optional)"), { target: { value: "u2" } });
+    expect([app.value, job.value]).toEqual(["CREATIVE", "SOCIAL_MEDIA"]);
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "maya@gmail.com" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send invite" }));
+    await waitFor(() => expect(act.inviteMember).toHaveBeenCalledTimes(1));
+    const fd = act.inviteMember.mock.calls[0][1] as FormData;
+    expect([fd.get("userId"), fd.get("appRole"), fd.get("jobRole")]).toEqual(["u2", "CREATIVE", "SOCIAL_MEDIA"]);
+  });
+
+  it("Requests: the approval picker lists linkable people and submits linkUserId", async () => {
+    act.approveRequest.mockResolvedValue({ ok: true, message: "Approved.", values: {}, nonce: "x" });
+    render(await UsersContent({ tab: "requests" }));
+    const row = screen.getByRole("listitem", { name: "Andi" });
+    const pick = within(row).getByLabelText("This is…") as HTMLSelectElement;
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["A new person", "Yosi", "Maya"]);
+    fireEvent.change(pick, { target: { value: "u1" } });
+    fireEvent.click(within(row).getByRole("button", { name: "Approve Andi" }));
+    await waitFor(() => expect(act.approveRequest).toHaveBeenCalledTimes(1));
+    expect((act.approveRequest.mock.calls[0][1] as FormData).get("linkUserId")).toBe("u1");
+  });
+
+  it("Merge: review shows the summary and Merge confirms with both ids; a failed review shows the error", async () => {
+    const counts = { requested: 2, assigned: 1, statusEvents: 0, deadlineEvents: 0, comments: 1, attachments: 0, kpiTargets: 0, notifications: 5, chatReads: 3, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0 };
+    act.previewMerge.mockResolvedValueOnce({ ok: false, error: "Both people have a login. Clear one login email first." });
+    act.previewMerge.mockResolvedValueOnce({
+      ok: true,
+      preview: { from: { id: "u1", name: "Yosi", email: null }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: false }, counts, movesLogin: true },
+    });
+    act.mergePerson.mockResolvedValue({ ok: true, message: "Merged.", values: {}, nonce: "m" });
+    render(await UsersContent({}));
+    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
+    expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["Choose a person", "Rina"]); // not Yosi himself
+    fireEvent.change(pick, { target: { value: "u3" } });
+    fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
+    expect((await within(details).findByRole("alert")).textContent).toBe("Error: Both people have a login. Clear one login email first.");
+    fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
+    fireEvent.click(await within(details).findByRole("button", { name: "Merge Yosi into Rina" }));
+    expect(within(details).getByText("Yosi will be removed. their login, 3 requests, 1 comment move to Rina. Rina becomes active.")).toBeTruthy();
+    expect(act.mergePerson).not.toHaveBeenCalled();
+    fireEvent.click(within(details).getByRole("button", { name: "Merge" }));
+    await waitFor(() => expect(act.mergePerson).toHaveBeenCalledTimes(1));
+    const fd = act.mergePerson.mock.calls[0][1] as FormData;
+    expect([fd.get("fromId"), fd.get("intoId")]).toEqual(["u1", "u3"]);
   });
 
   it("Invited: revoke asks for confirmation, resend submits the invite id", async () => {

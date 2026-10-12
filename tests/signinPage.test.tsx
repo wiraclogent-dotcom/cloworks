@@ -7,7 +7,7 @@ vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
 vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
 vi.mock("next/font/google", () => ({ Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 import SignInPage from "@/app/signin/page";
-import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE } from "@/lib/signinError";
+import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE, LINKED_MESSAGE } from "@/lib/signinError";
 
 afterEach(() => {
   cleanup();
@@ -26,8 +26,8 @@ describe("signInErrorMessage", () => {
 });
 
 describe("SignInPage", () => {
-  const show = async (error?: string, changed?: string) => {
-    await act(async () => { render(<SignInPage searchParams={Promise.resolve({ error, changed })} />); });
+  const show = async (error?: string, changed?: string, linked?: string) => {
+    await act(async () => { render(<SignInPage searchParams={Promise.resolve({ error, changed, linked })} />); });
   };
   it("renders an alert for a refused login", async () => {
     await show("AccessDenied");
@@ -67,5 +67,12 @@ describe("SignInPage", () => {
     cleanup();
     await show(undefined, "1");
     expect((await screen.findByRole("status")).textContent).toBe(PASSWORD_CHANGED_MESSAGE);
+  });
+  it("tells a linked applicant they are in and to sign in again (info tone)", async () => {
+    await show(undefined, undefined, "1");
+    const note = await screen.findByRole("status");
+    expect(note.textContent).toBe("You're in. Sign in again to continue.");
+    expect(note.textContent).toBe(LINKED_MESSAGE);
+    expect(note.getAttribute("data-tone")).toBe("in-progress");
   });
 });

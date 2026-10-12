@@ -10,12 +10,13 @@ import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
+import { listLinkablePeople } from "@/lib/linkPerson";
 import { loadJoinAdmin, requestBaseUrl } from "@/lib/joinDeps";
 import { InvitedList, type InviteRow } from "./InvitedList";
 import { InviteLinkCard } from "./InviteLinkCard";
 import { MemberTabs, parseMemberTab } from "./MemberTabs";
 import { RequestsList, type RequestRow } from "./RequestsList";
-import { ActiveToggle, EditUserForm, LoginEmailForm, PasswordForm } from "./UserForms";
+import { ActiveToggle, EditUserForm, LoginEmailForm, MergeForm, PasswordForm } from "./UserForms";
 
 function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
   return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
@@ -37,9 +38,9 @@ export async function UsersContent({ tab }: { tab?: string } = {}) {
   let count: number | undefined;
   if (current === "invited") {
     const invites = await loadInvites(db);
-    panel = <InvitedList invites={invites} />;
+    panel = <InvitedList invites={invites} linkable={await listLinkablePeople(db)} />;
   } else if (current === "requests") {
-    panel = <RequestsList pending={requests.pending.map(toRow)} rejected={requests.rejected.map(toRow)} />;
+    panel = <RequestsList pending={requests.pending.map(toRow)} rejected={requests.rejected.map(toRow)} linkable={await listLinkablePeople(db)} />;
   } else {
     const loaded = await loadMembers(db);
     count = loaded.users.length;
@@ -62,9 +63,9 @@ async function loadInvites(db: Awaited<ReturnType<typeof requireScope>>["db"]): 
   const rows = await db.invite.findMany({
     where: { acceptedAt: null, revokedAt: null },
     orderBy: { createdAt: "desc" },
-    select: { id: true, email: true, appRole: true, jobRole: true, expiresAt: true, invitedBy: { select: { name: true } } },
+    select: { id: true, email: true, appRole: true, jobRole: true, expiresAt: true, invitedBy: { select: { name: true } }, user: { select: { name: true } } },
   });
-  return rows.map((i) => ({ id: i.id, email: i.email, appRole: i.appRole, jobRole: i.jobRole, invitedBy: i.invitedBy.name, expiresOn: day.format(i.expiresAt), expired: i.expiresAt.getTime() <= now }));
+  return rows.map((i) => ({ id: i.id, email: i.email, appRole: i.appRole, jobRole: i.jobRole, invitedBy: i.invitedBy.name, linkedName: i.user?.name ?? null, expiresOn: day.format(i.expiresAt), expired: i.expiresAt.getTime() <= now }));
 }
 
 async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
@@ -125,6 +126,7 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />
                       <ActiveToggle u={u} />
+                      <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name }))} />
                     </div>
                   </details>
                 </td>
