@@ -86,6 +86,10 @@ describe("loadContentPlan", () => {
     expect(v.channels[0]).toMatchObject({ brandId, brandName: "View Brand", displayName: "First" });
     expect(v.channels[0].avatarUrl).toBe("https://res.cloudinary.com/demo/image/upload/c_fill,w_64,h_64,f_auto,q_auto/clowork/x/content/avatar");
     expect(v.channels[1].avatarUrl).toBeNull();
+    // The summary carries what the edit form pre-fills.
+    const avatar = await db.prisma.media.findFirst({ where: { publicId: "clowork/x/content/avatar" } });
+    expect(v.channels[0]).toMatchObject({ bio: "Hello", avatarMediaId: avatar!.id });
+    expect(v.channels[1]).toMatchObject({ bio: null, avatarMediaId: null });
   });
 
   it("defaults to the first channel and falls back on an unknown id", async () => {

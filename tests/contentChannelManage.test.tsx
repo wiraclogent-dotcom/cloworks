@@ -119,10 +119,22 @@ describe("channel management", () => {
     fireEvent.click(nav().getByRole("button", { name: "Move up" }));
     await waitFor(() => expect(actions.moveChannel).toHaveBeenCalledWith("c3", null, "c1"));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
-    // c1 moves below c3 (its brand-mate), which is the bottom of the list.
+    // c1 moves down by c3 taking its slot, so the Clogent group keeps its place above Bubble Wash.
     open("clogent.id");
     fireEvent.click(nav().getByRole("button", { name: "Move down" }));
-    await waitFor(() => expect(actions.moveChannel).toHaveBeenLastCalledWith("c1", "c3", null));
+    await waitFor(() => expect(actions.moveChannel).toHaveBeenLastCalledWith("c3", null, "c1"));
+  });
+
+  it("Move down keeps the brand groups in order once the server applies it", async () => {
+    actions.moveChannel.mockResolvedValue({ ok: true });
+    show();
+    open("clogent.id");
+    fireEvent.click(nav().getByRole("button", { name: "Move down" }));
+    await waitFor(() => expect(actions.moveChannel).toHaveBeenCalledWith("c3", null, "c1"));
+    cleanup();
+    render(<ChannelList channels={[channels[2], channels[0], channels[1]]} currentId="c1" tab="feed" canManage brands={brands} />);
+    expect(nav().getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Clogent", "Bubble Wash"]);
+    expect(nav().getAllByRole("link").map((l) => l.getAttribute("href"))).toEqual(["/content?channel=c3", "/content?channel=c1", "/content?channel=c2"]);
   });
 
   it("disables Move up at the top of a brand group and Move down at the bottom", () => {

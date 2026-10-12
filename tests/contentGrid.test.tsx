@@ -77,6 +77,17 @@ describe("planned tile reordering", () => {
     expect(order()).toEqual(["p1", "p2", "p3", "p4", "p5"]);
   });
 
+  it("locks every drag handle while a move is pending", async () => {
+    let finish!: (v: unknown) => void;
+    movePost.mockReturnValue(new Promise((r) => { finish = r; }));
+    show();
+    await keyboardMove("p1", ["ArrowRight"]);
+    await waitFor(() => expect(movePost).toHaveBeenCalled());
+    for (const id of ["p1", "p2", "p4"]) expect((handleOf(id) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => { finish({ ok: true }); });
+    for (const id of ["p1", "p2", "p4"]) expect((handleOf(id) as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("rolls the order back and shows the server's message when the move fails", async () => {
     movePost.mockResolvedValue({ ok: false, code: "CONFLICT", message: "This post changed in the meantime." });
     show();

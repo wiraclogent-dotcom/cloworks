@@ -34,10 +34,10 @@ function TileRow({ tab, children }: { tab: ContentTab; children: ReactNode }) {
  * A planned tile in the grid: every one is a drop slot; editable ones (for drafters) are also draggable, by the
  * whole tile for pointer and touch and by the small handle for keyboard and screen readers. Others render no handle.
  */
-function PlannedCell({ tile, draggable, busy, selected, channelId, tab }: {
-  tile: TileView; draggable: boolean; busy: boolean; selected: boolean; channelId: string; tab: ContentTab;
+function PlannedCell({ tile, draggable, busy, locked, selected, channelId, tab }: {
+  tile: TileView; draggable: boolean; busy: boolean; locked: boolean; selected: boolean; channelId: string; tab: ContentTab;
 }) {
-  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: tile.id, disabled: !draggable || busy });
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: tile.id, disabled: !draggable || locked });
   const drop = useDroppable({ id: tile.id });
   const over = drop.isOver && !isDragging;
   return (
@@ -47,7 +47,7 @@ function PlannedCell({ tile, draggable, busy, selected, channelId, tab }: {
         over && "outline-3 -outline-offset-3 outline-ring")}>
       <PostTile tile={tile} channelId={channelId} tab={tab} selected={selected} />
       {draggable ? (
-        <button type="button" ref={setActivatorNodeRef} {...attributes} data-handle="" disabled={busy}
+        <button type="button" ref={setActivatorNodeRef} {...attributes} data-handle="" disabled={locked}
           aria-label={`Drag “${tileLabel(tile)}”`}
           className={cn("absolute bottom-6 left-1/2 inline-flex size-6 -translate-x-1/2 cursor-grab touch-none items-center justify-center rounded-md bg-background/85 text-foreground",
             "opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100", focusRing)}>
@@ -101,7 +101,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
           <TileRow tab={tab}>
             {canDraft ? <NewPostTile {...tileProps} /> : null}
             {dnd.tiles.map((t) => (
-              <PlannedCell key={t.id} tile={t} draggable={isDraggable(t, canDraft)} busy={dnd.busyId === t.id} selected={t.id === selectedId} {...tileProps} />
+              <PlannedCell key={t.id} tile={t} draggable={isDraggable(t, canDraft)} busy={dnd.busyId === t.id} locked={dnd.busyId !== null} selected={t.id === selectedId} {...tileProps} />
             ))}
           </TileRow>
           {/* The dragged copy floats above the scrolling frame; hidden from assistive tech (the live region announces the move). */}

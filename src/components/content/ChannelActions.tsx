@@ -11,8 +11,8 @@ import { Button } from "@/components/ui/Button";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { ChannelForm, type BrandOption } from "./ChannelForm";
 
-/** The neighbours (top to bottom) a channel lands between when it moves one place. */
-export type ChannelMove = { aboveId: string | null; belowId: string | null };
+/** One reorder: the channel to move and the neighbours (top to bottom) it lands between. */
+export type ChannelMove = { id: string; aboveId: string | null; belowId: string | null };
 
 function DeleteChannelDialog({ channel, current, tab, onClose }: { channel: ChannelSummary; current: boolean; tab: ContentTab; onClose: () => void }) {
   const router = useRouter();
@@ -58,7 +58,7 @@ export function ChannelActions({ channel, up, down, current, tab, brands }: {
     setBusy(true);
     setError(null);
     try {
-      const r = await moveChannel(channel.id, m.aboveId, m.belowId);
+      const r = await moveChannel(m.id, m.aboveId, m.belowId);
       if (r.ok) router.refresh();
       else setError(r.message);
     } catch {

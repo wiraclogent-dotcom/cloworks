@@ -23,7 +23,8 @@ function byBrand(channels: ChannelSummary[]): ChannelSummary[][] {
 
 /**
  * The moves that shift a channel one place within its brand group (the group is how the list is shown), as the
- * neighbours it lands between in the full list order. Null at the group's ends.
+ * channel to move and the neighbours it lands between in the full list order. Null at the group's ends. Moving down
+ * moves the next channel of the group into this one's slot, so the group never jumps past another brand.
  */
 function movesOf(channels: ChannelSummary[], c: ChannelSummary): { up: ChannelMove | null; down: ChannelMove | null } {
   const group = channels.filter((x) => x.brandId === c.brandId);
@@ -32,8 +33,8 @@ function movesOf(channels: ChannelSummary[], c: ChannelSummary): { up: ChannelMo
   const next = group[i + 1];
   const at = (x: ChannelSummary, d: number) => channels[channels.indexOf(x) + d]?.id ?? null;
   return {
-    up: prev ? { aboveId: at(prev, -1), belowId: prev.id } : null,
-    down: next ? { aboveId: next.id, belowId: at(next, 1) } : null,
+    up: prev ? { id: c.id, aboveId: at(prev, -1), belowId: prev.id } : null,
+    down: next ? { id: next.id, aboveId: at(c, -1), belowId: c.id } : null,
   };
 }
 
