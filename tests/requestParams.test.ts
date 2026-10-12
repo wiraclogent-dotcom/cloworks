@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseParams, parseView, hrefWith, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
+import { parseParams, parseView, hrefWith, toFilter, MAX_Q, MAX_ID } from "@/app/(app)/requests/params";
 
 describe("parseParams limits", () => {
   it("caps q at 200 characters and trims", () => {
@@ -69,5 +69,12 @@ describe("timeline params", () => {
     expect(hrefWith(tl, { week: undefined })).toBe("/requests?view=timeline");
     expect(hrefWith(tl, { view: "table" })).not.toContain("week");
     expect(hrefWith(parseParams({ view: "calendar", week: "2026-10-12" }, now), {})).not.toContain("week");
+  });
+  it("My work (?work=1) filters to the signed-in user's assignments and wins over ?assignee", () => {
+    const p = parseParams({ work: "1", assignee: "someone" });
+    expect(p.work).toBe(true);
+    expect(toFilter(p, "me").assigneeId).toBe("me");
+    expect(toFilter(parseParams({ assignee: "someone" }), "me").assigneeId).toBe("someone");
+    expect(hrefWith(p, {})).toContain("work=1");
   });
 });

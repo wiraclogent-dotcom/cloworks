@@ -1,6 +1,6 @@
 import type { AppRole, PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
-import { isHttpUrl } from "./fieldSchema";
+import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 import { mentionTokens } from "./mentions";
 
@@ -78,8 +78,10 @@ export async function assignRequestWith(
   assigneeId: string | null,
   notifier: Notifier = notifierFor(db),
 ): Promise<{ ok: true } | CollabFail> {
-  if (!can(user.appRole, "request.assign")) return fail("FORBIDDEN", "Only leads and admins can assign requests.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, title: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, requesterId: true, title: true } });
+  // Leads and admins assign any request; whoever filed a request may pick its designer too.
+  if (!can(user.appRole, "request.assign") && req?.requesterId !== user.id)
+    return fail("FORBIDDEN", "Only the requester, leads and admins can assign this request.");
   if (!req) return fail("NOT_FOUND", "Request not found.");
   if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
   if (assigneeId !== null) {
@@ -117,7 +119,7 @@ export async function addAttachmentWith(
   if (!name) return fail("INVALID", "Give the link a name.");
   if (name.length > MAX_ATTACHMENT_NAME) return fail("INVALID", `Link names can be at most ${MAX_ATTACHMENT_NAME} characters.`);
   if (url.length > MAX_ATTACHMENT_URL) return fail("INVALID", `Links can be at most ${MAX_ATTACHMENT_URL} characters.`);
-  if (!isHttpUrl(url)) return fail("INVALID", "Enter a full http(s) link, for example https://drive.google.com/…");
+  if (!isFileLocation(url)) return fail("INVALID", `${FILE_LOCATION_HINT}.`);
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
   const req = await db.request.findUnique({ where: { id: requestId }, select: { title: true, requesterId: true, assigneeId: true } });
   if (!req) return fail("NOT_FOUND", "Request not found.");

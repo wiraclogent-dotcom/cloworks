@@ -6,6 +6,7 @@ import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { fieldClass } from "@/components/ui/Field";
+import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { setTaskFileUrl } from "./actions";
 
 /** File cell for one variant: the link (or plain name), with an inline editor that saves on submit. */
@@ -36,10 +37,12 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
       <form onSubmit={save} className="grid gap-1.5">
         <div className="flex items-center gap-2">
           <input
-            type="url"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="https://"
+            placeholder="https://… or \\server\folder"
             aria-label={`File link for ${label}`}
             className={fieldClass({ size: "sm", className: "min-w-56" })}
             disabled={pending}
@@ -60,7 +63,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
         aria-label={`${url ? "Edit" : "Add"} file link for ${label}`} icon={url ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
         onClick={() => { setDraft(url ?? ""); setError(null); setEditing(true); }} />
       {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{text}</a>
+        <FileLocationLink href={url} name={text} className="text-link underline-offset-2 hover:underline">{text}</FileLocationLink>
       ) : (
         <span className="text-foreground-secondary">{text}</span>
       )}

@@ -82,7 +82,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                 <tr key={r.id} className={ROW}>
                   <th scope="row" className={cn(t.rowHeader, "max-w-80 min-w-56")}>
                     <Link href={`/requests/${r.id}`} className={cn("line-clamp-2 rounded-sm break-words text-foreground underline-offset-2 hover:underline", focusRing)}>{r.title}</Link>
-                    {r.needsMotion && <div className="mt-1"><NeedsMotionBadge /></div>}
+                    {(r.needsMotion || r.isVideo) && <div className="mt-1"><NeedsMotionBadge video={r.isVideo} /></div>}
                   </th>
                   <td className={t.td}><BrandTag name={r.brandName} /></td>
                   <td className={cn(t.td, "text-foreground-secondary")}>{r.divisionName}</td>

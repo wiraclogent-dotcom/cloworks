@@ -74,10 +74,10 @@ describe("listRequests", () => {
     expect(await keys({ q: "qr" })).toEqual(["Poster Launch"]);
     expect(await keys({ q: "  SOON " })).toEqual(["soon"]);
   });
-  it("mine = requester OR assignee", async () => {
-    expect((await keys({ mine: { userId: u.cre2 } }))).toEqual(["nodl-new"]);
+  it("mine = requests I filed (assigned work is \"My work\", i.e. the assignee filter)", async () => {
+    expect((await keys({ mine: { userId: u.cre2 } }))).toEqual([]);
     expect((await keys({ mine: { userId: u.req2 } })).sort()).toEqual(["nodl-new", "other"]);
-    expect((await keys({ mine: { userId: u.cre } }))).toEqual(["soon"]);
+    expect((await keys({ mine: { userId: u.cre } }))).toEqual([]);
   });
   it("combines filters with AND", async () => {
     expect(await keys({ mine: { userId: u.req2 }, status: "FIRST_LOOK" })).toEqual(["nodl-new"]);

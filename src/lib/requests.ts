@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
 import { daysLeft } from "./daysLeft";
-import { jakartaDate } from "./createRequest";
+import { VIDEO_TYPE_NAME, jakartaDate } from "./createRequest";
 import { isOpenStatus } from "./reschedule";
 import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, TABLE_PAGE_SIZE, pageWindow, type PageWindow } from "./paging";
 
@@ -12,6 +12,7 @@ export type RequestFilter = {
   q?: string;
   /** true = only tasks that need motion, false = only those that do not, undefined = any. */
   needsMotion?: boolean;
+  /** "My requests": only requests this user filed. */
   mine?: { userId: string };
 };
 
@@ -27,6 +28,8 @@ export type RequestRow = {
   deadline: Date | null;
   outputCount: number;
   needsMotion: boolean;
+  /** Filed as a Video request (the Motion Support type): its chip says "Video" instead of "Needs motion". */
+  isVideo?: boolean;
   /** Jakarta-calendar days to the deadline (negative = overdue), null without a deadline. */
   daysLeft: number | null;
 };
@@ -34,6 +37,7 @@ export type RequestRow = {
 const ROW_SELECT = {
   id: true, title: true, status: true, requestedAt: true, deadline: true, outputCount: true, needsMotion: true,
   brand: { select: { name: true } },
+  type: { select: { name: true } },
   division: { select: { name: true } },
   requester: { select: { name: true } },
   assignee: { select: { name: true } },
@@ -46,7 +50,7 @@ function toRow(r: DbRow, now: Date): RequestRow {
     id: r.id, title: r.title, brandName: r.brand.name, divisionName: r.division.name,
     requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
     status: r.status, requestedAt: r.requestedAt, deadline: r.deadline, outputCount: r.outputCount, needsMotion: r.needsMotion,
-    daysLeft: daysLeft(r.deadline, now),
+    isVideo: r.type.name === VIDEO_TYPE_NAME, daysLeft: daysLeft(r.deadline, now),
   };
 }
 
@@ -59,7 +63,7 @@ function filterClauses(filter: RequestFilter): Prisma.RequestWhereInput[] {
   if (filter.needsMotion !== undefined) and.push({ needsMotion: filter.needsMotion });
   const q = filter.q?.trim();
   if (q) and.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { notes: { contains: q, mode: "insensitive" } }] });
-  if (filter.mine) and.push({ OR: [{ requesterId: filter.mine.userId }, { assigneeId: filter.mine.userId }] });
+  if (filter.mine) and.push({ requesterId: filter.mine.userId });
   return and;
 }
 

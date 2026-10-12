@@ -16,6 +16,7 @@ describe("collaboration cores", () => {
       ids[k] = (await p.user.create({ data: { email: `${k}@clogent.co.id`, name, fullName: name, appRole, jobRole: appRole === "CREATIVE" ? "DESIGNER" : "OTHER", ...extra } })).id;
     };
     await mk("author", "Rina", "REQUESTER");
+    await mk("other", "Oki", "REQUESTER");
     await mk("dimas", "Dimas Pandu", "CREATIVE", { aliases: ["dp"] });
     await mk("irsyad", "Irsyad", "CREATIVE", { aliases: ["Syad", "Irsyad Fulan"] });
     await mk("lead", "Lia", "LEAD");
@@ -88,9 +89,14 @@ describe("collaboration cores", () => {
       expect(await assignRequestWith(db.prisma, actor("lead", "LEAD"), reqId, null)).toEqual({ ok: true });
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBeNull();
     });
-    it("creative and requester are forbidden", async () => {
+    it("a creative, or a requester on someone else's request, is forbidden", async () => {
       expect(await assignRequestWith(db.prisma, actor("dimas", "CREATIVE"), reqId, ids.dimas)).toMatchObject({ ok: false, code: "FORBIDDEN" });
-      expect(await assignRequestWith(db.prisma, actor("author", "REQUESTER"), reqId, ids.dimas)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+      expect(await assignRequestWith(db.prisma, actor("other", "REQUESTER"), reqId, ids.dimas)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+    });
+    it("the requester can pick the designer for their own request", async () => {
+      expect(await assignRequestWith(db.prisma, actor("author", "REQUESTER"), reqId, ids.irsyad)).toEqual({ ok: true });
+      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.irsyad);
+      expect(await assignRequestWith(db.prisma, actor("author", "REQUESTER"), reqId, null)).toEqual({ ok: true });
     });
     it("rejects inactive and requester-role assignees, unknown user/request, cancelled request", async () => {
       const lead = actor("lead", "LEAD");
@@ -143,6 +149,10 @@ describe("collaboration cores", () => {
       expect(r.ok).toBe(true);
       if (r.ok) expect(await db.prisma.attachment.findUnique({ where: { id: r.id } })).toMatchObject({ name: "Brief", url: "https://drive.google.com/x", mimeType: null, sizeBytes: null });
       expect((await add("a", "http://example.com")).ok).toBe(true);
+    });
+    it("accepts file-server paths", async () => {
+      for (const u of ["\\\\192.168.1.10\\Design\\Brief 2026", "//192.168.1.10/Design", "smb://nas.local/design", "Z:\\Projects\\x"])
+        expect((await add("server", u)).ok).toBe(true);
     });
     it("rejects dangerous schemes", async () => {
       for (const u of ["javascript:alert(1)", "data:text/html,x", "ftp://x.com/a", "notaurl", ""])

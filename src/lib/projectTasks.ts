@@ -1,4 +1,5 @@
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
+import { isFileLocation } from "./fileLocation";
 
 /** Display labels for the design-project stages (the sheet's own wording). */
 export const PROJECT_STAGE_LABEL: Record<ProjectStage, string> = {
@@ -13,11 +14,11 @@ export const PROJECT_STAGE_LABEL: Record<ProjectStage, string> = {
 
 const MAX_FILE_URL_LENGTH = 2048;
 
-/** A blank value clears the link (returns null). Anything else must be a full http(s) link; returns it trimmed, or undefined when invalid. */
+/** A blank value clears the link (returns null). Anything else must be a web link or a file-server path; returns it trimmed, or undefined when invalid. */
 export function cleanFileUrl(input: string): string | null | undefined {
   const value = input.trim();
   if (!value) return null;
-  if (value.length > MAX_FILE_URL_LENGTH || !/^https?:\/\/\S+$/i.test(value)) return undefined;
+  if (value.length > MAX_FILE_URL_LENGTH || !isFileLocation(value)) return undefined;
   return value;
 }
 

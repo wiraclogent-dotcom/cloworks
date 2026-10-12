@@ -213,7 +213,7 @@ describe("notifications", () => {
       expect(calls).toHaveLength(1);
     });
     it("failed assignment does not notify", async () => {
-      await assignRequestWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, ids.dimas, notifier);
+      await assignRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, ids.dimas, notifier);
       expect(calls).toHaveLength(0);
     });
     it("comment: mention beats comment, requester/assignee get COMMENT, author excluded", async () => {

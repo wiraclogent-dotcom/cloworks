@@ -104,7 +104,7 @@ export function AddDetailForm({ projectId, mode, owners }: {
         </label>
         <label className="grid gap-1.5 text-sm sm:col-span-2">
           File link
-          <input type="url" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://" className={fieldClass()} />
+          <input type="text" inputMode="url" autoComplete="off" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://… or \\server\folder" className={fieldClass()} />
         </label>
         {error && <p role="alert" className="text-sm text-danger sm:col-span-2">{error}</p>}
         <div className="flex items-center justify-end gap-2 sm:col-span-2">

@@ -1,5 +1,5 @@
 import type { AppRole, PrismaClient } from "@prisma/client";
-import { CreateRequestError, DEFAULT_TYPE_NAME, createRequestWith, type CreateRequestInput } from "./createRequest";
+import { CreateRequestError, DEFAULT_TYPE_NAME, VIDEO_TYPE_NAME, createRequestWith, type CreateRequestInput } from "./createRequest";
 
 /** Step 1 of the form, "What do you need?". Each kind files the request as a type plus the motion flag. */
 export const WORK_KINDS = ["static", "motion", "video"] as const;
@@ -7,7 +7,7 @@ export type WorkKind = (typeof WORK_KINDS)[number];
 export const WORK_KIND_PLAN: Record<WorkKind, { typeName: string; needsMotion: boolean }> = {
   static: { typeName: DEFAULT_TYPE_NAME, needsMotion: false },
   motion: { typeName: DEFAULT_TYPE_NAME, needsMotion: true },
-  video: { typeName: "Motion Support", needsMotion: true },
+  video: { typeName: VIDEO_TYPE_NAME, needsMotion: true },
 };
 const PICK_KIND = "Pick what you need";
 

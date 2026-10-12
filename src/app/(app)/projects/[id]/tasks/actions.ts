@@ -5,6 +5,7 @@ import type { ProjectStage, ProjectStatus } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { can } from "@/lib/permissions";
+import { FILE_LOCATION_HINT } from "@/lib/fileLocation";
 import { PROJECT_STAGES, taskMode } from "@/lib/projectProgress";
 import { TASK_STATUS_ORDER, cleanFileUrl, cleanTaskDate, dateOrderError, jakartaDay, jakartaIso } from "@/lib/projectTasks";
 
@@ -34,7 +35,7 @@ export async function setTaskFileUrl(projectId: string, taskId: string, url: str
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change file links." };
     const fileUrl = cleanFileUrl(url);
-    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: "Use a full link that starts with https://." };
+    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: FILE_LOCATION_HINT };
     const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
     await db.projectTask.update({ where: { id: taskId }, data: { fileUrl } });
@@ -174,7 +175,7 @@ export async function createTaskDetail(projectId: string, input: NewDetailInput)
     if (orderError) return { ok: false, code: "VALIDATION", message: orderError };
 
     const fileUrl = cleanFileUrl(input.fileUrl);
-    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: "Use a full link that starts with https://." };
+    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: FILE_LOCATION_HINT };
 
     const clash = await db.projectTask.findFirst({ where: { projectId, title, subTitle }, select: { id: true } });
     if (clash) return { ok: false, code: "VALIDATION", message: "Another detail already has this item and detail name." };

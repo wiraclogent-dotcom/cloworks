@@ -25,6 +25,15 @@ describe("FilterBar", () => {
     // Phase B1: the "✓ " text became a check icon (state is announced by aria-current).
     expect(link.querySelector('svg[data-icon="check"]')).toBeTruthy();
   });
+  it("shows My work only when given a link, and hides the assignee filter while it is on", () => {
+    bar({});
+    expect(screen.queryByRole("link", { name: /My work/ })).toBeNull();
+    cleanup();
+    const { container } = render(<FilterBar p={parseParams({ work: "1" })} brands={[]} divisions={[]} assignees={[]} mineHref="/requests?mine=1" workHref="/requests" clearHref="/requests" />);
+    expect(screen.getByRole("link", { name: /My work/ }).getAttribute("aria-current")).toBe("true");
+    expect(container.querySelector('select[name="assignee"]')).toBeNull();
+    expect(hidden(container)).toEqual({ work: "1" });
+  });
   it("lists only the open statuses in the calendar view", () => {
     bar({ view: "calendar" });
     const opts = [...screen.getByLabelText("Status").querySelectorAll("option")].map((o) => o.textContent);

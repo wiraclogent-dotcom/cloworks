@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CircleCheck } from "lucide-react";
 import { Button } from "./ui/Button";
 import { FieldError, fieldClass, labelClass } from "./ui/Field";
+import { FILE_LOCATION_HINT, isFileLocation } from "@/lib/fileLocation";
 
 /** Mirrors MAX_OUTPUT_COUNT in src/lib/transition.ts (kept local: that module is server-side). */
 const MAX_OUTPUTS = 1000;
@@ -11,15 +12,6 @@ const MAX_OUTPUTS = 1000;
 export type DoneDetails = { outputCount: number; designFolderUrl?: string };
 
 const FOCUSABLE = 'input, button, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
-
-function isHttpUrl(s: string): boolean {
-  try {
-    const u = new URL(s);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
 
 /** Modal asking for the delivery details when a request is marked Done. Traps focus, closes on Escape, restores focus on close. */
 export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCancel: () => void; onSubmit: (d: DoneDetails) => void }) {
@@ -58,7 +50,7 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
     const n = Number(count);
     if (!/^\d{1,4}$/.test(count.trim()) || n < 1 || n > MAX_OUTPUTS) errs.count = `Enter a whole number from 1 to ${MAX_OUTPUTS}.`;
     const u = url.trim();
-    if (u && !isHttpUrl(u)) errs.url = "Enter a full http(s) link, for example https://drive.google.com/…";
+    if (u && !isFileLocation(u)) errs.url = `${FILE_LOCATION_HINT}.`;
     setErrors(errs);
     if (errs.count || errs.url) return;
     onSubmit({ outputCount: n, ...(u ? { designFolderUrl: u } : {}) });
@@ -85,8 +77,8 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
             <FieldError id={`${uid}-ne`}>{errors.count}</FieldError>
           </div>
           <div>
-            <label htmlFor={`${uid}-u`} className={labelClass}>Design folder link (optional)</label>
-            <input id={`${uid}-u`} type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://"
+            <label htmlFor={`${uid}-u`} className={labelClass}>Design folder link or server path (optional)</label>
+            <input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder"
               aria-invalid={!!errors.url} aria-describedby={errors.url ? `${uid}-ue` : undefined} className={fieldClass({ invalid: !!errors.url })} />
             <FieldError id={`${uid}-ue`}>{errors.url}</FieldError>
           </div>

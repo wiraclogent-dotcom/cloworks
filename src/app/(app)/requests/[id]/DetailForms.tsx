@@ -85,7 +85,7 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
         </div>
         <div>
           <label htmlFor={`${uid}-u`} className={labelClass}>Link address</label>
-          <input id={`${uid}-u`} type="url" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" className={fieldClass({ invalid: !!error })} aria-describedby={error ? `${uid}-e` : undefined} />
+          <input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder" className={fieldClass({ invalid: !!error })} aria-describedby={error ? `${uid}-e` : undefined} />
         </div>
         <Button type="submit" variant="secondary" loading={pending} icon={<Link2 aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Adding…" : "Add link"}</Button>
       </div>

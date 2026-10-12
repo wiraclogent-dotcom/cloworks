@@ -66,7 +66,6 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   it("denies actions outside the role, and unassigned DONE", async () => {
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toBeInstanceOf(TransitionError);
-    expect(await assignRequestWith(db.prisma, u.Fafa, reqId, u.Fadli.id, notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     expect(await assignRequestWith(db.prisma, u.Fadli, reqId, u.Fadli.id, notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     const t = { userId: u.Fadli.id, month: MONTH, role: "DESIGNER" as const, targetTasks: 10 };
     expect(await setTargetWith(db.prisma, u.Fadli, t)).toMatchObject({ ok: false, code: "FORBIDDEN" });
