@@ -52,6 +52,7 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
     <LibraryDialog title="Add channel" onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
+        {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
         <div>
           <label htmlFor={`${uid}-brandId`} className={labelClass}>Brand</label>
           <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
@@ -81,7 +82,7 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
         </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending}>Add channel</Button>
+          <Button type="submit" variant="primary" loading={pending} disabled={brands.length === 0}>Add channel</Button>
         </div>
       </form>
     </LibraryDialog>

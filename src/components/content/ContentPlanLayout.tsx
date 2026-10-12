@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { LayoutGrid, Plus } from "lucide-react";
-import type { ContentTab } from "@/lib/content/params";
 import type { ContentPlanView } from "@/lib/content/view";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { cn } from "@/components/ui/cn";
@@ -10,12 +9,10 @@ import { PhonePreview } from "./PhonePreview";
 
 /**
  * The Content Plan body (approved layout B): channel list on the left, phone preview in the middle, and the post
- * side panel on the right when `panel` is given (`?post=<id>`).
+ * side panel on the right when `panel` is given (for `view.postId`).
  */
-export function ContentPlanLayout({ view, tab, postId, brands, panel }: {
-  view: ContentPlanView; tab: ContentTab; postId: string | null; brands: BrandOption[]; panel?: ReactNode;
-}) {
-  const { channel, can } = view;
+export function ContentPlanLayout({ view, brands, panel }: { view: ContentPlanView; brands: BrandOption[]; panel?: ReactNode }) {
+  const { channel, can, tab, postId } = view;
   if (!channel) {
     return can.manageChannels ? (
       <EmptyState icon={<LayoutGrid />} title="Add your first channel"

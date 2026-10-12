@@ -13,6 +13,8 @@ describe("loadContentPlan", () => {
   let requester: ContentActor;
   let first: string; // new channels join the end of the list, so this one is listed first
   let second: string;
+  let brandId: string;
+  let foreignChannel: string;
   const ids: Record<string, string> = {};
 
   const mkMedia = async (n: string, type: "IMAGE" | "VIDEO" = "IMAGE") => (await db.prisma.media.create({
@@ -31,6 +33,7 @@ describe("loadContentPlan", () => {
     lead = await mk("vlead@clogent.co.id", "LEAD");
     requester = await mk("vreq@clogent.co.id", "REQUESTER");
     const brand = await db.prisma.brand.create({ data: { name: "View Brand" } });
+    brandId = brand.id;
     const avatar = await mkMedia("avatar");
     first = (await createChannelWith(db.prisma, lead, { brandId: brand.id, handle: "first", displayName: "First", bio: "Hello", avatarMediaId: avatar })).id;
     second = (await createChannelWith(db.prisma, lead, { brandId: brand.id, handle: "second", displayName: "Second" })).id;
@@ -62,6 +65,17 @@ describe("loadContentPlan", () => {
 
     const other = await planned(second);
     await set(other, { status: "SUBMITTED" });
+    ids.secondReel = await planned(second, "REEL");
+
+    // Another workspace's channel and post: never reachable through the scoped db.
+    const ws = await db.raw.workspace.create({ data: { name: "Other", slug: "other-view" } });
+    const fBrand = await db.raw.brand.create({ data: { name: "Foreign", workspaceId: ws.id } });
+    foreignChannel = (await db.raw.socialChannel.create({
+      data: { brandId: fBrand.id, platform: "INSTAGRAM", handle: "foreign", displayName: "F", position: 99, workspaceId: ws.id },
+    })).id;
+    ids.foreign = (await db.raw.contentPost.create({
+      data: { channelId: foreignChannel, surface: "REEL", position: 0, authorId: lead.id, workspaceId: ws.id },
+    })).id;
   });
   afterAll(async () => { await db?.stop(); });
 
@@ -69,7 +83,7 @@ describe("loadContentPlan", () => {
     const v = await loadContentPlan(db.prisma, lead, { tab: "feed" }, CLOUD);
     expect(v.channels.map((c) => c.handle)).toEqual(["first", "second"]);
     expect(v.channels.map((c) => c.awaiting)).toEqual([2, 1]);
-    expect(v.channels[0]).toMatchObject({ brandName: "View Brand", displayName: "First" });
+    expect(v.channels[0]).toMatchObject({ brandId, brandName: "View Brand", displayName: "First" });
     expect(v.channels[0].avatarUrl).toBe("https://res.cloudinary.com/demo/image/upload/c_fill,w_64,h_64,f_auto,q_auto/clowork/x/content/avatar");
     expect(v.channels[1].avatarUrl).toBeNull();
   });
@@ -81,7 +95,34 @@ describe("loadContentPlan", () => {
     expect(a.channel?.id).toBe(first);
     expect(b.channel?.id).toBe(first);
     expect(c.channel?.id).toBe(second);
-    expect(a.channel).toMatchObject({ handle: "first", bio: "Hello", plannedCount: 4, awaiting: 2 });
+    expect(a.channel).toMatchObject({ brandId, handle: "first", bio: "Hello", plannedCount: 4, awaiting: 2 });
+    expect(a).toMatchObject({ tab: "feed", postId: null });
+  });
+
+  it("ignores a channel id from another workspace", async () => {
+    const v = await loadContentPlan(db.prisma, lead, { channelId: foreignChannel, tab: "feed" }, CLOUD);
+    expect(v.channel?.id).toBe(first);
+    expect(v.channels.map((c) => c.id)).not.toContain(foreignChannel);
+  });
+
+  it("a post link opens that post's channel and tab", async () => {
+    const v = await loadContentPlan(db.prisma, lead, { postId: ids.secondReel }, CLOUD);
+    expect(v.channel?.id).toBe(second);
+    expect(v.tab).toBe("reels");
+    expect(v.postId).toBe(ids.secondReel);
+    expect(v.planned.map((t) => t.id)).toEqual([ids.secondReel]);
+    // The post wins over a channel or tab that disagrees with it.
+    const w = await loadContentPlan(db.prisma, lead, { channelId: first, tab: "stories", postId: ids.secondReel }, CLOUD);
+    expect([w.channel?.id, w.tab, w.postId]).toEqual([second, "reels", ids.secondReel]);
+  });
+
+  it("a post from another workspace falls back to the default view", async () => {
+    const v = await loadContentPlan(db.prisma, lead, { postId: ids.foreign }, CLOUD);
+    expect(v.channel?.id).toBe(first);
+    expect(v.tab).toBe("feed");
+    expect(v.postId).toBeNull();
+    const w = await loadContentPlan(db.prisma, lead, { channelId: second, tab: "reels", postId: "missing" }, CLOUD);
+    expect([w.channel?.id, w.tab, w.postId]).toEqual([second, "reels", null]);
   });
 
   it("orders planned by position and published by date, newest first", async () => {

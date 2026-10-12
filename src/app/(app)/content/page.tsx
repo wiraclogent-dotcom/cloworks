@@ -15,8 +15,10 @@ const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? 
 async function ContentPlanContent({ searchParams }: { searchParams: PageProps<"/content">["searchParams"] }) {
   const { user, db } = await requireScope();
   const sp = await searchParams;
-  const tab = parseTab(sp.tab);
-  const view = await loadContentPlan(db, user, { channelId: one(sp.channel), tab });
+  // A missing tab stays undefined so an open post's own surface decides it.
+  const view = await loadContentPlan(db, user, {
+    channelId: one(sp.channel), tab: one(sp.tab) ? parseTab(sp.tab) : undefined, postId: one(sp.post),
+  });
   const brands = view.can.manageChannels
     ? await db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } })
     : [];
@@ -24,8 +26,8 @@ async function ContentPlanContent({ searchParams }: { searchParams: PageProps<"/
     <>
       <PageHeader breadcrumb={[{ label: "Tools" }, { label: "Content Plan" }]} title="Content Plan"
         description="Plan each brand's Instagram feed, reels and stories." />
-      {/* The post side panel (?post=<id>) plugs into `panel`. */}
-      <ContentPlanLayout view={view} tab={tab} postId={one(sp.post) ?? null} brands={brands} />
+      {/* The post side panel (view.postId) plugs into `panel`. */}
+      <ContentPlanLayout view={view} brands={brands} />
     </>
   );
 }

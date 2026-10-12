@@ -11,11 +11,11 @@ import { fieldClass, labelClass } from "@/components/ui/Field";
 import { cn, focusRing } from "@/components/ui/cn";
 import { AddChannelButton, type BrandOption } from "./ChannelForm";
 
-/** Channels in list order, grouped by brand (a brand's group sits where its first channel is). */
-function byBrand(channels: ChannelSummary[]): [string, ChannelSummary[]][] {
+/** Channels in list order, grouped by brand id (a brand's group sits where its first channel is). */
+function byBrand(channels: ChannelSummary[]): ChannelSummary[][] {
   const groups = new Map<string, ChannelSummary[]>();
-  for (const c of channels) groups.set(c.brandName, [...(groups.get(c.brandName) ?? []), c]);
-  return [...groups];
+  for (const c of channels) groups.set(c.brandId, [...(groups.get(c.brandId) ?? []), c]);
+  return [...groups.values()];
 }
 
 /**
@@ -44,9 +44,9 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
       <nav aria-label="Channels" className="hidden lg:block">
         <p className="mb-2 px-2 text-xs font-medium tracking-wide text-foreground-secondary uppercase">Channels</p>
         <div className="space-y-4">
-          {byBrand(channels).map(([brand, list]) => (
-            <section key={brand}>
-              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-foreground-secondary">{brand}</h3>
+          {byBrand(channels).map((list) => (
+            <section key={list[0].brandId}>
+              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-foreground-secondary">{list[0].brandName}</h3>
               <ul className="space-y-0.5">
                 {list.map((c) => {
                   const on = c.id === currentId;

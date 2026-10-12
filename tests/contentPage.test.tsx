@@ -5,10 +5,16 @@ import { render, screen, cleanup, within, fireEvent, waitFor } from "@testing-li
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh: vi.fn() }) }));
 const createPost = vi.fn();
-vi.mock("@/app/(app)/content/actions", () => ({ createPost: (...a: unknown[]) => createPost(...a), createChannel: vi.fn() }));
+const createChannel = vi.fn();
+vi.mock("@/app/(app)/content/actions", () => ({
+  createPost: (...a: unknown[]) => createPost(...a), createChannel: (...a: unknown[]) => createChannel(...a),
+}));
 
 import { ContentPlanLayout } from "@/components/content/ContentPlanLayout";
 import type { ContentPlanView, TileView } from "@/lib/content/view";
+
+// jsdom has no showModal on <dialog>.
+HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
@@ -16,13 +22,15 @@ const tile = (o: Partial<TileView> & { id: string }): TileView => ({
   status: "IDEA", plannedAt: null, format: "SINGLE", coverUrl: null, warn: false, ...o,
 });
 const channels = [
-  { id: "c1", brandName: "Clogent", handle: "clogent.id", displayName: "Clogent", avatarUrl: null, awaiting: 2 },
-  { id: "c2", brandName: "Bubble Wash", handle: "bubblewash", displayName: "Bubble Wash", avatarUrl: null, awaiting: 0 },
+  { id: "c1", brandId: "b1", brandName: "Clogent", handle: "clogent.id", displayName: "Clogent", avatarUrl: null, awaiting: 2 },
+  { id: "c2", brandId: "b2", brandName: "Bubble Wash", handle: "bubblewash", displayName: "Bubble Wash", avatarUrl: null, awaiting: 0 },
 ];
 const can = { draft: true, approve: true, manageChannels: true };
 const view = (o: Partial<ContentPlanView> = {}): ContentPlanView => ({
   channels,
   channel: { ...channels[0], bio: "Clean homes", plannedCount: 7, awaiting: 2 },
+  tab: "feed",
+  postId: null,
   planned: [
     tile({ id: "p1", status: "IDEA" }),
     tile({ id: "p2", status: "DRAFT", plannedAt: "2026-10-24", format: "CAROUSEL" }),
@@ -37,8 +45,8 @@ const view = (o: Partial<ContentPlanView> = {}): ContentPlanView => ({
   mediaReady: true,
   ...o,
 });
-const show = (v: ContentPlanView, tab: "feed" | "reels" | "stories" = "feed") =>
-  render(<ContentPlanLayout view={v} tab={tab} postId={null} brands={[{ id: "b1", name: "Clogent" }]} />);
+const show = (v: ContentPlanView, tab: "feed" | "reels" | "stories" = "feed", brands = [{ id: "b1", name: "Clogent" }]) =>
+  render(<ContentPlanLayout view={{ ...v, tab }} brands={brands} />);
 
 describe("Content Plan page", () => {
   it("shows the channel list grouped by brand with awaiting counts", () => {
@@ -49,6 +57,37 @@ describe("Content Plan page", () => {
     expect(link.getAttribute("aria-current")).toBe("page");
     expect(within(list).getByText("Bubble Wash", { selector: "h3" })).toBeTruthy();
     expect(within(link).getByText("2")).toBeTruthy();
+  });
+
+  it("groups by brand id, so two brands with the same name stay apart", () => {
+    const twins = [channels[0], { ...channels[1], brandId: "b3", brandName: "Clogent" }];
+    show(view({ channels: twins }));
+    const list = screen.getByRole("navigation", { name: "Channels" });
+    expect(within(list).getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Clogent", "Clogent"]);
+  });
+
+  it("marks the open post's tile", () => {
+    show(view({ postId: "p3" }));
+    const a = screen.getAllByRole("link").find((l) => l.getAttribute("href")?.endsWith("post=p3"))!;
+    expect(a.getAttribute("aria-current")).toBe("true");
+  });
+
+  it("shows a failed new post outside the + button", async () => {
+    createPost.mockResolvedValue({ ok: false, code: "FORBIDDEN", message: "You are not allowed to draft content." });
+    show(view());
+    const plus = screen.getByRole("button", { name: "New post" });
+    fireEvent.click(plus);
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toBe("You are not allowed to draft content.");
+    expect(plus.contains(alert)).toBe(false);
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("the channel form asks for a brand first when there are none", () => {
+    show(view(), "feed", []);
+    fireEvent.click(screen.getAllByRole("button", { name: "Channel" })[0]);
+    expect(screen.getByText("Add a brand in Admin → Lists first.")).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Add channel" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   it("shows the profile header and three tabs", () => {

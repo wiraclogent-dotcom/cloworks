@@ -28,14 +28,21 @@ export function NewPostTile({ channelId, tab }: { channelId: string; tab: Conten
       setPending(false);
     }
   }
+  // The error sits over the tile, outside the button, so the button's label never hides it.
   return (
-    <button type="button" onClick={add} disabled={pending} aria-label="New post" title={error ?? "New post"} aria-busy={pending || undefined}
-      className={cn("flex w-full flex-col items-center justify-center gap-1 border border-dashed border-border-strong bg-surface text-foreground-secondary",
-        "transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
-        TILE_ASPECT[tab], focusRing)}>
-      <Plus aria-hidden="true" />
-      {error ? <span role="alert" className="px-1 text-center text-[10px] leading-3.5 text-danger">{error}</span> : null}
-    </button>
+    <div className="relative">
+      <button type="button" onClick={add} disabled={pending} aria-label="New post" title="New post" aria-busy={pending || undefined}
+        className={cn("flex w-full items-center justify-center border border-dashed border-border-strong bg-surface text-foreground-secondary",
+          "transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
+          TILE_ASPECT[tab], focusRing)}>
+        <Plus aria-hidden="true" />
+      </button>
+      {error ? (
+        <p role="alert" className="pointer-events-none absolute inset-x-1 bottom-1 rounded bg-background/90 px-1 text-center text-[10px] leading-3.5 text-danger">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
