@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ContentMediaRole } from "@prisma/client";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
@@ -24,22 +24,31 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
   const [list, setList] = useState(items);
   const [seen, setSeen] = useState(items);
   if (seen !== items) { setSeen(items); setList(items); }
+  // The latest list for callbacks that finish later (an upload completing after a refresh or another change).
+  const listRef = useRef(list);
+  useEffect(() => { listRef.current = list; }, [list]);
   const [pending, setPending] = useState(false);
+  // Moves and removes wait while a file uploads, so the save that follows it cannot undo them.
+  const [uploading, setUploading] = useState(false);
+  const locked = pending || uploading;
   const [error, setError] = useState<string | null>(null);
 
   async function save(next: PanelMedia[]) {
-    const before = list;
+    const before = listRef.current;
+    listRef.current = next;
     setList(next);
     setPending(true);
     setError(null);
     try {
       const r = await setPostMedia(postId, next.map((m) => ({ mediaId: m.mediaId, role })));
       if (!r.ok) {
+        listRef.current = before;
         setList(before);
         setError(r.message);
         if (r.code === "LOCKED" || r.code === "CONFLICT") router.refresh();
       }
     } catch {
+      listRef.current = before;
       setList(before);
       setError("Something went wrong. Try again.");
     } finally {
@@ -69,10 +78,10 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
             {editable ? (
               <span className="absolute inset-x-0.5 top-0.5 flex justify-between gap-0.5">
                 <span className="flex gap-0.5">
-                  {i > 0 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} earlier`} disabled={pending} onClick={() => move(i, -1)}><ChevronLeft aria-hidden="true" /></button> : null}
-                  {i < list.length - 1 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} later`} disabled={pending} onClick={() => move(i, 1)}><ChevronRight aria-hidden="true" /></button> : null}
+                  {i > 0 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} earlier`} disabled={locked} onClick={() => move(i, -1)}><ChevronLeft aria-hidden="true" /></button> : null}
+                  {i < list.length - 1 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} later`} disabled={locked} onClick={() => move(i, 1)}><ChevronRight aria-hidden="true" /></button> : null}
                 </span>
-                <button type="button" className={iconBtn} aria-label={`Remove ${i + 1}`} disabled={pending}
+                <button type="button" className={iconBtn} aria-label={`Remove ${i + 1}`} disabled={locked}
                   onClick={() => void save(list.filter((x) => x.mediaId !== m.mediaId))}><X aria-hidden="true" /></button>
               </span>
             ) : null}
@@ -80,8 +89,11 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
         ))}
         {editable ? (
           <li>
-            <MediaUpload purpose="content" accept="both" disabled={pending || !mediaReady}
-              onUploaded={(u) => void save([...list, { mediaId: u.id, type: "IMAGE", url: null, order: list.length }])} />
+            <MediaUpload purpose="content" accept="both" disabled={pending || !mediaReady} onBusyChange={setUploading}
+              onUploaded={(u) => {
+                const cur = listRef.current;
+                void save([...cur, { mediaId: u.id, type: u.type, url: null, order: cur.length }]);
+              }} />
           </li>
         ) : null}
       </ul>

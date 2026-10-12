@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ChangeEvent } from "react";
+import { useEffect, useId, useState, type ChangeEvent } from "react";
 import { Plus, RotateCw } from "lucide-react";
 import { registerUpload, requestUploadSignature } from "@/app/(app)/content/actions";
 import { IMAGE_FORMATS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, VIDEO_FORMATS } from "@/lib/media/config";
@@ -61,8 +61,11 @@ function post(uploadUrl: string, params: Record<string, string>, file: File, onP
  * "+" upload button: checks the file, gets a signed upload from the server, sends it straight to Cloudinary with
  * progress, then registers it. Failures offer a retry with the same file.
  */
-export function MediaUpload({ purpose, accept, onUploaded, disabled = false, className }: {
-  purpose: "content"; accept: Accept; onUploaded: (media: { id: string; url: string }) => void; disabled?: boolean; className?: string;
+export function MediaUpload({ purpose, accept, onUploaded, onBusyChange, disabled = false, className }: {
+  purpose: "content"; accept: Accept; onUploaded: (media: { id: string; url: string; type: "IMAGE" | "VIDEO" }) => void;
+  /** Told when an upload starts and ends, so the parent can hold edits that would race it. */
+  onBusyChange?: (busy: boolean) => void;
+  disabled?: boolean; className?: string;
 }) {
   const uid = useId();
   const [progress, setProgress] = useState<number | null>(null);
@@ -71,6 +74,7 @@ export function MediaUpload({ purpose, accept, onUploaded, disabled = false, cla
   const [unconfigured, setUnconfigured] = useState(false);
   const busy = progress !== null;
   const off = disabled || unconfigured || busy;
+  useEffect(() => { onBusyChange?.(busy); }, [busy, onBusyChange]);
 
   async function upload(file: File, kind: Kind) {
     setError(null);
@@ -85,13 +89,14 @@ export function MediaUpload({ purpose, accept, onUploaded, disabled = false, cla
         return;
       }
       const url = await post(signed.upload.uploadUrl, signed.upload.params, file, setProgress);
-      const reg = await registerUpload(signed.upload.publicId, kind === "video" ? "VIDEO" : "IMAGE");
+      const type = kind === "video" ? "VIDEO" : "IMAGE";
+      const reg = await registerUpload(signed.upload.publicId, type);
       if (!reg.ok) {
         setError(reg.message);
         setFailed({ file, kind });
         return;
       }
-      onUploaded({ id: reg.mediaId, url });
+      onUploaded({ id: reg.mediaId, url, type });
     } catch {
       setError("Upload failed. Try again.");
       setFailed({ file, kind });

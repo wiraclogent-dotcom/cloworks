@@ -46,7 +46,8 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   const d = form.defaults;
   const [title, setTitle] = useState(d.title);
   const [divisionId, setDivisionId] = useState(form.divisionId ?? "");
-  const [typeId, setTypeId] = useState(d.typeId ?? "");
+  // No suggested or default type: the first active one, so the select never shows a value it does not send.
+  const [typeId, setTypeId] = useState(d.typeId ?? form.types[0]?.id ?? "");
   const [assigneeId, setAssigneeId] = useState("");
   const [deadline, setDeadline] = useState(d.deadline ?? "");
   const [outputCount, setOutputCount] = useState(String(d.outputCount));

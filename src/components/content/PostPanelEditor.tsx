@@ -88,6 +88,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
   function change<K extends Key>(k: K, v: Fields[K], now = false) {
     latest.current = { ...latest.current, [k]: v };
     setFields(latest.current);
+    setSave("idle"); // "Saved" never shows over unsaved edits
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void flush(), now ? 0 : AUTOSAVE_MS);
   }
@@ -120,14 +121,14 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor={id("format")} className={labelClass}>Format</label>
-          <select {...props("format", "select")} value={fields.format} onChange={(e) => change("format", e.target.value as ContentFormat, true)}>
+          <select {...props("format", "select")} disabled={submitting} value={fields.format} onChange={(e) => change("format", e.target.value as ContentFormat, true)}>
             {(Object.keys(FORMAT_LABEL) as ContentFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
           </select>
         </div>
         {!published ? (
           <div>
             <label htmlFor={id("plannedAt")} className={labelClass}>Post date</label>
-            <input {...props("plannedAt")} type="date" value={fields.plannedAt} onChange={(e) => change("plannedAt", e.target.value)} />
+            <input {...props("plannedAt")} readOnly={submitting} type="date" value={fields.plannedAt} onChange={(e) => change("plannedAt", e.target.value)} />
             <FieldError id={id("plannedAt-err")}>{errors.plannedAt}</FieldError>
           </div>
         ) : null}
@@ -136,13 +137,13 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
         <div data-tone="due-soon" className="flex flex-wrap items-center gap-2 rounded-lg bg-tone-tint px-3 py-2 text-[13px] text-tone-text [&_svg]:size-4">
           <TriangleAlert aria-hidden="true" />
           <span className="flex-1">This date is out of order with the posts above it.</span>
-          <Button size="sm" variant="secondary" onClick={() => change("plannedAt", view.warnDate!, true)}>{`Set to ${shortDay(view.warnDate)}`}</Button>
+          <Button size="sm" variant="secondary" disabled={submitting} onClick={() => change("plannedAt", view.warnDate!, true)}>{`Set to ${shortDay(view.warnDate)}`}</Button>
         </div>
       ) : null}
       {!published ? (
         <div>
           <label htmlFor={id("typeId")} className={labelClass}>Request type</label>
-          <select {...props("typeId", "select")} value={fields.typeId} onChange={(e) => change("typeId", e.target.value, true)}>
+          <select {...props("typeId", "select")} disabled={submitting} value={fields.typeId} onChange={(e) => change("typeId", e.target.value, true)}>
             <option value="">No preference</option>
             {view.types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
@@ -150,13 +151,13 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       ) : null}
       <div>
         <label htmlFor={id("brief")} className={labelClass}>Brief</label>
-        <textarea {...props("brief", "textarea")} rows={4} value={fields.brief} onChange={(e) => change("brief", e.target.value)}
+        <textarea {...props("brief", "textarea")} readOnly={submitting} rows={4} value={fields.brief} onChange={(e) => change("brief", e.target.value)}
           placeholder="What should the designer make? Slides, key message, references" />
         <FieldError id={id("brief-err")}>{errors.brief}</FieldError>
       </div>
       <div>
         <label htmlFor={id("caption")} className={labelClass}>Caption draft</label>
-        <textarea {...props("caption", "textarea")} rows={3} value={fields.caption} onChange={(e) => change("caption", e.target.value)} />
+        <textarea {...props("caption", "textarea")} readOnly={submitting} rows={3} value={fields.caption} onChange={(e) => change("caption", e.target.value)} />
         <FieldError id={id("caption-err")}>{errors.caption}</FieldError>
       </div>
       {message ? <Alert tone="danger">{message}</Alert> : null}

@@ -59,6 +59,63 @@ describe("PostPanel", () => {
     expect(brief.getAttribute("aria-invalid")).toBe("true");
   });
 
+  it("clears Saved on a new edit and keeps fields read-only while submitting", async () => {
+    vi.useFakeTimers();
+    actions.updatePost.mockResolvedValue({ ok: true, status: "DRAFT" });
+    show(panel({ can: { ...NO, edit: true, submit: true } }));
+    const brief = screen.getByLabelText("Brief") as HTMLTextAreaElement;
+    fireEvent.change(brief, { target: { value: "A" } });
+    await act(async () => { vi.advanceTimersByTime(800); });
+    expect(screen.getByText("Saved")).toBeTruthy();
+    fireEvent.change(brief, { target: { value: "AB" } });
+    expect(screen.queryByText("Saved")).toBeNull();
+    await act(async () => { vi.advanceTimersByTime(800); });
+    vi.useRealTimers();
+
+    let finish!: (v: unknown) => void;
+    actions.submitPost.mockReturnValue(new Promise((r) => { finish = r; }));
+    fireEvent.click(screen.getByRole("button", { name: "Submit for approval" }));
+    await waitFor(() => expect(actions.submitPost).toHaveBeenCalled());
+    expect(brief.readOnly).toBe(true);
+    expect((screen.getByLabelText("Format") as HTMLSelectElement).disabled).toBe(true);
+    await act(async () => { finish({ ok: true }); });
+    expect(brief.readOnly).toBe(false);
+  });
+
+  it("holds media moves during an upload and saves the latest list with the new file", async () => {
+    let complete!: () => void;
+    class PendingXhr {
+      upload = { onprogress: null };
+      status = 200;
+      responseText = JSON.stringify({ secure_url: "https://x/v.mp4" });
+      onload: null | (() => void) = null;
+      onerror = null;
+      open() {}
+      send() { complete = () => this.onload?.(); }
+    }
+    vi.stubGlobal("XMLHttpRequest", PendingXhr);
+    actions.requestUploadSignature.mockResolvedValue({ ok: true, upload: { uploadUrl: "u", publicId: "p", params: {} } });
+    actions.registerUpload.mockResolvedValue({ ok: true, mediaId: "m3" });
+    actions.setPostMedia.mockResolvedValue({ ok: true });
+    const media = (id: string) => ({ mediaId: id, type: "IMAGE" as const, url: null, order: 0 });
+    const v = panel({ can: { ...NO, edit: true }, mockups: [media("m1"), media("m2")] });
+    const { rerender } = show(v);
+    const file = new File(["x"], "clip.mp4", { type: "video/mp4" });
+    fireEvent.change(screen.getByLabelText("Add media"), { target: { files: [file] } });
+    await waitFor(() => expect(complete).toBeTypeOf("function"));
+    expect((screen.getByRole("button", { name: "Remove 1" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Move 1 later" }) as HTMLButtonElement).disabled).toBe(true);
+
+    // The server list changes meanwhile (e.g. another tab removed m1).
+    rerender(<PostPanel view={{ ...v, mockups: [media("m2")] }} closeHref="/content?channel=c1" />);
+    await act(async () => { complete(); });
+    await waitFor(() => expect(actions.setPostMedia).toHaveBeenCalledWith("p1", [
+      { mediaId: "m2", role: "MOCKUP" }, { mediaId: "m3", role: "MOCKUP" },
+    ]));
+    expect(actions.registerUpload).toHaveBeenCalledWith("p", "VIDEO");
+    vi.unstubAllGlobals();
+  });
+
   it("refreshes when an autosave finds the post locked", async () => {
     vi.useFakeTimers();
     actions.updatePost.mockResolvedValue({ ok: false, code: "LOCKED", message: "This post can no longer be edited." });
@@ -126,6 +183,24 @@ describe("PostPanel", () => {
     const link = await screen.findByRole("link", { name: /View request/ });
     expect(link.getAttribute("href")).toBe("/requests/r9");
     expect(refresh).toHaveBeenCalled();
+  });
+
+  it("preselects the first type when the form has no default type", async () => {
+    actions.loadApprove.mockResolvedValue({
+      ok: true,
+      form: {
+        postId: "p1", brandName: "B", defaults: { title: "T", deadline: null, outputCount: 1, needsMotion: false, typeId: null },
+        divisionId: "d1", divisions: [{ id: "d1", name: "Marketing" }], team: [],
+        types: [{ id: "t1", name: "Alpha", fieldSchema: [] }, { id: "t2", name: "Beta", fieldSchema: [] }],
+      },
+    });
+    actions.approvePost.mockResolvedValue({ ok: true, requestId: "r1" });
+    show(panel({ post: { status: "SUBMITTED" }, can: { ...NO, approve: true } }));
+    fireEvent.click(screen.getByRole("button", { name: "Approve…" }));
+    const form = await screen.findByRole("form", { name: "Approve & create request" });
+    expect((within(form).getByLabelText("Type") as HTMLSelectElement).value).toBe("t1");
+    fireEvent.click(within(form).getByRole("button", { name: "Approve & create" }));
+    await waitFor(() => expect(actions.approvePost).toHaveBeenCalledWith("p1", expect.objectContaining({ typeId: "t1" })));
   });
 
   it("links an approved post to its request", () => {

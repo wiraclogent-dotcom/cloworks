@@ -72,10 +72,13 @@ describe("MediaUpload", () => {
     registerUpload.mockResolvedValue({ ok: true, mediaId: "m1" });
     const sent = fakeXhr(200, { secure_url: "https://res.cloudinary.com/demo/image/upload/abc.jpg" });
     const onUploaded = vi.fn();
-    render(<MediaUpload purpose="content" accept="both" onUploaded={onUploaded} />);
+    const onBusyChange = vi.fn();
+    render(<MediaUpload purpose="content" accept="both" onUploaded={onUploaded} onBusyChange={onBusyChange} />);
     const f = fileOf("a.png", "image/png", 1000);
     pick(f);
-    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith({ id: "m1", url: "https://res.cloudinary.com/demo/image/upload/abc.jpg" }));
+    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith({ id: "m1", url: "https://res.cloudinary.com/demo/image/upload/abc.jpg", type: "IMAGE" }));
+    await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
+    expect(onBusyChange).toHaveBeenCalledWith(true);
     expect(requestUploadSignature).toHaveBeenCalledWith("content", "image");
     expect(sent.url).toBe("https://api.cloudinary.com/v1_1/demo/image/upload");
     expect(sent.body?.get("signature")).toBe("s");
