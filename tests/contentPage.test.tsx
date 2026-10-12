@@ -22,8 +22,8 @@ const tile = (o: Partial<TileView> & { id: string }): TileView => ({
   status: "IDEA", plannedAt: null, format: "SINGLE", coverUrl: null, warn: false, ...o,
 });
 const channels = [
-  { id: "c1", brandId: "b1", brandName: "Clogent", handle: "clogent.id", displayName: "Clogent", avatarUrl: null, awaiting: 2 },
-  { id: "c2", brandId: "b2", brandName: "Bubble Wash", handle: "bubblewash", displayName: "Bubble Wash", avatarUrl: null, awaiting: 0 },
+  { id: "c1", brandId: "b1", brandName: "Clogent", handle: "clogent.id", displayName: "Clogent", bio: null, avatarMediaId: null, avatarUrl: null, awaiting: 2 },
+  { id: "c2", brandId: "b2", brandName: "Bubble Wash", handle: "bubblewash", displayName: "Bubble Wash", bio: null, avatarMediaId: null, avatarUrl: null, awaiting: 0 },
 ];
 const can = { draft: true, approve: true, manageChannels: true };
 const view = (o: Partial<ContentPlanView> = {}): ContentPlanView => ({

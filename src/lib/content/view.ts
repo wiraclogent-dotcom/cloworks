@@ -11,7 +11,7 @@ const SURFACE_TAB: Record<ContentSurface, ContentTab> = { FEED: "feed", REEL: "r
 
 const TAB_PRESET: Record<ContentTab, MediaPreset> = { feed: "grid-3x4", reels: "reel-9x16", stories: "story-9x16" };
 
-export type ChannelSummary = { id: string; brandId: string; brandName: string; handle: string; displayName: string; avatarUrl: string | null; awaiting: number };
+export type ChannelSummary = { id: string; brandId: string; brandName: string; handle: string; displayName: string; bio: string | null; avatarMediaId: string | null; avatarUrl: string | null; awaiting: number };
 
 export type ChannelView = {
   id: string; brandId: string; brandName: string; handle: string; displayName: string; bio: string | null; avatarUrl: string | null;
@@ -50,7 +50,7 @@ export async function loadContentPlan(
     db.socialChannel.findMany({
       orderBy: { position: "desc" },
       select: {
-        id: true, brandId: true, handle: true, displayName: true, bio: true,
+        id: true, brandId: true, handle: true, displayName: true, bio: true, avatarMediaId: true,
         brand: { select: { name: true } }, avatarMedia: { select: { publicId: true, type: true } },
       },
     }),
@@ -67,7 +67,7 @@ export async function loadContentPlan(
 
   const channels: ChannelSummary[] = rows.map((c) => ({
     id: c.id, brandId: c.brandId, brandName: c.brand.name, handle: c.handle, displayName: c.displayName,
-    avatarUrl: url(c.avatarMedia, "avatar-64"), awaiting: awaitingOf.get(c.id) ?? 0,
+    bio: c.bio, avatarMediaId: c.avatarMediaId, avatarUrl: url(c.avatarMedia, "avatar-64"), awaiting: awaitingOf.get(c.id) ?? 0,
   }));
   const current = rows.find((c) => c.id === (post?.channelId ?? q.channelId)) ?? rows[0];
   if (!current) return { channels, channel: null, tab, postId, planned: [], published: [], can, mediaReady: cloudName !== null };

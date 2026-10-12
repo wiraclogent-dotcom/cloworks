@@ -2,23 +2,31 @@
 
 import { useId, useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { createChannel } from "@/app/(app)/content/actions";
+import { createChannel, updateChannel } from "@/app/(app)/content/actions";
 import { planHref } from "@/lib/content/params";
+import type { ChannelSummary } from "@/lib/content/view";
 import { Alert } from "@/components/ui/Alert";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button, type ButtonVariant } from "@/components/ui/Button";
 import { FieldError, fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
+import { MediaUpload } from "@/components/media/MediaUpload";
 
 export type BrandOption = { id: string; name: string };
 
-/** New Instagram channel: brand, handle, display name, bio. The avatar is added later from the post panel's uploader. */
-export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClose: () => void }) {
+/**
+ * Instagram channel form: brand, handle, display name, bio and an avatar picker. Adds a channel, or edits `channel`
+ * (pre-filled; saving keeps its current avatar unless the picker changed it).
+ */
+export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[]; channel?: ChannelSummary; onClose: () => void }) {
   const router = useRouter();
   const uid = useId();
-  const [brandId, setBrandId] = useState(brands[0]?.id ?? "");
-  const [handle, setHandle] = useState("");
-  const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
+  const [brandId, setBrandId] = useState(channel?.brandId ?? brands[0]?.id ?? "");
+  const [handle, setHandle] = useState(channel?.handle ?? "");
+  const [displayName, setDisplayName] = useState(channel?.displayName ?? "");
+  const [bio, setBio] = useState(channel?.bio ?? "");
+  const [avatar, setAvatar] = useState<{ id: string | null; url: string | null }>({ id: channel?.avatarMediaId ?? null, url: channel?.avatarUrl ?? null });
+  const [uploading, setUploading] = useState(false);
   const [pending, setPending] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -29,7 +37,12 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
     setErrors({});
     setFormError(null);
     let r;
-    try { r = await createChannel({ brandId, handle, displayName, bio }); }
+    let createdId: string | null = null;
+    const input = { brandId, handle, displayName, bio, avatarMediaId: avatar.id };
+    try {
+      if (channel) r = await updateChannel(channel.id, input);
+      else { const c = await createChannel(input); r = c; if (c.ok) createdId = c.id; }
+    }
     catch { setFormError("Something went wrong. Try again."); return; }
     finally { setPending(false); }
     if (!r.ok) {
@@ -38,7 +51,8 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
       return;
     }
     onClose();
-    router.push(planHref({ channel: r.id }));
+    if (createdId) router.push(planHref({ channel: createdId }));
+    else router.refresh();
   }
 
   const f = (k: string) => ({
@@ -49,7 +63,7 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
   const err = (k: string) => <FieldError id={`${uid}-${k}-err`}>{errors[k]}</FieldError>;
 
   return (
-    <LibraryDialog title="Add channel" onClose={onClose}>
+    <LibraryDialog title={channel ? "Edit channel" : "Add channel"} onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
@@ -80,9 +94,17 @@ export function ChannelForm({ brands, onClose }: { brands: BrandOption[]; onClos
             className={fieldClass({ kind: "textarea", invalid: !!errors.bio })} />
           {errors.bio ? err("bio") : <p className={hintClass}>Optional, up to 150 characters.</p>}
         </div>
+        <div>
+          <span className={labelClass}>Avatar</span>
+          <div className="flex items-end gap-3">
+            <Avatar name={displayName || handle || "?"} src={avatar.url ?? undefined} size="lg" decorative />
+            <MediaUpload purpose="content" accept="image" onUploaded={(m) => setAvatar({ id: m.id, url: m.url })} onBusyChange={setUploading} />
+            {avatar.id ? <Button variant="ghost" size="sm" onClick={() => setAvatar({ id: null, url: null })}>Remove avatar</Button> : null}
+          </div>
+        </div>
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending} disabled={brands.length === 0}>Add channel</Button>
+          <Button type="submit" variant="primary" loading={pending} disabled={brands.length === 0 || uploading}>{channel ? "Save" : "Add channel"}</Button>
         </div>
       </form>
     </LibraryDialog>
