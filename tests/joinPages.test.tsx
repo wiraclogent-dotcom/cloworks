@@ -370,6 +370,11 @@ describe("/join/invite/[token]", () => {
     await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
     expect(lib.acceptInvite).toHaveBeenCalledWith({ db: true }, "tok", { applicantId: "a1" });
   });
+  it("applicant path linked to an existing person goes to sign-in, not /lobby/enter", async () => {
+    currentVisitor.mockResolvedValue(applicant);
+    lib.acceptInvite.mockResolvedValue({ userId: "u9", email: "andi@gmail.com", linked: true });
+    await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/signin?linked=1");
+  });
   it("a member (e.g. a just-upgraded applicant) goes in through /lobby/enter", async () => {
     currentVisitor.mockResolvedValue({ kind: "member" });
     await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");

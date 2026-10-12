@@ -32,12 +32,15 @@ export async function acceptInviteAction(_prev: AuthFormState, fd: FormData): Pr
 
   if (field(fd, "mode") === "applicant") {
     if (visitor.kind !== "applicant") return failed("Your session ended — sign in again.");
+    let linked: boolean;
     try {
-      await acceptInviteBy(token, { applicantId: visitor.applicant.id });
+      ({ linked } = await acceptInviteBy(token, { applicantId: visitor.applicant.id }));
     } catch (e) {
       if (e instanceof AdminError) return failed(copyFor(e));
       throw e;
     }
+    // Linked to an existing person: the applicant session matches no user, so sign in again as that person.
+    if (linked) redirect("/signin?linked=1");
     // Through /lobby/enter: it writes the upgraded (member) token to the cookie, else the edge sends them back to /lobby.
     redirect(ENTER_PATH);
   }
