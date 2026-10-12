@@ -86,6 +86,8 @@ describe("join emails", () => {
     expect(m.text).toContain("The reset link could not be created. Ask your admin for help.");
     expect(m.text).not.toContain("The link works for one hour");
     expect(m.html).not.toContain("href=");
+    expect(m.html).toContain('src="https://clowork.my.id/email/logo.png"');
+    expect(m.text).toContain("clowork.my.id");
   });
 
   it("without a trusted absolute url no email carries a bare link", () => {

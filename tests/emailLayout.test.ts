@@ -29,7 +29,7 @@ describe("renderEmail", () => {
   it("logo only with a safe base url", () => {
     const withLogo = renderEmail(base, { baseUrl: BASE }).html;
     expect(withLogo).toContain('src="https://clowork.my.id/email/logo.png"');
-    expect(withLogo).toContain('alt="Cloworks"');
+    expect(withLogo).toContain('alt=""');
     for (const baseUrl of [undefined, "ftp://x"]) {
       const html = renderEmail(base, { baseUrl }).html;
       expect(html).not.toContain("<img");

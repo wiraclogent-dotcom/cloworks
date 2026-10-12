@@ -142,7 +142,9 @@ describe("notifications", () => {
       await notifyWith(db.prisma, mailer, input({ requestId: evilId, message: "x\r\nBcc: a@b.c" }));
       expect(sent[0].subject).not.toMatch(/[\r\n]/);
       expect(sent[0].subject.length).toBeLessThanOrEqual(160);
-      expect(sent[0].text.split("\n")[0]).not.toMatch(/\r/);
+      expect(sent[0].text).not.toContain("\r");
+      expect(sent[0].html).not.toContain("\r");
+      expect(sent[0].text.split("\n").some((l) => l.startsWith("Bcc:"))).toBe(false);
     });
 
     it("email: false stores the row and sends no mail", async () => {

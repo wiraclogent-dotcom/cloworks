@@ -178,13 +178,14 @@ export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applic
   });
   const who = cleanLine(a.name, 80);
   const message = cleanLine(`${who} (${cleanLine(a.email, 254)}) asked to join`, 500);
+  const wsName = cleanLine(ws.name, 120);
   const subject = cleanLine(`${who} asked to join ${ws.name}`, 200);
   const base = safeBaseUrl(baseUrl ?? process.env.APP_BASE_URL);
   const mail = renderEmail(
     {
-      preheader: `${who} asked to join ${ws.name}`,
+      preheader: `${who} asked to join ${wsName}`,
       heading: "New request to join",
-      lines: [`${who} (${cleanLine(a.email, 254)}) asked to join ${ws.name}.`],
+      lines: [`${who} (${cleanLine(a.email, 254)}) asked to join ${wsName}.`],
       button: base ? { label: "Review request", url: `${base}/admin/users?tab=requests` } : undefined,
     },
     { baseUrl: base ?? undefined },
