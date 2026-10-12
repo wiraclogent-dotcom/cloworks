@@ -5,6 +5,7 @@ import { AdminError, isUniqueViolation, lockRoster, type Actor } from "./admin";
 import { can } from "./permissions";
 import type { Mailer } from "./mailer";
 import { approvedEmail } from "./joinEmails";
+import { assertLinkable, attachLogin } from "./linkPerson";
 import { newJoinCode } from "./joinTokens";
 import { pickShortName } from "./shortName";
 import { JOIN_REQUEST_NOTIFICATION } from "./notificationLinks";
@@ -63,7 +64,8 @@ export async function listJoinRequests(
  * Turns a pending, verified applicant of the actor's workspace into a User with the same id. The guarded
  * deleteMany is the race guard: of two parallel approvals only one deletes the row; the other gets NOT_FOUND.
  * An email that already belongs to any User rolls everything back (CONFLICT; the applicant is kept). Any open invite
- * for the email in this workspace is marked accepted in the same transaction.
+ * for the email in this workspace is marked accepted in the same transaction. With `linkUserId` the login goes onto
+ * that existing roster person (no email yet) instead of a new User; a stale target is NOT_FOUND and rolls back.
  */
 export async function approveApplicant(
   db: PrismaClient,
@@ -72,12 +74,13 @@ export async function approveApplicant(
   applicantId: string,
   roles: { appRole: AppRole; jobRole: JobRole },
   baseUrl: string,
-): Promise<{ userId: string }> {
+  linkUserId?: string,
+): Promise<{ userId: string; linked: boolean; name: string }> {
   assertAdmin(actor);
   if (!Object.values(AppRoleEnum).includes(roles?.appRole)) throw new AdminError("VALIDATION", "Unknown app role");
   if (!Object.values(JobRoleEnum).includes(roles?.jobRole)) throw new AdminError("VALIDATION", "Unknown job role");
 
-  let user: { id: string; email: string };
+  let user: { id: string; email: string; name: string; linked: boolean };
   try {
     user = await db.$transaction(async (tx) => {
       await lockRoster(tx);
@@ -89,6 +92,9 @@ export async function approveApplicant(
       } satisfies Prisma.ApplicantWhereInput;
       const a = await tx.applicant.findFirst({ where: guard, select: { name: true, email: true, passwordHash: true } });
       if (!a) throw notFound();
+      const person = linkUserId
+        ? await assertLinkable(tx, actor.workspaceId, linkUserId, () => new AdminError("NOT_FOUND", "This request no longer matches a person. Refresh and try again."))
+        : null;
       const del = await tx.applicant.deleteMany({ where: guard });
       if (del.count !== 1) throw notFound();
       const clash = await tx.user.findFirst({ where: { email: { equals: a.email, mode: "insensitive" } }, select: { id: true } });
@@ -98,6 +104,10 @@ export async function approveApplicant(
         where: { workspaceId: actor.workspaceId, email: { equals: a.email, mode: "insensitive" }, acceptedAt: null, revokedAt: null },
         data: { acceptedAt: new Date() },
       });
+      if (person) {
+        await attachLogin(tx, person.id, { email: a.email, passwordHash: a.passwordHash, appRole: roles.appRole, jobRole: roles.jobRole });
+        return { id: person.id, email: a.email, name: person.name, linked: true };
+      }
       const name = await pickShortName(tx, actor.workspaceId, a.name, a.email);
       const u = await tx.user.create({
         data: {
@@ -112,9 +122,9 @@ export async function approveApplicant(
           jobRole: roles.jobRole,
           workspaceId: actor.workspaceId,
         },
-        select: { id: true },
+        select: { id: true, name: true },
       });
-      return { id: u.id, email: a.email };
+      return { id: u.id, email: a.email, name: u.name, linked: false };
     });
   } catch (e) {
     if (isUniqueViolation(e)) throw new AdminError("CONFLICT", "This person already has an account");
@@ -126,7 +136,7 @@ export async function approveApplicant(
     const mail = approvedEmail({ workspace: ws.name, url: baseUrl ? `${baseUrl}/signin` : "" });
     await mailer.send({ to: user.email, ...mail });
   });
-  return { userId: user.id };
+  return { userId: user.id, linked: user.linked, name: user.name };
 }
 
 export async function rejectApplicant(db: PrismaClient, actor: Actor, applicantId: string): Promise<void> {
