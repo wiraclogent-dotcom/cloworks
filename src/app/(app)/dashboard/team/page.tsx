@@ -59,7 +59,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     <>
       <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" />} />
       {rows.length === 0 ? (
-        <EmptyState icon={<Users />} title="No team members to show" description="No creative team members yet." />
+        <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="team-summary">

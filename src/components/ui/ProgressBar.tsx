@@ -24,7 +24,7 @@ export function ProgressBar({ value, max = 100, label, hideLabel = false, valueT
       ) : null}
       <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(safe, max)} aria-valuetext={text}
         className="h-2 w-full overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
-        <div className="h-full rounded-full bg-chart-done transition-[width] duration-200 ease-out" style={{ width: `${Math.min(100, pct)}%` }} />
+        <div className="animate-bar h-full rounded-full bg-chart-done transition-[width] duration-200 ease-out" style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
   );

@@ -30,7 +30,7 @@ export function HelpSearch({ sections }: { sections: { section: Section; article
 
       {searching ? (
         matches.length === 0 ? (
-          <EmptyState title={`No guides match ‘${query.trim()}’`} />
+          <EmptyState art="empty-search" title={`No guides match ‘${query.trim()}’`} />
         ) : (
           <Card>
             <ul className="divide-y divide-border">

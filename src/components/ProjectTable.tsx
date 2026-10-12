@@ -35,7 +35,7 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
 export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; canManage: boolean; now: Date }) {
   if (rows.length === 0)
     return (
-      <EmptyState icon={<FolderKanban />} title="No projects yet."
+      <EmptyState art="empty-projects" icon={<FolderKanban />} title="No projects yet."
         description={canManage ? "Use “New project” to add the first one." : undefined} />
     );
   const t = tableClass();

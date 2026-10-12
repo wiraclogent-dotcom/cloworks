@@ -1,9 +1,5 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque } from "next/font/google";
 import { Landing } from "@/components/landing/Landing";
-
-/** Display face for the landing headings only; the app itself stays on Inter. */
-const display = Bricolage_Grotesque({ variable: "--font-display", subsets: ["latin"], weight: ["600", "700", "800"] });
 
 export const metadata: Metadata = {
   title: { absolute: "Cloworks: creative requests from brief to done" },
@@ -13,7 +9,7 @@ export const metadata: Metadata = {
 // Public landing page. The proxy sends signed-in visitors straight to /requests, so this page never reads the session.
 export default function Home() {
   return (
-    <div className={`${display.variable} flex flex-1 flex-col`}>
+    <div className="flex flex-1 flex-col">
       <Landing />
     </div>
   );

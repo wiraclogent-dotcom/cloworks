@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
@@ -141,7 +141,10 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
         <main id="main" tabIndex={-1} inert={open} className="min-w-0 flex-1 px-4 py-4 outline-none md:px-6 md:py-6">
           <div className="app-content relative mx-auto w-full max-w-[1440px]">
             {profile ? <div data-profile-slot="" className="absolute top-0 right-0 z-10">{profile}</div> : null}
-            {children}
+            {/* Sidebar navigations (transition type "nav") crossfade the page; drags, refreshes and filters never animate. */}
+            <ViewTransition update={{ nav: "page", default: "none" }} default="none">
+              <div>{children}</div>
+            </ViewTransition>
           </div>
         </main>
       </div>

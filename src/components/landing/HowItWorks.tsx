@@ -1,10 +1,12 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Check, CheckCheck, Clapperboard, FilePlus2, MessageSquareText, Palette, UserCheck } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { BrandTag, Chip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
+import { BrandArt } from "@/components/ui/BrandArt";
+import type { ArtName } from "@/lib/brand/art";
 
-const display = "font-[family-name:var(--font-display)] tracking-[-0.02em]";
+const display = "font-display tracking-[-0.02em]";
 
 /* ---------- one small illustration per step: a decorative slice of the screen used at that step ---------- */
 
@@ -88,12 +90,12 @@ function DoneCount() {
 }
 
 /** The request lifecycle in the order it happens; each tone matches that stage's board colour. */
-const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: ReactNode }[] = [
-  { title: "Send the brief", body: "Title, brief link, brand, deadline and motion, in one form. No chat thread to dig through later.", icon: <FilePlus2 />, tone: "tag-clogent", art: <BriefForm /> },
+const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: ReactNode; clay?: ArtName }[] = [
+  { title: "Send the brief", body: "Title, brief link, brand, deadline and motion, in one form. No chat thread to dig through later.", icon: <FilePlus2 />, tone: "tag-clogent", art: <BriefForm />, clay: "step-brief" },
   { title: "The lead assigns it", body: "New requests land in Requested. The lead picks a designer and it shows up in their queue.", icon: <UserCheck />, tone: "requested", art: <AssignPicker /> },
-  { title: "Designers make it", body: "Drag the card to On progress. Everyone can see who is on what without asking.", icon: <Palette />, tone: "in-progress", art: <WorkCard /> },
+  { title: "Designers make it", body: "Drag the card to On progress. Everyone can see who is on what without asking.", icon: <Palette />, tone: "in-progress", art: <WorkCard />, clay: "step-make" },
   { title: "First look", body: "The requester reviews, comments and @mentions. Revisions stay next to the brief.", icon: <MessageSquareText />, tone: "first-look", art: <ReviewComment /> },
-  { title: "Done, and counted", body: "Approved work moves to Done and counts toward the designer's monthly target.", icon: <CheckCheck />, tone: "done", art: <DoneCount /> },
+  { title: "Done, and counted", body: "Approved work moves to Done and counts toward the designer's monthly target.", icon: <CheckCheck />, tone: "done", art: <DoneCount />, clay: "celebrate" },
 ];
 
 export function HowItWorks() {
@@ -113,7 +115,7 @@ export function HowItWorks() {
           <span aria-hidden="true"
             className="absolute top-7 right-[10%] left-[10%] hidden h-0.5 rounded-full bg-gradient-to-r from-[var(--status-tag-clogent-accent)] via-[var(--status-first-look-accent)] to-[var(--status-done-accent)] opacity-60 lg:block" />
           {STEPS.map((step, i) => (
-            <li key={step.title} className="relative pl-20 md:grid md:grid-cols-[minmax(0,1fr)_20rem] md:items-start md:gap-x-10 lg:block lg:pl-0 lg:text-center">
+            <li key={step.title} className="reveal relative pl-20 md:grid md:grid-cols-[minmax(0,1fr)_20rem] md:items-start md:gap-x-10 lg:block lg:pl-0 lg:text-center">
               {/* Phone and tablet: one step per row, joined by a vertical line. Tablet puts the illustration beside the text. */}
               {i < STEPS.length - 1 ? (
                 <span aria-hidden="true" className="absolute top-16 -bottom-10 left-7 w-0.5 bg-border lg:hidden" />
@@ -131,7 +133,13 @@ export function HowItWorks() {
                 <h3 className="text-base font-semibold text-heading lg:mt-5">{step.title}</h3>
                 <p className="mt-1.5 text-sm leading-relaxed text-foreground-secondary lg:min-h-[5.75rem]">{step.body}</p>
               </div>
-              <div className="mt-5 max-w-xs text-left md:mt-0 md:max-w-none lg:mt-5">{step.art}</div>
+              <div className="relative mt-5 max-w-xs text-left md:mt-0 md:max-w-none lg:mt-5">
+                {step.clay ? (
+                  <BrandArt name={step.clay} width={72} style={{ "--float-delay": `${i * -1.5}s` } as CSSProperties}
+                    className="animate-float absolute -top-9 -right-3 z-10 size-16 object-contain drop-shadow-lg" />
+                ) : null}
+                {step.art}
+              </div>
             </li>
           ))}
         </ol>
