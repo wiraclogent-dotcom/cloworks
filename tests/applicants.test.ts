@@ -335,7 +335,7 @@ describe("applicants", () => {
     await db.prisma.user.create({ data: { name: uniq("D"), fullName: "Deact", email, active: false } });
     const { d, sent } = deps();
     await signUp(d, { name: "X", email, password: PASSWORD });
-    expect(sent[0].text).toContain("If you can't sign in, contact your admin.");
+    expect(sent[0].text).toContain("Can't sign in? Contact your admin. Not you? Ignore this email.");
   });
 
   it("an email domain without a dot is invalid (I1)", async () => {
