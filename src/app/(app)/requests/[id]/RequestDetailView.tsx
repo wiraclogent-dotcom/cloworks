@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
 import { ChevronLeft, CircleSlash, ExternalLink, FileText, FolderOpen, Link2, Target } from "lucide-react";
@@ -12,6 +13,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { BrandTag, Chip, CountPill } from "@/components/ui/Chip";
 import { StatusChip } from "@/components/ui/StatusChip";
+import { BrandArt } from "@/components/ui/BrandArt";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { Avatar, UnassignedAvatar } from "@/components/ui/Avatar";
@@ -85,6 +87,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
       <PageHeader title={<span className="break-words">{req.title}</span>} className="mb-2"
         breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
       <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
+        {req.status === "DONE" ? <BrandArt name="celebrate" width={36} className="animate-pop size-9 object-contain" /> : null}
         <StatusChip status={req.status} />
         {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}
         {req.includeKpi
@@ -94,7 +97,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
 
       <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-5">
-          <Card>
+          <Card className="animate-rise" style={{ "--i": 0 } as CSSProperties}>
             <section aria-labelledby="brief-h">
               <CardTitle id="brief-h">Brief</CardTitle>
               <div className="mt-3 space-y-4">
@@ -124,7 +127,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             </section>
           </Card>
 
-          <Card>
+          <Card className="animate-rise" style={{ "--i": 1 } as CSSProperties}>
             <section aria-labelledby="files-h">
               <CardHeader className="mb-2"><CardTitle id="files-h">Attachments</CardTitle></CardHeader>
               {req.attachments.length === 0 ? (
@@ -147,7 +150,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             </section>
           </Card>
 
-          <Card>
+          <Card className="animate-rise" style={{ "--i": 2 } as CSSProperties}>
             <section aria-labelledby="comments-h">
               <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <CountPill value={req.comments.length} /></CardTitle></CardHeader>
               {req.comments.length === 0 ? (
@@ -155,7 +158,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
               ) : (
                 <ol className="mb-4 space-y-4">
                   {req.comments.map((c) => (
-                    <li key={c.id} className="flex gap-3">
+                    <li key={c.id} className="animate-rise flex gap-3">
                       <Avatar name={c.author.name} decorative className="mt-0.5" />
                       <div className="min-w-0 flex-1">
                         <p className="text-xs text-foreground-secondary"><span className="text-sm font-medium text-foreground">{c.author.name}</span> · <time dateTime={c.createdAt.toISOString()} className="tabular-nums">{stamp.format(c.createdAt)} WIB</time></p>
@@ -171,7 +174,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             </section>
           </Card>
 
-          <Card>
+          <Card className="animate-rise" style={{ "--i": 3 } as CSSProperties}>
             <section aria-labelledby="history-h">
               <CardTitle id="history-h">Activity</CardTitle>
               {activity.length === 0 ? (
@@ -201,7 +204,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
         </div>
 
         <aside className="min-w-0 space-y-5 @3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16" aria-label="Details and actions">
-          <Card>
+          <Card className="animate-rise" style={{ "--i": 4 } as CSSProperties}>
             <section aria-labelledby="details-h">
               <CardTitle id="details-h">Details</CardTitle>
               <dl className="mt-2 divide-y divide-border">
@@ -229,7 +232,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
           </Card>
 
           {(canPickAssignee || canMove) && (
-            <Card>
+            <Card className="animate-rise" style={{ "--i": 5 } as CSSProperties}>
               <section aria-labelledby="actions-h" className="space-y-4">
                 <CardTitle id="actions-h">Manage</CardTitle>
                 {canPickAssignee && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}

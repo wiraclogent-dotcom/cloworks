@@ -289,7 +289,8 @@ describe("KpiTile", () => {
   it("label, big tabular value, sub-line and a decorative tinted icon", () => {
     const { container } = render(<KpiTile icon={<Inbox aria-hidden="true" />} label="Tasks done" value={12} sub="of 20 target" tone="in-progress" />);
     expect(screen.getByText("Tasks done")).toBeTruthy();
-    expect(screen.getByText("12").className).toMatch(/tabular-nums/);
+    // The number counts up visually (CSS); its real value is screen-reader text inside the tabular-nums line.
+    expect(screen.getByText("12").closest("p")!.className).toMatch(/tabular-nums/);
     expect(screen.getByText("of 20 target")).toBeTruthy();
     expect(container.querySelector("[data-tone='in-progress']")!.getAttribute("aria-hidden")).toBe("true");
   });

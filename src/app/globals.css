@@ -661,6 +661,24 @@
 .press { transition: transform 0.15s var(--ease-out); }
 .press:active { transform: scale(0.97); }
 
+/* <CountUp>: the integer --n animates 0 → --to and is printed with a counter; the real value is sr-only text beside it. */
+@property --n {
+  syntax: "<integer>";
+  initial-value: 0;
+  inherits: false;
+}
+@keyframes count-up { from { --n: 0; } to { --n: var(--to); } }
+.count-up {
+  --n: var(--to);
+  counter-reset: n var(--n);
+  animation: count-up 0.9s var(--ease-out) 0.1s both;
+}
+.count-up::after { content: counter(n); }
+
+/* Progress fills grow from the left on arrival (transform only, so the layout never moves). */
+@keyframes bar-grow { from { transform: scaleX(0); } }
+.animate-bar { transform-origin: left; animation: bar-grow 0.9s var(--ease-out) 0.15s both; }
+
 /* Confetti burst (<Celebrate>): each piece flies out along its --dx/--dy and spins, then fades. */
 @keyframes confetti {
   0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }

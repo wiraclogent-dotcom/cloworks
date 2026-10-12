@@ -11,8 +11,8 @@ import { Avatar, UnassignedAvatar } from "./ui/Avatar";
 import { cn, focusRing } from "./ui/cn";
 
 const CARD_SHAPE = "rounded-xl border bg-card p-4 text-sm text-card-foreground";
-/** Card in its column: white, 12px radius, a whisper of a hairline and a soft shadow. */
-export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card`;
+/** Card in its column: white, 12px radius, a whisper of a hairline and a soft shadow that deepens on hover (no movement, so drags stay put). */
+export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card transition-[box-shadow,border-color] duration-200 hover:border-border-strong hover:shadow-raised`;
 /** The drag overlay copy: same card, Aqua outline and the raised shadow. */
 export const CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
 

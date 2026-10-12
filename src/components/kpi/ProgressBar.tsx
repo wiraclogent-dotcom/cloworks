@@ -43,7 +43,7 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
         aria-valuetext={text}
         className="h-3 w-full overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border"
       >
-        <div className={cn("h-full rounded-full transition-[width] duration-200 ease-out", level ? PROGRESS_FILL[level] : "bg-progress-mid")} style={{ width: `${width}%` }} />
+        <div className={cn("animate-bar h-full rounded-full transition-[width] duration-200 ease-out", level ? PROGRESS_FILL[level] : "bg-progress-mid")} style={{ width: `${width}%` }} />
       </div>
     </div>
   );
