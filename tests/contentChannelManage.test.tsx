@@ -12,7 +12,7 @@ vi.mock("@/app/(app)/content/actions", () => Object.fromEntries(
 // The real uploader talks to Cloudinary; here it just reports one uploaded image when clicked.
 vi.mock("@/components/media/MediaUpload", () => ({
   MediaUpload: (p: { purpose: string; accept: string; onUploaded: (m: { id: string; url: string; type: "IMAGE" }) => void }) => (
-    <button type="button" data-purpose={p.purpose} data-accept={p.accept} onClick={() => p.onUploaded({ id: "m9", url: "https://img/new.jpg", type: "IMAGE" })}>
+    <button type="button" data-purpose={p.purpose} data-accept={p.accept} onClick={() => p.onUploaded({ id: "m9", url: "https://img/new-preview.jpg", type: "IMAGE" })}>
       Upload avatar
     </button>
   ),
@@ -74,6 +74,8 @@ describe("channel management", () => {
     expect(picker.getAttribute("data-purpose")).toBe("content");
     expect(picker.getAttribute("data-accept")).toBe("image");
     fireEvent.click(picker);
+    // The preview shows the url the uploader hands over (the sized preview from registerUpload).
+    expect(dialog.querySelector('img[src="https://img/new-preview.jpg"]')).not.toBeNull();
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(actions.updateChannel).toHaveBeenLastCalledWith("c1", expect.objectContaining({ avatarMediaId: "m9" })));
   });

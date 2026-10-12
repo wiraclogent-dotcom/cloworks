@@ -202,6 +202,15 @@ describe("approve content post", () => {
     expect(await db.prisma.request.count()).toBe(before);
   });
 
+  it("loadApproveForm drops a suggested type that is no longer active and falls back to the default", async () => {
+    const id = await submitted();
+    const retired = await db.prisma.requestType.create({ data: { name: "Retired type", active: false } });
+    await db.prisma.contentPost.update({ where: { id }, data: { typeId: retired.id } });
+    const form = await loadApproveForm(db.prisma, lead, id);
+    expect(form.types.some((t) => t.id === retired.id)).toBe(false);
+    expect(form.defaults.typeId).toBe(form.types.find((t) => t.name === "General Design")?.id);
+  });
+
   it("loadApproveForm: approver only, SUBMITTED only, division from the author's latest request", async () => {
     const fresh = await mkUser("afresh@clogent.co.id", "CREATIVE"); // no requests yet
     const id = await submitted({ media: ["IMAGE", "IMAGE"], by: fresh });

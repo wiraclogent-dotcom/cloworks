@@ -152,6 +152,16 @@ describe("loadContentPlan", () => {
     expect((await loadContentPlan(db.prisma, lead, { channelId: first, tab: "stories" }, CLOUD)).planned).toEqual([]);
   });
 
+  it("video covers on reels and stories use a 9:16 poster", async () => {
+    const clip = await mkMedia("reelclip", "VIDEO");
+    await db.prisma.contentPostMedia.create({ data: { postId: ids.secondReel, mediaId: clip, role: "MOCKUP" } });
+    const story = await planned(second, "STORY");
+    await db.prisma.contentPostMedia.create({ data: { postId: story, mediaId: clip, role: "MOCKUP" } });
+    const poster = "https://res.cloudinary.com/demo/video/upload/c_fill,ar_9:16,w_360,f_auto,q_auto/so_0/clowork/x/content/reelclip.jpg";
+    expect((await loadContentPlan(db.prisma, lead, { channelId: second, tab: "reels" }, CLOUD)).planned[0].coverUrl).toBe(poster);
+    expect((await loadContentPlan(db.prisma, lead, { channelId: second, tab: "stories" }, CLOUD)).planned[0].coverUrl).toBe(poster);
+  });
+
   it("flags out-of-order tiles", async () => {
     const v = await loadContentPlan(db.prisma, lead, { channelId: first, tab: "feed" }, CLOUD);
     expect(v.planned.filter((t) => t.warn).map((t) => t.id)).toEqual([ids.middle]);

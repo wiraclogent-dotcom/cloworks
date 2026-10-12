@@ -25,6 +25,10 @@ describe("mediaUrl", () => {
       .toBe("https://res.cloudinary.com/demo/video/upload/c_fill,ar_3:4,w_360,f_auto,q_auto/so_0/clowork/w/content/vid.jpg");
     expect(mediaUrl({ publicId: "p", type: "IMAGE" }, "poster", "demo"))
       .toBe("https://res.cloudinary.com/demo/image/upload/c_fill,ar_3:4,w_360,f_auto,q_auto/p");
+    expect(mediaUrl({ publicId: "clowork/w/content/vid", type: "VIDEO" }, "poster-9x16", "demo"))
+      .toBe("https://res.cloudinary.com/demo/video/upload/c_fill,ar_9:16,w_360,f_auto,q_auto/so_0/clowork/w/content/vid.jpg");
+    expect(mediaUrl({ publicId: "p", type: "IMAGE" }, "poster-9x16", "demo"))
+      .toBe("https://res.cloudinary.com/demo/image/upload/c_fill,ar_9:16,w_360,f_auto,q_auto/p");
     expect(mediaUrl({ publicId: "p", type: "VIDEO" }, "reel-9x16", "demo"))
       .toBe("https://res.cloudinary.com/demo/video/upload/c_fill,ar_9:16,w_360,f_auto,q_auto/p");
   });

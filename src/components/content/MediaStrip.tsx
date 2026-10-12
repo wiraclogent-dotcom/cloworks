@@ -92,7 +92,7 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
             <MediaUpload purpose="content" accept="both" disabled={pending || !mediaReady} onBusyChange={setUploading}
               onUploaded={(u) => {
                 const cur = listRef.current;
-                void save([...cur, { mediaId: u.id, type: u.type, url: null, order: cur.length }]);
+                void save([...cur, { mediaId: u.id, type: u.type, url: u.url, order: cur.length }]);
               }} />
           </li>
         ) : null}

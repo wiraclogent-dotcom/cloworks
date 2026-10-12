@@ -69,14 +69,15 @@ describe("MediaUpload", () => {
 
   it("signs, posts every signed param with the file, then registers", async () => {
     requestUploadSignature.mockResolvedValue({ ok: true, upload: { uploadUrl: "https://api.cloudinary.com/v1_1/demo/image/upload", publicId: "clowork/w/content/abc", params: { signature: "s", api_key: "k", timestamp: "1" } } });
-    registerUpload.mockResolvedValue({ ok: true, mediaId: "m1" });
+    const preview = "https://res.cloudinary.com/demo/image/upload/c_limit,w_900,f_auto,q_auto/clowork/w/content/abc";
+    registerUpload.mockResolvedValue({ ok: true, mediaId: "m1", previewUrl: preview });
     const sent = fakeXhr(200, { secure_url: "https://res.cloudinary.com/demo/image/upload/abc.jpg" });
     const onUploaded = vi.fn();
     const onBusyChange = vi.fn();
     render(<MediaUpload purpose="content" accept="both" onUploaded={onUploaded} onBusyChange={onBusyChange} />);
     const f = fileOf("a.png", "image/png", 1000);
     pick(f);
-    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith({ id: "m1", url: "https://res.cloudinary.com/demo/image/upload/abc.jpg", type: "IMAGE" }));
+    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith({ id: "m1", url: preview, type: "IMAGE" }));
     await waitFor(() => expect(onBusyChange).toHaveBeenLastCalledWith(false));
     expect(onBusyChange).toHaveBeenCalledWith(true);
     expect(requestUploadSignature).toHaveBeenCalledWith("content", "image");

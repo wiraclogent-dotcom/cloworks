@@ -90,7 +90,8 @@ export async function loadApproveForm(db: ScopedDb, user: ContentActor, postId: 
     db.user.findMany({ where: CREATIVE_TEAM, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.request.findFirst({ where: { requesterId: post.authorId }, orderBy: { requestedAt: "desc" }, select: { divisionId: true } }),
   ]);
-  // No suggested type on the post: preselect the workspace default.
+  // No suggested type on the post, or one that is no longer active: preselect the workspace default.
+  if (defaults.typeId && !types.some((t) => t.id === defaults.typeId)) defaults.typeId = null;
   if (!defaults.typeId) defaults.typeId = types.find((t) => t.name === DEFAULT_TYPE_NAME)?.id ?? null;
   return { postId, brandName, defaults, divisionId: latest?.divisionId ?? divisions[0]?.id ?? null, divisions, types, team };
 }

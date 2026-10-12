@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { CheckCheck } from "lucide-react";
 import { approvePost } from "@/app/(app)/content/actions";
 import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
@@ -43,6 +44,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   form: ApproveFormData; authorName: string; mockupCount: number; onCancel: () => void; onApproved: (requestId: string) => void;
 }) {
   const uid = useId();
+  const router = useRouter();
   const d = form.defaults;
   const [title, setTitle] = useState(d.title);
   const [divisionId, setDivisionId] = useState(form.divisionId ?? "");
@@ -78,6 +80,8 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       const shown = new Set(["title", "divisionId", "typeId", "assigneeId", "deadline", "outputCount", ...defs.map((f) => `fields.${f.key}`)]);
       const orphan = Object.entries(fe).filter(([k]) => !shown.has(k)).map(([, m]) => m);
       setMessage(Object.keys(fe).length ? (orphan.join(" ") || null) : r.message);
+      // Approved or sent back elsewhere meanwhile: reload so the panel shows where the post is now.
+      if (r.code === "CONFLICT") router.refresh();
     } catch {
       setMessage("Something went wrong. Try again.");
     } finally {

@@ -34,8 +34,8 @@ function checkFile(f: File, accept: Accept): { kind: Kind } | { error: string } 
   return { kind };
 }
 
-/** POSTs the file with the signed params; resolves with Cloudinary's delivery URL. */
-function post(uploadUrl: string, params: Record<string, string>, file: File, onProgress: (pct: number) => void): Promise<string> {
+/** POSTs the file with the signed params; resolves once Cloudinary has stored it. */
+function post(uploadUrl: string, params: Record<string, string>, file: File, onProgress: (pct: number) => void): Promise<void> {
   return new Promise((resolve, reject) => {
     const body = new FormData();
     for (const [k, v] of Object.entries(params)) body.append(k, v);
@@ -44,13 +44,8 @@ function post(uploadUrl: string, params: Record<string, string>, file: File, onP
     xhr.open("POST", uploadUrl);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        try {
-          resolve(String(JSON.parse(xhr.responseText).secure_url ?? ""));
-        } catch {
-          resolve("");
-        }
-      } else reject(new Error("upload failed"));
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error("upload failed"));
     };
     xhr.onerror = () => reject(new Error("upload failed"));
     xhr.send(body);
@@ -88,7 +83,7 @@ export function MediaUpload({ purpose, accept, onUploaded, onBusyChange, disable
         setError(signed.code === "NOT_CONFIGURED" ? NOT_CONFIGURED : signed.message);
         return;
       }
-      const url = await post(signed.upload.uploadUrl, signed.upload.params, file, setProgress);
+      await post(signed.upload.uploadUrl, signed.upload.params, file, setProgress);
       const type = kind === "video" ? "VIDEO" : "IMAGE";
       const reg = await registerUpload(signed.upload.publicId, type);
       if (!reg.ok) {
@@ -96,7 +91,8 @@ export function MediaUpload({ purpose, accept, onUploaded, onBusyChange, disable
         setFailed({ file, kind });
         return;
       }
-      onUploaded({ id: reg.mediaId, url, type });
+      // The sized preview (panel image or video poster), not the raw original.
+      onUploaded({ id: reg.mediaId, url: reg.previewUrl, type });
     } catch {
       setError("Upload failed. Try again.");
       setFailed({ file, kind });

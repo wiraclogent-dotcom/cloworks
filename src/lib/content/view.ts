@@ -85,10 +85,10 @@ export async function loadContentPlan(
     db.contentPost.count({ where: { channelId: current.id, kind: "PLANNED" } }),
   ]);
 
-  // Cover: first FINAL, else first MOCKUP. Videos show their first frame in every tab.
+  // Cover: first FINAL, else first MOCKUP. Videos show their first frame in every tab, cropped to the tab's shape.
   const cover = (media: CoverMedia[]) => {
     const m = (media.find((x) => x.role === "FINAL") ?? media.find((x) => x.role === "MOCKUP"))?.media;
-    return url(m, m?.type === "VIDEO" ? "poster" : TAB_PRESET[tab]);
+    return url(m, m?.type === "VIDEO" ? (tab === "feed" ? "poster" : "poster-9x16") : TAB_PRESET[tab]);
   };
   const warn = outOfOrder(plannedRows);
   const tile = (p: (typeof plannedRows)[number]): TileView => ({

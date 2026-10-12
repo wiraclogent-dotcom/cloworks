@@ -23,6 +23,7 @@ import { CreateRequestError } from "@/lib/createRequest";
 import { cloudinaryConfig } from "@/lib/media/config";
 import { signUpload, type SignedUpload } from "@/lib/media/sign";
 import { cloudinaryClient } from "@/lib/media/client";
+import { mediaUrl } from "@/lib/media/url";
 import { destroyMediaWith } from "@/lib/media/destroy";
 import { registerMediaWith, MediaError, type MediaErrorCode } from "@/lib/media/register";
 
@@ -156,13 +157,14 @@ export async function requestUploadSignature(purpose: "content", kind: "image" |
   });
 }
 
-export async function registerUpload(publicId: string, type: MediaType): Promise<ContentActionResult<{ mediaId: string }>> {
+export async function registerUpload(publicId: string, type: MediaType): Promise<ContentActionResult<{ mediaId: string; previewUrl: string }>> {
   return run(async (db, u) => {
     if (!canDraftContent(u)) throw new ContentError("FORBIDDEN", "You are not allowed to upload content media.");
     if (type !== "IMAGE" && type !== "VIDEO") throw new ContentError("INVALID", "Unsupported media type.");
     const cfg = cloudinaryConfig();
     if (!cfg) throw new MediaError("NOT_CONFIGURED", "Media storage is not configured");
     const media = await registerMediaWith(db, cloudinaryClient(cfg), u, { publicId, type });
-    return { mediaId: media.id };
+    // Same preview the panel uses: a sized image, or a video's first frame.
+    return { mediaId: media.id, previewUrl: mediaUrl(media, media.type === "VIDEO" ? "poster" : "panel", cfg.cloudName) };
   });
 }

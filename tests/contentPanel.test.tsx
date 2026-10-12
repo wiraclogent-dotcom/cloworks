@@ -95,7 +95,7 @@ describe("PostPanel", () => {
     }
     vi.stubGlobal("XMLHttpRequest", PendingXhr);
     actions.requestUploadSignature.mockResolvedValue({ ok: true, upload: { uploadUrl: "u", publicId: "p", params: {} } });
-    actions.registerUpload.mockResolvedValue({ ok: true, mediaId: "m3" });
+    actions.registerUpload.mockResolvedValue({ ok: true, mediaId: "m3", previewUrl: "https://res.cloudinary.com/demo/video/upload/poster/p.jpg" });
     actions.setPostMedia.mockResolvedValue({ ok: true });
     const media = (id: string) => ({ mediaId: id, type: "IMAGE" as const, url: null, order: 0 });
     const v = panel({ can: { ...NO, edit: true }, mockups: [media("m1"), media("m2")] });
@@ -113,6 +113,8 @@ describe("PostPanel", () => {
       { mediaId: "m2", role: "MOCKUP" }, { mediaId: "m3", role: "MOCKUP" },
     ]));
     expect(actions.registerUpload).toHaveBeenCalledWith("p", "VIDEO");
+    // The new file shows its sized preview straight away, not a placeholder.
+    expect(document.querySelector('img[src="https://res.cloudinary.com/demo/video/upload/poster/p.jpg"]')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
@@ -201,6 +203,23 @@ describe("PostPanel", () => {
     expect((within(form).getByLabelText("Type") as HTMLSelectElement).value).toBe("t1");
     fireEvent.click(within(form).getByRole("button", { name: "Approve & create" }));
     await waitFor(() => expect(actions.approvePost).toHaveBeenCalledWith("p1", expect.objectContaining({ typeId: "t1" })));
+  });
+
+  it("refreshes when approving finds the post changed", async () => {
+    actions.loadApprove.mockResolvedValue({
+      ok: true,
+      form: {
+        postId: "p1", brandName: "B", defaults: { title: "T", deadline: null, outputCount: 1, needsMotion: false, typeId: "t1" },
+        divisionId: "d1", divisions: [{ id: "d1", name: "Marketing" }], team: [], types: [{ id: "t1", name: "Alpha", fieldSchema: [] }],
+      },
+    });
+    actions.approvePost.mockResolvedValue({ ok: false, code: "CONFLICT", message: "This post changed in the meantime." });
+    show(panel({ post: { status: "SUBMITTED" }, can: { ...NO, approve: true } }));
+    fireEvent.click(screen.getByRole("button", { name: "Approve…" }));
+    const form = await screen.findByRole("form", { name: "Approve & create request" });
+    fireEvent.click(within(form).getByRole("button", { name: "Approve & create" }));
+    expect(await within(form).findByText("This post changed in the meantime.")).toBeTruthy();
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("links an approved post to its request", () => {

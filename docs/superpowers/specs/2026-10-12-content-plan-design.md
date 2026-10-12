@@ -273,7 +273,7 @@ New module `src/lib/media/`. It is the **only** code that talks to Cloudinary.
   (image ≤ 10 MB, video ≤ 100 MB / ≤ 90 s), then creates the `Media` row.
 - `url.ts` — `mediaUrl(media, preset)` with a **fixed** preset set so derived assets cache and stop costing credits:
   `avatar-64`, `grid-3x4` (`c_fill,ar_3:4,w_360`), `reel-9x16` (`c_fill,ar_9:16,w_360`), `story-9x16`,
-  `panel` (`c_limit,w_900`), `full` (`c_limit,w_2048`, used for request attachments), `poster` (video first frame
+  `panel` (`c_limit,w_900`), `full` (`c_limit,w_2048`, used for request attachments), `poster` / `poster-9x16` (video first frame, 3:4 / 9:16,
   as image), all with `f_auto,q_auto`.
 - `destroy.ts` — `destroyMedia(db, mediaId)`: deletes the Cloudinary asset, then the row. Best effort; failures are
   logged and retried by the later cleanup job.
