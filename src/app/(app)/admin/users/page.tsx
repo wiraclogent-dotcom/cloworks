@@ -7,8 +7,8 @@ import { UsersContent } from "./UsersContent";
 export const metadata: Metadata = { title: "Admin · Members" };
 
 async function Content({ searchParams }: { searchParams: PageProps<"/admin/users">["searchParams"] }) {
-  const { tab } = await searchParams;
-  return <UsersContent tab={typeof tab === "string" ? tab : undefined} />;
+  const { tab, merged } = await searchParams;
+  return <UsersContent tab={typeof tab === "string" ? tab : undefined} merged={typeof merged === "string" ? merged.trim() || undefined : undefined} />;
 }
 
 export default function AdminUsersPage({ searchParams }: PageProps<"/admin/users">) {

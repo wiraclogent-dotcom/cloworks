@@ -321,6 +321,18 @@ describe("/join/invite/[token]", () => {
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
     expect((document.querySelector('input[name="next"]') as HTMLInputElement).value).toBe("/join/invite/tok");
   });
+  it("linked invite: heading names the person, password form has no name field, applicant button unchanged", async () => {
+    lib.describeInvite.mockResolvedValue({ ...open, linkedName: "Yosi" });
+    render(await InviteView({ params }));
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Wira invited you to join Clogent as Yosi");
+    expect(screen.queryByLabelText("Your name")).toBeNull();
+    expect(document.querySelector('input[name="name"]')).toBeNull();
+    expect(screen.getByLabelText("Password")).toBeTruthy();
+    cleanup();
+    currentVisitor.mockResolvedValue(applicant);
+    render(await InviteView({ params }));
+    expect(screen.getByRole("button", { name: "Accept invite" })).toBeTruthy();
+  });
   it("opts out of prerendering before reading the clock (describeInvite defaults now = new Date())", async () => {
     lib.describeInvite.mockResolvedValue(open);
     render(await InviteView({ params }));
@@ -370,10 +382,22 @@ describe("/join/invite/[token]", () => {
     await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
     expect(lib.acceptInvite).toHaveBeenCalledWith({ db: true }, "tok", { applicantId: "a1" });
   });
+  it("applicant path linked to an existing person goes to sign-in, not /lobby/enter", async () => {
+    currentVisitor.mockResolvedValue(applicant);
+    lib.acceptInvite.mockResolvedValue({ userId: "u9", email: "andi@gmail.com", linked: true });
+    await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/signin?linked=1");
+  });
   it("a member (e.g. a just-upgraded applicant) goes in through /lobby/enter", async () => {
     currentVisitor.mockResolvedValue({ kind: "member" });
     await expect(acceptInviteAction(null, fd({ token: "tok", mode: "applicant" }))).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
     expect(lib.acceptInvite).not.toHaveBeenCalled();
+  });
+  it("shows the stale-link copy as-is; any other NOT_FOUND keeps the expired copy", async () => {
+    const { INVITE_STALE_MESSAGE } = await vi.importActual<typeof import("@/lib/invites")>("@/lib/invites");
+    lib.acceptInvite.mockRejectedValue(new AdminError("NOT_FOUND", INVITE_STALE_MESSAGE));
+    expect(await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1" }))).toMatchObject({ error: INVITE_STALE_MESSAGE });
+    lib.acceptInvite.mockRejectedValue(new AdminError("NOT_FOUND", "whatever"));
+    expect(await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1" }))).toMatchObject({ error: expect.stringContaining("expired or was already used") });
   });
   it("maps refusals to copy; a stale applicant session is told to sign in again", async () => {
     currentVisitor.mockResolvedValue(applicant);

@@ -58,8 +58,8 @@ export async function loadJoinAdmin(actor: Actor) {
   return { workspace, requests };
 }
 
-export const approveFor = (actor: Actor, mailer: Mailer, applicantId: string, roles: { appRole: AppRole; jobRole: JobRole }, baseUrl: string) =>
-  approveApplicant(prisma, actor, mailer, applicantId, roles, baseUrl);
+export const approveFor = (actor: Actor, mailer: Mailer, applicantId: string, roles: { appRole: AppRole; jobRole: JobRole }, baseUrl: string, linkUserId?: string) =>
+  approveApplicant(prisma, actor, mailer, applicantId, roles, baseUrl, linkUserId);
 export const rejectFor = (actor: Actor, applicantId: string) => rejectApplicant(prisma, actor, applicantId);
 export const undoRejectFor = (actor: Actor, applicantId: string) => undoReject(prisma, actor, applicantId);
 export const resetLinkFor = (actor: Actor) => resetJoinLink(prisma, actor);

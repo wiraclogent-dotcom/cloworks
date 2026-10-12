@@ -1,12 +1,10 @@
 "use client";
 
-import { AdminForm, ConfirmAction, Labeled, selectControl } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction } from "@/components/admin/AdminForm";
 import { Chip } from "@/components/ui/Chip";
-import { enumLabel } from "@/lib/adminChips";
+import type { LinkablePerson } from "@/lib/linkPerson";
+import { PersonRoleFields } from "./PersonRoleFields";
 import { approveRequest, rejectRequest, undoRejectRequest } from "./actions";
-
-const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
-const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
 
 export type RequestRow = { applicantId: string; name: string; email: string; source: "LINK" | "DOMAIN"; requestedAt: string };
 
@@ -25,7 +23,7 @@ function Who({ r }: { r: RequestRow }) {
   );
 }
 
-export function RequestsList({ pending, rejected }: { pending: RequestRow[]; rejected: RequestRow[] }) {
+export function RequestsList({ pending, rejected, linkable }: { pending: RequestRow[]; rejected: RequestRow[]; linkable: LinkablePerson[] }) {
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
@@ -41,16 +39,7 @@ export function RequestsList({ pending, rejected }: { pending: RequestRow[]; rej
                     hidden={{ applicantId: r.applicantId }} className="space-y-2">
                     {({ v, idFor }) => (
                       <div className="flex flex-wrap items-end gap-3">
-                        <Labeled id={idFor("appRole")} label="App role">
-                          <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", "REQUESTER")}>
-                            {APP_ROLES.map((x) => <option key={x} value={x}>{enumLabel(x)}</option>)}
-                          </select>
-                        </Labeled>
-                        <Labeled id={idFor("jobRole")} label="Job role">
-                          <select id={idFor("jobRole")} name="jobRole" className={selectControl} defaultValue={v("jobRole", "OTHER")}>
-                            {JOB_ROLES.map((x) => <option key={x} value={x}>{enumLabel(x)}</option>)}
-                          </select>
-                        </Labeled>
+                        <PersonRoleFields linkable={linkable} v={v} idFor={idFor} name="linkUserId" label="This is…" noneLabel="A new person" />
                       </div>
                     )}
                   </AdminForm>

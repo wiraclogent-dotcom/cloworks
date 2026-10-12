@@ -159,7 +159,7 @@ describe("join requests", () => {
   it("a failing mailer does not fail the approval", async () => {
     const a = await mkApplicant();
     const mailer: Mailer = { async send() { throw new Error("smtp down"); } };
-    await expect(approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE)).resolves.toEqual({ userId: a.id });
+    await expect(approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE)).resolves.toMatchObject({ userId: a.id, linked: false });
   });
 
   it("approving twice in parallel → one User, one NOT_FOUND", async () => {
@@ -322,5 +322,62 @@ describe("join requests", () => {
       expect(sent.length).toBeGreaterThan(0);
       expect(sent.every((m) => m.text.includes(`https://deps.example.test${LINK}`))).toBe(true);
     });
+  });
+});
+
+describe("linked approval", () => {
+  const mkPerson = (email: string | null = null) => {
+    const name = uniq("Person");
+    return db.raw.user.create({ data: { name, fullName: `${name} Full`, email, appRole: "REQUESTER", jobRole: "OTHER", active: false, workspaceId: "clogent" } });
+  };
+
+  it("attaches the login and roles to the person, consumes the applicant and invite, creates no User", async () => {
+    const person = await mkPerson();
+    const a = await mkApplicant({ name: "Linked Applicant" });
+    const inv = await db.raw.invite.create({
+      data: { email: a.email, appRole: "REQUESTER", jobRole: "OTHER", tokenHash: `h-${uniq("t")}`, invitedById: admin.id, workspaceId: "clogent", expiresAt: new Date(Date.now() + 86_400_000) },
+    });
+    const before = await db.raw.user.count();
+    const { mailer, sent } = fakeMailer();
+    const res = await approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE, person.id);
+    expect(res).toEqual({ userId: person.id, linked: true, name: person.name });
+    expect(await db.raw.user.count()).toBe(before);
+    const u = await db.raw.user.findUniqueOrThrow({ where: { id: person.id } });
+    expect(u).toMatchObject({
+      email: a.email, passwordHash: "scrypt$fake$hash", appRole: "CREATIVE", jobRole: "DESIGNER", active: true,
+      passwordVersion: person.passwordVersion + 1, failedLogins: 0, lockedUntil: null, name: person.name,
+    });
+    expect(await db.raw.applicant.findUnique({ where: { id: a.id } })).toBeNull();
+    expect((await db.raw.invite.findUniqueOrThrow({ where: { id: inv.id } })).acceptedAt).not.toBeNull();
+    expect(sent).toHaveLength(1);
+    expect(sent[0].to).toBe(a.email);
+  });
+
+  it("a person who already has an email → NOT_FOUND, applicant kept, nothing sent", async () => {
+    const person = await mkPerson(`${uniq("has")}@x.test`);
+    const a = await mkApplicant();
+    const { mailer, sent } = fakeMailer();
+    const err = await approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE, person.id).catch((e) => e);
+    expect(err).toBeInstanceOf(AdminError);
+    expect(err.code).toBe("NOT_FOUND");
+    expect(err.message).toBe("This request no longer matches a person. Refresh and try again.");
+    expect(await db.raw.applicant.findUnique({ where: { id: a.id } })).not.toBeNull();
+    expect(sent).toHaveLength(0);
+  });
+
+  it("a person from another workspace → NOT_FOUND", async () => {
+    const other = await db.raw.user.create({ data: { name: uniq("Far"), fullName: "Far", email: null, workspaceId: otherWs } });
+    const a = await mkApplicant();
+    const { mailer } = fakeMailer();
+    expect(await errCode(approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE, other.id))).toBe("NOT_FOUND");
+    expect(await db.raw.applicant.findUnique({ where: { id: a.id } })).not.toBeNull();
+  });
+
+  it("unlinked approval returns the new user's name", async () => {
+    const a = await mkApplicant({ name: "Plain Andi" });
+    const { mailer } = fakeMailer();
+    const res = await approveApplicant(db.raw, admin, mailer, a.id, ROLES, BASE);
+    const u = await db.raw.user.findUniqueOrThrow({ where: { id: a.id } });
+    expect(res).toEqual({ userId: a.id, linked: false, name: u.name });
   });
 });

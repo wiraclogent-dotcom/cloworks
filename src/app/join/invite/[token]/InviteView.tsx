@@ -49,7 +49,11 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
   return (
     <div>
       <h1 className={authTitleClass}>
-        {invite.inviterName} invited you to <strong>{invite.workspaceName}</strong> as <strong>{roleLabel(invite)}</strong>
+        {invite.linkedName ? (
+          <>{invite.inviterName} invited you to join <strong>{invite.workspaceName}</strong> as <strong>{invite.linkedName}</strong></>
+        ) : (
+          <>{invite.inviterName} invited you to <strong>{invite.workspaceName}</strong> as <strong>{roleLabel(invite)}</strong></>
+        )}
       </h1>
       <p className={lead}>This invite is for {invite.maskedEmail}.</p>
       <div className="mt-8 space-y-4">
@@ -69,10 +73,12 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
             <AuthForm action={acceptInviteAction} submitLabel="Join" pendingLabel="Joining…">
               <input type="hidden" name="token" value={token} />
               <input type="hidden" name="mode" value="password" />
-              <div>
-                <label htmlFor="invite-name" className={labelClass}>Your name</label>
-                <input id="invite-name" name="name" type="text" autoComplete="name" maxLength={100} required className={fieldClass({ className: "h-11" })} />
-              </div>
+              {!invite.linkedName && (
+                <div>
+                  <label htmlFor="invite-name" className={labelClass}>Your name</label>
+                  <input id="invite-name" name="name" type="text" autoComplete="name" maxLength={100} required className={fieldClass({ className: "h-11" })} />
+                </div>
+              )}
               <div>
                 <label htmlFor="invite-password" className={labelClass}>Password</label>
                 <PasswordInput id="invite-password" name="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={200} required

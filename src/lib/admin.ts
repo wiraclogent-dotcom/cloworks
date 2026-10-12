@@ -22,12 +22,12 @@ export type Actor = { id: string; appRole: AppRole; workspaceId: string };
 type Db = PrismaClient;
 type Tx = Prisma.TransactionClient;
 
-const MAX_ALIASES = 20;
-const MAX_ALIAS_LEN = 50;
+export const MAX_ALIASES = 20;
+export const MAX_ALIAS_LEN = 50;
 const MAX_NAME_LEN = 100;
 const MAX_LIST_NAME = 60;
 
-function assertAdmin(actor: Actor) {
+export function assertAdmin(actor: Actor) {
   if (!actor || !can(actor.appRole, "admin.manage")) throw new AdminError("FORBIDDEN", "Only admins can do this");
 }
 

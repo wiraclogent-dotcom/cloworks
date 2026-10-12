@@ -6,6 +6,7 @@ import { ENTER_PATH } from "@/lib/auth.config";
 import { signIn } from "@/lib/auth";
 import { AdminError } from "@/lib/admin";
 import { failed, field, isInviteToken, rememberOf, type AuthFormState } from "@/lib/authForm";
+import { INVITE_STALE_MESSAGE } from "@/lib/invites";
 import { acceptInviteBy } from "@/lib/joinDeps";
 import { currentVisitor } from "@/lib/session";
 
@@ -13,7 +14,7 @@ const GONE = "This invite has expired or was already used. Ask your admin for a 
 
 /** AdminError → fixed copy (the library's messages are fixed text; they never carry the full invited email). */
 function copyFor(e: AdminError): string {
-  if (e.code === "NOT_FOUND") return GONE;
+  if (e.code === "NOT_FOUND") return e.message === INVITE_STALE_MESSAGE ? e.message : GONE;
   if (e.code === "VALIDATION" || e.code === "FORBIDDEN" || e.code === "CONFLICT") return e.message;
   return "Something went wrong. Try again.";
 }
@@ -31,12 +32,15 @@ export async function acceptInviteAction(_prev: AuthFormState, fd: FormData): Pr
 
   if (field(fd, "mode") === "applicant") {
     if (visitor.kind !== "applicant") return failed("Your session ended — sign in again.");
+    let linked: boolean;
     try {
-      await acceptInviteBy(token, { applicantId: visitor.applicant.id });
+      ({ linked } = await acceptInviteBy(token, { applicantId: visitor.applicant.id }));
     } catch (e) {
       if (e instanceof AdminError) return failed(copyFor(e));
       throw e;
     }
+    // Linked to an existing person: the applicant session matches no user, so sign in again as that person.
+    if (linked) redirect("/signin?linked=1");
     // Through /lobby/enter: it writes the upgraded (member) token to the cookie, else the edge sends them back to /lobby.
     redirect(ENTER_PATH);
   }

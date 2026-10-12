@@ -1,15 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
-import { withUser } from "@/lib/actionUser";
+import { UNAUTH_MESSAGE, withUser } from "@/lib/actionUser";
 import { AdminError, createUser, normalizeEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { mergePreview, mergeUsers } from "@/lib/mergeUsers";
 import { createInvite, resendInvite, revokeInvite } from "@/lib/invites";
 import { approveFor, rejectFor, requestBaseUrl, resetLinkFor, setLinkEnabledFor, undoRejectFor } from "@/lib/joinDeps";
 import { createMailerFromEnv } from "@/lib/mailer";
 import { checkNewPassword } from "@/lib/password";
-import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
+import { adminResult, adminUnauth, splitList, type AdminFormState, type MergeFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
 const done = (r: NonNullable<AdminFormState>) => {
@@ -142,7 +144,7 @@ export async function inviteMember(_prev: AdminFormState, fd: FormData): Promise
       await adminResult(fd, async () => {
         const { mailer, baseUrl } = await inviteDeps();
         const email = s(fd, "email").trim();
-        await createInvite(db, actor, mailer, { email, appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole }, baseUrl);
+        await createInvite(db, actor, mailer, { email, appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole, userId: s(fd, "userId") || undefined }, baseUrl);
         return `Invite sent to ${normalizeEmail(email)}.`;
       }),
     );
@@ -179,8 +181,8 @@ export async function approveRequest(_prev: AdminFormState, fd: FormData): Promi
     return done(
       await adminResult(fd, async () => {
         const { mailer, baseUrl } = await inviteDeps();
-        await approveFor(actor, mailer, s(fd, "applicantId"), { appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole }, baseUrl);
-        return "Approved. They can sign in now.";
+        const r = await approveFor(actor, mailer, s(fd, "applicantId"), { appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole }, baseUrl, s(fd, "linkUserId") || undefined);
+        return r.linked ? `Approved as ${r.name}. They sign in once more to continue.` : "Approved. They can sign in now.";
       }),
     );
   }, () => adminUnauth(fd));
@@ -209,4 +211,34 @@ export async function toggleInviteLink(_prev: AdminFormState, fd: FormData): Pro
     const enabled = s(fd, "enabled") === "true";
     return done(await adminResult(fd, async () => { await setLinkEnabledFor(actor, enabled); return enabled ? "Join link turned on." : "Join link turned off."; }));
   }, () => adminUnauth(fd));
+}
+
+/** Merge step 1: what merging `fromId` into `intoId` would move. Writes nothing; failures are data for the form. */
+export async function previewMerge(_prev: MergeFormState, fd: FormData): Promise<MergeFormState> {
+  return withUser<NonNullable<MergeFormState>, NonNullable<MergeFormState>>(requireUser, async (actor) => {
+    try {
+      return { ok: true, preview: await mergePreview(dbFor(actor), actor, s(fd, "fromId"), s(fd, "intoId")) };
+    } catch (e) {
+      if (e instanceof AdminError) return { ok: false, error: e.message };
+      throw e;
+    }
+  }, () => ({ ok: false, error: UNAUTH_MESSAGE }));
+}
+
+/** Merge step 2: moves the duplicate's history onto the survivor and removes the duplicate. */
+export async function mergePerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  let survivor: string | null = null;
+  const result = await withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
+    return done(
+      await adminResult(fd, async () => {
+        const { intoName } = await mergeUsers(db, actor, s(fd, "fromId"), s(fd, "intoId"));
+        survivor = intoName;
+        return `Merged into ${intoName}.`;
+      }),
+    );
+  }, () => adminUnauth(fd));
+  // The duplicate's row is gone, so its own success message would never be seen: show it on the page instead.
+  if (survivor !== null) redirect(`/admin/users?merged=${encodeURIComponent(survivor)}`);
+  return result;
 }

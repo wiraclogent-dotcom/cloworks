@@ -1,5 +1,6 @@
 import { AdminError } from "./admin";
 import { UNAUTH_MESSAGE } from "./actionUser";
+import type { MergePreview } from "./mergeUsers";
 
 /** Result-object state shared by every admin form (Next redacts thrown errors, so failures are data). */
 export type AdminFormState = {
@@ -11,6 +12,9 @@ export type AdminFormState = {
   values: Record<string, string>;
   nonce: string;
 } | null;
+
+/** State of the merge-confirmation step: the preview to show, or why it cannot be shown. */
+export type MergeFormState = null | { ok: false; error: string } | { ok: true; preview: MergePreview };
 
 export function formValues(fd: FormData): Record<string, string> {
   const out: Record<string, string> = {};

@@ -120,7 +120,8 @@ model User {
   libraryItemsCreated LibraryItem[]   @relation("LibraryItemCreatedBy")
   libraryItemsUpdated LibraryItem[]   @relation("LibraryItemUpdatedBy")
   projectTasks        ProjectTask[]
-  invitesSent         Invite[]
+  invitesSent         Invite[]        @relation("InviteSentBy")
+  invitesFor          Invite[]        @relation("InviteFor")
 
   mediaUploaded        Media[]
   contentPostsAuthored ContentPost[]    @relation("ContentPostAuthor")
@@ -522,17 +523,21 @@ model Invite {
   jobRole     JobRole
   tokenHash   String    @unique
   invitedById String
-  invitedBy   User      @relation(fields: [invitedById], references: [id])
+  invitedBy   User      @relation("InviteSentBy", fields: [invitedById], references: [id])
   expiresAt   DateTime
   acceptedAt  DateTime?
   revokedAt   DateTime?
   createdAt   DateTime  @default(now())
+  /// Existing roster person this invite attaches the new login to (null = create a fresh person).
+  userId      String?
+  user        User?     @relation("InviteFor", fields: [userId], references: [id], onDelete: SetNull)
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([workspaceId])
   @@index([email])
+  @@index([userId])
 }
 
 /// One-time "reset my password" links. Global (not workspace-scoped): the email decides whose password it sets.
