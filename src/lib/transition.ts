@@ -3,6 +3,7 @@ import { can } from "./permissions";
 import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { canTransition } from "./workflow";
 import { STATUS_LABEL } from "./statusLabels";
+import { syncContentPostForRequest } from "./content/sync";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 
 export class TransitionError extends Error {
@@ -54,8 +55,11 @@ export async function transitionRequestWith(
       if (to === "DONE" && now && now.status === from && !now.assigneeId) throw new TransitionError("INVALID", NEEDS_ASSIGNEE);
       throw new TransitionError("CONFLICT", "Request status changed concurrently; reload and retry");
     }
-    await tx.statusEvent.create({ data: { requestId, from, to, actorId: user.id, at: new Date() } });
-    return { from, to, assigneeId: req.assigneeId, requesterId: req.requesterId, title: req.title };
+    const at = new Date();
+    await tx.statusEvent.create({ data: { requestId, from, to, actorId: user.id, at } });
+    // A linked Content Plan post follows the request; `post` is kept for notifying its author after commit.
+    const post = await syncContentPostForRequest(tx, requestId, from, to, at);
+    return { from, to, assigneeId: req.assigneeId, requesterId: req.requesterId, title: req.title, post };
   });
 
   await bestEffort(async () => {
