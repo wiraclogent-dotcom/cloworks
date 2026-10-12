@@ -1,10 +1,10 @@
 import type { PrismaClient } from "@prisma/client";
 
 /** What the bell and the notifications page show for one row. */
-export type InboxItem = { id: string; type: string; message: string; requestId: string | null; readAt: Date | null; createdAt: Date };
+export type InboxItem = { id: string; type: string; message: string; requestId: string | null; contentPostId?: string | null; readAt: Date | null; createdAt: Date };
 
 type Db = Pick<PrismaClient, "notification">;
-const SELECT = { id: true, type: true, message: true, requestId: true, readAt: true, createdAt: true } as const;
+const SELECT = { id: true, type: true, message: true, requestId: true, contentPostId: true, readAt: true, createdAt: true } as const;
 
 /** Every query here is confined to `userId`: nobody reads or marks someone else's notifications. */
 export function listNotificationsWith(db: Db, userId: string, opts: { limit?: number; offset?: number } = {}): Promise<InboxItem[]> {

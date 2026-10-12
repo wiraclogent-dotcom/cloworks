@@ -1,43 +1,110 @@
-import { describe, it, expect } from "vitest";
-import { codeEmail, inviteEmail, approvedEmail, alreadyHaveAccountEmail } from "@/lib/joinEmails";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { codeEmail, inviteEmail, approvedEmail, alreadyHaveAccountEmail, resetEmail } from "@/lib/joinEmails";
+
+const prev = process.env.APP_BASE_URL;
+beforeEach(() => {
+  process.env.APP_BASE_URL = "https://clowork.my.id";
+});
+afterEach(() => {
+  if (prev === undefined) delete process.env.APP_BASE_URL;
+  else process.env.APP_BASE_URL = prev;
+});
+
+const expires = new Date("2026-11-01T00:00:00Z");
 
 describe("join emails", () => {
-  it("codeEmail carries the code and expiry", () => {
-    expect(codeEmail("482913").text).toContain("Your Cloworks code is 482913. It expires in 15 minutes.");
+  it("codeEmail: code is one unbroken token in html and text, no button", () => {
+    const m = codeEmail("482913");
+    expect(m.subject).toBe("Your Cloworks code: 482913");
+    expect(m.html).toContain("482913");
+    expect(m.text).toContain("482913");
+    expect(m.html).toContain("Your sign-up code");
+    expect(m.text).toContain("Enter this code to finish signing up. It expires in 15 minutes.");
+    expect(m.text).toContain("Didn't ask for it? Ignore this email.");
+    expect(m.html).not.toContain("href=");
   });
-  it("inviteEmail names inviter and workspace, with url, role and expiry", () => {
-    const m = inviteEmail({ inviter: "Wira", workspace: "Clogent", role: "Designer", url: "https://x.test/join/t", expires: new Date("2026-10-18T00:00:00Z") });
-    expect(m.subject).toBe("Wira invited you to join Clogent on Cloworks");
-    expect(m.text).toContain("https://x.test/join/t");
-    expect(m.text).toContain("Designer");
-    expect(m.text).toContain("2026");
+
+  it("inviteEmail: heading, line, button and note", () => {
+    const m = inviteEmail({ inviter: "Lia", workspace: "Clogent", role: "Designer", url: "https://clowork.my.id/join/abc", expires });
+    expect(m.subject).toBe("Lia invited you to join Clogent on Cloworks");
+    expect(m.html).toContain("Join Clogent on Cloworks");
+    expect(m.text).toContain("Lia invited you to join Clogent as Designer.");
+    expect(m.text).toContain("Accept invite: https://clowork.my.id/join/abc");
+    expect(m.html).toContain('href="https://clowork.my.id/join/abc"');
+    expect(m.text).toContain("This invite expires on 1 November 2026.");
   });
-  it("approvedEmail starts with the approval line and has the url", () => {
-    const m = approvedEmail({ workspace: "Clogent", url: "https://x.test/signin" });
-    expect(m.text.startsWith("You're in. Clogent approved your request.")).toBe(true);
-    expect(m.text).toContain("https://x.test/signin");
+
+  it("inviteEmail without a link asks the inviter and has no button", () => {
+    const m = inviteEmail({ inviter: "Lia", workspace: "Clogent", role: "Designer", url: "/join/abc", expires });
+    expect(m.text).toContain("Ask Lia for the invite link.");
+    expect(m.html).not.toContain("href=");
+    expect(m.text).not.toContain("/join/");
   });
-  it("alreadyHaveAccountEmail gives the sign-in url", () => {
-    const m = alreadyHaveAccountEmail({ signinUrl: "https://x.test/signin" });
-    expect(m.text).toContain("already have a Cloworks account");
-    expect(m.text).toContain("https://x.test/signin");
-    expect(m.text).toContain("ignore");
+
+  it("approvedEmail: heading, line and Sign in button", () => {
+    const m = approvedEmail({ workspace: "Clogent", url: "https://clowork.my.id/signin" });
+    expect(m.subject).toBe("You're in: Clogent approved your request");
+    expect(m.html).toContain("You&#39;re in");
+    expect(m.text).toContain("You're in");
+    expect(m.text).toContain("Clogent approved your request to join.");
+    expect(m.text).toContain("Sign in: https://clowork.my.id/signin");
+    expect(m.html).toContain('href="https://clowork.my.id/signin"');
   });
-  it("without a trusted absolute url every email drops the link sentence (no bare /signin)", () => {
-    const expires = new Date("2026-10-18T00:00:00Z");
+
+  it("approvedEmail without a link adds the sign-in line", () => {
+    const m = approvedEmail({ workspace: "Clogent", url: "" });
+    expect(m.text).toContain("Sign in to Cloworks to get started.");
+    expect(m.html).not.toContain("href=");
+  });
+
+  it("alreadyHaveAccountEmail: heading, line, button and note", () => {
+    const m = alreadyHaveAccountEmail({ signinUrl: "https://clowork.my.id/signin" });
+    expect(m.subject).toBe("You already have a Cloworks account");
+    expect(m.text).toContain("You already have an account");
+    expect(m.text).toContain("This email already has a Cloworks account.");
+    expect(m.text).toContain("Sign in: https://clowork.my.id/signin");
+    expect(m.text).toContain("Can't sign in? Contact your admin. Not you? Ignore this email.");
+  });
+
+  it("alreadyHaveAccountEmail without a link adds the sign-in line", () => {
+    const m = alreadyHaveAccountEmail({ signinUrl: "" });
+    expect(m.text).toContain("Sign in to Cloworks with this email.");
+    expect(m.html).not.toContain("href=");
+  });
+
+  it("resetEmail: heading, line, button and note", () => {
+    const m = resetEmail({ url: "https://clowork.my.id/reset/t" });
+    expect(m.subject).toBe("Reset your Cloworks password");
+    expect(m.text).toContain("Reset your password");
+    expect(m.text).toContain("Someone asked to reset the password for this email. The link works for one hour.");
+    expect(m.text).toContain("Set new password: https://clowork.my.id/reset/t");
+    expect(m.text).toContain("Didn't ask for this? Ignore this email. Your password stays the same.");
+  });
+
+  it("resetEmail without a link says so and has no button", () => {
+    const m = resetEmail({ url: "" });
+    expect(m.text).toContain("The reset link could not be created. Ask your admin for help.");
+    expect(m.text).not.toContain("The link works for one hour");
+    expect(m.html).not.toContain("href=");
+    expect(m.html).toContain('src="https://clowork.my.id/email/logo.png"');
+    expect(m.text).toContain("clowork.my.id");
+  });
+
+  it("without a trusted absolute url no email carries a bare link", () => {
     for (const url of ["", "/signin", "/join/invite/t"]) {
       const mails = [
         inviteEmail({ inviter: "Wira", workspace: "Clogent", role: "Designer", url, expires }),
         approvedEmail({ workspace: "Clogent", url }),
         alreadyHaveAccountEmail({ signinUrl: url }),
+        resetEmail({ url }),
         codeEmail("482913"),
       ];
       for (const m of mails) {
         expect(m.text).not.toContain("/signin");
         expect(m.text).not.toContain("/join/");
         expect(m.text).not.toContain("http");
+        expect(m.html).not.toContain("href=");
       }
     }
-    expect(approvedEmail({ workspace: "Clogent", url: "" }).text.startsWith("You're in. Clogent approved your request.")).toBe(true);
   });
 });

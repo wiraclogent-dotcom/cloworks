@@ -74,6 +74,11 @@ model Workspace {
   libraryItems      LibraryItem[]
   invites           Invite[]
   applicants        Applicant[]        @relation("ApplicantRequestedWorkspace")
+  media             Media[]
+  socialChannels    SocialChannel[]
+  contentPosts      ContentPost[]
+  contentPostMedia  ContentPostMedia[]
+  contentComments   ContentComment[]
 }
 
 model User {
@@ -117,6 +122,11 @@ model User {
   projectTasks        ProjectTask[]
   invitesSent         Invite[]
 
+  mediaUploaded        Media[]
+  contentPostsAuthored ContentPost[]    @relation("ContentPostAuthor")
+  contentPostsApproved ContentPost[]    @relation("ContentPostApprover")
+  contentComments      ContentComment[]
+
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -129,6 +139,8 @@ model Brand {
   requests     Request[]
   projects     Project[]
   libraryItems LibraryItem[]
+
+  socialChannels SocialChannel[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -155,6 +167,8 @@ model RequestType {
   fieldSchema Json      @default("[]")
   active      Boolean   @default(true)
   requests    Request[]
+
+  contentPosts ContentPost[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -195,6 +209,8 @@ model Request {
   attachments    Attachment[]
   notifications  Notification[]
   chatReads      ChatRead[]
+
+  contentPost ContentPost?
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -327,8 +343,11 @@ model Notification {
   emailedAt DateTime?
   createdAt DateTime  @default(now())
 
-  user    User     @relation(fields: [userId], references: [id])
-  request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+  request     Request?     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  contentPost ContentPost? @relation(fields: [contentPostId], references: [id], onDelete: Cascade)
+
+  contentPostId String?
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -336,6 +355,7 @@ model Notification {
   @@index([userId, readAt])
   @@index([workspaceId])
   @@index([userId, createdAt])
+  @@index([contentPostId])
 }
 
 enum ProjectStage {
@@ -527,4 +547,167 @@ model PasswordReset {
   createdAt DateTime  @default(now())
 
   @@index([email])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+/// One file in Cloudinary. Shared by every feature that shows media (Content Plan now; avatars and attachments later).
+model Media {
+  id           String    @id @default(cuid())
+  publicId     String // Cloudinary public_id, e.g. clowork/<workspaceId>/content/<cuid>
+  type         MediaType
+  width        Int
+  height       Int
+  bytes        Int
+  durationSec  Float? // videos only
+  uploadedById String
+  createdAt    DateTime  @default(now())
+
+  uploadedBy User               @relation(fields: [uploadedById], references: [id])
+  postLinks  ContentPostMedia[]
+  channels   SocialChannel[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, publicId])
+  @@index([workspaceId])
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+}
+
+model SocialChannel {
+  id            String         @id @default(cuid())
+  brandId       String
+  platform      SocialPlatform
+  handle        String // without the "@"
+  displayName   String
+  bio           String?
+  avatarMediaId String?
+  position      Float          @default(0)
+  createdAt     DateTime       @default(now())
+
+  brand       Brand         @relation(fields: [brandId], references: [id])
+  avatarMedia Media?        @relation(fields: [avatarMediaId], references: [id], onDelete: SetNull)
+  posts       ContentPost[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, platform, handle])
+  @@index([workspaceId])
+}
+
+enum ContentSurface {
+  FEED
+  REEL
+  STORY
+}
+
+enum ContentKind {
+  PLANNED
+  PUBLISHED
+}
+
+enum ContentFormat {
+  SINGLE
+  CAROUSEL
+  VIDEO
+}
+
+enum ContentStatus {
+  IDEA
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  IN_PRODUCTION
+  DONE
+}
+
+model ContentPost {
+  id                 String         @id @default(cuid())
+  channelId          String
+  surface            ContentSurface
+  kind               ContentKind    @default(PLANNED)
+  status             ContentStatus  @default(IDEA) // ignored for PUBLISHED
+  position           Float // manual order within (channel, surface, kind); higher = nearer the top
+  plannedAt          DateTime?
+  publishedAt        DateTime? // PUBLISHED only
+  format             ContentFormat  @default(SINGLE)
+  caption            String?
+  brief              String?
+  typeId             String? // suggested request type
+  authorId           String
+  submittedAt        DateTime?
+  approvedById       String?
+  approvedAt         DateTime?
+  doneAt             DateTime? // used by the later cleanup job
+  requestId          String?        @unique
+  // The request a cancel unlinked; restoring that request relinks the post while it is still editable and unlinked.
+  cancelledRequestId String?        @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  channel    SocialChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  type       RequestType?       @relation(fields: [typeId], references: [id])
+  author     User               @relation("ContentPostAuthor", fields: [authorId], references: [id])
+  approvedBy User?              @relation("ContentPostApprover", fields: [approvedById], references: [id])
+  request    Request?           @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  media      ContentPostMedia[]
+  comments   ContentComment[]
+
+  workspaceId   String         @default(dbgenerated())
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id])
+  notifications Notification[]
+
+  @@index([channelId, surface, kind, position])
+  @@index([status])
+  @@index([workspaceId])
+}
+
+enum ContentMediaRole {
+  MOCKUP
+  FINAL
+}
+
+model ContentPostMedia {
+  id      String           @id @default(cuid())
+  postId  String
+  mediaId String
+  role    ContentMediaRole @default(MOCKUP)
+  order   Int              @default(0)
+
+  post  ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  media Media       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([postId, mediaId])
+  @@index([postId, role, order])
+  @@index([workspaceId])
+}
+
+model ContentComment {
+  id         String   @id @default(cuid())
+  postId     String
+  authorId   String
+  body       String
+  isFeedback Boolean  @default(false) // true = the lead's "Send back" note
+  createdAt  DateTime @default(now())
+
+  post   ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([postId, createdAt])
+  @@index([workspaceId])
 }

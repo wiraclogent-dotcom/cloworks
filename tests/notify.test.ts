@@ -5,7 +5,7 @@ import { addAttachmentWith, addCommentWith, assignRequestWith } from "@/lib/coll
 import { transitionRequestWith } from "@/lib/transition";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
-type Sent = { to: string; subject: string; text: string };
+type Sent = { to: string; subject: string; text: string; html?: string };
 const recorder = (failFor: string[] = []) => {
   const sent: Sent[] = [];
   const mailer: Mailer = {
@@ -104,12 +104,47 @@ describe("notifications", () => {
       expect(spy).toHaveBeenCalled();
       vi.restoreAllMocks();
     });
+    it("emails a branded html part with an Open request button", async () => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ message: "Dimas assigned you to Poster" }), { baseUrl: "https://t.example.com" });
+      const html = sent[0].html ?? "";
+      expect(html).toContain("Assigned to you");
+      expect(html).toContain("Dimas assigned you to Poster");
+      expect(html).toContain("Open request");
+      expect(html).toContain(`href="https://t.example.com/requests/${reqId}"`);
+      expect(sent[0].text).toContain(`https://t.example.com/requests/${reqId}`);
+    });
+    it("uses a heading per emailed type", async () => {
+      for (const [type, heading] of [["MENTION", "You were mentioned"], ["DESIGN_SENT", "Design ready for review"]] as const) {
+        const { sent, mailer } = recorder();
+        await notifyWith(db.prisma, mailer, input({ type }), { baseUrl: "https://t.example.com" });
+        expect(sent[0].html).toContain(heading);
+      }
+    });
+    it("escapes hostile markup in the html part and keeps the full message", async () => {
+      const { sent, mailer } = recorder();
+      const message = `"><img src=x onerror=alert(1)>`;
+      await notifyWith(db.prisma, mailer, input({ requestId: evilId, message }), { baseUrl: "https://t.example.com" });
+      expect(sent[0].html).toContain("&lt;img");
+      expect(sent[0].html).not.toContain("<img src=x");
+      expect(sent[0].html).toContain("&gt;&lt;img src=x onerror=alert(1)&gt;");
+    });
+    it("caps the subject for a long title but keeps the full message in html and text", async () => {
+      const { sent, mailer } = recorder();
+      const message = "Dimas assigned you to " + "y".repeat(300);
+      await notifyWith(db.prisma, mailer, input({ requestId: evilId, message }), { baseUrl: "https://t.example.com" });
+      expect(sent[0].subject.length).toBeLessThanOrEqual(160);
+      expect(sent[0].html).toContain(message);
+      expect(sent[0].text).toContain(message);
+    });
     it("neutralizes header injection and caps the subject", async () => {
       const { sent, mailer } = recorder();
       await notifyWith(db.prisma, mailer, input({ requestId: evilId, message: "x\r\nBcc: a@b.c" }));
       expect(sent[0].subject).not.toMatch(/[\r\n]/);
       expect(sent[0].subject.length).toBeLessThanOrEqual(160);
-      expect(sent[0].text.split("\n")[0]).not.toMatch(/\r/);
+      expect(sent[0].text).not.toContain("\r");
+      expect(sent[0].html).not.toContain("\r");
+      expect(sent[0].text.split("\n").some((l) => l.startsWith("Bcc:"))).toBe(false);
     });
 
     it("email: false stores the row and sends no mail", async () => {
@@ -119,6 +154,23 @@ describe("notifications", () => {
       expect(r).toHaveLength(1);
       expect(r[0]).toMatchObject({ userId: ids.dimas, type: "ATTACHMENT" });
       expect(r[0].emailedAt).toBeNull();
+      expect(sent).toHaveLength(0);
+    });
+
+    // Email is kept for events that need someone to act; the rest only lands in the bell, which keeps
+    // routine traffic from using up the provider's daily cap that password resets and invites share.
+    it.each(["ASSIGNED", "MENTION", "DESIGN_SENT"] as const)("%s is emailed", async (type) => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ type }));
+      expect(sent).toHaveLength(1);
+      expect((await rows())[0].emailedAt).toBeInstanceOf(Date);
+    });
+    it.each(["COMMENT", "STATUS", "DEADLINE", "ATTACHMENT"] as const)("%s is in-app only", async (type) => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ type }));
+      const r = await rows();
+      expect(r).toHaveLength(1);
+      expect(r[0]).toMatchObject({ userId: ids.dimas, type, emailedAt: null });
       expect(sent).toHaveLength(0);
     });
   });
@@ -187,6 +239,12 @@ describe("notifications", () => {
       expect((init.headers as Record<string, string>).Authorization).toBe("Bearer key1");
       expect(JSON.parse(init.body as string)).toEqual({ from: "T <n@x.com>", to: ["a@b.c"], subject: "s", text: "t" });
       expect(init.signal).toBeDefined();
+    });
+    it("includes html in the Resend body when given", async () => {
+      const f = vi.fn(async () => ({ ok: true, status: 200 }));
+      await createMailerFromEnv({ RESEND_API_KEY: "key1", EMAIL_FROM: "T <n@x.com>" }, f).send({ to: "a@b.c", subject: "s", text: "t", html: "<p>h</p>" });
+      const [, init] = f.mock.calls[0] as unknown as [string, RequestInit];
+      expect(JSON.parse(init.body as string)).toEqual({ from: "T <n@x.com>", to: ["a@b.c"], subject: "s", text: "t", html: "<p>h</p>" });
     });
     it("throws on a non-2xx response", async () => {
       const f = vi.fn(async () => ({ ok: false, status: 500 }));

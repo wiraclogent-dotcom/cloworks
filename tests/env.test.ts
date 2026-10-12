@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { validateEnv, shouldValidateEnv } from "@/lib/env";
 
 const GOOD = {
-  DATABASE_URL: "postgresql://u:p@db:5432/x", AUTH_SECRET: "a-real-looking-secret-0123456789abcdef", AUTH_URL: "https://tracker.example.com",
+  DATABASE_URL: "postgresql://u:p@db:5432/x", AUTH_SECRET: "a-real-looking-secret-0123456789abcdef", AUTH_URL: "https://tracker.example.com", CLOUDINARY_CLOUD_NAME: "demo", CLOUDINARY_API_KEY: "key", CLOUDINARY_API_SECRET: "secret",
   AUTH_GOOGLE_ID: "gid", AUTH_GOOGLE_SECRET: "gsecret", RESEND_API_KEY: "re_x", EMAIL_FROM: "T <n@x.com>", APP_BASE_URL: "https://tracker.example.com",
 };
 
@@ -14,7 +14,7 @@ describe("validateEnv", () => {
     const r = validateEnv({});
     expect(r.errors.length).toBe(3);
     expect(r.errors.join(" ")).toMatch(/DATABASE_URL[\s\S]*AUTH_SECRET[\s\S]*AUTH_URL/);
-    expect(r.warnings).toHaveLength(2);
+    expect(r.warnings).toHaveLength(3);
   });
   it("rejects a placeholder or short AUTH_SECRET", () => {
     expect(validateEnv({ ...GOOD, AUTH_SECRET: "change-me-generate-with-openssl-rand-base64-32" }).errors.join()).toMatch(/placeholder/);
@@ -31,6 +31,11 @@ describe("validateEnv", () => {
     const r = validateEnv({ ...GOOD, RESEND_API_KEY: undefined, EMAIL_FROM: undefined, APP_BASE_URL: undefined });
     expect(r.errors).toEqual([]);
     expect(r.warnings.join(" ")).toMatch(/no email notifications/);
+  });
+  it("only warns (never errors) when a Cloudinary setting is missing", () => {
+    const r = validateEnv({ ...GOOD, CLOUDINARY_API_SECRET: undefined });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join(" ")).toMatch(/uploads are disabled/);
   });
   it("never includes secret values in messages", () => {
     const text = JSON.stringify(validateEnv({ ...GOOD, AUTH_SECRET: "short-secret-xyz", DATABASE_URL: "" }));

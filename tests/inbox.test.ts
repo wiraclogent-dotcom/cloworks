@@ -33,7 +33,7 @@ describe("inbox", () => {
     const rest = await listNotificationsWith(db.prisma, a, { offset: 20 });
     expect(rest.map((n) => n.message)).toEqual(["m4", "m3", "m2", "m1", "m0"]);
     expect([...first, ...rest].some((n) => n.message === "for b")).toBe(false);
-    expect(Object.keys(first[0]).sort()).toEqual(["createdAt", "id", "message", "readAt", "requestId", "type"]);
+    expect(Object.keys(first[0]).sort()).toEqual(["contentPostId", "createdAt", "id", "message", "readAt", "requestId", "type"]);
   });
 
   it("counts total and unread", async () => {

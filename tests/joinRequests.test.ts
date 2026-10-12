@@ -9,7 +9,7 @@ import type { Mailer } from "@/lib/mailer";
 import { JOIN_REQUEST_NOTIFICATION } from "@/lib/notificationLinks";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
-type Msg = { to: string; subject: string; text: string };
+type Msg = { to: string; subject: string; text: string; html?: string };
 
 let db: TestDb;
 let n = 0;
@@ -243,6 +243,18 @@ describe("join requests", () => {
     expect(rows.every((r) => r.emailedAt !== null)).toBe(true);
     expect(sent.map((m) => m.to).sort()).toEqual(admins.map((u) => u.email).sort());
     expect(sent[0].text).toContain(message);
+  });
+
+  it("notifyJoinRequest emails a branded html part with a Review request button", async () => {
+    await mkUser("clogent", "ADMIN", false);
+    const { mailer, sent } = fakeMailer();
+    await notifyJoinRequest(db.raw, mailer, (await mkApplicant()).id, "https://app.example.test");
+    expect(sent.length).toBeGreaterThan(0);
+    for (const m of sent) {
+      expect(m.html).toContain("New request to join");
+      expect(m.html).toContain("Review request");
+      expect(m.html).toContain('href="https://app.example.test/admin/users?tab=requests"');
+    }
   });
 
   it("notifyJoinRequest without a requested workspace does nothing", async () => {

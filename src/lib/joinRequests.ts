@@ -8,6 +8,7 @@ import { approvedEmail } from "./joinEmails";
 import { newJoinCode } from "./joinTokens";
 import { pickShortName } from "./shortName";
 import { JOIN_REQUEST_NOTIFICATION } from "./notificationLinks";
+import { renderEmail } from "./emailLayout";
 import { bestEffort, cleanLine, safeBaseUrl } from "./notify";
 
 /**
@@ -177,9 +178,18 @@ export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applic
   });
   const who = cleanLine(a.name, 80);
   const message = cleanLine(`${who} (${cleanLine(a.email, 254)}) asked to join`, 500);
+  const wsName = cleanLine(ws.name, 120);
   const subject = cleanLine(`${who} asked to join ${ws.name}`, 200);
   const base = safeBaseUrl(baseUrl ?? process.env.APP_BASE_URL);
-  const text = base ? `${message}\n\n${base}/admin/users?tab=requests\n` : `${message}\n`;
+  const mail = renderEmail(
+    {
+      preheader: `${who} asked to join ${wsName}`,
+      heading: "New request to join",
+      lines: [`${who} (${cleanLine(a.email, 254)}) asked to join ${wsName}.`],
+      button: base ? { label: "Review request", url: `${base}/admin/users?tab=requests` } : undefined,
+    },
+    { baseUrl: base ?? undefined },
+  );
   await Promise.all(
     admins.map((u) =>
       bestEffort(async () => {
@@ -187,7 +197,7 @@ export async function notifyJoinRequest(db: PrismaClient, mailer: Mailer, applic
           data: { userId: u.id, requestId: null, type: JOIN_REQUEST_NOTIFICATION, message, workspaceId: ws.id },
         });
         if (!u.email) return;
-        await mailer.send({ to: u.email, subject, text });
+        await mailer.send({ to: u.email, subject, ...mail });
         await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
       }),
     ),
