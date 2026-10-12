@@ -55,11 +55,12 @@ describe("loadArticles", () => {
     expect(loadArticles(dir).map((a) => a.slug)).toEqual(["start", "req"]);
   });
 
-  it("loads all twelve guides from the real directory with the expected slugs and order", () => {
+  it("loads all thirteen guides from the real directory with the expected slugs and order", () => {
     const articles = loadArticles(`${process.cwd()}/content/help`);
     expect(articles.map((a) => a.slug)).toEqual([
       "getting-started", "signing-in-and-roles",
       "requests-views", "creating-a-request", "request-details-and-statuses", "todays-overview-search-filters",
+      "content-plan",
       "projects", "my-kpi", "team-kpi", "brief-calendar",
       "admin-users", "admin-lists",
     ]);
