@@ -50,7 +50,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
         <div className="flex flex-wrap items-center gap-1.5">
           <BrandTag name={card.brandName} />
           {open && <DeadlineChip daysLeft={card.daysLeft} />}
-          {card.needsMotion && <NeedsMotionChip />}
+          {(card.needsMotion || card.isVideo) && <NeedsMotionChip video={card.isVideo} />}
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3 text-xs">

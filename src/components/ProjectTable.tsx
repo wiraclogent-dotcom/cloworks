@@ -4,6 +4,8 @@ import type { ProjectStatus } from "@prisma/client";
 import { daysLeft } from "@/lib/daysLeft";
 import { formatJakartaDate, groupProjects } from "@/lib/projects";
 import { isHttpUrl } from "@/lib/fieldSchema";
+import { isServerPath } from "@/lib/fileLocation";
+import { FileLocationLink } from "./ui/FileLocationLink";
 import { brandTone } from "@/lib/palette";
 import { Avatar } from "./ui/Avatar";
 import { CountPill } from "./ui/Chip";
@@ -94,6 +96,8 @@ export function ProjectTable({ rows, canManage, now }: { rows: ProjectRow[]; can
                               <ExternalLink aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
                               Open file{" "}<span className="sr-only">for {p.title} (opens in a new tab)</span>
                             </a>
+                          ) : p.fileUrl && isServerPath(p.fileUrl) ? (
+                            <FileLocationLink href={p.fileUrl}>{p.fileUrl}</FileLocationLink>
                           ) : <span className="text-foreground-secondary">—</span>}
                         </td>
                         {canManage && (

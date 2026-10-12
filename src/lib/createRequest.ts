@@ -19,6 +19,8 @@ export type CreateRequestInput = {
 };
 
 export const DEFAULT_TYPE_NAME = "General Design";
+/** The type "Video" requests are filed under (the form's third "What do you need?" card). */
+export const VIDEO_TYPE_NAME = "Motion Support";
 
 export class CreateRequestError extends Error {
   constructor(

@@ -13,6 +13,7 @@ import type { ProjectStage, ProjectStatus } from "@prisma/client";
 import { StageSelect } from "./StageSelect";
 import { StatusSelect } from "./StatusSelect";
 import { FileLinkEdit } from "./FileLinkEdit";
+import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { DateEdit } from "./DateEdit";
 import { EditableName, OwnerSelect } from "./DetailEdit";
 import { RowActions } from "./RowActions";
@@ -122,7 +123,7 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
         {editing ? (
           <FileLinkEdit projectId={projectId} taskId={task.id} fileUrl={task.fileUrl} text={fileText} label={label} />
         ) : task.fileUrl ? (
-          <a href={task.fileUrl} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{fileText}</a>
+          <FileLocationLink href={task.fileUrl} name={fileText} className="text-link underline-offset-2 hover:underline">{fileText}</FileLocationLink>
         ) : fileText}
       </td>
     </tr>

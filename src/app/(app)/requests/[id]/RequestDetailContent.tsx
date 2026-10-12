@@ -27,11 +27,14 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
     },
   }), canAssign ? listCreativeTeam(db) : null]);
   if (!req) notFound();
+  // The requester may pick the designer for their own request, not just leads and admins.
+  const canPickAssignee = canAssign || req.requesterId === user.id;
+  const pickerTeam = team ?? (canPickAssignee ? await listCreativeTeam(db) : null);
   // Viewing a request counts as reading its chat. Runs after the response; a failure must never affect the page.
   after(() => markChatReadWith(db, user.id, id).catch(() => {}));
 
-  const assignees = team
-    ? assigneeOptions(team, req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
+  const assignees = pickerTeam
+    ? assigneeOptions(pickerTeam, req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
     : [];
   const canMove = can(user.appRole, "request.transition");
   const left = daysLeft(req.deadline);
@@ -40,7 +43,7 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
   const shown = schema.filter((f) => fields[f.key] !== undefined && fields[f.key] !== "");
 
   return (
-    <RequestDetailView req={req} daysLeft={left} userId={user.id} canAssign={canAssign} canMove={canMove} assignees={assignees} fullPage={fullPage}
+    <RequestDetailView req={req} daysLeft={left} userId={user.id} canAssign={canAssign} canPickAssignee={canPickAssignee} canMove={canMove} assignees={assignees} fullPage={fullPage}
       extra={shown.map((f) => ({ key: f.key, label: f.label, value: fields[f.key], url: f.type === "url" }))} />
   );
 }

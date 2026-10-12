@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { AppRole, PrismaClient, ProjectStatus } from "@prisma/client";
 import { can } from "./permissions";
-import { isHttpUrl } from "./fieldSchema";
+import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { jakartaDate } from "./createRequest";
 import { MONTHS } from "./timeline";
 
@@ -85,7 +85,7 @@ function parse(raw: Partial<ProjectInput>, partial: boolean): { out: Cleaned; er
   }
   for (const k of ["startDate", "dueDate"] as const)
     if (out[k] && !isRealDate(out[k]!)) errors[k] ??= `${k === "startDate" ? "Start" : "Due"} date must be a real date (YYYY-MM-DD)`;
-  if (out.fileUrl && !isHttpUrl(out.fileUrl)) errors.fileUrl ??= "File link must be an http(s) link";
+  if (out.fileUrl && !isFileLocation(out.fileUrl)) errors.fileUrl ??= FILE_LOCATION_HINT;
   return { out, errors };
 }
 

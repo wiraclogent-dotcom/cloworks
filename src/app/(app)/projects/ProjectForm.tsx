@@ -90,7 +90,7 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
         </Field>
       </div>
       <Field id="fileUrl" label="File link" error={errs.fileUrl}>
-        <input {...props("fileUrl")} type="url" placeholder="https://" maxLength={2048} defaultValue={v?.fileUrl} />
+        <input {...props("fileUrl")} type="text" inputMode="url" autoComplete="off" placeholder="https://… or \\server\folder" maxLength={2048} defaultValue={v?.fileUrl} />
       </Field>
       </Card>
       <div className="flex flex-wrap items-center gap-2">

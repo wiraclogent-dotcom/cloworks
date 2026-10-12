@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
-import { Check, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
+import { Brush, Check, Search, SlidersHorizontal, UserRound, X } from "lucide-react";
 import type { ViewParams } from "@/app/(app)/requests/params";
 import { STATUS_LABEL } from "./status";
 import { buttonClass } from "./ui/Button";
@@ -14,6 +14,21 @@ const pill = (active = false) => cn(
   active ? "border-ring bg-accent text-accent-foreground" : "border-input bg-surface text-foreground",
   focusRing,
 );
+/** "My requests" / "My work": a link that toggles its URL flag, Aqua-tinted with a check while on. */
+function Toggle({ href, on, icon, children }: { href: string; on: boolean; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Link href={href} aria-current={on ? "true" : undefined}
+      className={cn(
+        "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 ease-out",
+        on ? "border-ring bg-accent text-accent-foreground" : "border-border-strong bg-surface text-foreground hover:bg-surface-muted",
+        focusRing,
+      )}>
+      {on ? <Check aria-hidden="true" strokeWidth={2} data-icon="check" className="size-3.5" /> : icon}
+      {children}
+    </Link>
+  );
+}
+
 /** Label stacked above a control inside the Filters panel. */
 const LABEL = "flex flex-col gap-1 text-xs font-medium text-foreground-secondary";
 
@@ -22,13 +37,16 @@ const LABEL = "flex flex-col gap-1 text-xs font-medium text-foreground-secondary
  * button; the dropdowns, Apply, My requests and Clear live in the Filters panel (a native <details>, so it opens
  * without JS and its fields are still submitted when it is closed).
  */
-export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref }: {
-  p: ViewParams; brands: Opt[]; divisions: Opt[]; assignees: Opt[]; mineHref: string; clearHref: string;
+export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref, clearHref }: {
+  p: ViewParams; brands: Opt[]; divisions: Opt[]; assignees: Opt[]; mineHref: string;
+  /** Designers only: toggles "My work" (requests assigned to me). */
+  workHref?: string;
+  clearHref: string;
 }) {
   const all = Object.keys(STATUS_LABEL) as RequestStatus[];
   /** The calendar and timeline only show open work, so closed statuses are not offered there. */
   const statuses = p.view === "calendar" || p.view === "timeline" ? all.filter((s) => s !== "DONE" && s !== "CANCELLED") : all;
-  const activeCount = [p.status, p.brandId, p.divisionId, p.assigneeId, p.motion].filter(Boolean).length;
+  const activeCount = [p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.work].filter(Boolean).length;
   const select = (name: string, label: string, value: string | undefined, opts: Opt[]) => (
     <label className={LABEL}>
       {label}
@@ -41,11 +59,12 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
   return (
     // Keyed on the filters: Clear filters / My requests are soft navigations that reuse this form, and uncontrolled
     // fields ignore a new defaultValue, so a remount is what shows the new values (and closes the panel).
-    <form key={JSON.stringify([p.q, p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.view])} method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
+    <form key={JSON.stringify([p.q, p.status, p.brandId, p.divisionId, p.assigneeId, p.motion, p.mine, p.work, p.view])} method="get" action="/requests" role="search" aria-label="Filter requests" className="flex flex-wrap items-center gap-2">
       {p.view !== "board" && <input type="hidden" name="view" value={p.view} />}
       {p.view === "calendar" && <input type="hidden" name="month" value={p.month} />}
       {p.view === "timeline" && <input type="hidden" name="week" value={p.week} />}
       {p.mine && <input type="hidden" name="mine" value="1" />}
+      {p.work && <input type="hidden" name="work" value="1" />}
       {/* Keep the table sort when filtering (same rules as hrefWith: the default, newest requested first, is not repeated). */}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="sort" value={p.sort} />}
       {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="dir" value={p.dir} />}
@@ -63,7 +82,8 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
           {select("status", "Status", p.status, statuses.map((s) => ({ id: s, name: STATUS_LABEL[s] })))}
           {select("brand", "Brand", p.brandId, brands)}
           {select("division", "Division", p.divisionId, divisions)}
-          {select("assignee", "Assignee", p.assigneeId, assignees)}
+          {/* "My work" already fixes the assignee to me. */}
+          {!p.work && select("assignee", "Assignee", p.assigneeId, assignees)}
           <label className={LABEL}>
             Motion
             <select name="motion" defaultValue={p.motion ?? ""} className={cn(pill(!!p.motion), "w-full pr-7 pl-3")}>
@@ -74,15 +94,8 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
           </label>
           <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
             <button type="submit" className={buttonClass({ variant: "primary", size: "sm" })}>Apply</button>
-            <Link href={mineHref} aria-current={p.mine ? "true" : undefined}
-              className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-[13px] font-medium transition-colors duration-150 ease-out",
-                p.mine ? "border-ring bg-accent text-accent-foreground" : "border-border-strong bg-surface text-foreground hover:bg-surface-muted",
-                focusRing,
-              )}>
-              {p.mine ? <Check aria-hidden="true" strokeWidth={2} data-icon="check" className="size-3.5" /> : <UserRound aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}
-              My requests
-            </Link>
+            <Toggle href={mineHref} on={p.mine} icon={<UserRound aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}>My requests</Toggle>
+            {workHref && <Toggle href={workHref} on={p.work} icon={<Brush aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}>My work</Toggle>}
             <Link href={clearHref} className={buttonClass({ variant: "ghost", size: "sm" })}><X aria-hidden="true" strokeWidth={1.75} />Clear filters</Link>
           </div>
         </div>

@@ -24,6 +24,11 @@ describe("Needs motion badge", () => {
     card(false);
     expect(screen.queryByText("Needs motion")).toBeNull();
   });
+  it("says Video, not Needs motion, for a Video request", () => {
+    render(<DndContext><ul><BoardCard card={{ ...row("v", true), isVideo: true }} canMove={false} busy={false} dragging={false} /></ul></DndContext>);
+    expect(screen.getByText("Video").closest("span")?.querySelector("svg[aria-hidden='true']")).toBeTruthy();
+    expect(screen.queryByText("Needs motion")).toBeNull();
+  });
   it("shows in the table next to the title only for flagged rows", () => {
     render(<RequestTable rows={[row("a", true), row("b", false)]} sort="deadline" dir="asc" hrefFor={() => "/x"} />);
     expect(screen.getAllByText("Needs motion")).toHaveLength(1);

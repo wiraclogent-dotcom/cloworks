@@ -2,8 +2,9 @@ import Link from "next/link";
 import type { RequestStatus } from "@prisma/client";
 import { ChevronLeft, CircleSlash, ExternalLink, FileText, FolderOpen, Link2, Target } from "lucide-react";
 import { isOpenStatus, shortLabel } from "@/lib/reschedule";
-import { jakartaDate } from "@/lib/createRequest";
+import { VIDEO_TYPE_NAME, jakartaDate } from "@/lib/createRequest";
 import { isHttpUrl } from "@/lib/fieldSchema";
+import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { splitMentions } from "@/lib/mentions";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { STATUS_LABEL } from "@/components/status";
@@ -60,9 +61,10 @@ function Person({ name }: { name: string }) {
  * Request detail page body (server-safe, no data access): header with chips, a wide column (Brief, Attachments,
  * Comments, Activity) and a sticky side column (Details, and Manage for people who may assign or move).
  */
-export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, canMove, assignees, fullPage = false }: {
+export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, canPickAssignee = canAssign, canMove, assignees, fullPage = false }: {
   req: RequestDetail; extra: ExtraField[]; daysLeft: number | null; userId: string;
-  canAssign: boolean; canMove: boolean; assignees: { id: string; name: string }[];
+  /** Lead/admin powers (KPI, motion flag, removing anyone's link). `canPickAssignee` also covers the request's requester. */
+  canAssign: boolean; canPickAssignee?: boolean; canMove: boolean; assignees: { id: string; name: string }[];
   /** Full page: the Work › Requests › code top bar (where the profile menu sits). The side panel keeps a back link. */
   fullPage?: boolean;
 }) {
@@ -84,7 +86,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
         breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
       <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
         <StatusChip status={req.status} />
-        {req.needsMotion && <NeedsMotionChip />}
+        {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}
         {req.includeKpi
           ? <Chip tone="done" icon={<Target aria-hidden="true" strokeWidth={1.75} />}>Counts toward KPI</Chip>
           : <Chip tone="tag-neutral" icon={<CircleSlash aria-hidden="true" strokeWidth={1.75} />}>Not counted toward KPI</Chip>}
@@ -133,7 +135,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                     <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
                       <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground-secondary"><Link2 strokeWidth={1.75} className="size-4" /></span>
                       <span className="min-w-0 flex-1">
-                        <span className="block font-medium"><ExtLink href={a.url}>{a.name}</ExtLink></span>
+                        <span className="block font-medium"><FileLocationLink href={a.url} name={a.name} className={LINK}>{a.name}</FileLocationLink></span>
                         <span className="block text-xs text-foreground-secondary">added by {a.uploader.name}, {day.format(a.createdAt)}</span>
                       </span>
                       {(a.uploaderId === userId || canAssign) && <RemoveAttachmentButton requestId={req.id} attachmentId={a.id} name={a.name} />}
@@ -219,18 +221,18 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                 {req.status === "DONE" && <Row label="Outputs"><span className="tabular-nums">{req.outputCount}</span></Row>}
                 {req.designFolderUrl && (
                   <Row label="Design folder">
-                    <ExtLink href={req.designFolderUrl} className={cn("inline-flex items-center gap-1.5 font-medium", LINK)}><FolderOpen aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />Open folder</ExtLink>
+                    <FileLocationLink href={req.designFolderUrl} className={cn("inline-flex items-center gap-1.5 font-medium", LINK)}><FolderOpen aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />Open folder</FileLocationLink>
                   </Row>
                 )}
               </dl>
             </section>
           </Card>
 
-          {(canAssign || canMove) && (
+          {(canPickAssignee || canMove) && (
             <Card>
               <section aria-labelledby="actions-h" className="space-y-4">
                 <CardTitle id="actions-h">Manage</CardTitle>
-                {canAssign && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}
+                {canPickAssignee && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}
                 {canMove && <MoveControl key={req.status} requestId={req.id} title={req.title} status={req.status} />}
                 {canMove && isOpenStatus(req.status) && (
                   <DeadlineControl key={req.deadline?.toISOString() ?? "none"} requestId={req.id} current={req.deadline ? jakartaDate(req.deadline) : null} minDay={jakartaDate(req.requestedAt)} />

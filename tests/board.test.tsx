@@ -158,7 +158,7 @@ describe("Board", () => {
     fireEvent.change(within(dialog).getByLabelText(/Number of outputs/), { target: { value: "2" } });
     fireEvent.change(within(dialog).getByLabelText(/Design folder link/), { target: { value: "ftp://x" } });
     fireEvent.click(within(dialog).getByRole("button", { name: /mark as done/i }));
-    expect(within(dialog).getByText(/http\(s\) link/i)).toBeTruthy();
+    expect(within(dialog).getByText(/web link/i)).toBeTruthy();
     expect(move).not.toHaveBeenCalled();
     fireEvent.keyDown(dialog, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
