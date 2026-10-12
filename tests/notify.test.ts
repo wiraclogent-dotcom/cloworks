@@ -5,7 +5,7 @@ import { addAttachmentWith, addCommentWith, assignRequestWith } from "@/lib/coll
 import { transitionRequestWith } from "@/lib/transition";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
-type Sent = { to: string; subject: string; text: string };
+type Sent = { to: string; subject: string; text: string; html?: string };
 const recorder = (failFor: string[] = []) => {
   const sent: Sent[] = [];
   const mailer: Mailer = {
@@ -103,6 +103,30 @@ describe("notifications", () => {
       await expect(notifyWith(broken, mailer, input())).resolves.toBeUndefined();
       expect(spy).toHaveBeenCalled();
       vi.restoreAllMocks();
+    });
+    it("emails a branded html part with an Open request button", async () => {
+      const { sent, mailer } = recorder();
+      await notifyWith(db.prisma, mailer, input({ message: "Dimas assigned you to Poster" }), { baseUrl: "https://t.example.com" });
+      const html = sent[0].html ?? "";
+      expect(html).toContain("Assigned to you");
+      expect(html).toContain("Dimas assigned you to Poster");
+      expect(html).toContain("Open request");
+      expect(html).toContain(`href="https://t.example.com/requests/${reqId}"`);
+      expect(sent[0].text).toContain(`https://t.example.com/requests/${reqId}`);
+    });
+    it("uses a heading per emailed type", async () => {
+      for (const [type, heading] of [["MENTION", "You were mentioned"], ["DESIGN_SENT", "Design ready for review"]] as const) {
+        const { sent, mailer } = recorder();
+        await notifyWith(db.prisma, mailer, input({ type }), { baseUrl: "https://t.example.com" });
+        expect(sent[0].html).toContain(heading);
+      }
+    });
+    it("escapes hostile markup in the html part and keeps the full message", async () => {
+      const { sent, mailer } = recorder();
+      const message = `"><img src=x onerror=alert(1)>`;
+      await notifyWith(db.prisma, mailer, input({ requestId: evilId, message }), { baseUrl: "https://t.example.com" });
+      expect(sent[0].html).toContain("&lt;img");
+      expect(sent[0].html).not.toContain("<img src=x");
     });
     it("neutralizes header injection and caps the subject", async () => {
       const { sent, mailer } = recorder();

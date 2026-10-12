@@ -2,7 +2,7 @@ import { after } from "next/server";
 import type { PrismaClient } from "@prisma/client";
 import { STATUS_LABEL } from "./statusLabels";
 import { createMailerFromEnv, type Mailer } from "./mailer";
-import { safeBaseUrl } from "./emailLayout";
+import { renderEmail, safeBaseUrl } from "./emailLayout";
 
 export type { Mailer } from "./mailer";
 export { safeBaseUrl } from "./emailLayout";
@@ -29,6 +29,13 @@ const SUBJECTS: Record<NotificationType, string> = {
   DEADLINE: "Deadline changed",
   DESIGN_SENT: "Design sent for review",
   ATTACHMENT: "New design link",
+};
+
+/** Email headings for the emailed types; anything else falls back to its subject label. */
+const HEADINGS: Partial<Record<NotificationType, string>> = {
+  ASSIGNED: "Assigned to you",
+  MENTION: "You were mentioned",
+  DESIGN_SENT: "Design ready for review",
 };
 
 /** Strips control characters (incl. CR/LF), collapses whitespace, caps length. */
@@ -77,13 +84,21 @@ export async function notifyWith(
     const base = safeBaseUrl("baseUrl" in opts ? opts.baseUrl : process.env.APP_BASE_URL);
     const subject = `${SUBJECTS[input.type]}: ${cleanLine(req?.title ?? "", 120)}`.replace(/: $/, "");
     const message = cleanLine(input.message, 500);
-    const text = base ? `${message}\n\n${base}/requests/${encodeURIComponent(input.requestId)}\n` : `${message}\n`;
+    const mail = renderEmail(
+      {
+        preheader: message,
+        heading: HEADINGS[input.type] ?? SUBJECTS[input.type],
+        lines: [message],
+        button: base ? { label: "Open request", url: `${base}/requests/${encodeURIComponent(input.requestId)}` } : undefined,
+      },
+      { baseUrl: base ?? undefined },
+    );
     const work = Promise.allSettled(
       users.map(async (u) => {
         try {
           const n = await db.notification.create({ data: { userId: u.id, requestId: input.requestId, type: input.type, message } });
           if (!u.email || input.email === false || !EMAILED_TYPES.has(input.type)) return;
-          await mailer.send({ to: u.email, subject, text });
+          await mailer.send({ to: u.email, subject, ...mail });
           await db.notification.update({ where: { id: n.id }, data: { emailedAt: new Date() } });
         } catch (e) {
           console.error("[notify] failed for a recipient:", e instanceof Error ? e.message : "unknown error");
