@@ -41,11 +41,11 @@ function failure(e: unknown): { ok: false; code: ContentErrorCode | MediaErrorCo
 }
 
 /** Shared wrapper: auth, scoped db, result-object errors (Next redacts thrown errors in production), revalidate. */
-function run<T extends object>(fn: (db: ScopedDb, user: SessionUser) => Promise<T | void>): Promise<ContentActionResult<T>> {
+function run<T extends object>(fn: (db: ScopedDb, user: SessionUser) => Promise<T | void>, opts: { revalidate?: boolean } = {}): Promise<ContentActionResult<T>> {
   return withUser<ContentActionResult<T>, ContentActionResult<T>>(requireUser, async (user) => {
     try {
       const r = await fn(dbFor(user), user);
-      revalidatePath("/content");
+      if (opts.revalidate !== false) revalidatePath("/content");
       return { ok: true, ...(r ?? {}) } as ContentActionResult<T>;
     } catch (e) {
       return failure(e);
@@ -102,7 +102,7 @@ export async function sendBackPost(id: string, note: string): Promise<ContentAct
   return run(async (db, u) => { await sendBackPostWith(db, u, id, note); });
 }
 export async function loadApprove(id: string): Promise<ContentActionResult<{ form: ApproveFormData }>> {
-  return run(async (db, u) => ({ form: await loadApproveForm(db, u, id) }));
+  return run(async (db, u) => ({ form: await loadApproveForm(db, u, id) }), { revalidate: false });
 }
 export async function approvePost(id: string, input: ApproveInput): Promise<ContentActionResult<{ requestId: string }>> {
   // Notifications are wired in a later step.

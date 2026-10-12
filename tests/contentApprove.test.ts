@@ -152,8 +152,31 @@ describe("approve content post", () => {
 
   it("rejects a bad output count", async () => {
     const id = await submitted();
-    const e = await code(approveContentPostWith(db.prisma, lead, id, input({ outputCount: 0 }), NOW));
-    expect((e as CreateRequestError).fieldErrors?.outputCount).toBeTruthy();
+    const before = await db.prisma.request.count();
+    for (const outputCount of [0, 1001, 1.5]) {
+      const e = await code(approveContentPostWith(db.prisma, lead, id, input({ outputCount }), NOW));
+      expect((e as CreateRequestError).code).toBe("VALIDATION"); // the action maps this to INVALID
+      expect((e as CreateRequestError).fieldErrors?.outputCount).toBeTruthy();
+    }
+    expect(await db.prisma.request.count()).toBe(before);
+    expect(await db.prisma.contentPost.findUniqueOrThrow({ where: { id } })).toMatchObject({ status: "SUBMITTED", requestId: null });
+  });
+
+  it("clamps notes to 5000 chars: brief whole, caption cut with an ellipsis", async () => {
+    const brief = "b".repeat(4000);
+    const p = await db.prisma.contentPost.create({
+      data: { channelId, surface: "FEED", status: "SUBMITTED", position: 3, authorId: author.id, brief, caption: "c".repeat(2000), plannedAt: jakarta("2099-02-01") },
+    });
+    const { requestId } = await approveContentPostWith(db.prisma, lead, p.id, input(), NOW);
+    const notes = (await db.prisma.request.findUniqueOrThrow({ where: { id: requestId } })).notes!;
+    expect(notes.length).toBeLessThanOrEqual(5000);
+    expect(notes.startsWith(`${brief}\n\nCaption draft:\n`)).toBe(true);
+    expect(notes.endsWith("…")).toBe(true);
+    const full = await db.prisma.contentPost.create({
+      data: { channelId, surface: "FEED", status: "SUBMITTED", position: 4, authorId: author.id, brief: "b".repeat(5000), caption: "cap", plannedAt: jakarta("2099-02-01") },
+    });
+    const r2 = await approveContentPostWith(db.prisma, lead, full.id, input(), NOW);
+    expect((await db.prisma.request.findUniqueOrThrow({ where: { id: r2.requestId } })).notes).toBe("b".repeat(5000));
   });
 
   it("writes nothing when mock-ups exist but storage is not configured", async () => {

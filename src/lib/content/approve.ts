@@ -4,6 +4,7 @@ import type { ScopedDb } from "../db";
 import {
   CreateRequestError, DEFAULT_TYPE_NAME, insertRequestTx, jakartaDate, validateRequestInput, type CreateRequestInput,
 } from "../createRequest";
+import { MAX_OUTPUT_COUNT } from "../transition";
 import { cloudinaryConfig } from "../media/config";
 import { mediaUrl } from "../media/url";
 import { CREATIVE_TEAM } from "../team";
@@ -14,7 +15,8 @@ import { ContentError } from "./errors";
 const SURFACE_LABEL: Record<ContentSurface, string> = { FEED: "Feed", REEL: "Reel", STORY: "Story" };
 const MAX_TITLE_LINE = 80;
 const DEADLINE_LEAD_DAYS = 3;
-const MAX_OUTPUTS = 100;
+const MAX_NOTES = 5000; // the request notes limit (see createRequest)
+const CAPTION_HEADER = "\n\nCaption draft:\n";
 
 export type ApproveDefaults = { title: string; deadline: string | null; outputCount: number; needsMotion: boolean; typeId: string | null };
 
@@ -93,6 +95,15 @@ export async function loadApproveForm(db: ScopedDb, user: ContentActor, postId: 
   return { postId, brandName, defaults, divisionId: latest?.divisionId ?? divisions[0]?.id ?? null, divisions, types, team };
 }
 
+/** Brief plus caption draft, clamped to the notes limit: the brief stays whole, the caption is cut with "…". */
+function composeNotes(brief: string, caption: string): string {
+  if (!caption) return brief;
+  const head = brief ? brief + CAPTION_HEADER : CAPTION_HEADER.trimStart();
+  const room = MAX_NOTES - head.length;
+  if (caption.length <= room) return head + caption;
+  return room < 2 ? brief : `${head}${caption.slice(0, room - 1)}…`;
+}
+
 /**
  * Approves a SUBMITTED post: one transaction creates the request (requester = the post's author) with the mock-ups as
  * attachments and marks the post APPROVED. The final compare-and-set update is the real guard against a double
@@ -115,8 +126,8 @@ export async function approveContentPostWith(
       if (!nextStatus(post.status, "approve") || post.requestId) throw new ContentError("CONFLICT", NOT_WAITING);
 
       const { outputCount } = input;
-      if (!Number.isInteger(outputCount) || outputCount < 1 || outputCount > MAX_OUTPUTS) {
-        const msg = `Enter a whole number from 1 to ${MAX_OUTPUTS}`;
+      if (!Number.isInteger(outputCount) || outputCount < 1 || outputCount > MAX_OUTPUT_COUNT) {
+        const msg = `Enter a whole number from 1 to ${MAX_OUTPUT_COUNT}`;
         throw new CreateRequestError("VALIDATION", msg, { outputCount: msg });
       }
       const cfg = post.media.length ? cloudinaryConfig() : null;
@@ -124,7 +135,7 @@ export async function approveContentPostWith(
 
       const brief = post.brief?.trim() ?? "";
       const caption = post.caption?.trim() ?? "";
-      const notes = [brief, caption && `Caption draft:\n${caption}`].filter(Boolean).join("\n\n");
+      const notes = composeNotes(brief, caption);
       const v = await validateRequestInput(tx, { ...input, brandId: post.channel.brandId, notes: notes || undefined }, now);
       const req = await insertRequestTx(tx, v, { requesterId: post.authorId, actorId: user.id, outputCount, now });
 
@@ -150,7 +161,7 @@ export async function approveContentPostWith(
     });
   } catch (e) {
     // requestId @unique tripping means a concurrent approval won.
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") throw new ContentError("CONFLICT", STALE);
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002" && String(e.meta?.target).includes("requestId")) throw new ContentError("CONFLICT", STALE);
     throw e;
   }
 }
