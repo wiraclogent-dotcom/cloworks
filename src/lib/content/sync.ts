@@ -27,6 +27,7 @@ export async function syncContentPostForRequest(
   const cancelled = ev === "requestCancelled";
   const data: Prisma.ContentPostUncheckedUpdateManyInput = { status };
   if (ev === "requestDone") data.doneAt = now;
+  if (ev === "requestReopened") data.doneAt = null;
   if (cancelled) Object.assign(data, { requestId: null, approvedById: null, approvedAt: null, doneAt: null });
   // Pin the status we validated against so a concurrent change to the post is not overwritten.
   const res = await tx.contentPost.updateMany({ where: { id: post.id, status: post.status }, data });

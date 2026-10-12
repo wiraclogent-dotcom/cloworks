@@ -69,7 +69,7 @@ describe("request status drives the content post", () => {
     expect(done.status).toBe("DONE");
     expect(done.doneAt).not.toBeNull();
     await move(requestId, "ON_PROGRESS");
-    expect(await post(postId)).toMatchObject({ status: "IN_PRODUCTION" });
+    expect(await post(postId)).toMatchObject({ status: "IN_PRODUCTION", doneAt: null });
   });
 
   it("cancelling sends the post back to DRAFT and frees it; resubmit + approve makes a new request", async () => {
