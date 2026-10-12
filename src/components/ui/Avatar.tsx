@@ -1,6 +1,9 @@
+"use client";
+
 import { UserPlus } from "lucide-react";
 import { avatarColor, initials } from "@/lib/palette";
 import { cn } from "./cn";
+import { usePhotoFor } from "./photoDirectory";
 
 export type AvatarSize = "sm" | "md" | "lg";
 const SIZE: Record<AvatarSize, string> = {
@@ -12,7 +15,7 @@ const SIZE: Record<AvatarSize, string> = {
 
 type Common = {
   size?: AvatarSize;
-  /** The person's profile photo URL; initials show when there is none (or it fails to load). */
+  /** The person's profile photo URL. Defaults to their photo from the workspace directory; initials when there is none. */
   src?: string | null;
   /** A 2px surface-coloured ring (separates overlapping avatars in a stack). */
   ring?: boolean;
@@ -24,15 +27,17 @@ type Common = {
 /** Round initials avatar. Same person (short name, case/space-insensitive) = same colour everywhere. */
 export function Avatar({ name, size = "md", ring, decorative, className, src }: Common & { name: string }) {
   const c = avatarColor(name);
+  const known = usePhotoFor(name);
+  const photo = src === undefined ? known : src;
   // No name = nothing to announce: hidden like a decorative avatar (never role="img" with aria-label="").
   const hidden = decorative || name.trim() === "";
   return (
     <span {...(hidden ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={hidden ? undefined : name}
       style={{ background: c.tint, color: c.text }}
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide uppercase select-none", SIZE[size], ring && "ring-2 ring-surface", className)}>
-      {src ? (
+      {photo ? (
         // eslint-disable-next-line @next/next/no-img-element -- a local API route, not an optimisable asset
-        <img src={src} alt="" className="size-full rounded-full object-cover" />
+        <img src={photo} alt="" className="size-full rounded-full object-cover" />
       ) : (
         initials(name)
       )}

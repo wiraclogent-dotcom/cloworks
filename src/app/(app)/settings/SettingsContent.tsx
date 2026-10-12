@@ -1,6 +1,7 @@
 import { Building2, Mail } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { accountRows } from "@/lib/settings/account";
+import { photoUrl } from "@/lib/profilePhotoUrl";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -24,7 +25,7 @@ export async function SettingsContent() {
   });
   const value = (label: string) => rows.find((r) => r.label === label)?.value ?? "—";
   const fullName = me?.fullName || user.name;
-  const photoSrc = me?.avatarUpdatedAt ? `/api/avatar/${user.id}?v=${me.avatarUpdatedAt.getTime()}` : null;
+  const photoSrc = me?.avatarUpdatedAt ? photoUrl(user.id, me.avatarUpdatedAt) : null;
   const title = value("Title");
 
   return (

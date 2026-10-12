@@ -71,7 +71,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
     <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[2.25rem] border-[10px] border-foreground bg-background shadow-raised">
       <div className="mx-auto mt-1.5 h-1.5 w-20 rounded-full bg-surface-muted" aria-hidden="true" />
       <header className="flex items-start gap-3 px-4 pt-4 pb-3">
-        <Avatar name={channel.displayName} src={channel.avatarUrl ?? undefined} size="lg" decorative className="size-16 text-lg" />
+        <Avatar name={channel.displayName} src={channel.avatarUrl} size="lg" decorative className="size-16 text-lg" />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold text-foreground">@{channel.handle}</h2>
           <p className="truncate text-sm font-medium text-foreground">{channel.displayName}</p>

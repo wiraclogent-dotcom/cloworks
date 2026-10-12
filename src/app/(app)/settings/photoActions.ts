@@ -21,7 +21,8 @@ export async function changeProfilePhoto(fd: FormData): Promise<PhotoResult> {
       if (e instanceof PhotoError) return { ok: false, message: e.message };
       return { ok: false, message: "Could not save the photo. Try again." };
     }
-    revalidatePath("/settings");
+    // The whole app: every avatar reads the photo directory in the shell.
+    revalidatePath("/", "layout");
     return { ok: true };
   }, () => SESSION_ENDED);
 }
@@ -30,7 +31,8 @@ export async function changeProfilePhoto(fd: FormData): Promise<PhotoResult> {
 export async function clearProfilePhoto(): Promise<PhotoResult> {
   return withUser<PhotoResult, PhotoResult>(requireUser, async (me) => {
     await removeProfilePhoto(dbFor(me), me.id);
-    revalidatePath("/settings");
+    // The whole app: every avatar reads the photo directory in the shell.
+    revalidatePath("/", "layout");
     return { ok: true };
   }, () => SESSION_ENDED);
 }
