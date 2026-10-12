@@ -1,0 +1,37 @@
+import type { ReactNode } from "react";
+import { LayoutGrid, Plus } from "lucide-react";
+import type { ContentTab } from "@/lib/content/params";
+import type { ContentPlanView } from "@/lib/content/view";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { cn } from "@/components/ui/cn";
+import { AddChannelButton, type BrandOption } from "./ChannelForm";
+import { ChannelList } from "./ChannelList";
+import { PhonePreview } from "./PhonePreview";
+
+/**
+ * The Content Plan body (approved layout B): channel list on the left, phone preview in the middle, and the post
+ * side panel on the right when `panel` is given (`?post=<id>`).
+ */
+export function ContentPlanLayout({ view, tab, postId, brands, panel }: {
+  view: ContentPlanView; tab: ContentTab; postId: string | null; brands: BrandOption[]; panel?: ReactNode;
+}) {
+  const { channel, can } = view;
+  if (!channel) {
+    return can.manageChannels ? (
+      <EmptyState icon={<LayoutGrid />} title="Add your first channel"
+        description="Add a brand's Instagram account to start planning its feed, reels and stories."
+        action={<AddChannelButton brands={brands} variant="primary" icon={<Plus />}>Add channel</AddChannelButton>} />
+    ) : (
+      <EmptyState icon={<LayoutGrid />} title="No channels yet" description="A lead adds each brand's Instagram account here before posts can be planned." />
+    );
+  }
+  return (
+    <div className={cn("grid gap-5 lg:grid-cols-[13.5rem_minmax(0,1fr)]", !!panel && "xl:grid-cols-[13.5rem_minmax(0,1fr)_minmax(0,26rem)]")}>
+      <ChannelList channels={view.channels} currentId={channel.id} tab={tab} canManage={can.manageChannels} brands={brands} />
+      <div className="min-w-0 rounded-xl bg-surface-muted px-3 py-6 sm:px-6">
+        <PhonePreview channel={channel} tab={tab} planned={view.planned} published={view.published} canDraft={can.draft} selectedId={postId} />
+      </div>
+      {panel ? <div className="min-w-0 lg:col-span-2 xl:col-span-1">{panel}</div> : null}
+    </div>
+  );
+}

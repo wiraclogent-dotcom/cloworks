@@ -13,6 +13,9 @@ describe("activeNavHref", () => {
     ["/dashboard/team", "/dashboard/team"],
     ["/dashboard/briefs", "/dashboard/briefs"],
     ["/library", "/library"],
+    ["/content", "/content"],
+    ["/content?channel=x", "/content"],
+    ["/content?channel=x&tab=reels#top", "/content"],
   ])("%s → %s", (path, want) => {
     expect(activeNavHref(path)).toBe(want);
   });
