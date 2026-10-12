@@ -11,6 +11,8 @@ export type PostPatch = Partial<{ format: ContentFormat; plannedAt: string | nul
 export type PostMediaEntry = { mediaId: string; role: ContentMediaRole };
 
 export const MAX_CONTENT_COMMENT = 2000;
+export const MAX_BRIEF = 5000; // matches request notes
+export const MAX_CAPTION = 2200; // Instagram's limit
 const FORMATS: readonly ContentFormat[] = ["SINGLE", "CAROUSEL", "VIDEO"];
 
 /** A Jakarta calendar day, stored as midnight Jakarta time (same as createRequestWith). */
@@ -29,18 +31,6 @@ async function loadPost(db: ScopedDb, id: string) {
 async function hasContentOf(db: ScopedDb, postId: string, brief: string | null): Promise<boolean> {
   if (brief?.trim()) return true;
   return (await db.contentPostMedia.count({ where: { postId, role: "MOCKUP" } })) >= 1;
-}
-
-/** Applies the IDEA to DRAFT save rule with compare-and-set; PUBLISHED posts ignore status. */
-async function applySaveRule(db: ScopedDb, post: { id: string; status: ContentStatus; kind: ContentKind }, hasContent: boolean): Promise<ContentStatus> {
-  if (post.kind === "PUBLISHED") return post.status;
-  const next = nextStatus(post.status, "save", { hasContent });
-  if (!next) throw new ContentError("LOCKED", "This post can no longer be edited.");
-  if (next !== post.status) {
-    const r = await db.contentPost.updateMany({ where: { id: post.id, status: post.status }, data: { status: next } });
-    if (r.count !== 1) throw new ContentError("CONFLICT", "This post changed in the meantime. Reload and try again.");
-  }
-  return next;
 }
 
 export async function createPostWith(
@@ -85,6 +75,12 @@ export async function updatePostWith(db: ScopedDb, user: ContentActor, id: strin
     if (patch.plannedAt === null) data.plannedAt = null;
     else if (typeof patch.plannedAt === "string" && isRealDate(patch.plannedAt)) data.plannedAt = jakartaMidnight(patch.plannedAt);
     else fieldErrors.plannedAt = "Enter a real date (YYYY-MM-DD)";
+  }
+  for (const [k, max] of [["brief", MAX_BRIEF], ["caption", MAX_CAPTION]] as const) {
+    const v = patch[k];
+    if (v === undefined) continue;
+    if (typeof v !== "string") fieldErrors[k] = "Must be text";
+    else if (v.length > max) fieldErrors[k] = `At most ${max} characters`;
   }
   if (Object.keys(fieldErrors).length) throw new ContentError("INVALID", Object.values(fieldErrors)[0], fieldErrors);
   if (patch.typeId !== undefined) {
@@ -135,12 +131,15 @@ export async function setPostMediaWith(db: ScopedDb, user: ContentActor, id: str
   if (existing.some((l) => l.role !== role && ids.includes(l.mediaId))) throw new ContentError("INVALID", "That file is already attached to this post.");
   const previous = existing.filter((l) => l.role === role).map((l) => l.mediaId);
 
-  await db.$transaction([
-    db.contentPostMedia.deleteMany({ where: { postId: id, role } }),
-    db.contentPostMedia.createMany({ data: media.map((m, order) => ({ postId: id, mediaId: m.mediaId, role, order })) }),
-  ]);
-
-  if (role === "MOCKUP") await applySaveRule(db, post, await hasContentOf(db, id, post.brief));
+  // Status guard and link swap commit together, so a stale tab cannot touch a post that was submitted meanwhile.
+  const hasContent = !!post.brief?.trim() || (role === "MOCKUP" ? media.length >= 1 : (await db.contentPostMedia.count({ where: { postId: id, role: "MOCKUP" } })) >= 1);
+  const status = post.kind === "PUBLISHED" || role === "FINAL" ? post.status : nextStatus(post.status, "save", { hasContent })!;
+  await db.$transaction(async (tx) => {
+    const r = await tx.contentPost.updateMany({ where: { id, status: post.status }, data: { status } });
+    if (r.count !== 1) throw new ContentError("CONFLICT", "This post changed in the meantime. Reload and try again.");
+    await tx.contentPostMedia.deleteMany({ where: { postId: id, role } });
+    await tx.contentPostMedia.createMany({ data: media.map((m, order) => ({ postId: id, mediaId: m.mediaId, role, order })) });
+  });
   return { removedMediaIds: await orphanedMedia(db, id, previous.filter((m) => !ids.includes(m))) };
 }
 
@@ -161,13 +160,18 @@ export async function movePostWith(db: ScopedDb, user: ContentActor, id: string,
   };
   const above = pos(aboveId);
   const below = pos(belowId);
+  let moved = positionBetween(above, below);
+  const others: { id: string; position: number }[] = [];
   if (needsRenumber(above, below)) {
     const ids = tab.map((p) => p.id).filter((x) => x !== id);
     ids.splice(aboveId ? ids.indexOf(aboveId) + 1 : 0, 0, id);
-    for (const r of renumber(ids)) await db.contentPost.update({ where: { id: r.id }, data: { position: r.position } });
-    return;
+    for (const r of renumber(ids)) (r.id === id ? (moved = r.position) : others.push(r));
   }
-  await db.contentPost.update({ where: { id }, data: { position: positionBetween(above, below) } });
+  await db.$transaction(async (tx) => {
+    const r = await tx.contentPost.updateMany({ where: { id, status: post.status }, data: { position: moved } });
+    if (r.count !== 1) throw new ContentError("CONFLICT", "This post changed in the meantime. Reload and try again.");
+    for (const o of others) await tx.contentPost.update({ where: { id: o.id }, data: { position: o.position } });
+  });
 }
 
 /** Author or approver, before APPROVED. Returns media ids now unused; the caller destroys them. */
@@ -212,9 +216,11 @@ export async function sendBackPostWith(db: ScopedDb, user: ContentActor, id: str
   const post = await loadPost(db, id);
   const next = nextStatus(post.status, "sendBack");
   if (!next) throw new ContentError("CONFLICT", "This post is no longer waiting for review.");
-  const r = await db.contentPost.updateMany({ where: { id, status: post.status }, data: { status: next } });
-  if (r.count !== 1) throw new ContentError("CONFLICT", "This post changed in the meantime. Reload and try again.");
-  const c = await db.contentComment.create({ data: { postId: id, authorId: user.id, body: text, isFeedback: true }, select: { id: true } });
+  const c = await db.$transaction(async (tx) => {
+    const r = await tx.contentPost.updateMany({ where: { id, status: post.status }, data: { status: next } });
+    if (r.count !== 1) throw new ContentError("CONFLICT", "This post changed in the meantime. Reload and try again.");
+    return tx.contentComment.create({ data: { postId: id, authorId: user.id, body: text, isFeedback: true }, select: { id: true } });
+  });
   return { id: c.id };
 }
 

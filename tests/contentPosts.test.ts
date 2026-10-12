@@ -221,4 +221,41 @@ describe("content posts", () => {
     expect(c.body).toBe("hi @pcreative");
     expect(c.isFeedback).toBe(false);
   });
+
+  it("media edit after a submit from another tab is refused and leaves the links alone", async () => {
+    const { id } = await feed(creative);
+    const [m1, m2] = [await mkMedia("m9"), await mkMedia("m10")];
+    await setPostMediaWith(db.prisma, creative, id, [{ mediaId: m1, role: "MOCKUP" }]);
+    await db.raw.contentPost.update({ where: { id }, data: { status: "SUBMITTED" } });
+    expect((await code(setPostMediaWith(db.prisma, creative, id, [{ mediaId: m2, role: "MOCKUP" }])))?.code).toBe("LOCKED");
+    expect((await db.prisma.contentPostMedia.findMany({ where: { postId: id } })).map((l) => l.mediaId)).toEqual([m1]);
+  });
+
+  it("a stale status guard rolls the whole media swap back", async () => {
+    const { id } = await feed(creative);
+    const [m1, m2] = [await mkMedia("m11"), await mkMedia("m12")];
+    await setPostMediaWith(db.prisma, creative, id, [{ mediaId: m1, role: "MOCKUP" }]);
+    // The post is read first, then flips to SUBMITTED before the write: simulate by flipping between the two queries.
+    const orig = db.prisma.contentPostMedia.findMany;
+    const spy = (db.prisma.contentPostMedia as unknown as { findMany: unknown });
+    spy.findMany = async (...a: Parameters<typeof orig>) => {
+      const r = await orig.apply(db.prisma.contentPostMedia, a);
+      await db.raw.contentPost.update({ where: { id }, data: { status: "SUBMITTED" } });
+      return r;
+    };
+    try {
+      expect((await code(setPostMediaWith(db.prisma, creative, id, [{ mediaId: m2, role: "MOCKUP" }])))?.code).toBe("CONFLICT");
+    } finally {
+      spy.findMany = orig;
+    }
+    expect((await db.prisma.contentPostMedia.findMany({ where: { postId: id } })).map((l) => l.mediaId)).toEqual([m1]);
+  });
+
+  it("brief and caption are length checked", async () => {
+    const { id } = await feed(creative);
+    expect((await code(updatePostWith(db.prisma, creative, id, { brief: "x".repeat(5001) })))?.fieldErrors?.brief).toBeTruthy();
+    expect((await code(updatePostWith(db.prisma, creative, id, { caption: "x".repeat(2201) })))?.fieldErrors?.caption).toBeTruthy();
+    expect((await code(updatePostWith(db.prisma, creative, id, { brief: 5 as unknown as string })))?.fieldErrors?.brief).toBeTruthy();
+    await updatePostWith(db.prisma, creative, id, { brief: "x".repeat(5000), caption: "x".repeat(2200) });
+  });
 });
