@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { ChevronsUpDown, Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";
@@ -98,7 +98,8 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
             "md:visible md:sticky md:top-0 md:z-auto md:h-dvh md:max-w-none md:flex-none md:translate-x-0",
             open ? "visible translate-x-0 shadow-raised" : "invisible -translate-x-full",
           )}>
-          {/* Workspace switcher (reference): the chevron is decorative until there is more than one workspace. */}
+          {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
+              chevron: a chevron here would promise a menu that does not exist. */}
           <div className="flex-none px-3 pt-3">
             <div className="sb-item sb-frame flex items-center gap-2.5 rounded-xl border border-border bg-surface p-2 shadow-card">
               <LogoMark size={32} />
@@ -106,7 +107,6 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
                 <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
               </div>
-              <ChevronsUpDown aria-hidden="true" className="sb-label size-4 shrink-0 text-sidebar-foreground-secondary" />
               <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
                 className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring md:hidden">
                 <X aria-hidden="true" className="size-[18px]" />

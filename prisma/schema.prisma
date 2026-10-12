@@ -43,15 +43,19 @@ enum ProjectStatus {
 // without a workspace fails); the empty dbgenerated() only makes the field optional in Prisma's create types so
 // the scoped client (src/lib/db.ts) can stamp it.
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  createdAt       DateTime @default(now())
   /// Chat launch moment: comments before it count as read for anyone without a ChatRead row ("start fresh").
-  chatSince DateTime @default(now())
+  chatSince       DateTime @default(now())
+  /// People whose email is on this domain may ask to join (replaces the ALLOWED_EMAIL_DOMAIN env var).
+  emailDomain     String?  @unique
+  /// Random URL-safe code in the shared join link.
+  joinCode        String?  @unique
+  joinLinkEnabled Boolean  @default(true)
 
   users             User[]
-  allowedEmails     AllowedEmail[]
   brands            Brand[]
   divisions         Division[]
   requestTypes      RequestType[]
@@ -68,27 +72,35 @@ model Workspace {
   projectMilestones ProjectMilestone[]
   libraryCategories LibraryCategory[]
   libraryItems      LibraryItem[]
+  invites           Invite[]
+  applicants        Applicant[]        @relation("ApplicantRequestedWorkspace")
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String?   @unique
-  name               String
-  fullName           String
-  title              String?
-  department         String?
-  appRole            AppRole   @default(REQUESTER)
-  jobRole            JobRole   @default(OTHER)
-  aliases            String[]
-  active             Boolean   @default(true)
+  id                  String    @id @default(cuid())
+  email               String?   @unique
+  name                String
+  fullName            String
+  title               String?
+  department          String?
+  appRole             AppRole   @default(REQUESTER)
+  jobRole             JobRole   @default(OTHER)
+  aliases             String[]
+  active              Boolean   @default(true)
   /// scrypt hash for email + password sign-in; null = no password set.
-  passwordHash       String?
+  passwordHash        String?
   /// Bumped on every password change; sessions issued under an older version end.
-  passwordVersion    Int       @default(0)
-  failedLogins       Int       @default(0)
-  lockedUntil        DateTime?
+  passwordVersion     Int       @default(0)
+  failedLogins        Int       @default(0)
+  lockedUntil         DateTime?
+  /// Last "you already have an account" email (sign-up with this email); at most one per hour.
+  accountNoticeSentAt DateTime?
   /// Set when an admin sets or resets the password; cleared when the person changes it.
-  mustChangePassword Boolean   @default(false)
+  mustChangePassword  Boolean   @default(false)
+  /// Profile photo: a small JPEG/PNG/WebP stored in the row (null = initials). Served by /api/avatar/<id>.
+  avatar              Bytes?
+  avatarType          String?
+  avatarUpdatedAt     DateTime?
 
   requested           Request[]       @relation("RequestRequester")
   assigned            Request[]       @relation("RequestAssignee")
@@ -103,22 +115,11 @@ model User {
   libraryItemsCreated LibraryItem[]   @relation("LibraryItemCreatedBy")
   libraryItemsUpdated LibraryItem[]   @relation("LibraryItemUpdatedBy")
   projectTasks        ProjectTask[]
+  invitesSent         Invite[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-  @@index([workspaceId])
-}
-
-model AllowedEmail {
-  id    String  @id @default(cuid())
-  email String
-  note  String?
-
-  workspaceId String    @default(dbgenerated())
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-
-  @@unique([workspaceId, email])
   @@index([workspaceId])
 }
 
@@ -449,7 +450,7 @@ model LibraryItem {
   updatedBy        User            @relation("LibraryItemUpdatedBy", fields: [updatedById], references: [id])
   createdAt        DateTime        @default(now())
   /// Extra labelled file links shown as chips on the row, e.g. [{ "label": "AI", "url": "https://…" }]. Max 6.
-  files       Json            @default("[]")
+  files            Json            @default("[]")
   /// Set only by create/edit (not @updatedAt): pinning and reordering leave it alone, so they don't trigger the badge.
   contentUpdatedAt DateTime        @default(now())
 
@@ -458,4 +459,72 @@ model LibraryItem {
 
   @@index([workspaceId])
   @@index([categoryId])
+}
+
+enum JoinSource {
+  LINK
+  DOMAIN
+}
+
+/// Someone who signed up but is not a member of any workspace. Global (not workspace-scoped); the id becomes the
+/// User.id on approval.
+model Applicant {
+  id                   String      @id @default(cuid())
+  email                String      @unique
+  name                 String
+  passwordHash         String?
+  emailVerifiedAt      DateTime?
+  codeHash             String?
+  codeExpiresAt        DateTime?
+  codeAttempts         Int         @default(0)
+  codeSentAt           DateTime?
+  codesSentInWindow    Int         @default(0)
+  failedLogins         Int         @default(0)
+  lockedUntil          DateTime?
+  /// Set = join request for that workspace; null = lobby.
+  requestedWorkspaceId String?
+  requestedWorkspace   Workspace?  @relation("ApplicantRequestedWorkspace", fields: [requestedWorkspaceId], references: [id])
+  requestedAt          DateTime?
+  requestSource        JoinSource?
+  rejectedAt           DateTime?
+  /// Join code the person signed up through; used once their email is verified.
+  pendingJoinCode      String?
+  createdAt            DateTime    @default(now())
+
+  @@index([requestedWorkspaceId])
+}
+
+/// An admin's invitation to join a workspace. The raw token only lives in the email link; we keep its SHA-256 hex.
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  appRole     AppRole
+  jobRole     JobRole
+  tokenHash   String    @unique
+  invitedById String
+  invitedBy   User      @relation(fields: [invitedById], references: [id])
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+/// One-time "reset my password" links. Global (not workspace-scoped): the email decides whose password it sets.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  /// Lowercased address the link was sent to.
+  email     String
+  /// SHA-256 of the raw token; the raw token only lives in the emailed link.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
 }

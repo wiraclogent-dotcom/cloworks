@@ -46,9 +46,9 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, clearHref
       {p.view === "calendar" && <input type="hidden" name="month" value={p.month} />}
       {p.view === "timeline" && <input type="hidden" name="week" value={p.week} />}
       {p.mine && <input type="hidden" name="mine" value="1" />}
-      {/* Keep the table sort when filtering (same rules as hrefWith). */}
-      {p.view === "table" && p.sort !== "deadline" && <input type="hidden" name="sort" value={p.sort} />}
-      {p.dir === "desc" && <input type="hidden" name="dir" value="desc" />}
+      {/* Keep the table sort when filtering (same rules as hrefWith: the default, newest requested first, is not repeated). */}
+      {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="sort" value={p.sort} />}
+      {p.view === "table" && !(p.sort === "requested" && p.dir === "desc") && <input type="hidden" name="dir" value={p.dir} />}
       <label className="relative block">
         <span className="sr-only">Search</span>
         <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-foreground-secondary" />

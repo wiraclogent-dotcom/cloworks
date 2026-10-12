@@ -1,8 +1,9 @@
 "use client";
 
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { enumLabel } from "@/lib/adminChips";
-import { addAllowed, addPerson, removeAllowed, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
+import { addPerson, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
 
 const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
 const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
@@ -64,7 +65,7 @@ export function PasswordForm({ u }: { u: UserRowData }) {
     <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
       {({ idFor, aria }) => (
         <Labeled id={idFor("password")} label={u.hasPassword ? "New password (signs them out everywhere)" : "Password (at least 10 characters)"}>
-          <input id={idFor("password")} name="password" type="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
+          <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
         </Labeled>
       )}
     </AdminForm>
@@ -123,45 +124,14 @@ export function AddPersonForm() {
               <input id={idFor("aliases")} name="aliases" className={control} defaultValue={v("aliases")} />
             </Labeled>
           </div>
-          <Labeled id={idFor("email")} label="Login email (optional)">
+          <Labeled id={idFor("email")} label="Login email (for a password)">
             <input id={idFor("email")} name="email" type="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
           </Labeled>
-          <Labeled id={idFor("password")} label="Temporary password (optional, needs a login email)">
-            <input id={idFor("password")} name="password" type="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
+          <Labeled id={idFor("password")} label="Temporary password">
+            <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
           </Labeled>
         </div>
       )}
     </AdminForm>
-  );
-}
-
-export function AddAllowedForm() {
-  return (
-    <AdminForm action={addAllowed} prefix="add-allowed" submitLabel="Allow email">
-      {({ v, idFor, aria }) => (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Labeled id={idFor("email")} label="Email address">
-            <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
-          </Labeled>
-          <Labeled id={idFor("note")} label="Note (optional)">
-            <input id={idFor("note")} name="note" className={control} defaultValue={v("note")} />
-          </Labeled>
-        </div>
-      )}
-    </AdminForm>
-  );
-}
-
-export function RemoveAllowed({ email }: { email: string }) {
-  return (
-    <ConfirmAction
-      action={removeAllowed}
-      prefix={`rm-${email}`}
-      hidden={{ email }}
-      triggerLabel="Remove"
-      triggerAriaLabel={`Remove ${email}`}
-      question={`Remove ${email}? Anyone signing in with it loses access on their next request.`}
-      confirmLabel={`Yes, remove ${email}`}
-    />
   );
 }

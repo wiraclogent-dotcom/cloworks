@@ -11,7 +11,7 @@ const PERIOD_ICON: Record<DayPeriod, React.ReactNode> = { morning: <Sunrise />, 
 /** One number that opens the list it counts. `emphasis` colours the number only when there is something to act on. */
 function Tile({ href, icon, label, value, emphasis }: { href: string; icon: React.ReactNode; label: string; value: number; emphasis?: string }) {
   return (
-    <Link href={href} className={cn("group relative flex min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card transition-colors duration-150 hover:border-border-strong", focusRing)}>
+    <Link href={href} className={cn("group relative flex w-full min-w-0 items-center gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card transition-colors duration-150 hover:border-border-strong", focusRing)}>
       <span aria-hidden="true" className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground [&_svg]:size-[18px]">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className={cn("block text-2xl leading-7 font-semibold tabular-nums text-foreground", value > 0 && emphasis)}>{value}</span>
@@ -49,10 +49,10 @@ export function TodayOverview({ name, now, overview }: { name: string; now: Date
         </div>
       </div>
       <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
-        <li className="min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<Clock aria-hidden="true" />} label="Due today" value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label="Overdue" value={overview.overdue} emphasis="text-danger" /></li>
-        <li className="min-w-0"><Tile href="/requests?view=table&status=DONE" icon={<CircleCheckBig aria-hidden="true" />} label="Done today" value={overview.doneToday} /></li>
+        <li className="flex min-w-0"><Tile href="/requests" icon={<Inbox aria-hidden="true" />} label="Open requests" value={overview.open} /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<Clock aria-hidden="true" />} label="Due today" value={overview.dueToday} emphasis="text-[var(--status-due-soon-accent)]" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&sort=deadline" icon={<TriangleAlert aria-hidden="true" />} label="Overdue" value={overview.overdue} emphasis="text-danger" /></li>
+        <li className="flex min-w-0"><Tile href="/requests?view=table&status=DONE" icon={<CircleCheckBig aria-hidden="true" />} label="Done today" value={overview.doneToday} /></li>
       </ul>
     </section>
   );

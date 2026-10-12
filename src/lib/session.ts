@@ -2,8 +2,11 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma, scopedDb, type ScopedDb } from "./db";
-import { isUnauthenticated, PasswordChangeRequiredError, requireUserWith, type SessionUser } from "./session-core";
+import {
+  isUnauthenticated, loadSessionApplicant, PasswordChangeRequiredError, requireUserWith, type SessionApplicant, type SessionUser,
+} from "./session-core";
 import { loadActiveUserOnce } from "./activeUser";
+import { ENTER_PATH } from "./auth.config";
 
 /**
  * Current user without the password-change check, for the /change-password flow itself. Memoised per request.
@@ -35,7 +38,27 @@ export async function requireUserOrRedirect(): Promise<SessionUser> {
   return user;
 }
 
-export type { ScopedDb };
+export type { ScopedDb, SessionApplicant };
+
+/**
+ * For applicant-only pages (/lobby, /verify). Memoised per request. A member session (including an applicant whose
+ * token was just upgraded after approval) goes through /lobby/enter, which writes the upgraded cookie and continues to
+ * /requests; no or invalid session goes to /signin.
+ */
+export const requireApplicantOrRedirect: () => Promise<SessionApplicant> = cache(async () => {
+  const r = await loadSessionApplicant(prisma, await auth());
+  if (r.kind === "member") redirect(ENTER_PATH);
+  if (r.kind === "none") redirect("/signin");
+  return r.applicant;
+});
+
+/**
+ * Who is visiting a public join page, without redirecting: a member, a valid applicant, or nobody (no session, or an
+ * applicant session whose row is gone). Memoised per request.
+ */
+export const currentVisitor: () => Promise<
+  { kind: "member" } | { kind: "none" } | { kind: "applicant"; applicant: SessionApplicant }
+> = cache(async () => loadSessionApplicant(prisma, await auth()));
 
 /** Database client scoped to the user's workspace. */
 export const dbFor = (user: SessionUser): ScopedDb => scopedDb(user.workspaceId);

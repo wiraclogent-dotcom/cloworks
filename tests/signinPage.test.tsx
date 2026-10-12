@@ -4,7 +4,7 @@ import { act } from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
-vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
+vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
 vi.mock("next/font/google", () => ({ Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 import SignInPage from "@/app/signin/page";
 import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE } from "@/lib/signinError";

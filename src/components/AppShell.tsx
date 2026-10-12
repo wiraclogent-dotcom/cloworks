@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { CalendarDays, ChartColumn, FolderKanban, LibraryBig, Plug, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, FolderKanban, LibraryBig, ListChecks, Plug, SquareKanban, UserPlus, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
 import { requireUserOrRedirect } from "@/lib/session";
@@ -37,6 +37,19 @@ export async function TeamKpiItem() {
 export async function BriefCalendarItem() {
   const { appRole } = await requireUserOrRedirect();
   return can(appRole, "briefs.view") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
+}
+
+/** Admin links (Members, Lists) for admins only; the admin pages re-check on the server. */
+export async function AdminNavGroup() {
+  const { appRole } = await requireUserOrRedirect();
+  if (!can(appRole, "admin.manage")) return null;
+  return (
+    <NavGroup id="nav-admin" label="Admin" divided>
+      <NavItem href="/admin/users" label="Members" icon={<Users aria-hidden="true" />} />
+      <NavItem href="/admin/add-person" label="Add person" icon={<UserPlus aria-hidden="true" />} />
+      <NavItem href="/admin/lists" label="Lists" icon={<ListChecks aria-hidden="true" />} />
+    </NavGroup>
+  );
 }
 
 /** The signed-in person's workspace name, under the app name in the sidebar header. `Workspace` is not scoped. */
@@ -78,6 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavItem href="/library" label="Library" icon={<LibraryBig aria-hidden="true" />} />
             <DisabledNavItem label="Integrations" icon={<Plug aria-hidden="true" />} />
           </NavGroup>
+          <Suspense fallback={null}><AdminNavGroup /></Suspense>
         </nav>
       }
 >

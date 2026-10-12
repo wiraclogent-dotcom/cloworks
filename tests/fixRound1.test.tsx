@@ -7,7 +7,7 @@ import { render, screen, cleanup, within, fireEvent } from "@testing-library/rea
 vi.mock("@/app/(app)/dashboard/targets/actions", () => ({ setTarget: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
-vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
+vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
 vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }), Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 vi.mock("@/lib/session", () => ({ requireUserOrRedirect: vi.fn(), requireUser: vi.fn() }));
@@ -110,7 +110,7 @@ describe("D11 per-page titles", () => {
   it("root template + static page titles", () => {
     expect(rootMeta.title).toEqual({ default: "Cloworks", template: "%s · Cloworks" });
     expect([requestsMeta, newRequestMeta, detailMeta, kpiMeta, teamMeta, projectsMeta, usersMeta, listsMeta, signinMeta].map((m) => m.title)).toEqual(
-      ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Users", "Admin · Lists", "Sign in"]);
+      ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Members", "Admin · Lists", "Sign in"]);
   });
 });
 

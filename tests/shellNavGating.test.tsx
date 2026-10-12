@@ -33,8 +33,17 @@ describe("role-gated sidebar items (same can() checks as the pages)", () => {
     expect(screen.getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
   });
 
-  it("there is no Admin group in the sidebar any more (admins reach it from Settings)", () => {
-    expect("AdminGroup" in Shell).toBe(false);
+  it.each(["REQUESTER", "CREATIVE", "LEAD"] as const)("%s does not see the Admin group", async (r) => {
+    role = r;
+    const { container } = render(<nav aria-label="Main">{await Shell.AdminNavGroup()}</nav>);
+    expect(container.textContent).toBe("");
+  });
+
+  it("admins see the Admin group with Members and Lists", async () => {
+    role = "ADMIN";
+    render(<nav aria-label="Main">{await Shell.AdminNavGroup()}</nav>);
+    expect(screen.getByRole("link", { name: "Members" }).getAttribute("href")).toBe("/admin/users");
+    expect(screen.getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
   });
 });
 

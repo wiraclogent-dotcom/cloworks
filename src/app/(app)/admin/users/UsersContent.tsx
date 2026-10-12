@@ -1,4 +1,4 @@
-import { ChevronRight, Mail } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
@@ -10,35 +10,74 @@ import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
-import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "./UserForms";
+import { loadJoinAdmin, requestBaseUrl } from "@/lib/joinDeps";
+import { InvitedList, type InviteRow } from "./InvitedList";
+import { InviteLinkCard } from "./InviteLinkCard";
+import { MemberTabs, parseMemberTab } from "./MemberTabs";
+import { RequestsList, type RequestRow } from "./RequestsList";
+import { ActiveToggle, EditUserForm, LoginEmailForm, PasswordForm } from "./UserForms";
 
 function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
   return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
 }
 
-/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
-export async function UsersContent() {
+const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
+
+/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. `tab`: members | invited | requests. */
+export async function UsersContent({ tab }: { tab?: string } = {}) {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
+  const current = parseMemberTab(tab);
 
-  const [users, allowed] = await Promise.all([
-    // Explicit select: rows go to client forms, so secrets (passwordHash) must never be loaded here.
-    db.user
-      .findMany({
-        orderBy: [{ active: "desc" }, { name: "asc" }],
-        select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
-      })
-      .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash }))),
-    db.allowedEmail.findMany({ orderBy: { email: "asc" } }),
-  ]);
-  const owners = new Map(users.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u.name]));
-  const t = tableClass({ minWidth: "min-w-[60rem]" });
+  const [{ workspace, requests }, base] = await Promise.all([loadJoinAdmin(viewer), requestBaseUrl()]);
+  const toRow = (r: (typeof requests.pending)[number]): RequestRow => ({ applicantId: r.applicantId, name: r.name, email: r.email, source: r.source, requestedAt: when.format(r.requestedAt) });
+
+  let panel: React.ReactNode;
+  let count: number | undefined;
+  if (current === "invited") {
+    const invites = await loadInvites(db);
+    panel = <InvitedList invites={invites} />;
+  } else if (current === "requests") {
+    panel = <RequestsList pending={requests.pending.map(toRow)} rejected={requests.rejected.map(toRow)} />;
+  } else {
+    const loaded = await loadMembers(db);
+    count = loaded.users.length;
+    panel = loaded.view;
+  }
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Users" }]} title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
-        description="Company-domain addresses can sign in once bound to a person. Anyone else needs the address on the allowed list (adding a login email below does this for you)." />
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
+        description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
+      <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
+      <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
+      {panel}
+    </>
+  );
+}
 
+async function loadInvites(db: Awaited<ReturnType<typeof requireScope>>["db"]): Promise<InviteRow[]> {
+  const now = Date.now();
+  const rows = await db.invite.findMany({
+    where: { acceptedAt: null, revokedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, email: true, appRole: true, jobRole: true, expiresAt: true, invitedBy: { select: { name: true } } },
+  });
+  return rows.map((i) => ({ id: i.id, email: i.email, appRole: i.appRole, jobRole: i.jobRole, invitedBy: i.invitedBy.name, expiresOn: day.format(i.expiresAt), expired: i.expiresAt.getTime() <= now }));
+}
+
+async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
+  const users = await db.user
+    .findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+      select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
+    })
+    .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash })));
+  const t = tableClass({ minWidth: "min-w-[60rem]" });
+
+  const view = (
+    <>
       <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
         <table className={t.table}>
           <caption className="sr-only">All people</caption>
@@ -94,46 +133,7 @@ export async function UsersContent() {
           </tbody>
         </table>
       </div>
-
-      <div className="mt-5 grid items-start gap-4 lg:grid-cols-2">
-        <Card>
-          <section aria-labelledby="add-person-h">
-            <CardHeader><CardTitle id="add-person-h">Add person</CardTitle></CardHeader>
-            <AddPersonForm />
-          </section>
-        </Card>
-
-        <Card>
-          <section aria-labelledby="allowed-h">
-            <CardHeader>
-              <CardTitle id="allowed-h">Allowed emails</CardTitle>
-              <p className="text-[13px] text-foreground-secondary">Outside addresses that may sign in.</p>
-            </CardHeader>
-            {allowed.length === 0 ? (
-              <p className="mb-4 text-sm text-foreground-secondary">No outside addresses are allowed.</p>
-            ) : (
-              <ul className="mb-4 divide-y divide-border rounded-lg border border-border">
-                {allowed.map((a) => (
-                  <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 p-3">
-                    <div className="flex min-w-0 items-start gap-2.5">
-                      <span aria-hidden="true" className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary"><Mail strokeWidth={1.75} className="size-3.5" /></span>
-                      <div className="min-w-0">
-                        <p className="font-medium break-all text-foreground">{a.email}</p>
-                        <p className="text-[13px] text-foreground-secondary">
-                          {owners.has(a.email.toLowerCase()) ? `Used by ${owners.get(a.email.toLowerCase())}` : "Not linked to a person"}
-                          {a.note ? ` · ${a.note}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <RemoveAllowed email={a.email} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <AddAllowedForm />
-          </section>
-        </Card>
-      </div>
     </>
   );
+  return { users, view };
 }

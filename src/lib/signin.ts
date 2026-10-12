@@ -1,23 +1,18 @@
-import type { PrismaClient, User } from "@prisma/client";
-import { normalizeName } from "./import/aliases";
-import { CLOGENT_WORKSPACE_ID } from "./workspace";
+import type { Applicant, PrismaClient, User } from "@prisma/client";
+import { JoinError, oauthApplicant } from "./applicants";
 
-export const DEFAULT_ALLOWED_DOMAIN = "clogent.co.id";
-
-/** Pure: exact (case-insensitive) domain match, or the full address is on the allow-list. */
-export function isAllowedEmail(email: string, domain: string, allowList: string[]): boolean {
-  const e = email.trim().toLowerCase();
-  const parts = e.split("@");
-  if (parts.length !== 2 || !parts[0] || !parts[1]) return false;
-  if (parts[1] === domain.trim().toLowerCase()) return true;
-  return allowList.some((a) => a.trim().toLowerCase() === e);
-}
-
+/** OAuth sign-in decision: a member, an applicant (found or created), or refused. */
 export type SignInResult =
-  | { ok: true; user: User; created: boolean }
-  | { ok: false; reason: "no-email" | "not-allowed" | "inactive" | "untrusted" };
+  | { ok: true; kind: "user"; user: User }
+  | { ok: true; kind: "applicant"; applicant: Applicant }
+  | { ok: false; reason: "no-email" | "inactive" | "untrusted" | "refused" };
 
-type Db = Pick<PrismaClient, "user" | "allowedEmail">;
+/** Who an email belongs to right now. Never creates anything. */
+export type ResolveResult =
+  | { ok: true; kind: "user"; user: User }
+  | { ok: true; kind: "applicant"; applicant: Applicant }
+  | { ok: false; reason: "no-email" | "inactive" | "not-found" };
+
 type Env = Record<string, string | undefined>;
 
 /** Pure: is the identity provider's email claim trustworthy? Fails closed. */
@@ -34,58 +29,53 @@ export function isTrustedIdentity(
   return false;
 }
 
-/** Full sign-in decision: trusted identity, then permitted email, then link-by-email or create. */
+/**
+ * Full OAuth sign-in decision. Requires a trusted identity. An existing User (exact email, any case) signs in as a
+ * member when active; any other email becomes a verified Applicant (found or created by `oauthApplicant`, which also
+ * routes a workspace-domain email to that workspace's join requests). Nobody becomes a User here.
+ */
 export async function decideSignIn(
-  db: Db,
+  db: PrismaClient,
   provider: string | undefined,
   profile: { email?: string | null; name?: string | null; email_verified?: unknown; tid?: unknown },
   env: Env,
 ): Promise<SignInResult> {
   if (!isTrustedIdentity(provider, profile, env)) return { ok: false, reason: "untrusted" };
-  return resolveSignIn(db, profile, env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN, {
-    viaAllowList: provider !== "microsoft-entra-id",
-  });
-}
-
-/**
- * Permitted email (domain, or allow-list when viaAllowList), active user.
- * First-login linking is by exact normalized User.email only; otherwise create a REQUESTER.
- * No alias/name matching (privilege-escalation risk).
- */
-export async function resolveSignIn(
-  db: Db,
-  profile: { email?: string | null; name?: string | null },
-  domain: string = DEFAULT_ALLOWED_DOMAIN,
-  opts: { viaAllowList?: boolean } = {},
-): Promise<SignInResult> {
   const email = profile.email?.trim().toLowerCase();
   if (!email) return { ok: false, reason: "no-email" };
 
-  const allowList =
-    opts.viaAllowList === false
-      ? []
-      : (await db.allowedEmail.findMany({ select: { email: true } })).map((a) => a.email);
-  if (!isAllowedEmail(email, domain, allowList)) return { ok: false, reason: "not-allowed" };
+  const user = await findUser(db, email);
+  if (user) return user.active ? { ok: true, kind: "user", user } : { ok: false, reason: "inactive" };
 
-  const user = await db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
-  if (user) {
-    return user.active ? { ok: true, user, created: false } : { ok: false, reason: "inactive" };
+  try {
+    const applicant = await oauthApplicant({ db, baseUrl: env.APP_BASE_URL }, { email, name: profile.name ?? "" });
+    return { ok: true, kind: "applicant", applicant };
+  } catch (e) {
+    if (!(e instanceof JoinError)) throw e;
+    // INACTIVE_MEMBER: a deactivated User appeared meanwhile. Anything else (unusable email, or an active User /
+    // changed row appeared meanwhile): refuse this attempt rather than guess.
+    return { ok: false, reason: e.code === "INACTIVE_MEMBER" ? "inactive" : "refused" };
   }
+}
 
-  const local = email.split("@")[0];
-  const display = profile.name?.trim() || local;
-  // `name` is the short name used for @mentions, admin collision checks and import resolution. If the OAuth display name
-  // collides with anyone's name/fullName/alias, fall back to the email local part (numeric suffix if that collides too).
-  // Sign-up stays closed and Clogent is the only workspace, so a first OAuth sign-in joins Clogent.
-  const workspaceId = CLOGENT_WORKSPACE_ID;
-  const roster = await db.user.findMany({ where: { workspaceId }, select: { name: true, fullName: true, aliases: true } });
-  const taken = new Set(roster.flatMap((u) => [u.name, u.fullName, ...u.aliases]).map(normalizeName));
-  let name = display;
-  if (!normalizeName(display) || taken.has(normalizeName(display))) {
-    const base = local.toLowerCase();
-    name = base;
-    for (let n = 2; !normalizeName(name) || taken.has(normalizeName(name)); n++) name = `${base}${n}`;
-  }
-  const created = await db.user.create({ data: { workspaceId, email, name, fullName: display, appRole: "REQUESTER" } });
-  return { ok: true, user: created, created: true };
+/**
+ * Who a just-vetted sign-in email belongs to (jwt callback): an active User first, else an Applicant. Matches the
+ * exact email in any case; no alias/name matching (privilege-escalation risk). Creates nothing.
+ */
+export async function resolveSignIn(
+  db: Pick<PrismaClient, "user" | "applicant">,
+  profile: { email?: string | null; name?: string | null },
+): Promise<ResolveResult> {
+  const email = profile.email?.trim().toLowerCase();
+  if (!email) return { ok: false, reason: "no-email" };
+
+  const user = await findUser(db, email);
+  if (user) return user.active ? { ok: true, kind: "user", user } : { ok: false, reason: "inactive" };
+
+  const applicant = await db.applicant.findUnique({ where: { email } });
+  return applicant ? { ok: true, kind: "applicant", applicant } : { ok: false, reason: "not-found" };
+}
+
+function findUser(db: Pick<PrismaClient, "user">, email: string) {
+  return db.user.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
 }

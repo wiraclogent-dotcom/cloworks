@@ -57,29 +57,42 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 | `DATABASE_URL` | PostgreSQL connection string. `npm run db:dev` prints a ready-made one. | Yes |
 | `AUTH_SECRET` | Signs and encrypts session cookies. Generate with `openssl rand -base64 32`. | Yes |
 | `AUTH_URL` | Public base URL of the app (`http://localhost:3000` locally). | Yes in production; locally also used by `dev:session` |
-| `ALLOWED_EMAIL_DOMAIN` | Company email domain that may sign in automatically. Defaults to `clogent.co.id`. | No |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client for sign-in. | Yes, to use Google sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_ID`, `AUTH_MICROSOFT_ENTRA_ID_SECRET` | Microsoft Entra app registration. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_ISSUER` | `https://login.microsoftonline.com/<tenant-id>/v2.0`. | Yes, to use Microsoft sign-in |
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Your tenant id. Entra sign-in is denied unless the token's `tid` equals it. | Yes, to use Microsoft sign-in |
-| `RESEND_API_KEY` | Resend API key for notification emails. Empty means no email is sent (notification rows are still stored). | No |
-| `EMAIL_FROM` | Sender, e.g. `Cloworks <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | No |
-| `APP_BASE_URL` | Base URL used for links in emails. | No (recommended when email is on) |
+| `RESEND_API_KEY` | Resend API key for emails (sign-up codes, invites, notifications). Empty means no email is sent (notification rows are still stored). | Yes in production (sign-up codes and invites need it) |
+| `EMAIL_FROM` | Sender, e.g. `Cloworks <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | Yes in production |
+| `APP_BASE_URL` | Public origin used for links in emails, e.g. `https://cloworks.vercel.app`. In production, emails carry no links without it (request headers are never trusted for this). | Yes in production |
 
 Never commit `.env`; `.gitignore` already excludes it.
 
-## First login and access
+## Signing in and joining
 
 - After seeding, only **Wira** (Creative Director, `wira.budi@clogent.co.id`, role ADMIN) can sign in. Every other
   seeded person has no login email yet.
-- As admin, open **Admin > Users**. Add each person's login email on their row, and add Gmail (or any non-company)
-  addresses under **Allowed emails**; those can sign in through Google.
-- Emails on the company domain (`ALLOWED_EMAIL_DOMAIN`) sign in automatically. A first sign-in is linked to an
-  existing person only by exact email match; an unknown company-domain email creates a new REQUESTER.
-- Microsoft Entra sign-in is for company-domain emails only (the allow-list applies to Google) and requires
-  `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`.
-- Sessions last 24 hours. Deactivating a person, clearing or changing their login email, or removing their access
-  takes effect on their next request.
+- Any active person with a login email can sign in (password, Google or Microsoft), whatever the email domain. A
+  first OAuth sign-in is linked to an existing person only by exact email match.
+- **Sign-up.** Anyone can create an account at `/signup` (name, email, password, or Google). A password sign-up
+  confirms the email with a 6-digit code (`/verify`, 15 minutes, 5 tries, resend after 60 s, at most 5 an hour). An
+  account on its own is an *applicant*: it reaches only `/lobby`, `/verify` and the join pages, never workspace data.
+  Nobody becomes a member without an invite or an admin's approval.
+- **Ways in** (admins manage all of them under Account settings → Users, the **Members** page):
+  - **Email invite** (**Invited** tab → Invite someone: email, app role, job role). The email links to
+    `/join/invite/<token>`, valid 7 days; the person sets a password or uses Google and is a member at once.
+    Resend issues a new link; Revoke kills it.
+  - **Invite link** (`/join/<code>`, the **Invite link** card: Copy, **Link is on** switch, **Reset link**). Joining
+    through it creates a join request.
+  - **Company email.** A verified sign-up whose domain is a workspace's `emailDomain` (`clogent.co.id` for Clogent)
+    creates a join request automatically, unless that email already has an open invite (then they use the invite).
+  - Without either, the lobby asks them for an invite link.
+- **Join requests** (**Requests** tab, with a count). Admins get a bell notification and email per request. Approve
+  (choose app and job role) turns the applicant into a member with the same id and password, emails them, and closes
+  any open invite for that email; a waiting lobby moves them in by itself. Reject is silent and can be undone.
+- Sessions: **Remember me** on the password forms (sign-in, sign-up, invite) keeps the session for 30 days; without
+  it, and for Google/Microsoft, the session ends 24 hours after sign-in. Deactivating a person or clearing or changing
+  their login email takes effect on their next request.
+- Microsoft Entra sign-in requires `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID`.
 
 ## Roles and permissions
 
@@ -212,13 +225,40 @@ Safety: the script refuses to run unless `AUTH_URL` (or `APP_BASE_URL`) is local
 ## Deployment notes
 
 - Provide a PostgreSQL database and set the environment variables above (at minimum `DATABASE_URL`, `AUTH_SECRET`,
-  `AUTH_URL`, the OAuth variables you use, and `ALLOWED_EMAIL_DOMAIN` if it is not `clogent.co.id`).
+  `AUTH_URL`, and the OAuth variables you use).
 - Build and start: `npm ci`, `npx prisma migrate deploy`, `npm run build`, `npm start`.
-- Seed once (`npm run db:seed`) so Wira can sign in; add everyone else through Admin > Users.
+- Seed once (`npm run db:seed`) so Wira can sign in; invite everyone else (Account settings → Users → Invited), or
+  share the invite link and approve the requests.
 - Register the OAuth redirect URIs for your public URL (`/api/auth/callback/google` and
   `/api/auth/callback/microsoft-entra-id`).
 - Resend is optional: without `RESEND_API_KEY` and `EMAIL_FROM` no emails are sent. Notification rows are always stored in the database for a future inbox.
 - Do not run `dev:session` against a deployed environment (it refuses non-localhost anyway).
+
+### Deploying the self sign-up release
+
+This release retires the email allow-list (`AllowedEmail`): from now on **any active User can sign in**. Do these in
+order:
+
+1. **Before** `prisma migrate deploy`, list active users who could only get in through the allow-list domain rule
+   until now, and deactivate (Admin → Members) anyone listed who should stay out:
+
+   ```sql
+   SELECT u.id, u.email FROM "User" u
+   WHERE u.active AND u.email IS NOT NULL
+     AND lower(split_part(u.email,'@',2)) <> 'clogent.co.id'
+     AND NOT EXISTS (SELECT 1 FROM "AllowedEmail" a
+                     WHERE a."workspaceId" = u."workspaceId" AND lower(a.email) = lower(u.email));
+   ```
+
+2. In production set `APP_BASE_URL` (e.g. `https://cloworks.vercel.app`; without it emails carry no links) and
+   `RESEND_API_KEY` + `EMAIL_FROM` (without them no sign-up code or invite is ever sent).
+3. Run `prisma migrate deploy` and deploy the new build **back-to-back**: the old build still queries `AllowedEmail`,
+   which the migration drops.
+4. After deploying, press **Reset link** once in Admin → Members (Invite link card). The initial join codes were
+   generated in SQL from `md5(random())`, which isn't a secure random source.
+5. Allow-list emails without an account were migrated to open invites (Requester / Other) under **Invited**, but no
+   email was sent and their links can't be used: press **Resend** on each one you still want (adjust roles by
+   inviting the same email again).
 
 ## Known limitations
 

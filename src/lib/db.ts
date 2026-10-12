@@ -14,9 +14,9 @@ export { CLOGENT_WORKSPACE_ID } from "./workspace";
 
 /** Models whose rows carry `workspaceId`, by Prisma model name. `Workspace` itself is not scoped. */
 const SCOPED_MODELS = new Set([
-  "User", "AllowedEmail", "Brand", "Division", "RequestType", "Request", "StatusEvent", "DeadlineEvent", "Comment",
+  "User", "Brand", "Division", "RequestType", "Request", "StatusEvent", "DeadlineEvent", "Comment",
   "Attachment", "KpiTarget", "Notification", "ChatRead", "Project", "ProjectTask", "ProjectMilestone",
-  "LibraryCategory", "LibraryItem",
+  "LibraryCategory", "LibraryItem", "Invite",
 ]);
 
 const WHERE_OPS = new Set([

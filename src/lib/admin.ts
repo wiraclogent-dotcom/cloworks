@@ -1,7 +1,6 @@
 import { Prisma, AppRole as AppRoleEnum, JobRole as JobRoleEnum, type AppRole, type JobRole, type PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
 import { fieldSchemaSchema } from "./fieldSchema";
-import { DEFAULT_ALLOWED_DOMAIN, isAllowedEmail } from "./signin";
 import { normalizeName } from "./import/aliases";
 import { checkNewPassword, hashPassword, verifyPassword } from "./password";
 
@@ -34,16 +33,25 @@ function assertAdmin(actor: Actor) {
 
 const norm = (s: string) => s.trim().replace(/\s+/g, " ");
 
-function companyDomain() {
-  return (process.env.ALLOWED_EMAIL_DOMAIN || DEFAULT_ALLOWED_DOMAIN).trim().toLowerCase();
-}
+/** Prisma unique-constraint violation (P2002). */
+export const isUniqueViolation = (e: unknown) => e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
 
-/** Normalised email, or throws VALIDATION: exactly one @, no whitespace, <= 254 chars. */
-export function normalizeEmail(raw: string): string {
+/**
+ * Trimmed, lowercased email, or null when malformed: exactly one @ with a local part, no whitespace, at most 254
+ * characters, and a domain of at least two dot-separated, non-empty labels ("andi@gmail" is refused).
+ */
+export function cleanEmail(raw: string): string | null {
   const e = (raw ?? "").trim().toLowerCase();
   const parts = e.split("@");
-  if (!e || e.length > 254 || /\s/.test(e) || parts.length !== 2 || !parts[0] || !parts[1])
-    throw new AdminError("VALIDATION", "Enter a valid email address (one @, no spaces, at most 254 characters)");
+  if (!e || e.length > 254 || /\s/.test(e) || parts.length !== 2 || !parts[0]) return null;
+  const labels = parts[1].split(".");
+  return labels.length >= 2 && labels.every(Boolean) ? e : null;
+}
+
+/** Normalised email, or throws VALIDATION (see cleanEmail). */
+export function normalizeEmail(raw: string): string {
+  const e = cleanEmail(raw);
+  if (!e) throw new AdminError("VALIDATION", "Enter a valid email address (one @, no spaces, a domain like example.com, at most 254 characters)");
   return e;
 }
 
@@ -70,7 +78,7 @@ function cleanName(raw: string, label: string, max = MAX_NAME_LEN): string {
 }
 
 /** Serialises every roster mutation that can change who the admins are (released at commit). */
-async function lockRoster(tx: Tx) {
+export async function lockRoster(tx: Tx) {
   await tx.$executeRaw`SELECT pg_advisory_xact_lock(7312001)`;
 }
 
@@ -116,21 +124,11 @@ function assertRoles(appRole: unknown, jobRole: unknown) {
     throw new AdminError("VALIDATION", `Unknown job role "${String(jobRole)}"`);
 }
 
-/**
- * Active admins who can actually sign in: have an email that sign-in would accept (company domain or on the allow list).
- * Run under the roster lock.
- */
+/** Active admins who can actually sign in, i.e. have a login email. Run under the roster lock. */
 export async function countSignInCapableAdmins(tx: Tx, excludeUserId?: string): Promise<number> {
-  const [admins, rows] = await Promise.all([
-    tx.user.findMany({
-      where: { appRole: "ADMIN", active: true, email: { not: null }, ...(excludeUserId ? { id: { not: excludeUserId } } : {}) },
-      select: { email: true },
-    }),
-    tx.allowedEmail.findMany({ select: { email: true } }),
-  ]);
-  const allow = rows.map((r) => r.email);
-  const domain = companyDomain();
-  return admins.filter((a) => a.email && isAllowedEmail(a.email, domain, allow)).length;
+  return tx.user.count({
+    where: { appRole: "ADMIN", active: true, email: { not: null }, ...(excludeUserId ? { id: { not: excludeUserId } } : {}) },
+  });
 }
 
 function mapUnique(e: unknown, message: string): never {
@@ -216,7 +214,7 @@ export async function createUser(db: Db, actor: Actor, input: NewUserInput) {
   });
 }
 
-/** Binds (or clears) the login email in one transaction, keeping AllowedEmail consistent. */
+/** Binds (or clears) the login email in one transaction; refuses to leave no admin who can sign in. */
 export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, email: string | null) {
   assertAdmin(actor);
   const next = email === null ? null : normalizeEmail(email);
@@ -225,21 +223,12 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
       await lockRoster(tx);
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw new AdminError("NOT_FOUND", "User not found");
-      const old = user.email?.trim().toLowerCase() ?? null;
       const capableBefore = user.appRole === "ADMIN" && user.active ? await countSignInCapableAdmins(tx) : 0;
       if (next) {
         const clash = await tx.user.findFirst({ where: { id: { not: userId }, email: { equals: next, mode: "insensitive" } }, select: { name: true } });
         if (clash) throw new AdminError("CONFLICT", `${next} is already the login email of ${clash.name}`);
       }
       const updated = await tx.user.update({ where: { id: userId }, data: { email: next } });
-      if (old && old !== next) {
-        const stillUsed = await tx.user.count({ where: { id: { not: userId }, email: { equals: old, mode: "insensitive" } } });
-        if (!stillUsed) await tx.allowedEmail.deleteMany({ where: { email: { equals: old, mode: "insensitive" } } });
-      }
-      if (next && !isAllowedEmail(next, companyDomain(), [])) {
-        if (!(await tx.allowedEmail.findFirst({ where: { workspaceId: actor.workspaceId, email: next } })))
-          await tx.allowedEmail.create({ data: { workspaceId: actor.workspaceId, email: next, note: `login for ${user.name}` } });
-      }
       if (capableBefore > 0 && (await countSignInCapableAdmins(tx)) === 0)
         throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
       return updated;
@@ -275,30 +264,6 @@ export async function changeOwnPassword(db: Db, userId: string, current: string,
   await db.user.update({
     where: { id: userId },
     data: { passwordHash: await hashPassword(next), passwordVersion: { increment: 1 }, failedLogins: 0, lockedUntil: null, mustChangePassword: false },
-  });
-}
-
-export async function addAllowedEmail(db: Db, actor: Actor, email: string, note?: string) {
-  assertAdmin(actor);
-  const e = normalizeEmail(email);
-  const n = note?.trim() ? note.trim().slice(0, 200) : undefined;
-  const { workspaceId } = actor;
-  const existing = await db.allowedEmail.findFirst({ where: { workspaceId, email: e }, select: { id: true } });
-  return existing
-    ? db.allowedEmail.update({ where: { id: existing.id }, data: n !== undefined ? { note: n } : {} })
-    : db.allowedEmail.create({ data: { workspaceId, email: e, note: n ?? null } });
-}
-
-/** Idempotent. Sessions of users relying on this row end on their next request (session-core). */
-export async function removeAllowedEmail(db: Db, actor: Actor, email: string) {
-  assertAdmin(actor);
-  const e = normalizeEmail(email);
-  await db.$transaction(async (tx) => {
-    await lockRoster(tx);
-    const before = await countSignInCapableAdmins(tx);
-    await tx.allowedEmail.deleteMany({ where: { email: { equals: e, mode: "insensitive" } } });
-    if (before > 0 && (await countSignInCapableAdmins(tx)) === 0)
-      throw new AdminError("LAST_ADMIN", "That would leave no active admin who can sign in");
   });
 }
 

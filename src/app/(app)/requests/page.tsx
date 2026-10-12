@@ -102,7 +102,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
       ) : tablePage ? (
         <div data-page-wide="">
           <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
-            hrefFor={(key, dir) => hrefWith(p, { sort: key === "deadline" ? undefined : key, dir: dir === "desc" ? "desc" : undefined })}
+            hrefFor={(key, dir) => hrefWith(p, { sort: key, dir })}
             footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
               hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />} />
         </div>

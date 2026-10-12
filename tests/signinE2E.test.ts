@@ -93,7 +93,6 @@ describe("sign-in / sign-out end to end: 10 accounts created by an admin", () =>
     process.env.AUTH_SECRET = "test-secret-for-e2e-signin-0123456789abcdef";
     process.env.AUTH_URL = BASE;
     process.env.AUTH_TRUST_HOST = "true";
-    process.env.ALLOWED_EMAIL_DOMAIN = "clogent.co.id";
     ({ handlers: h } = (await import("@/lib/auth")) as unknown as { handlers: Handlers });
 
     const a = await db.prisma.user.create({

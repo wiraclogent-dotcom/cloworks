@@ -13,7 +13,7 @@ import { cn } from "./ui/cn";
 import { useNarrow } from "./useNarrow";
 
 /**
- * Workload per person over two Monday-start weeks: one section per team member (+ Unassigned), one bar per open
+ * Workload per person over one Monday-start week: one section per team member (+ Unassigned), one bar per open
  * request from its request day to its deadline (overdue and no-deadline ones run to today). View-only.
  */
 export function RequestTimeline({ rows, people, week, today, assigneeId, prevHref, nextHref, todayHref, filtered = false, clearHref = "/requests?view=timeline" }: {
@@ -43,11 +43,11 @@ export function RequestTimeline({ rows, people, week, today, assigneeId, prevHre
       </div>
       {empty ? (
         filtered ? (
-          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters in these two weeks"
+          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters in this week"
             description="Try another search, other weeks, or clear the filters."
             action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
         ) : (
-          <EmptyState icon={<ChartNoAxesGantt />} title="No open requests in these two weeks"
+          <EmptyState icon={<ChartNoAxesGantt />} title="No open requests in this week"
             description="Open requests show up here from the day they were requested to their deadline."
             action={<Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>} />
         )

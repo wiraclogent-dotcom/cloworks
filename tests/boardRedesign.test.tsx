@@ -70,7 +70,7 @@ describe("board card chips", () => {
     const a = screen.getByRole("img", { name: "Assignee: Cami Putri" });
     expect(a.getAttribute("title")).toBe("Assignee: Cami Putri");
     expect(a.getAttribute("data-card-assignee")).toBe("assigned");
-    expect(a.textContent).toBe("CP");
+    expect(a.textContent).toContain("CP"); // name shown, then the initials avatar
     cleanup();
     card({ assigneeName: null });
     const u = screen.getByRole("img", { name: "Assignee: Unassigned" });
