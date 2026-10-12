@@ -4,7 +4,8 @@ import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { canTransition } from "./workflow";
 import { STATUS_LABEL } from "./statusLabels";
 import { syncContentPostForRequest } from "./content/sync";
-import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
+import { bestEffort, buildMessage, notifierFor, realMailer, type Notifier } from "./notify";
+import { notifyContentWith } from "./content/notify";
 
 export class TransitionError extends Error {
   constructor(
@@ -70,4 +71,10 @@ export async function transitionRequestWith(
     const userIds = [...new Set([change.requesterId, change.assigneeId])].filter((id): id is string => !!id && id !== user.id);
     await notifier({ actorId: user.id, userIds, requestId, type, message });
   });
+
+  // The post's author hears that the request behind it was cancelled (the actor is excluded by the notice itself).
+  const cancelled = change.post;
+  if (cancelled?.cancelled) {
+    await bestEffort(() => notifyContentWith(db, realMailer(), { kind: "cancelled", postId: cancelled.postId, actorId: user.id }));
+  }
 }

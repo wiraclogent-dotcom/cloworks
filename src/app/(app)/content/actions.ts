@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import type { ContentKind, ContentStatus, ContentSurface, MediaType } from "@prisma/client";
-import { bestEffort } from "@/lib/notify";
+import { bestEffort, buildMessage, notifierFor, realMailer } from "@/lib/notify";
+import { commentRecipients, notifyContentWith, type ContentNotice } from "@/lib/content/notify";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import type { ScopedDb } from "@/lib/db";
@@ -74,6 +75,11 @@ function destroyAfter(db: ScopedDb, mediaIds: string[]) {
   for (const id of mediaIds) after(() => bestEffort(() => destroyMediaWith(db, client, id)));
 }
 
+/** Tells the people a content event concerns, after the response; failures are logged, never surfaced. */
+function notifyAfter(db: ScopedDb, n: ContentNotice) {
+  after(() => bestEffort(() => notifyContentWith(db, realMailer(), n)));
+}
+
 export async function createPost(input: { channelId: string; surface: ContentSurface; kind: ContentKind; publishedAt?: string }): Promise<ContentActionResult<{ id: string }>> {
   return run((db, u) => createPostWith(db, u, input));
 }
@@ -96,22 +102,45 @@ export async function deletePost(id: string): Promise<ContentActionResult> {
   });
 }
 export async function submitPost(id: string): Promise<ContentActionResult> {
-  return run((db, u) => submitPostWith(db, u, id));
+  return run(async (db, u) => {
+    await submitPostWith(db, u, id);
+    notifyAfter(db, { kind: "submitted", postId: id, actorId: u.id });
+  });
 }
 export async function sendBackPost(id: string, note: string): Promise<ContentActionResult> {
-  return run(async (db, u) => { await sendBackPostWith(db, u, id, note); });
+  return run(async (db, u) => {
+    await sendBackPostWith(db, u, id, note);
+    notifyAfter(db, { kind: "sentBack", postId: id, actorId: u.id, note });
+  });
 }
 export async function loadApprove(id: string): Promise<ContentActionResult<{ form: ApproveFormData }>> {
   return run(async (db, u) => ({ form: await loadApproveForm(db, u, id) }), { revalidate: false });
 }
 export async function approvePost(id: string, input: ApproveInput): Promise<ContentActionResult<{ requestId: string }>> {
-  // Notifications are wired in a later step.
-  return run((db, u) => approveContentPostWith(db, u, id, input));
+  return run(async (db, u) => {
+    const { requestId } = await approveContentPostWith(db, u, id, input);
+    notifyAfter(db, { kind: "approved", postId: id, actorId: u.id });
+    // An assignee picked on the approve form is told just like when a lead assigns a request.
+    if (input.assigneeId) {
+      const assigneeId = input.assigneeId;
+      await bestEffort(async () => {
+        const actor = await db.user.findUnique({ where: { id: u.id }, select: { name: true } });
+        await notifierFor(db)({
+          actorId: u.id, userIds: [assigneeId], requestId, type: "ASSIGNED",
+          message: buildMessage("ASSIGNED", actor?.name ?? "Someone", input.title),
+        });
+      });
+    }
+    return { requestId };
+  });
 }
 export async function addContentComment(id: string, body: string): Promise<ContentActionResult<{ commentId: string }>> {
   return run(async (db, u) => {
-    // Mentioned ids are for the notification step added later.
-    const { id: commentId } = await addContentCommentWith(db, u, id, body);
+    const { id: commentId, mentionedUserIds } = await addContentCommentWith(db, u, id, body);
+    after(() => bestEffort(async () => {
+      const userIds = await commentRecipients(db, id, u.id, mentionedUserIds);
+      await notifyContentWith(db, realMailer(), { kind: "comment", postId: id, actorId: u.id, userIds });
+    }));
     return { commentId };
   });
 }

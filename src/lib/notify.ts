@@ -117,7 +117,7 @@ export async function notifyWith(
 }
 
 let mailer: Mailer | undefined;
-const realMailer = () => (mailer ??= createMailerFromEnv());
+export const realMailer = () => (mailer ??= createMailerFromEnv());
 
 /**
  * Default notifier for a given db handle, using the env-configured mailer. Inside a request it runs after the

@@ -36,5 +36,7 @@ describe("notifyLibraryWith", () => {
   it("request notifications still link to their request; others to nothing", () => {
     expect(notificationHref({ type: "COMMENT", requestId: "r1" })).toBe("/requests/r1");
     expect(notificationHref({ type: "COMMENT", requestId: null })).toBeNull();
+    expect(notificationHref({ type: "CONTENT", requestId: null, contentPostId: "p 1" })).toBe("/content?post=p%201");
+    expect(notificationHref({ type: "CONTENT", requestId: "r1", contentPostId: "p1" })).toBe("/requests/r1");
   });
 });
