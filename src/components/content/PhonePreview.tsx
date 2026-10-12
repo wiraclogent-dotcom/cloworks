@@ -1,12 +1,18 @@
-import { Children, isValidElement, type ReactNode } from "react";
+"use client";
+
+import { Children, isValidElement, useCallback, type ReactNode } from "react";
 import Link from "next/link";
-import { CircleDashed, Clapperboard, Grid3x3 } from "lucide-react";
+import { DndContext, DragOverlay, useDraggable, useDroppable } from "@dnd-kit/core";
+import { CircleDashed, Clapperboard, GripVertical, Grid3x3, X } from "lucide-react";
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelView, TileView } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
+import { Alert } from "@/components/ui/Alert";
+import { Button } from "@/components/ui/Button";
 import { cn, focusRing } from "@/components/ui/cn";
-import { PostTile } from "./PostTile";
+import { PostTile, TILE_ASPECT, tileLabel } from "./PostTile";
 import { AlreadyPostedButton, NewPostTile } from "./NewPostButtons";
+import { isDraggable, useGridDnd } from "./useGridDnd";
 
 const TABS: { value: ContentTab; label: string; icon: ReactNode }[] = [
   { value: "feed", label: "Feed", icon: <Grid3x3 aria-hidden="true" /> },
@@ -25,6 +31,34 @@ function TileRow({ tab, children }: { tab: ContentTab; children: ReactNode }) {
 }
 
 /**
+ * A planned tile in the grid: every one is a drop slot; editable ones (for drafters) are also draggable, by the
+ * whole tile for pointer and touch and by the small handle for keyboard and screen readers. Others render no handle.
+ */
+function PlannedCell({ tile, draggable, busy, selected, channelId, tab }: {
+  tile: TileView; draggable: boolean; busy: boolean; selected: boolean; channelId: string; tab: ContentTab;
+}) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, isDragging } = useDraggable({ id: tile.id, disabled: !draggable || busy });
+  const drop = useDroppable({ id: tile.id });
+  const over = drop.isOver && !isDragging;
+  return (
+    <div ref={(el) => { setNodeRef(el); drop.setNodeRef(el); }} data-tile={tile.id} data-draggable={draggable ? "true" : undefined}
+      {...(draggable ? listeners : undefined)}
+      className={cn("group/tile relative", draggable && "touch-manipulation", isDragging && "opacity-40", busy && "opacity-60",
+        over && "outline-3 -outline-offset-3 outline-ring")}>
+      <PostTile tile={tile} channelId={channelId} tab={tab} selected={selected} />
+      {draggable ? (
+        <button type="button" ref={setActivatorNodeRef} {...attributes} data-handle="" disabled={busy}
+          aria-label={`Drag “${tileLabel(tile)}”`}
+          className={cn("absolute bottom-6 left-1/2 inline-flex size-6 -translate-x-1/2 cursor-grab touch-none items-center justify-center rounded-md bg-background/85 text-foreground",
+            "opacity-0 transition-opacity duration-150 group-hover/tile:opacity-100 group-focus-within/tile:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100", focusRing)}>
+          <GripVertical aria-hidden="true" className="size-4" />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
  * Centre column: an Instagram profile in a phone frame (~390px): header, Feed/Reels/Stories tabs, then the planned
  * posts (top of the plan first), an "Already posted" divider and the posted ones, faded.
  */
@@ -32,6 +66,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
   channel: ChannelView; tab: ContentTab; planned: TileView[]; published: TileView[]; canDraft: boolean; selectedId: string | null;
 }) {
   const tileProps = { channelId: channel.id, tab };
+  const dnd = useGridDnd({ planned, cols: tab === "stories" ? 1 : 3, labelOf: useCallback((t: TileView) => tileLabel(t), []) });
   return (
     <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[2.25rem] border-[10px] border-foreground bg-background shadow-raised">
       <div className="mx-auto mt-1.5 h-1.5 w-20 rounded-full bg-surface-muted" aria-hidden="true" />
@@ -56,10 +91,28 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
         ))}
       </nav>
       <div className="min-h-64 pt-0.5 pb-4">
-        <TileRow tab={tab}>
-          {canDraft ? <NewPostTile {...tileProps} /> : null}
-          {planned.map((t) => <PostTile key={t.id} tile={t} {...tileProps} selected={t.id === selectedId} />)}
-        </TileRow>
+        {dnd.error ? (
+          <Alert tone="danger" className="mx-2 mb-2"
+            action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" />} onClick={dnd.dismissError}>Dismiss</Button>}>
+            <p>{dnd.error}</p>
+          </Alert>
+        ) : null}
+        <DndContext {...dnd.dndProps}>
+          <TileRow tab={tab}>
+            {canDraft ? <NewPostTile {...tileProps} /> : null}
+            {dnd.tiles.map((t) => (
+              <PlannedCell key={t.id} tile={t} draggable={isDraggable(t, canDraft)} busy={dnd.busyId === t.id} selected={t.id === selectedId} {...tileProps} />
+            ))}
+          </TileRow>
+          {/* The dragged copy floats above the scrolling frame; hidden from assistive tech (the live region announces the move). */}
+          <DragOverlay>
+            {dnd.activeTile ? (
+              <div inert aria-hidden="true" className={cn("w-28 cursor-grabbing opacity-90 shadow-raised", TILE_ASPECT[tab])}>
+                <PostTile tile={dnd.activeTile} {...tileProps} />
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
         <div className="my-2 flex flex-col items-center gap-1 px-3">
           <div className="flex w-full items-center gap-2 text-xs text-foreground-secondary">
             <span className="h-px flex-1 bg-border" aria-hidden="true" />

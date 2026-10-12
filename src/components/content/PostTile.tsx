@@ -36,6 +36,12 @@ const DAY_FMT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short
 /** "2026-10-24" → "24 Oct". */
 export const shortDay = (ymd: string) => DAY_FMT.format(new Date(`${ymd}T00:00:00Z`));
 
+/** Screen-reader label of a tile: status (or "Posted"), planned day, format. */
+export function tileLabel(tile: TileView, published = false): string {
+  return [published ? "Posted" : STATUS_LABEL[tile.status], tile.plannedAt && !published ? shortDay(tile.plannedAt) : null,
+    tile.format === "CAROUSEL" ? "Carousel" : tile.format === "VIDEO" ? "Video" : null].filter(Boolean).join(" · ");
+}
+
 /**
  * One grid tile: cover (or stripes), status badge, planned date, carousel/video icon and the ⚠ badge when its date
  * is out of order. Published tiles are faded and carry no status. Links to `?post=<id>`, keeping channel and tab.
@@ -43,10 +49,8 @@ export const shortDay = (ymd: string) => DAY_FMT.format(new Date(`${ymd}T00:00:0
 export function PostTile({ tile, channelId, tab, published = false, selected = false }: {
   tile: TileView; channelId: string; tab: ContentTab; published?: boolean; selected?: boolean;
 }) {
-  const label = [published ? "Posted" : STATUS_LABEL[tile.status], tile.plannedAt && !published ? shortDay(tile.plannedAt) : null,
-    tile.format === "CAROUSEL" ? "Carousel" : tile.format === "VIDEO" ? "Video" : null].filter(Boolean).join(" · ");
   return (
-    <Link href={planHref({ channel: channelId, tab, post: tile.id })} aria-label={label} aria-current={selected ? "true" : undefined}
+    <Link href={planHref({ channel: channelId, tab, post: tile.id })} aria-label={tileLabel(tile, published)} aria-current={selected ? "true" : undefined}
       className={cn("relative block overflow-hidden bg-surface-muted", TILE_ASPECT[tab], focusRing,
         !tile.coverUrl && STRIPES, published && "opacity-50 hover:opacity-80",
         selected && "outline-3 -outline-offset-3 outline-primary")}>
