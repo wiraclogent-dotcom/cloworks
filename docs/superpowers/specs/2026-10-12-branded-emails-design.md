@@ -13,7 +13,7 @@ so this work is about presentation and content, not delivery setup.
 ## Decisions
 
 - **Look: "branded header" (option B).** Deep-blue (`#09426d`) header band with the logo and the word "Cloworks",
-  white card on a warm grey page (`#f5f3ee`), aqua (`#11aa9f`) button, small grey footer. The header uses a solid
+  white card on a warm grey page (`#f5f3ee`), darker aqua (`#0b7d75`, ~5:1 with white text; the brand aqua `#11aa9f` was only ~2.9:1) button, small grey footer. The header uses a solid
   background colour (no image background) so dark-mode inverting clients keep it legible.
 - **Sender stays no-reply.** No Reply-To. Every email's footer says "Need help? Contact your workspace admin."
 - **English only.**

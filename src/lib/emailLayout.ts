@@ -53,7 +53,7 @@ export function renderEmail(c: EmailContent, opts: { baseUrl?: string } = {}): R
     ? `<div style="margin:6px 0 18px;padding:14px 16px;background:#f5f3ee;border-radius:8px;font-family:'SFMono-Regular',Menlo,Consolas,monospace;font-size:28px;letter-spacing:4px;color:#17181c;text-align:center;">${e(c.code)}</div>`
     : "";
   const btn = button
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px;"><tr><td bgcolor="#11aa9f" style="background:#11aa9f;border-radius:8px;"><a href="${e(button.url)}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${e(button.label)}</a></td></tr></table>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px;"><tr><td bgcolor="#0b7d75" style="background:#0b7d75;border-radius:8px;"><a href="${e(button.url)}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${e(button.label)}</a></td></tr></table>`
     : "";
   const note = c.note ? `<p style="margin:0;font-size:13px;line-height:1.5;color:#7d8088;">${e(c.note)}</p>` : "";
   const footer = [e(HELP), host ? `Cloworks &middot; ${e(host)}` : ""].filter(Boolean).join("<br>");
