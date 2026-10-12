@@ -8,6 +8,7 @@ import { ThemeSync } from "./ui/darkMode";
 import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
 import { ProfileMenu } from "./shell/ProfileMenu";
+import { PhotoDirectory } from "./shell/PhotoDirectory";
 import { NotificationBell } from "./shell/NotificationBell";
 import { ChatDock } from "./chat/ChatDock";
 import { Skeleton } from "./ui/Skeleton";
@@ -72,6 +73,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><NotificationBell /></Suspense>
           <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>
+          <Suspense fallback={null}><PhotoDirectory /></Suspense>
         </div>
       }
       nav={

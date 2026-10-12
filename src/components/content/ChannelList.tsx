@@ -89,7 +89,7 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
                         <Link href={planHref({ channel: c.id, tab })} aria-current={on ? "page" : undefined}
                           className={cn("flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm transition-colors duration-150 ease-out", focusRing,
                             on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-surface-muted")}>
-                          <Avatar name={c.displayName} src={c.avatarUrl ?? undefined} size="sm" decorative />
+                          <Avatar name={c.displayName} src={c.avatarUrl} size="sm" decorative />
                           <span className="min-w-0 flex-1 truncate">@{c.handle}</span>
                           {c.awaiting ? <CountPill value={c.awaiting} aria-label={`${c.awaiting} awaiting approval`} /> : null}
                         </Link>

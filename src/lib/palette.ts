@@ -112,7 +112,7 @@ export const AVATAR_PAIRS: { light: { tint: string; text: string }; dark: { tint
   { light: { tint: "#EAEFF5", text: "#2B3A4D" }, dark: { tint: "#314358", text: "#D3DCE8" } },
 ];
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
 }
 

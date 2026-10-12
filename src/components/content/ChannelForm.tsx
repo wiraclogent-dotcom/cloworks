@@ -97,7 +97,7 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
         <div>
           <span className={labelClass}>Avatar</span>
           <div className="flex items-end gap-3">
-            <Avatar name={displayName || handle || "?"} src={avatar.url ?? undefined} size="lg" decorative />
+            <Avatar name={displayName || handle || "?"} src={avatar.url} size="lg" decorative />
             <MediaUpload purpose="content" accept="image" onUploaded={(m) => setAvatar({ id: m.id, url: m.url })} onBusyChange={setUploading} />
             {avatar.id ? <Button variant="ghost" size="sm" onClick={() => setAvatar({ id: null, url: null })}>Remove avatar</Button> : null}
           </div>
