@@ -244,3 +244,17 @@ describe("invites", () => {
     expect(await pickShortName(db.raw, "clogent", "!!!", "zz@x.com")).toBe("zz");
   });
 });
+
+describe("invite link column", () => {
+  it("stores userId and clears it when the person is deleted", async () => {
+    const u = await db.prisma.user.create({ data: { name: uniq("Roster"), fullName: "Roster Person", appRole: "REQUESTER" } });
+    const email = `${uniq("link")}@gmail.com`;
+    const inv = await db.prisma.invite.create({
+      data: { email, appRole: "REQUESTER", jobRole: "OTHER", tokenHash: hashToken("t" + uniq("")), invitedById: admin.id, expiresAt: new Date(Date.now() + DAY), userId: u.id },
+    });
+    expect(inv.userId).toBe(u.id);
+    await db.prisma.user.delete({ where: { id: u.id } });
+    const after = await db.raw.invite.findUniqueOrThrow({ where: { id: inv.id } });
+    expect(after.userId).toBeNull();
+  });
+});
