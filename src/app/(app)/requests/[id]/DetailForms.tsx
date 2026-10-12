@@ -177,7 +177,7 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
         <option value="">Choose a status</option>
         {legal.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
       </select>
-      <p id={`${uid}-mh`} className={hintClass}>{legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</p>
+      <p id={`${uid}-mh`} className={hintClass}>{status === "CANCELLED" ? "Choose Requested to restore this request." : legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</p>
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}
     </div>

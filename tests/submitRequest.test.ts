@@ -35,9 +35,24 @@ describe("submitRequestWith", () => {
     expect(r.fieldErrors?.briefUrl).toBeTruthy();
     expect(r.values).toEqual({
       title: "My title", briefUrl: "ftp://bad", notes: "some notes", brandId: ids.brand, divisionId: ids.division,
-      deadline: "2099-01-01", workKind: "motion",
+      deadline: "2099-01-01", workKind: "motion", assigneeId: "",
     });
     expect(r.nonce).toBeTruthy();
+  });
+  it("assigns the picked designer straight away and notifies them", async () => {
+    const designer = await db.prisma.user.findFirstOrThrow({ where: { active: true, jobRole: "DESIGNER", appRole: { not: "REQUESTER" } } });
+    const calls: { userIds: string[]; type: string }[] = [];
+    const r = await submitRequestWith(db.prisma, user, fd({ title: "Assigned", brandId: ids.brand, divisionId: ids.division, workKind: "static", assigneeId: designer.id }),
+      async (n) => { calls.push(n); });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect((await db.prisma.request.findUniqueOrThrow({ where: { id: r.id } })).assigneeId).toBe(designer.id);
+    expect(calls).toMatchObject([{ userIds: [designer.id], type: "ASSIGNED" }]);
+  });
+  it("rejects an assignee who is not on the creative team", async () => {
+    const r = await submitRequestWith(db.prisma, user, fd({ title: "Bad assignee", brandId: ids.brand, divisionId: ids.division, workKind: "static", assigneeId: user.id }));
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.fieldErrors?.assigneeId).toBe("Pick someone from the creative team");
   });
   it("static design: General Design, no motion", async () => {
     const r = await submitRequestWith(db.prisma, user, fd({ title: "T", brandId: ids.brand, divisionId: ids.division, workKind: "static" }));

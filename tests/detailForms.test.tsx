@@ -49,13 +49,15 @@ describe("pickers", () => {
     expect(sel.value).toBe("u2");
     expect(Array.from(sel.options).map((o) => o.text)).toEqual(["Unassigned", "Ana", "Bima"]);
   });
-  it("move control offers only legal statuses and hides when none", () => {
+  it("move control offers only legal statuses; a cancelled request can only be restored to Requested", () => {
     const { unmount } = render(<MoveControl requestId="r1" title="T" status="REQUESTED" />);
     const sel = screen.getByLabelText("Move to…") as HTMLSelectElement;
     expect(Array.from(sel.options).map((o) => o.text)).not.toContain("Requested");
     unmount();
-    const { container } = render(<MoveControl requestId="r1" title="T" status="CANCELLED" />);
-    expect(container.textContent).toBe("");
+    render(<MoveControl requestId="r1" title="T" status="CANCELLED" />);
+    const restore = screen.getByLabelText("Move to…") as HTMLSelectElement;
+    expect(Array.from(restore.options).map((o) => o.text)).toEqual(["Choose a status", "Requested"]);
+    expect(screen.getByText("Choose Requested to restore this request.")).toBeTruthy();
   });
 });
 

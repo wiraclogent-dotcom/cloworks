@@ -17,6 +17,7 @@ const ALLOWED: [RequestStatus, RequestStatus][] = [
   ["ON_PROGRESS", "CANCELLED"],
   ["FIRST_LOOK", "CANCELLED"],
   ["DONE", "CANCELLED"],
+  ["CANCELLED", "REQUESTED"],
 ];
 
 describe("canTransition", () => {

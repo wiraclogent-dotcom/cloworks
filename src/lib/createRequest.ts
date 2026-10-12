@@ -2,6 +2,7 @@ import { z } from "zod";
 import type { AppRole, PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
 import { isHttpUrl, parseFieldSchema, validateFields } from "./fieldSchema";
+import { CREATIVE_TEAM } from "./team";
 
 export type CreateRequestInput = {
   title: string;
@@ -16,6 +17,8 @@ export type CreateRequestInput = {
   fields?: Record<string, unknown>;
   /** The task also needs motion/video work. Default false. */
   needsMotion?: boolean;
+  /** Optional designer to assign straight away (must be on the creative team). Omitted/empty = unassigned. */
+  assigneeId?: string | null;
 };
 
 export const DEFAULT_TYPE_NAME = "General Design";
@@ -95,11 +98,14 @@ export async function createRequestWith(
   const idOf = (k: "brandId" | "divisionId" | "typeId") => (typeof input[k] === "string" && input[k] ? input[k] : null);
   const [brandId, divisionId, typeId] = [idOf("brandId"), idOf("divisionId"), idOf("typeId")];
   const useDefault = input.typeId === undefined;
-  const [brand, division, type] = await Promise.all([
+  const assigneeId = typeof input.assigneeId === "string" && input.assigneeId ? input.assigneeId : null;
+  const [brand, division, type, assignee] = await Promise.all([
     brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
     divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
     useDefault ? db.requestType.findFirst({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
+    assigneeId ? db.user.findFirst({ where: { id: assigneeId, ...CREATIVE_TEAM }, select: { id: true } }) : null,
   ]);
+  if (assigneeId && !assignee) errs.assigneeId ??= "Pick someone from the creative team";
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
   if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;
@@ -125,7 +131,7 @@ export async function createRequestWith(
         divisionId: v.divisionId,
         typeId: type.id,
         requesterId: user.id,
-        assigneeId: null,
+        assigneeId,
         requestedAt: now,
         deadline: v.deadline ? new Date(`${v.deadline}T00:00:00+07:00`) : null,
         status: "REQUESTED",
