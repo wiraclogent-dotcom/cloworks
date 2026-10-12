@@ -6,7 +6,8 @@ type Tx = Prisma.TransactionClient;
 
 export type MergeCounts = Record<
   | "requested" | "assigned" | "statusEvents" | "deadlineEvents" | "comments" | "attachments" | "kpiTargets"
-  | "notifications" | "chatReads" | "ownedProjects" | "projectTasks" | "libraryItems" | "invites",
+  | "notifications" | "chatReads" | "ownedProjects" | "projectTasks" | "libraryItems" | "invites"
+  | "contentPosts" | "contentComments" | "media",
   number
 >;
 
@@ -38,6 +39,10 @@ const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<un
   "LibraryItem.updatedById": (tx, from, into) => tx.libraryItem.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
   "Invite.invitedById": (tx, from, into) => tx.invite.updateMany({ where: { invitedById: from }, data: { invitedById: into } }),
   "Invite.userId": (tx, from, into) => tx.invite.updateMany({ where: { userId: from }, data: { userId: into } }),
+  "ContentPost.authorId": (tx, from, into) => tx.contentPost.updateMany({ where: { authorId: from }, data: { authorId: into } }),
+  "ContentPost.approvedById": (tx, from, into) => tx.contentPost.updateMany({ where: { approvedById: from }, data: { approvedById: into } }),
+  "ContentComment.authorId": (tx, from, into) => tx.contentComment.updateMany({ where: { authorId: from }, data: { authorId: into } }),
+  "Media.uploadedById": (tx, from, into) => tx.media.updateMany({ where: { uploadedById: from }, data: { uploadedById: into } }),
 };
 
 /** "Model.field" for every foreign key to User that mergeUsers re-points. */
@@ -78,6 +83,9 @@ async function countsFor(tx: Tx, id: string): Promise<MergeCounts> {
     projectTasks: await tx.projectTask.count({ where: { ownerId: id } }),
     libraryItems: await tx.libraryItem.count({ where: { OR: [{ createdById: id }, { updatedById: id }] } }),
     invites: await tx.invite.count({ where: { OR: [{ invitedById: id }, { userId: id }] } }),
+    contentPosts: await tx.contentPost.count({ where: { OR: [{ authorId: id }, { approvedById: id }] } }),
+    contentComments: await tx.contentComment.count({ where: { authorId: id } }),
+    media: await tx.media.count({ where: { uploadedById: id } }),
   };
 }
 

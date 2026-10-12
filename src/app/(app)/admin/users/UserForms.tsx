@@ -157,6 +157,9 @@ function countList(c: MergeCounts): string[] {
     [c.projectTasks, "project task", "project tasks"],
     [c.libraryItems, "library item", "library items"],
     [c.invites, "invite", "invites"],
+    [c.contentPosts, "content post", "content posts"],
+    [c.contentComments, "content comment", "content comments"],
+    [c.media, "uploaded file", "uploaded files"],
   ];
   return rows.filter(([n]) => n > 0).map(([n, one, many]) => plural(n, one, many));
 }
