@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import type { MediaType } from "@prisma/client";
+import { after } from "next/server";
+import type { ContentKind, ContentStatus, ContentSurface, MediaType } from "@prisma/client";
+import { bestEffort } from "@/lib/notify";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import type { ScopedDb } from "@/lib/db";
@@ -11,9 +13,14 @@ import { canDraftContent } from "@/lib/content/permissions";
 import {
   createChannelWith, updateChannelWith, moveChannelWith, deleteChannelWith, type ChannelInput,
 } from "@/lib/content/channels";
+import {
+  createPostWith, updatePostWith, setPostMediaWith, movePostWith, deletePostWith, submitPostWith, sendBackPostWith,
+  addContentCommentWith, type PostPatch, type PostMediaEntry,
+} from "@/lib/content/posts";
 import { cloudinaryConfig } from "@/lib/media/config";
 import { signUpload, type SignedUpload } from "@/lib/media/sign";
 import { cloudinaryClient } from "@/lib/media/client";
+import { destroyMediaWith } from "@/lib/media/destroy";
 import { registerMediaWith, MediaError, type MediaErrorCode } from "@/lib/media/register";
 
 export type ContentActionResult<T = object> =
@@ -50,6 +57,49 @@ export async function moveChannel(id: string, aboveId: string | null, belowId: s
 }
 export async function deleteChannel(id: string): Promise<ContentActionResult> {
   return run((db, u) => deleteChannelWith(db, u, id));
+}
+
+/** Destroys unlinked media after the response; skipped when storage is not configured (rows stay, nothing leaks). */
+function destroyAfter(db: ScopedDb, mediaIds: string[]) {
+  const cfg = cloudinaryConfig();
+  if (!cfg || !mediaIds.length) return;
+  const client = cloudinaryClient(cfg);
+  for (const id of mediaIds) after(() => bestEffort(() => destroyMediaWith(db, client, id)));
+}
+
+export async function createPost(input: { channelId: string; surface: ContentSurface; kind: ContentKind; publishedAt?: string }): Promise<ContentActionResult<{ id: string }>> {
+  return run((db, u) => createPostWith(db, u, input));
+}
+export async function updatePost(id: string, patch: PostPatch): Promise<ContentActionResult<{ status: ContentStatus }>> {
+  return run((db, u) => updatePostWith(db, u, id, patch));
+}
+export async function setPostMedia(id: string, media: PostMediaEntry[]): Promise<ContentActionResult> {
+  return run(async (db, u) => {
+    const { removedMediaIds } = await setPostMediaWith(db, u, id, media);
+    destroyAfter(db, removedMediaIds);
+  });
+}
+export async function movePost(id: string, aboveId: string | null, belowId: string | null): Promise<ContentActionResult> {
+  return run((db, u) => movePostWith(db, u, id, aboveId, belowId));
+}
+export async function deletePost(id: string): Promise<ContentActionResult> {
+  return run(async (db, u) => {
+    const { mediaIds } = await deletePostWith(db, u, id);
+    destroyAfter(db, mediaIds);
+  });
+}
+export async function submitPost(id: string): Promise<ContentActionResult> {
+  return run((db, u) => submitPostWith(db, u, id));
+}
+export async function sendBackPost(id: string, note: string): Promise<ContentActionResult> {
+  return run(async (db, u) => { await sendBackPostWith(db, u, id, note); });
+}
+export async function addContentComment(id: string, body: string): Promise<ContentActionResult<{ commentId: string }>> {
+  return run(async (db, u) => {
+    // Mentioned ids are for the notification step added later.
+    const { id: commentId } = await addContentCommentWith(db, u, id, body);
+    return { commentId };
+  });
 }
 
 /** Signed direct-upload parameters for the browser. Only `content` uploads for now; the API secret never leaves the server. */
