@@ -21,3 +21,9 @@ export function parseUserParam(raw: RawParam): string | undefined {
 export function resolveSubject(viewer: { id: string; appRole: AppRole }, userParam: string | undefined): string {
   return userParam && can(viewer.appRole, "dashboard.team") ? userParam : viewer.id;
 }
+
+/** `view=projects|requests` for the KPI pages; anything else is undefined (the page picks its default). */
+export function parseViewParam(raw: RawParam): "requests" | "projects" | undefined {
+  const v = first(raw);
+  return v === "projects" || v === "requests" ? v : undefined;
+}

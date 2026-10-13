@@ -19,6 +19,9 @@ import { ProjectScoreHeader } from "@/components/kpi/project/ProjectScoreHeader"
 import { TargetRow, targetBadge } from "@/components/kpi/project/TargetList";
 import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
+import { parseViewParam } from "@/app/(app)/dashboard/params";
+import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
+import { ProjectTeamTable, projectTeamRows, type ProjectTeamRow } from "@/components/kpi/project/ProjectTeamTable";
 import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi, TargetItem } from "@/lib/kpi/projectQueries";
 import type { QuarterScore } from "@/lib/kpi/projectScore";
@@ -246,6 +249,78 @@ describe("ManageTargetsModal", () => {
     loadItemOptions.mockResolvedValue({ ok: true, options: [{ itemTitle: "Logo", assignedTo: [] }] });
     open();
     expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("parseViewParam", () => {
+  it("accepts projects and requests, rejects the rest", () => {
+    expect(parseViewParam("projects")).toBe("projects");
+    expect(parseViewParam("requests")).toBe("requests");
+    expect(parseViewParam("x")).toBeUndefined();
+    expect(parseViewParam(undefined)).toBeUndefined();
+    expect(parseViewParam(["projects", "x"])).toBe("projects");
+  });
+});
+
+describe("KpiViewToggle", () => {
+  it("links Requests (no view) and Projects (view=projects), keeping the other params", () => {
+    render(<KpiViewToggle view="projects" base="/dashboard" params={{ month: "2026-10", year: "2026", q: "3", view: "projects", junk: undefined }} />);
+    const nav = screen.getByRole("navigation", { name: "View" });
+    const req = within(nav).getByRole("link", { name: "Requests" });
+    const proj = within(nav).getByRole("link", { name: "Projects" });
+    expect(req.getAttribute("href")).toBe("/dashboard?month=2026-10&year=2026&q=3");
+    expect(proj.getAttribute("href")).toBe("/dashboard?month=2026-10&year=2026&q=3&view=projects");
+    expect(proj.getAttribute("aria-current")).toBe("page");
+    expect(req.getAttribute("aria-current")).toBeNull();
+  });
+  it("can make the Requests link explicit for pages whose default is Projects", () => {
+    render(<KpiViewToggle view="projects" base="/dashboard" params={{ month: "2026-10" }} explicitRequests />);
+    expect(screen.getByRole("link", { name: "Requests" }).getAttribute("href")).toBe("/dashboard?month=2026-10&view=requests");
+  });
+  it("links to the bare path when there is nothing to keep", () => {
+    render(<KpiViewToggle view="requests" base="/dashboard/team" params={{}} />);
+    expect(screen.getByRole("link", { name: "Requests" }).getAttribute("href")).toBe("/dashboard/team");
+    expect(screen.getByRole("link", { name: "Projects" }).getAttribute("href")).toBe("/dashboard/team?view=projects");
+  });
+});
+
+describe("ProjectTeamTable", () => {
+  const row = (userId: string, name: string, year: number | null, over: Partial<ProjectTeamRow> = {}): ProjectTeamRow =>
+    ({ userId, name, quarters: [null, null, null, year], year, done: 1, items: 2, onTimePct: year === null ? null : 50, ...over });
+  it("sorts by year score descending with null last", () => {
+    render(<ProjectTeamTable rows={[row("a", "Ann", null), row("b", "Bo", 60), row("c", "Cy", 90)]} year={2026} />);
+    const names = screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("rowheader")[0]?.textContent ?? r.querySelector("a")?.textContent);
+    expect(names).toEqual(["Cy", "Bo", "Ann"]);
+    const cy = screen.getByRole("link", { name: "Cy" });
+    expect(cy.getAttribute("href")).toBe("/dashboard/projects/c?year=2026");
+  });
+  it("shows scores, dashes, done and on time", () => {
+    render(<ProjectTeamTable rows={[row("a", "Ann", null), row("c", "Cy", 90, { done: 3, items: 4, onTimePct: 75 })]} year={2026} />);
+    for (const h of ["Person", "Q1", "Q2", "Q3", "Q4", "Year", "Done", "On time"]) expect(screen.getByRole("columnheader", { name: h })).toBeTruthy();
+    const cy = screen.getByRole("link", { name: "Cy" }).closest("tr")!;
+    expect(cy.textContent).toContain("3/4");
+    expect(cy.textContent).toContain("75%");
+    expect(within(screen.getByRole("link", { name: "Ann" }).closest("tr")!).getAllByText("—").length).toBeGreaterThanOrEqual(5);
+  });
+  it("does not link names when canOpen is false", () => {
+    render(<ProjectTeamTable rows={[row("c", "Cy", 90)]} year={2026} canOpen={false} />);
+    expect(screen.queryByRole("link", { name: "Cy" })).toBeNull();
+    expect(screen.getByText("Cy")).toBeTruthy();
+  });
+  it("shows the empty state with no rows", () => {
+    render(<ProjectTeamTable rows={[]} year={2026} />);
+    expect(screen.getByText("No project targets for 2026 yet.")).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+});
+
+describe("projectTeamRows", () => {
+  it("sums the quarters and drops people without targets", () => {
+    const withTargets = { ...kpiOf({ userId: "u1" }), name: "Ann" };
+    const none = { ...kpiOf({ userId: "u2", yearScore: null, quarters: { 1: emptyQ(), 2: emptyQ(), 3: emptyQ(), 4: emptyQ() } }), name: "Bo" };
+    const rows = projectTeamRows([withTargets, none]);
+    expect(rows.map((r) => r.userId)).toEqual(["u1"]);
+    expect(rows[0]).toMatchObject({ name: "Ann", year: 80, quarters: [null, null, null, 80], done: 1, items: 2, onTimePct: 100 });
   });
 });
 

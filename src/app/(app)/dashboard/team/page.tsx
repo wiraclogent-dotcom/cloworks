@@ -15,7 +15,12 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CircleCheckBig, Gauge, Users } from "lucide-react";
 import { listTeamKpiPeople } from "@/lib/team";
-import { parseMonthParam } from "../params";
+import { loadTeamProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
+import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
+import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
+import { ProjectTeamTable, projectTeamRows } from "@/components/kpi/project/ProjectTeamTable";
+import { YearSelect } from "@/components/kpi/project/YearSelect";
+import { parseMonthParam, parseViewParam } from "../params";
 
 /** One cell of the summary scorecard: small label with its icon, the number, and an optional hint. */
 function ScoreCell({ kpi, icon, label, value, hint }: { kpi: string; icon: React.ReactNode; label: string; value: string; hint?: string }) {
@@ -40,7 +45,27 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     // Same pattern as the personal page: an inline message, never the data.
     return <AccessDenied description="You do not have access to the team KPI page." backHref="/dashboard" backLabel="Back to My KPI" />;
   }
-  const month = parseMonthParam((await searchParams).month);
+  const sp = await searchParams;
+  if (parseViewParam(sp.view) === "projects") {
+    const now = new Date();
+    const { year } = parseProjectKpiParams(sp, now);
+    const [kpis, years] = await Promise.all([loadTeamProjectKpi(db, year, now), targetYears(db)]);
+    const yearOptions = (years.includes(year) ? years : [year, ...years]).sort((a, b) => b - a);
+    return (
+      <>
+        <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={`Project KPI ${year}`}
+          actions={<>
+            <KpiViewToggle view="projects" base="/dashboard/team" params={{ ...sp, view: "projects" }} />
+            <YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: `/dashboard/team?view=projects&year=${y}` }))} />
+          </>} />
+        <section aria-labelledby="team-projects">
+          <h2 id="team-projects" className="sr-only">People</h2>
+          <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={can(viewer.appRole, "dashboard.team")} />
+        </section>
+      </>
+    );
+  }
+  const month = parseMonthParam(sp.month);
   const [targets, requests] = await Promise.all([loadTargets(db, [month]), loadKpiRequests(db, [month])]);
   const people = await listTeamKpiPeople(db, targets);
   const rows: TeamRow[] = people.map((u) => {
@@ -57,7 +82,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
   const canManage = can(viewer.appRole, "dashboard.team");
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" />} />
+      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<><KpiViewToggle view="requests" base="/dashboard/team" params={sp} /><MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" /></>} />
       {rows.length === 0 ? (
         <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
       ) : (
