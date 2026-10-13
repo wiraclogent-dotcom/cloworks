@@ -1,25 +1,54 @@
 "use client";
 
-import { useState, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent } from "react";
 import { Info } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 
+const HOVER_CLOSE_MS = 150;
+
 /**
  * Small info button beside a measure's label. A popover (not a tooltip) so it also opens on tap: mouse hover opens and
- * leaves closes, click toggles, and Tab / Enter / Space / Esc work from the keyboard.
+ * leaving closes after a short delay (so the pointer can move onto the text), a click while hover-open pins it, otherwise click toggles, and Tab / Enter / Space / Esc work from the keyboard.
  */
 export function MeasureInfo({ label, weight, help }: { label: string; weight: number; help: string }) {
   const [open, setOpen] = useState(false);
-  const onEnter = (e: PointerEvent) => { if (e.pointerType === "mouse") setOpen(true); };
-  const onLeave = (e: PointerEvent) => { if (e.pointerType === "mouse") setOpen(false); };
+  // True while the popover is open only because the mouse is over it; a click then pins it open instead of toggling it shut.
+  const hoverOpened = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelClose = () => { if (timer.current) { clearTimeout(timer.current); timer.current = null; } };
+  useEffect(() => cancelClose, []);
+
+  const onEnter = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse") return;
+    cancelClose();
+    if (!open) { hoverOpened.current = true; setOpen(true); }
+  };
+  const onLeave = (e: PointerEvent) => {
+    if (e.pointerType !== "mouse" || !hoverOpened.current) return;
+    cancelClose();
+    timer.current = setTimeout(() => { timer.current = null; hoverOpened.current = false; setOpen(false); }, HOVER_CLOSE_MS);
+  };
+  const onClick = (e: MouseEvent) => {
+    if (!hoverOpened.current) return; // otherwise Radix toggles as usual
+    e.preventDefault(); // skip Radix's toggle: keep it open
+    hoverOpened.current = false;
+    cancelClose();
+  };
+  const onOpenChange = (next: boolean) => {
+    cancelClose();
+    if (!next) hoverOpened.current = false;
+    setOpen(next);
+  };
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
           aria-label={`What is ${label}?`}
           onPointerEnter={onEnter}
           onPointerLeave={onLeave}
+          onClick={onClick}
           className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-foreground-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Info className="size-3.5" aria-hidden="true" />

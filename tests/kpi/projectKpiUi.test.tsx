@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, fireEvent, cleanup, within, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, within, waitFor, act } from "@testing-library/react";
 import type { ReactNode } from "react";
 
 const addProjectTargets = vi.fn();
@@ -106,6 +106,37 @@ describe("measure info", () => {
     expect(screen.getByText("— means there's no data yet. This measure's weight is shared among the others.")).toBeTruthy();
     fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
     await waitFor(() => expect(screen.queryByText("On time · 50%")).toBeNull());
+  });
+  it("a mouse click after hover keeps the popover open (pinned); a second click closes it", async () => {
+    render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
+    const btn = screen.getByRole("button", { name: "What is Speed?" });
+    fireEvent.pointerEnter(btn, { pointerType: "mouse" });
+    expect(await screen.findByText("Speed · 10%")).toBeTruthy();
+    fireEvent.click(btn);
+    expect(screen.queryByText("Speed · 10%")).toBeTruthy();
+    fireEvent.pointerLeave(btn, { pointerType: "mouse" });
+    await new Promise((r) => setTimeout(r, 250));
+    expect(screen.queryByText("Speed · 10%")).toBeTruthy(); // pinned: leaving does not close
+    fireEvent.click(btn);
+    await waitFor(() => expect(screen.queryByText("Speed · 10%")).toBeNull());
+  });
+  it("hover-close waits 150 ms and is cancelled by entering the popover", async () => {
+    render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
+    const btn = screen.getByRole("button", { name: "What is Speed?" });
+    fireEvent.pointerEnter(btn, { pointerType: "mouse" });
+    const title = await screen.findByText("Speed · 10%");
+    const content = title.closest("[data-slot='popover-content']") as HTMLElement;
+    vi.useFakeTimers();
+    try {
+      fireEvent.pointerLeave(btn, { pointerType: "mouse" });
+      act(() => { vi.advanceTimersByTime(100); });
+      fireEvent.pointerEnter(content, { pointerType: "mouse" });
+      act(() => { vi.advanceTimersByTime(500); });
+      expect(screen.queryByText("Speed · 10%")).toBeTruthy();
+      fireEvent.pointerLeave(content, { pointerType: "mouse" });
+      act(() => { vi.advanceTimersByTime(200); });
+    } finally { vi.useRealTimers(); }
+    await waitFor(() => expect(screen.queryByText("Speed · 10%")).toBeNull());
   });
   it("titles every measure with its weight", async () => {
     render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
