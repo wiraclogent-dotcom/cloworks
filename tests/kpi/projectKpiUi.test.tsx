@@ -106,8 +106,14 @@ describe("TargetRow", () => {
     expect(link.getAttribute("href")).toBe("/projects/p1");
     expect(link.textContent).toContain("Logo");
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("40");
-    expect(screen.getByText("1 slips · 2 revisions")).toBeTruthy();
+    expect(screen.getByText("1 slip · 2 revisions")).toBeTruthy();
     expect(document.querySelector("[data-deadline]")).toBeTruthy();
+  });
+  it("pluralizes the counts: 2 slips · 1 revision, 0 slips · 0 revisions", () => {
+    const { rerender } = render(<ul><TargetRow item={target({ slips: 2, revisions: 1 })} canManage={false} /></ul>);
+    expect(screen.getByText("2 slips · 1 revision")).toBeTruthy();
+    rerender(<ul><TargetRow item={target({ slips: 0, revisions: 0 })} canManage={false} /></ul>);
+    expect(screen.getByText("0 slips · 0 revisions")).toBeTruthy();
   });
   it("has no remove button without canManage, and removes with it", async () => {
     const { rerender } = render(<ul><TargetRow item={target()} canManage={false} /></ul>);

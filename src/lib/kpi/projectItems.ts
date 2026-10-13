@@ -87,17 +87,17 @@ function countRevisions(events: ItemEvent[], mode: "stage" | "status"): number {
   return n;
 }
 
-/** Due-date pushes, with rows moved together (same actor, within 60 s of the group's first event) counted once. */
+/** Due-date pushes, with rows moved together (same actor, each within 60 s of the previous push in the group) counted once. */
 function countSlips(events: ItemEvent[]): number {
   const pushes = events
     .filter((e) => e.kind === "DUE" && e.fromValue && e.toValue && e.toValue > e.fromValue)
     .sort((a, b) => a.at.getTime() - b.at.getTime());
   let groups = 0;
-  let first: ItemEvent | null = null;
+  let last: ItemEvent | null = null;
   for (const e of pushes) {
-    if (first && e.actorId === first.actorId && e.at.getTime() - first.at.getTime() <= SLIP_WINDOW_MS) continue;
-    groups++;
-    first = e;
+    const joins = last !== null && e.actorId === last.actorId && e.at.getTime() - last.at.getTime() <= SLIP_WINDOW_MS;
+    if (!joins) groups++;
+    last = e;
   }
   return groups;
 }
@@ -153,19 +153,11 @@ export function itemFacts(input: {
   let state: ItemState = "open";
   let finishAt: Date | null = null;
   if (live.every((r) => isTaskDone(r, mode))) {
-    state = "done";
-    for (const r of live) {
-      let last: Date | null = null;
-      for (const e of itemEvents) {
-        if (e.taskId === r.id && e.kind === doneKind && e.toValue === doneValue && (!last || e.at > last)) last = e.at;
-      }
-      if (!last) {
-        state = "finishedUntracked";
-        finishAt = null;
-        break;
-      }
-      if (!finishAt || last > finishAt) finishAt = last;
+    // Every row is done: finishAt is the latest done event of any row. Only when no row has one is it untracked.
+    for (const e of itemEvents) {
+      if (e.kind === doneKind && e.toValue === doneValue && (!finishAt || e.at > finishAt)) finishAt = e.at;
     }
+    state = finishAt ? "done" : "finishedUntracked";
   }
 
   const dueEnd = dueDate ? endOfJakartaDay(dueDate) : null;

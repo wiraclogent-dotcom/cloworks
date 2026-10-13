@@ -78,11 +78,18 @@ describe("itemFacts", () => {
     const f = facts([row("1", { stage: "APPROVAL", dueDate: jakartaDay("2026-10-13") })], [], "2026-10-13T16:00:00Z");
     expect(f.onTime).toBeNull();
   });
-  it("a FINAL row with no event -> finishedUntracked, onTime null", () => {
+  it("every FINAL row without an event -> finishedUntracked, onTime null", () => {
     const f = facts([row("1", { stage: "FINAL_ARTWORK", dueDate: jakartaDay("2026-11-30") })]);
     expect(f.state).toBe("finishedUntracked");
     expect(f.finishAt).toBeNull();
     expect(f.onTime).toBeNull();
+  });
+  it("two FINAL rows, only one with an event -> done at that event, onTime judged normally", () => {
+    const f = facts(finalRows("2026-11-30"), [ev("1", "STAGE", "APPROVAL", "FINAL_ARTWORK", "2026-11-28T03:00:00Z")]);
+    expect(f.state).toBe("done");
+    expect(f.finishAt).toEqual(new Date("2026-11-28T03:00:00Z"));
+    expect(f.onTime).toBe(true);
+    expect(facts(finalRows("2026-11-25"), [ev("1", "STAGE", "APPROVAL", "FINAL_ARTWORK", "2026-11-28T03:00:00Z")]).onTime).toBe(false);
   });
   it("uses the last event that set a row done", () => {
     const f = facts([row("1", { stage: "FINAL_ARTWORK", dueDate: jakartaDay("2026-11-30") })], [
@@ -200,11 +207,18 @@ describe("itemFacts", () => {
     ]);
     expect(f.slips).toBe(2);
   });
-  it("the 60 s window is measured from the first event of the group", () => {
+  it("the 60 s window is measured from the previous event: 0/40/80 s by one actor is one slip", () => {
     const f = facts([row("1"), row("2"), row("3")], [
       due("2026-11-01", "2026-11-02", "2026-10-05T03:00:00Z", "1"),
       due("2026-11-01", "2026-11-02", "2026-10-05T03:00:40Z", "2"),
       due("2026-11-01", "2026-11-02", "2026-10-05T03:01:20Z", "3"),
+    ]);
+    expect(f.slips).toBe(1);
+  });
+  it("a gap over 60 s between consecutive events starts a new slip: 0/70 s is two", () => {
+    const f = facts(twoRows, [
+      due("2026-11-01", "2026-11-02", "2026-10-05T03:00:00Z", "1"),
+      due("2026-11-01", "2026-11-02", "2026-10-05T03:01:10Z", "2"),
     ]);
     expect(f.slips).toBe(2);
   });

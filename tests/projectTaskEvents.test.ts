@@ -55,6 +55,12 @@ describe("project task event logging", () => {
     expect(ev[0]).toMatchObject({ kind: "STATUS", fromValue: "IN_PROGRESS", toValue: "DONE" });
   });
 
+  it("writes no event when the status is unchanged", async () => {
+    const t = await task("A", { status: "IN_PROGRESS" });
+    await setTaskStatus(projectId, t.id, "IN_PROGRESS");
+    expect(await events()).toHaveLength(0);
+  });
+
   it("logs a due date change", async () => {
     const t = await task("A", { dueDate: jakartaDay("2026-11-15") });
     await setTaskDate(projectId, t.id, "due", "2026-11-30");

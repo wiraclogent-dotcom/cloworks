@@ -36,7 +36,7 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
         <Link href={`/projects/${item.projectId}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
           <span className="text-foreground-secondary">{item.projectTitle}</span> › {item.itemTitle}
         </Link>
-        <p className="mt-0.5 text-xs text-foreground-secondary tabular-nums">{item.slips} slips · {item.revisions} revisions</p>
+        <p className="mt-0.5 text-xs text-foreground-secondary tabular-nums">{item.slips} {item.slips === 1 ? "slip" : "slips"} · {item.revisions} {item.revisions === 1 ? "revision" : "revisions"}</p>
       </div>
       <div className="w-32 shrink-0">
         <ProgressBar hideLabel label={`${label} progress`} value={Math.round(item.progress * 100)} />

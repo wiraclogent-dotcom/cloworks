@@ -26,10 +26,11 @@ export function median(xs: number[]): number | null {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
 }
 
-/** (finishAt - startAt) in days; only for tracked done items. */
+/** (finishAt - startAt) in days; only for tracked done items, and null when the finish precedes the start. */
 export function cycleDays(f: ItemFacts): number | null {
   if (f.state !== "done" || !f.startAt || !f.finishAt) return null;
-  return (f.finishAt.getTime() - f.startAt.getTime()) / DAY_MS;
+  const ms = f.finishAt.getTime() - f.startAt.getTime();
+  return ms < 0 ? null : ms / DAY_MS;
 }
 
 const penalty = (total: number, items: number) => Math.max(0, 100 - (25 * total) / items);

@@ -38,6 +38,12 @@ describe("cycleDays", () => {
     expect(cycleDays(doneItem({ startAt: null, finishAt: T0 }))).toBeNull();
     expect(cycleDays(doneItem({ startAt: T0, finishAt: null }))).toBeNull();
   });
+  it("is null when finish is before start, so it is left out of speed", () => {
+    const back = doneItem({ startAt: T0, finishAt: new Date(T0.getTime() - DAY) });
+    expect(cycleDays(back)).toBeNull();
+    expect(scoreQuarter([back], [10, 20, 30]).parts.speed).toBeNull();
+    expect(cycleDays(doneItem({ startAt: T0, finishAt: T0 }))).toBe(0);
+  });
 });
 
 describe("scoreQuarter on time", () => {
@@ -118,6 +124,21 @@ describe("scoreQuarter weighting", () => {
     // revisions 87.5, slips 100, completion 0, onTime null, speed null -> (0 + 8.75 + 10) / 0.4 = 46.875 -> 47
     const q = scoreQuarter([item({ revisions: 2 }), item(), item(), item()], []);
     expect(q.score).toBe(47);
+  });
+  it("all five parts present with distinct values: exact weighted score, rounding once not per part (59.55 -> 60, rounded parts would give 59)", () => {
+    const items = [
+      withCycle(20, { revisions: 2 }),
+      withCycle(50, { onTime: false, slips: 5 }),
+      item({ progress: 0.2 }),
+    ];
+    const q = scoreQuarter(items, [10, 20, 30]);
+    expect(q.parts).toEqual({ onTime: 50, completion: 73, speed: 57, revisions: 83, slips: 58 });
+    expect(q.usedParts).toEqual(["onTime", "completion", "speed", "revisions", "slips"]);
+    const unrounded = 0.5 * 50 + 0.2 * (220 / 3) + 0.1 * (100 * 20 / 35) + 0.1 * (100 - 50 / 3) + 0.1 * (100 - 125 / 3);
+    expect(unrounded).toBeCloseTo(59.5476, 3);
+    expect(q.score).toBe(60);
+    const roundedFirst = 0.5 * 50 + 0.2 * 73 + 0.1 * 57 + 0.1 * 83 + 0.1 * 58;
+    expect(Math.round(roundedFirst)).toBe(59);
   });
   it("score is null with no items", () => {
     const q = scoreQuarter([], [10, 20, 30]);

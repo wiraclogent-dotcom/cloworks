@@ -11,7 +11,7 @@ import { KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
-import { parseUserParam } from "../../params";
+import { canViewPersonKpi, parseUserParam } from "../../params";
 
 /** Tab title: "Project KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Project KPI" };
@@ -24,8 +24,7 @@ async function PersonContent({ params, searchParams }: {
   const userId = parseUserParam((await params).userId);
   const canTeam = can(viewer.appRole, "dashboard.team");
   // Own page needs dashboard.self; anyone else's needs dashboard.team. The data is never loaded before this check.
-  const allowed = canTeam || (userId === viewer.id && can(viewer.appRole, "dashboard.self"));
-  if (!allowed) {
+  if (!canViewPersonKpi(viewer, userId)) {
     return <AccessDenied description="You do not have access to this person's project KPI." backHref="/dashboard" backLabel="Back to My KPI" />;
   }
   const subject = userId ? await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true } }) : null;

@@ -22,6 +22,11 @@ export function resolveSubject(viewer: { id: string; appRole: AppRole }, userPar
   return userParam && can(viewer.appRole, "dashboard.team") ? userParam : viewer.id;
 }
 
+/** Person KPI pages: team viewers may open anyone's; everyone else only their own, and only with dashboard.self. */
+export function canViewPersonKpi(viewer: { id: string; appRole: AppRole }, userId: string | undefined): boolean {
+  return can(viewer.appRole, "dashboard.team") || (userId !== undefined && userId === viewer.id && can(viewer.appRole, "dashboard.self"));
+}
+
 /** `view=projects|requests` for the KPI pages; anything else is undefined (the page picks its default). */
 export function parseViewParam(raw: RawParam): "requests" | "projects" | undefined {
   const v = first(raw);
