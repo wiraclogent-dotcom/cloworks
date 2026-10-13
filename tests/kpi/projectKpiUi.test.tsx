@@ -138,6 +138,14 @@ describe("measure info", () => {
     } finally { vi.useRealTimers(); }
     await waitFor(() => expect(screen.queryByText("Speed · 10%")).toBeNull());
   });
+  it("extends the info button's hit area to 24px (14px icon + 5px each side)", () => {
+    render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
+    const btn = screen.getByRole("button", { name: "What is Speed?" });
+    expect(btn.className).toContain("relative");
+    expect(btn.className).toContain("after:absolute");
+    expect(btn.className).toContain("after:-inset-[5px]");
+    expect(btn.querySelector("svg")?.getAttribute("class")).toContain("size-3.5");
+  });
   it("titles every measure with its weight", async () => {
     render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
     fireEvent.click(screen.getByRole("button", { name: "What is Speed?" }));

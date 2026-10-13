@@ -49,7 +49,7 @@ export function MeasureInfo({ label, weight, help }: { label: string; weight: nu
           onPointerEnter={onEnter}
           onPointerLeave={onLeave}
           onClick={onClick}
-          className="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full align-middle text-foreground-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="relative inline-flex shrink-0 after:absolute after:-inset-[5px] after:content-[''] cursor-pointer items-center justify-center rounded-full align-middle text-foreground-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Info className="size-3.5" aria-hidden="true" />
         </button>
