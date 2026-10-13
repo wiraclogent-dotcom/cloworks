@@ -70,6 +70,8 @@ model Workspace {
   projects          Project[]
   projectTasks      ProjectTask[]
   projectMilestones ProjectMilestone[]
+  projectTaskEvents ProjectTaskEvent[]
+  projectKpiTargets ProjectKpiTarget[]
   libraryCategories LibraryCategory[]
   libraryItems      LibraryItem[]
   invites           Invite[]
@@ -107,21 +109,24 @@ model User {
   avatarType          String?
   avatarUpdatedAt     DateTime?
 
-  requested           Request[]       @relation("RequestRequester")
-  assigned            Request[]       @relation("RequestAssignee")
-  statusEvents        StatusEvent[]
-  deadlineEvents      DeadlineEvent[]
-  comments            Comment[]
-  attachments         Attachment[]
-  kpiTargets          KpiTarget[]
-  notifications       Notification[]
-  chatReads           ChatRead[]
-  ownedProjects       Project[]
-  libraryItemsCreated LibraryItem[]   @relation("LibraryItemCreatedBy")
-  libraryItemsUpdated LibraryItem[]   @relation("LibraryItemUpdatedBy")
-  projectTasks        ProjectTask[]
-  invitesSent         Invite[]        @relation("InviteSentBy")
-  invitesFor          Invite[]        @relation("InviteFor")
+  requested                Request[]          @relation("RequestRequester")
+  assigned                 Request[]          @relation("RequestAssignee")
+  statusEvents             StatusEvent[]
+  deadlineEvents           DeadlineEvent[]
+  comments                 Comment[]
+  attachments              Attachment[]
+  kpiTargets               KpiTarget[]
+  notifications            Notification[]
+  chatReads                ChatRead[]
+  ownedProjects            Project[]
+  libraryItemsCreated      LibraryItem[]      @relation("LibraryItemCreatedBy")
+  libraryItemsUpdated      LibraryItem[]      @relation("LibraryItemUpdatedBy")
+  projectTasks             ProjectTask[]
+  projectTaskEvents        ProjectTaskEvent[]
+  projectKpiTargets        ProjectKpiTarget[] @relation("ProjectKpiTargetUser")
+  projectKpiTargetsCreated ProjectKpiTarget[] @relation("ProjectKpiTargetCreator")
+  invitesSent              Invite[]           @relation("InviteSentBy")
+  invitesFor               Invite[]           @relation("InviteFor")
 
   mediaUploaded        Media[]
   contentPostsAuthored ContentPost[]    @relation("ContentPostAuthor")
@@ -385,6 +390,7 @@ model Project {
   owner      User               @relation(fields: [ownerId], references: [id])
   tasks      ProjectTask[]
   milestones ProjectMilestone[]
+  kpiTargets ProjectKpiTarget[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -411,8 +417,9 @@ model ProjectTask {
   fileUrl   String?
   notes     String?
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  owner   User?   @relation(fields: [ownerId], references: [id])
+  project Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner   User?              @relation(fields: [ownerId], references: [id])
+  events  ProjectTaskEvent[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -436,6 +443,53 @@ model ProjectMilestone {
 
   @@index([projectId, date])
   @@index([workspaceId])
+}
+
+enum ProjectTaskEventKind {
+  STAGE
+  STATUS
+  DUE
+}
+
+/// Change log for project task rows. Feeds finish dates, revisions and slips for the Project KPI.
+model ProjectTaskEvent {
+  id        String               @id @default(cuid())
+  taskId    String
+  kind      ProjectTaskEventKind
+  fromValue String? // stage/status enum name, or ISO date for DUE
+  toValue   String?
+  actorId   String
+  at        DateTime             @default(now())
+
+  task  ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User        @relation(fields: [actorId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([taskId, at])
+  @@index([workspaceId])
+}
+
+/// A project item a lead assigned to a person for a year. Its quarter comes from the item's due date.
+model ProjectKpiTarget {
+  id          String   @id @default(cuid())
+  userId      String
+  year        Int
+  projectId   String
+  itemTitle   String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  user      User    @relation("ProjectKpiTargetUser", fields: [userId], references: [id])
+  createdBy User    @relation("ProjectKpiTargetCreator", fields: [createdById], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, year, projectId, itemTitle])
+  @@index([workspaceId, year])
 }
 
 /// A named group of Library links (e.g. "Product Knowledge"). `icon` is a key from a small fixed lucide set.
