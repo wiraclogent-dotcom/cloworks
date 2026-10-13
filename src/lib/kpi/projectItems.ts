@@ -72,15 +72,15 @@ function rowProgress(r: ItemRow, mode: "stage" | "status"): number {
   return i < 0 ? 0 : i / 5;
 }
 
-function countRevisions(events: ItemEvent[]): number {
+function countRevisions(events: ItemEvent[], mode: "stage" | "status"): number {
   let n = 0;
   for (const e of events) {
-    if (e.kind === "STAGE") {
+    if (e.kind === "STAGE" && mode === "stage") {
       if (!e.fromValue || !e.toValue || e.fromValue === "CANCELLED" || e.toValue === "CANCELLED") continue;
       const from = stageIndex(e.fromValue);
       const to = stageIndex(e.toValue);
       if (from >= 0 && to >= 0 && to < from) n++;
-    } else if (e.kind === "STATUS") {
+    } else if (e.kind === "STATUS" && mode === "status") {
       if ((e.fromValue === "DONE" || e.fromValue === "IN_REVIEW") && (e.toValue === "IN_PROGRESS" || e.toValue === "NOT_STARTED")) n++;
     }
   }
@@ -119,7 +119,7 @@ export function itemFacts(input: {
   // Events of the item's live rows; a fully cancelled item still counts its own rows' history.
   const ids = new Set((live.length > 0 ? live : itemRows).map((r) => r.id));
   const itemEvents = events.filter((e) => ids.has(e.taskId));
-  const revisions = countRevisions(itemEvents);
+  const revisions = countRevisions(itemEvents, mode);
   const slips = countSlips(itemEvents);
 
   if (live.length === 0) {
@@ -141,6 +141,7 @@ export function itemFacts(input: {
     for (const e of itemEvents) {
       if (e.kind !== "STAGE" && e.kind !== "STATUS") continue;
       if (e.fromValue !== null && e.fromValue !== "NOT_STARTED") continue;
+      if (e.toValue === null || e.toValue === "NOT_STARTED") continue; // must move OFF NOT_STARTED
       if (!startAt || e.at < startAt) startAt = e.at;
     }
   }

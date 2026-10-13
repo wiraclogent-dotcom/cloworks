@@ -100,16 +100,60 @@ describe("itemFacts", () => {
     expect(f.progress).toBe(1);
   });
   it("taskMode comes from the whole project, not only the item's rows", () => {
-    const rows = [row("1", { stage: null, status: "IN_PROGRESS" }), row("2", { title: "Other", stage: null, status: "DONE" })];
+    // Item-only would be stage mode (APPROVAL = 0.8); the status-only sibling makes the project status mode (IN_PROGRESS = 0.5).
+    const rows = [
+      row("1", { stage: "APPROVAL", status: "IN_PROGRESS" }),
+      row("2", { title: "Other", stage: null, status: "IN_PROGRESS" }),
+    ];
     expect(facts(rows).progress).toBe(0.5);
   });
-  it("events of other rows are ignored", () => {
+  it("events of other rows are ignored for finishAt", () => {
     const rows = [row("1", { stage: "FINAL_ARTWORK", dueDate: jakartaDay("2026-11-30") }), row("9", { title: "Other" })];
     const f = facts(rows, [
       ev("9", "STAGE", "APPROVAL", "FINAL_ARTWORK", "2026-12-20T03:00:00Z"),
       ev("1", "STAGE", "APPROVAL", "FINAL_ARTWORK", "2026-11-20T03:00:00Z"),
     ]);
     expect(f.finishAt).toEqual(new Date("2026-11-20T03:00:00Z"));
+  });
+  it("slips and revisions on another item's row are ignored", () => {
+    const rows = [row("1", { stage: "MANUSCRIPT" }), row("9", { title: "Other", stage: "MANUSCRIPT" })];
+    const f = facts(rows, [
+      ev("9", "DUE", "2026-11-15", "2026-11-30", "2026-10-05T03:00:00Z"),
+      ev("9", "STAGE", "APPROVAL", "MANUSCRIPT", "2026-10-06T03:00:00Z"),
+    ]);
+    expect(f.slips).toBe(0);
+    expect(f.revisions).toBe(0);
+  });
+  it("slips and revisions on a cancelled row of a partly-live item are ignored", () => {
+    const rows = [row("1", { stage: "MANUSCRIPT" }), row("2", { stage: "CANCELLED" })];
+    const f = facts(rows, [
+      ev("2", "DUE", "2026-11-15", "2026-11-30", "2026-10-05T03:00:00Z"),
+      ev("2", "STAGE", "APPROVAL", "MANUSCRIPT", "2026-10-06T03:00:00Z"),
+    ]);
+    expect(f.slips).toBe(0);
+    expect(f.revisions).toBe(0);
+  });
+  it("a STATUS revision-shaped event on a stage-mode item is not a revision", () => {
+    const f = facts([row("1", { stage: "MANUSCRIPT", status: "IN_PROGRESS" })], [
+      ev("1", "STATUS", "DONE", "IN_PROGRESS", "2026-10-02T03:00:00Z"),
+    ]);
+    expect(f.revisions).toBe(0);
+  });
+  it("a STAGE backward move on a status-mode item is not a revision", () => {
+    const f = facts([row("1", { stage: null, status: "IN_PROGRESS" })], [
+      ev("1", "STAGE", "APPROVAL", "MANUSCRIPT", "2026-10-02T03:00:00Z"),
+    ]);
+    expect(f.revisions).toBe(0);
+  });
+  it("finishing at 00:00 Jakarta the day after the due day (17:00Z) is late", () => {
+    const f = facts([row("1", { stage: "FINAL_ARTWORK", dueDate: jakartaDay("2026-11-28") })], [
+      ev("1", "STAGE", "APPROVAL", "FINAL_ARTWORK", "2026-11-28T17:00:00Z"),
+    ]);
+    expect(f.onTime).toBe(false);
+  });
+  it("open item at 00:00 Jakarta the day after the due day (17:00Z) is overdue", () => {
+    const f = facts([row("1", { stage: "APPROVAL", dueDate: jakartaDay("2026-11-28") })], [], "2026-11-28T17:00:00Z");
+    expect(f.onTime).toBe(false);
   });
 
   it("revisions count backward stage moves only", () => {
@@ -205,6 +249,13 @@ describe("itemFacts", () => {
       ev("1", "STAGE", "FIRST_PREVIEW", "MANUSCRIPT", "2026-10-02T03:00:00Z"),
     ]);
     expect(f.startAt).toEqual(new Date("2026-10-03T03:00:00Z"));
+  });
+  it("startAt skips a null -> NOT_STARTED event and uses the first move off NOT_STARTED", () => {
+    const f = facts([row("1", { stage: "FIRST_PREVIEW" })], [
+      ev("1", "STAGE", null, "NOT_STARTED", "2026-10-01T03:00:00Z"),
+      ev("1", "STAGE", "NOT_STARTED", "FIRST_PREVIEW", "2026-10-20T03:00:00Z"),
+    ]);
+    expect(f.startAt).toEqual(new Date("2026-10-20T03:00:00Z"));
   });
   it("startAt is null with no startDate and no events", () => {
     expect(facts([row("1")]).startAt).toBeNull();
