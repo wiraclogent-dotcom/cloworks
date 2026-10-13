@@ -1,0 +1,64 @@
+import Link from "next/link";
+import type { Tone } from "@/lib/palette";
+import { daysLeft } from "@/lib/daysLeft";
+import type { ItemFacts } from "@/lib/kpi/projectItems";
+import type { TargetItem } from "@/lib/kpi/projectQueries";
+import { Chip } from "@/components/ui/Chip";
+import { DeadlineChip } from "@/components/ui/DeadlineChip";
+import { ProgressBar } from "@/components/ui/ProgressBar";
+import { cn } from "@/components/ui/cn";
+import { RemoveTargetButton } from "./RemoveTargetButton";
+
+export type TargetBadge = { text: string; tone: Tone; muted: boolean };
+
+/** The one status word on a row. Judged items say On time / Late; the rest say why they are not (yet) judged. */
+export function targetBadge(f: Pick<ItemFacts, "state" | "onTime">): TargetBadge {
+  if (f.state === "cancelled") return { text: "Cancelled", tone: "tag-neutral", muted: true };
+  if (f.state === "removed") return { text: "Item removed", tone: "tag-neutral", muted: true };
+  if (f.state === "finishedUntracked") return { text: "Finished before tracking", tone: "tag-neutral", muted: false };
+  if (f.onTime === true) return { text: "On time", tone: "done", muted: false };
+  if (f.onTime === false) return { text: "Late", tone: "overdue", muted: false };
+  return { text: "In progress", tone: "tag-neutral", muted: false };
+}
+
+const dateText = (d: Date) => new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Jakarta" }).format(d);
+
+/**
+ * One item: Project › Item (link), progress, due date, badge and the slip / revision counts. `canManage` adds the ×
+ * (only on real targets). `muted` is for the "Not scored" group and for other work.
+ */
+export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts & { targetId?: string }; canManage: boolean; muted?: boolean }) {
+  const badge = targetBadge(item);
+  const label = `${item.projectTitle} › ${item.itemTitle}`;
+  return (
+    <li data-state={item.state} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", muted && "text-foreground-secondary")}>
+      <div className="min-w-0 grow basis-60">
+        <Link href={`/projects/${item.projectId}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
+          <span className="text-foreground-secondary">{item.projectTitle}</span> › {item.itemTitle}
+        </Link>
+        <p className="mt-0.5 text-xs text-foreground-secondary tabular-nums">{item.slips} slips · {item.revisions} revisions</p>
+      </div>
+      <div className="w-32 shrink-0">
+        <ProgressBar hideLabel label={`${label} progress`} value={Math.round(item.progress * 100)} />
+      </div>
+      <div className="flex shrink-0 flex-wrap items-center gap-2">
+        {item.state === "open" ? (
+          <DeadlineChip daysLeft={daysLeft(item.dueDate)} />
+        ) : item.dueDate ? (
+          <span className="text-xs text-foreground-secondary tabular-nums">Due {dateText(item.dueDate)}</span>
+        ) : null}
+        <Chip tone={badge.tone} className={cn(badge.muted && "bg-transparent text-foreground-muted outline outline-1 -outline-offset-1 outline-border")}>{badge.text}</Chip>
+        {canManage && item.targetId ? <RemoveTargetButton targetId={item.targetId} label={label} /> : null}
+      </div>
+    </li>
+  );
+}
+
+/** A bordered list of rows (`bare`: no frame, for use inside another card). */
+export function TargetList({ items, canManage, muted = false, bare = false }: { items: (ItemFacts & { targetId?: string })[]; canManage: boolean; muted?: boolean; bare?: boolean }) {
+  return (
+    <ul className={cn("divide-y divide-border overflow-hidden", !bare && "rounded-xl border border-border bg-card shadow-card")}>
+      {items.map((it, i) => <TargetRow key={`${(it as TargetItem).targetId ?? "other"}-${i}`} item={it} canManage={canManage} muted={muted} />)}
+    </ul>
+  );
+}
