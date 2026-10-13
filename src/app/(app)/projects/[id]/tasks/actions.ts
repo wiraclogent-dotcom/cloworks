@@ -7,6 +7,7 @@ import { withUser, unauthResult } from "@/lib/actionUser";
 import { can } from "@/lib/permissions";
 import { FILE_LOCATION_HINT } from "@/lib/fileLocation";
 import { PROJECT_STAGES, taskMode } from "@/lib/projectProgress";
+import { carryTargetsOnRename, recordTaskChange } from "@/lib/projectTaskEvents";
 import { TASK_STATUS_ORDER, cleanFileUrl, cleanTaskDate, dateOrderError, jakartaDay, jakartaIso } from "@/lib/projectTasks";
 
 export type TaskStageCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "UNAUTHENTICATED";
@@ -18,9 +19,9 @@ export async function setTaskStage(projectId: string, taskId: string, stage: Pro
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change task stages." };
     if (!PROJECT_STAGES.includes(stage)) return { ok: false, code: "VALIDATION", message: "Pick a valid stage." };
-    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
+    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, stage: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    await db.projectTask.update({ where: { id: taskId }, data: { stage } });
+    await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STAGE", from: task.stage, to: stage, data: { stage } }));
     revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, stage };
@@ -59,10 +60,15 @@ export async function setTaskDate(projectId: string, taskId: string, field: "sta
     const dueDate = field === "due" ? (iso ? jakartaDay(iso) : null) : task.dueDate;
     if (startDate && dueDate && dueDate < startDate) return { ok: false, code: "VALIDATION", message: "The due date can't be before the start date." };
     // Setting a real due date replaces a TBC; clearing the due date leaves it blank.
-    await db.projectTask.update({
-      where: { id: taskId },
-      data: { startDate, dueDate, ...(field === "due" && dueDate ? { dueTbc: false } : {}) },
-    });
+    const data = { startDate, dueDate, ...(field === "due" && dueDate ? { dueTbc: false } : {}) };
+    if (field === "due") {
+      await db.$transaction((tx) => recordTaskChange(tx, {
+        taskId, actorId: user.id, kind: "DUE",
+        from: task.dueDate ? jakartaIso(task.dueDate) : null, to: dueDate ? jakartaIso(dueDate) : null, data,
+      }));
+    } else {
+      await db.projectTask.update({ where: { id: taskId }, data });
+    }
     revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, startDate: startDate ? jakartaIso(startDate) : null, dueDate: dueDate ? jakartaIso(dueDate) : null };
@@ -101,7 +107,14 @@ export async function setTaskDetail(projectId: string, taskId: string, field: Ta
         select: { id: true },
       });
       if (clash) return { ok: false, code: "VALIDATION", message: "Another detail already has this item and detail name." };
-      await db.projectTask.update({ where: { id: taskId }, data: field === "title" ? { title } : { subTitle } });
+      if (field === "title") {
+        await db.$transaction(async (tx) => {
+          await tx.projectTask.update({ where: { id: taskId }, data: { title } });
+          await carryTargetsOnRename(tx, projectId, task.title, title);
+        });
+      } else {
+        await db.projectTask.update({ where: { id: taskId }, data: { subTitle } });
+      }
     }
     revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
@@ -117,9 +130,9 @@ export async function setTaskStatus(projectId: string, taskId: string, status: P
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change status." };
     if (!TASK_STATUS_ORDER.includes(status)) return { ok: false, code: "VALIDATION", message: "Pick a valid status." };
-    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
+    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, status: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    await db.projectTask.update({ where: { id: taskId }, data: { status } });
+    await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STATUS", from: task.status, to: status, data: { status } }));
     revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, status };
