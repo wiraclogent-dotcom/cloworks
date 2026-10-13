@@ -50,7 +50,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     const now = new Date();
     const { year } = parseProjectKpiParams(sp, now);
     const [kpis, years] = await Promise.all([loadTeamProjectKpi(db, year, now), targetYears(db)]);
-    const yearOptions = (years.includes(year) ? years : [year, ...years]).sort((a, b) => b - a);
+    const yearOptions = [...(years.includes(year) ? years : [year, ...years])].sort((a, b) => b - a);
     return (
       <>
         <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={`Project KPI ${year}`}

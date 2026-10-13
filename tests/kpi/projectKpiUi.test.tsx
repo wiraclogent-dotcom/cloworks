@@ -19,7 +19,7 @@ import { ProjectScoreHeader } from "@/components/kpi/project/ProjectScoreHeader"
 import { TargetRow, targetBadge } from "@/components/kpi/project/TargetList";
 import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
-import { parseViewParam } from "@/app/(app)/dashboard/params";
+import { parseViewParam, defaultKpiView } from "@/app/(app)/dashboard/params";
 import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
 import { ProjectTeamTable, projectTeamRows, type ProjectTeamRow } from "@/components/kpi/project/ProjectTeamTable";
 import type { ItemFacts } from "@/lib/kpi/projectItems";
@@ -259,6 +259,23 @@ describe("parseViewParam", () => {
     expect(parseViewParam("x")).toBeUndefined();
     expect(parseViewParam(undefined)).toBeUndefined();
     expect(parseViewParam(["projects", "x"])).toBe("projects");
+  });
+});
+
+describe("defaultKpiView", () => {
+  const base = { view: undefined, month: undefined, own: true, countedZero: true, hasTargets: true } as const;
+  it("an explicit view wins", () => {
+    expect(defaultKpiView({ ...base, view: "requests" })).toBe("requests");
+    expect(defaultKpiView({ ...base, view: "projects", countedZero: false, hasTargets: false })).toBe("projects");
+  });
+  it("a chosen month means requests", () => {
+    expect(defaultKpiView({ ...base, month: "2026-09" })).toBe("requests");
+  });
+  it("projects only when own, nothing counted, has targets, and neither view nor month is set", () => {
+    expect(defaultKpiView(base)).toBe("projects");
+    expect(defaultKpiView({ ...base, own: false })).toBe("requests");
+    expect(defaultKpiView({ ...base, countedZero: false })).toBe("requests");
+    expect(defaultKpiView({ ...base, hasTargets: false })).toBe("requests");
   });
 });
 

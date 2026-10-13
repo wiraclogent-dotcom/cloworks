@@ -18,14 +18,12 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
 import type { Tone } from "@/lib/palette";
-import { loadPersonProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
-import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
-import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
+import { PersonProjectKpiSection } from "@/components/kpi/project/PersonProjectKpiSection";
 import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
 import type { ScopedDb } from "@/lib/db";
 import { jakartaQuarter } from "@/lib/kpi/projectItems";
-import { parseMonthParam, parseUserParam, parseViewParam, resolveSubject } from "./params";
+import { parseMonthParam, parseUserParam, defaultKpiView, parseViewParam, resolveSubject } from "./params";
 
 /** Tab title: "My KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "My KPI" };
@@ -48,11 +46,6 @@ async function ProjectsView({ db, subject, own, canTeam, sp }: {
 }) {
   const now = new Date();
   const { year, quarter } = parseProjectKpiParams(sp, now);
-  const [kpi, years, projects] = await Promise.all([
-    loadPersonProjectKpi(db, subject.id, year, now),
-    targetYears(db),
-    canTeam ? db.project.findMany({ select: { id: true, title: true }, orderBy: { title: "asc" } }) : Promise.resolve([]),
-  ]);
   const hrefFor = (p: { year?: number; q?: string }) =>
     `/dashboard?view=projects&year=${p.year ?? year}&q=${p.q ?? quarter}${own ? "" : `&user=${encodeURIComponent(subject.id)}`}`;
   return (
@@ -60,8 +53,7 @@ async function ProjectsView({ db, subject, own, canTeam, sp }: {
       <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
         title={own ? "My KPI" : `KPI: ${subject.name}`} description={`Project KPI ${year}`}
         actions={<KpiViewToggle view="projects" base="/dashboard" params={{ ...sp, view: "projects" }} explicitRequests />} />
-      <ProjectKpiPanel kpi={kpi} quarter={quarter} years={years} canManage={canTeam} hrefFor={hrefFor}
-        manage={canTeam ? <ManageTargetsModal userId={subject.id} name={subject.name} year={year} projects={projects} /> : undefined} />
+      <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} />
     </>
   );
 }
@@ -104,10 +96,12 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   });
   const isEmpty = !target && kpi.tasksDone === 0 && kpi.totalOutputs === 0 && kpi.activeWorkload === 0 && points.every((p) => p.tasksDone === 0 && p.target === null);
 
-  // No view chosen: open on Projects when the viewer has project targets this year and nothing counted this month.
-  if (view === undefined && own && kpi.tasksDone === 0 && kpi.totalOutputs === 0 && kpi.activeWorkload === 0) {
-    const hasTargets = (await db.projectKpiTarget.count({ where: { userId: subject.id, year: jakartaQuarter(new Date()).year } })) > 0;
-    if (hasTargets) return <ProjectsView db={db} subject={subject} own={own} canTeam={canTeam} sp={sp} />;
+  // No view and no month chosen: open on Projects when nothing counted this month and the viewer has targets this
+  // year. The target count only runs when the other conditions already point to Projects.
+  const wanted = defaultKpiView({ view, month: sp.month, own, countedZero: kpi.tasksDone === 0 && kpi.totalOutputs === 0 && kpi.activeWorkload === 0, hasTargets: true });
+  if (view === undefined && wanted === "projects"
+    && (await db.projectKpiTarget.count({ where: { userId: subject.id, year: jakartaQuarter(new Date()).year } })) > 0) {
+    return <ProjectsView db={db} subject={subject} own={own} canTeam={canTeam} sp={sp} />;
   }
 
   return (

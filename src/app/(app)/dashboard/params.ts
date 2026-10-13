@@ -27,3 +27,16 @@ export function parseViewParam(raw: RawParam): "requests" | "projects" | undefin
   const v = first(raw);
   return v === "projects" || v === "requests" ? v : undefined;
 }
+
+/**
+ * My KPI's view. An explicit `view` wins; a chosen `month` means Requests (months are a Requests concept, and the
+ * month picker drops `view`); otherwise Projects only for the viewer's own page when nothing was counted this month
+ * and they have project targets this year.
+ */
+export function defaultKpiView({ view, month, own, countedZero, hasTargets }: {
+  view: "requests" | "projects" | undefined; month: RawParam; own: boolean; countedZero: boolean; hasTargets: boolean;
+}): "requests" | "projects" {
+  if (view) return view;
+  if (month !== undefined) return "requests";
+  return own && countedZero && hasTargets ? "projects" : "requests";
+}

@@ -4,10 +4,8 @@ import Link from "next/link";
 import { ArrowLeft, UserX } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { loadPersonProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
-import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
-import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
+import { PersonProjectKpiSection } from "@/components/kpi/project/PersonProjectKpiSection";
 import { AccessDenied } from "@/components/AccessDenied";
 import { KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -39,13 +37,7 @@ async function PersonContent({ params, searchParams }: {
   }
 
   const sp = await searchParams;
-  const now = new Date();
-  const { year, quarter } = parseProjectKpiParams(sp, now);
-  const [kpi, years, projects] = await Promise.all([
-    loadPersonProjectKpi(db, subject.id, year, now),
-    targetYears(db),
-    canTeam ? db.project.findMany({ select: { id: true, title: true }, orderBy: { title: "asc" } }) : Promise.resolve([]),
-  ]);
+  const { year, quarter } = parseProjectKpiParams(sp, new Date());
   const own = subject.id === viewer.id;
   const base = `/dashboard/projects/${subject.id}`;
   const hrefFor = (p: { year?: number; q?: string }) => `${base}?year=${p.year ?? year}&q=${p.q ?? quarter}`;
@@ -58,8 +50,7 @@ async function PersonContent({ params, searchParams }: {
         title={`${subject.name} · Project KPI ${year}`}
         description="Quarterly score from the project items this person is measured on."
         actions={canTeam ? <Link href="/dashboard/team" className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : undefined} />
-      <ProjectKpiPanel kpi={kpi} quarter={quarter} years={years} canManage={canTeam} hrefFor={hrefFor}
-        manage={canTeam ? <ManageTargetsModal userId={subject.id} name={subject.name} year={year} projects={projects} /> : undefined} />
+      <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} />
     </>
   );
 }
