@@ -309,7 +309,7 @@ describe("KpiViewToggle", () => {
 
 describe("ProjectTeamTable", () => {
   const row = (userId: string, name: string, year: number | null, over: Partial<ProjectTeamRow> = {}): ProjectTeamRow =>
-    ({ userId, name, quarters: [null, null, null, year], year, done: 1, items: 2, onTimePct: year === null ? null : 50, ...over });
+    ({ userId, name, quarters: [null, null, null, year], year, done: 1, items: 2, onTimePct: year === null ? null : 50, hasTargets: true, ...over });
   it("sorts by year score descending with null last", () => {
     render(<ProjectTeamTable rows={[row("a", "Ann", null), row("b", "Bo", 60), row("c", "Cy", 90)]} year={2026} />);
     const names = screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("rowheader")[0]?.textContent ?? r.querySelector("a")?.textContent);
@@ -338,11 +338,11 @@ describe("ProjectTeamTable", () => {
 });
 
 describe("projectTeamRows", () => {
-  it("sums the quarters and drops people without targets", () => {
+  it("sums the quarters and flags people without targets", () => {
     const withTargets = { ...kpiOf({ userId: "u1" }), name: "Ann" };
     const none = { ...kpiOf({ userId: "u2", yearScore: null, quarters: { 1: emptyQ(), 2: emptyQ(), 3: emptyQ(), 4: emptyQ() } }), name: "Bo" };
     const rows = projectTeamRows([withTargets, none]);
-    expect(rows.map((r) => r.userId)).toEqual(["u1"]);
+    expect(rows.map((r) => [r.userId, r.hasTargets])).toEqual([["u1", true], ["u2", false]]);
     expect(rows[0]).toMatchObject({ name: "Ann", year: 80, quarters: [null, null, null, 80], done: 1, items: 2, onTimePct: 100 });
   });
 });

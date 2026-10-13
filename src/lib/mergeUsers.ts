@@ -19,8 +19,8 @@ export type MergePreview = {
 };
 
 /**
- * One `updateMany` per foreign key to User, moving rows from the duplicate to the survivor. KpiTarget, ProjectKpiTarget
- * and ChatRead clashes (their `@@unique([userId, …])`) are resolved before these run. A new User relation must be added here:
+ * One `updateMany` per foreign key to User, moving rows from the duplicate to the survivor. KpiTarget, ProjectKpiTarget,
+ * KpiRosterEntry and ChatRead clashes (their `@@unique([userId, …])`) are resolved before these run. A new User relation must be added here:
  * a test compares this list with the Prisma DMMF.
  */
 const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<unknown>> = {
@@ -38,6 +38,8 @@ const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<un
   "ProjectTaskEvent.actorId": (tx, from, into) => tx.projectTaskEvent.updateMany({ where: { actorId: from }, data: { actorId: into } }),
   "ProjectKpiTarget.userId": (tx, from, into) => tx.projectKpiTarget.updateMany({ where: { userId: from }, data: { userId: into } }),
   "ProjectKpiTarget.createdById": (tx, from, into) => tx.projectKpiTarget.updateMany({ where: { createdById: from }, data: { createdById: into } }),
+  "KpiRosterEntry.userId": (tx, from, into) => tx.kpiRosterEntry.updateMany({ where: { userId: from }, data: { userId: into } }),
+  "KpiRosterEntry.updatedById": (tx, from, into) => tx.kpiRosterEntry.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
   "LibraryItem.createdById": (tx, from, into) => tx.libraryItem.updateMany({ where: { createdById: from }, data: { createdById: into } }),
   "LibraryItem.updatedById": (tx, from, into) => tx.libraryItem.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
   "Invite.invitedById": (tx, from, into) => tx.invite.updateMany({ where: { invitedById: from }, data: { invitedById: into } }),
@@ -143,6 +145,10 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
     // Project KPI clash: an item both people hold stays on the survivor; the duplicate's copy is dropped.
     const intoItems = await tx.projectKpiTarget.findMany({ where: { userId: into.id }, select: { year: true, projectId: true, itemTitle: true } });
     if (intoItems.length > 0) await tx.projectKpiTarget.deleteMany({ where: { userId: from.id, OR: intoItems } });
+
+    // Roster clash: the survivor's entry for a kind wins; the duplicate's is dropped.
+    const intoKinds = await tx.kpiRosterEntry.findMany({ where: { userId: into.id }, select: { kind: true } });
+    if (intoKinds.length > 0) await tx.kpiRosterEntry.deleteMany({ where: { userId: from.id, kind: { in: intoKinds.map((e) => e.kind) } } });
 
     // ChatRead clash: the later lastReadAt wins, on the survivor's row.
     const fromReads = await tx.chatRead.findMany({ where: { userId: from.id } });

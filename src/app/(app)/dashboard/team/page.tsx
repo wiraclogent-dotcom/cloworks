@@ -15,6 +15,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CircleCheckBig, Gauge, Users } from "lucide-react";
 import { listTeamKpiPeople } from "@/lib/team";
+import { loadRosterEntries, rosterCandidates, rosterPeople } from "@/lib/kpi/roster";
+import { ManagePeopleDialog } from "@/components/kpi/ManagePeopleDialog";
 import { loadTeamProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
 import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
@@ -49,7 +51,16 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
   if (parseViewParam(sp.view) === "projects") {
     const now = new Date();
     const { year } = parseProjectKpiParams(sp, now);
-    const [kpis, years] = await Promise.all([loadTeamProjectKpi(db, year, now), targetYears(db)]);
+    const canManage = can(viewer.appRole, "dashboard.team");
+    const entries = await loadRosterEntries(db, "PROJECTS");
+    const [kpis, years, candidates] = await Promise.all([
+      loadTeamProjectKpi(db, year, now, {
+        extraUserIds: entries.filter((e) => e.included).map((e) => e.userId),
+        excludeUserIds: entries.filter((e) => !e.included).map((e) => e.userId),
+      }),
+      targetYears(db),
+      canManage ? rosterCandidates(db) : Promise.resolve([]),
+    ]);
     const yearOptions = [...(years.includes(year) ? years : [year, ...years])].sort((a, b) => b - a);
     return (
       <>
@@ -57,17 +68,22 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
           actions={<>
             <KpiViewToggle view="projects" base="/dashboard/team" params={{ ...sp, view: "projects" }} />
             <YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: `/dashboard/team?view=projects&year=${y}` }))} />
+            {canManage ? <ManagePeopleDialog kind="PROJECTS" candidates={candidates} selected={kpis.map((k) => k.userId)} year={year} /> : null}
           </>} />
         <section aria-labelledby="team-projects">
           <h2 id="team-projects" className="sr-only">People</h2>
-          <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={can(viewer.appRole, "dashboard.team")} />
+          <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={canManage} />
         </section>
       </>
     );
   }
   const month = parseMonthParam(sp.month);
   const [targets, requests] = await Promise.all([loadTargets(db, [month]), loadKpiRequests(db, [month])]);
-  const people = await listTeamKpiPeople(db, targets);
+  const canManage = can(viewer.appRole, "dashboard.team");
+  const [people, candidates] = await Promise.all([
+    listTeamKpiPeople(db, targets).then((automatic) => rosterPeople(db, "REQUESTS", automatic)),
+    canManage ? rosterCandidates(db) : Promise.resolve([]),
+  ]);
   const rows: TeamRow[] = people.map((u) => {
     const t = targets.find((x) => x.userId === u.id) ?? null;
     return {
@@ -79,10 +95,9 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     };
   });
   const summary = teamSummary(rows);
-  const canManage = can(viewer.appRole, "dashboard.team");
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<><KpiViewToggle view="requests" base="/dashboard/team" params={sp} /><MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" /></>} />
+      <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<><KpiViewToggle view="requests" base="/dashboard/team" params={sp} /><MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" />{canManage ? <ManagePeopleDialog kind="REQUESTS" candidates={candidates} selected={people.map((p) => p.id)} month={month} /> : null}</>} />
       {rows.length === 0 ? (
         <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
       ) : (

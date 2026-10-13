@@ -15,12 +15,13 @@ export type ProjectTeamRow = {
   items: number;
   /** On time share of the finished scheduled items, 0..100, null when none finished. */
   onTimePct: number | null;
+  /** False for someone added to the roster who has no targets this year. */
+  hasTargets: boolean;
 };
 
-/** One row per person who has targets this year. Done / items / on time are summed over the scored quarters. */
+/** One row per person on the roster. Done / items / on time are summed over the scored quarters. */
 export function projectTeamRows(kpis: (PersonProjectKpi & { name: string })[]): ProjectTeamRow[] {
   return kpis
-    .filter((k) => k.unscheduled.length + k.excluded.length + ([1, 2, 3, 4] as const).reduce((n, q) => n + k.quarters[q].items.length, 0) > 0)
     .map((k) => {
       const qs = ([1, 2, 3, 4] as const).map((q) => k.quarters[q].score);
       const onTime = qs.reduce((n, s) => n + s.onTimeCount, 0);
@@ -29,6 +30,7 @@ export function projectTeamRows(kpis: (PersonProjectKpi & { name: string })[]): 
         userId: k.userId, name: k.name, quarters: qs.map((s) => s.score), year: k.yearScore,
         done: qs.reduce((n, s) => n + s.done, 0), items: qs.reduce((n, s) => n + s.items, 0),
         onTimePct: onTime + late === 0 ? null : Math.round((onTime / (onTime + late)) * 100),
+        hasTargets: k.unscheduled.length + k.excluded.length + ([1, 2, 3, 4] as const).reduce((n, q) => n + k.quarters[q].items.length, 0) > 0,
       };
     });
 }
@@ -60,6 +62,9 @@ export function ProjectTeamTable({ rows, year, canOpen = true }: { rows: Project
             <tr key={r.userId} className={t.tr}>
               <th scope="row" className={cn(t.rowHeader, "text-left")}>
                 {canOpen ? <Link href={`/dashboard/projects/${r.userId}?year=${year}`} className="rounded hover:underline">{r.name}</Link> : r.name}
+                {canOpen && !r.hasTargets ? (
+                  <Link href={`/dashboard/projects/${r.userId}?year=${year}`} className="ml-2 rounded text-xs font-medium text-link hover:underline">Set targets</Link>
+                ) : null}
               </th>
               {r.quarters.map((s, i) => <td key={i} className={cn(t.td, t.numeric)}>{num(s)}</td>)}
               <td className={cn(t.td, t.numeric, "font-semibold")}>{num(r.year)}</td>

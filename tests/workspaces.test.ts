@@ -25,6 +25,7 @@ const MODELS = {
   projectMilestone: { title: "hacked" },
   projectTaskEvent: { at: new Date(0) },
   projectKpiTarget: { itemTitle: "hacked" },
+  kpiRosterEntry: { included: false },
 } as const;
 type ModelKey = keyof typeof MODELS;
 const KEYS = Object.keys(MODELS) as ModelKey[];
@@ -78,12 +79,15 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   const projectKpiTarget = await raw.projectKpiTarget.create({
     data: { ...w, userId: user.id, year: 2026, projectId: project.id, itemTitle: "Item", createdById: user.id },
   });
+  const kpiRosterEntry = await raw.kpiRosterEntry.create({
+    data: { ...w, userId: user.id, kind: "REQUESTS", included: true, updatedById: user.id },
+  });
   return {
     user: user.id, invite: invite.id, brand: brand.id, division: division.id, requestType: requestType.id,
     request: request.id, statusEvent: statusEvent.id, deadlineEvent: deadlineEvent.id, comment: comment.id,
     attachment: attachment.id, notification: notification.id, chatRead: chatRead.id, kpiTarget: kpiTarget.id, project: project.id,
     projectTask: projectTask.id, projectMilestone: projectMilestone.id,
-    projectTaskEvent: projectTaskEvent.id, projectKpiTarget: projectKpiTarget.id,
+    projectTaskEvent: projectTaskEvent.id, projectKpiTarget: projectKpiTarget.id, kpiRosterEntry: kpiRosterEntry.id,
   };
 }
 

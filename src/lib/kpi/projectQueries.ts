@@ -31,15 +31,20 @@ const dead = (f: ItemFacts) => f.state === "cancelled" || f.state === "removed";
 
 /**
  * One pass over the data for `year`: every target of that year (all people, for the team cycle times), the rows of
- * every involved project and their events. Returns the people (`userIds`, or everyone with a target) as KPI objects.
+ * every involved project and their events. Returns the people (`only`, or everyone with a target plus `extraUserIds`
+ * minus `excludeUserIds`) as KPI objects; an added person without targets gets empty quarters.
  */
-async function buildKpis(db: ScopedDb, year: number, now: Date, only?: string): Promise<PersonProjectKpi[]> {
+async function buildKpis(
+  db: ScopedDb, year: number, now: Date, only?: string, roster?: { extraUserIds?: string[]; excludeUserIds?: string[] },
+): Promise<PersonProjectKpi[]> {
   const targets: TargetRow[] = await db.projectKpiTarget.findMany({
     where: { year },
     select: { id: true, userId: true, projectId: true, itemTitle: true },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
   });
-  const userIds = only ? [only] : [...new Set(targets.map((t) => t.userId))];
+  const people = new Set([...targets.map((t) => t.userId), ...(roster?.extraUserIds ?? [])]);
+  for (const id of roster?.excludeUserIds ?? []) people.delete(id);
+  const userIds = only ? [only] : [...people];
   if (userIds.length === 0) return [];
 
   // Projects where these people own rows, for "other work".
@@ -138,12 +143,23 @@ export async function loadPersonProjectKpi(db: ScopedDb, userId: string, year: n
   return kpi;
 }
 
-export async function loadTeamProjectKpi(db: ScopedDb, year: number, now: Date): Promise<(PersonProjectKpi & { name: string })[]> {
-  const kpis = await buildKpis(db, year, now);
+/**
+ * Everyone with a target this year, plus `extraUserIds` (the Team KPI roster's additions) minus `excludeUserIds`
+ * (its removals; they win). An added person must be active and not a requester, otherwise they are dropped.
+ */
+export async function loadTeamProjectKpi(
+  db: ScopedDb, year: number, now: Date, roster?: { extraUserIds?: string[]; excludeUserIds?: string[] },
+): Promise<(PersonProjectKpi & { name: string })[]> {
+  const kpis = await buildKpis(db, year, now, undefined, roster);
   if (kpis.length === 0) return [];
-  const users = await db.user.findMany({ where: { id: { in: kpis.map((k) => k.userId) } }, select: { id: true, name: true } });
-  const names = new Map(users.map((u) => [u.id, u.name]));
-  return kpis.map((k) => ({ ...k, name: names.get(k.userId) ?? "" })).sort((a, b) => a.name.localeCompare(b.name));
+  const users = await db.user.findMany({ where: { id: { in: kpis.map((k) => k.userId) } }, select: { id: true, name: true, active: true, appRole: true } });
+  const byId = new Map(users.map((u) => [u.id, u]));
+  const hasTargets = (k: PersonProjectKpi) =>
+    k.unscheduled.length + k.excluded.length + QUARTERS.reduce((n, q) => n + k.quarters[q].items.length, 0) > 0;
+  return kpis
+    .filter((k) => hasTargets(k) || (byId.get(k.userId)?.active === true && byId.get(k.userId)?.appRole !== "REQUESTER"))
+    .map((k) => ({ ...k, name: byId.get(k.userId)?.name ?? "" }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Years that have targets, plus the current Jakarta year, newest first. */

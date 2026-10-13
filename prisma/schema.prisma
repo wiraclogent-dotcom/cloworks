@@ -72,6 +72,7 @@ model Workspace {
   projectMilestones ProjectMilestone[]
   projectTaskEvents ProjectTaskEvent[]
   projectKpiTargets ProjectKpiTarget[]
+  kpiRosterEntries  KpiRosterEntry[]
   libraryCategories LibraryCategory[]
   libraryItems      LibraryItem[]
   invites           Invite[]
@@ -125,6 +126,8 @@ model User {
   projectTaskEvents        ProjectTaskEvent[]
   projectKpiTargets        ProjectKpiTarget[] @relation("ProjectKpiTargetUser")
   projectKpiTargetsCreated ProjectKpiTarget[] @relation("ProjectKpiTargetCreator")
+  kpiRosterEntries         KpiRosterEntry[]   @relation("KpiRosterUser")
+  kpiRosterUpdated         KpiRosterEntry[]   @relation("KpiRosterUpdater")
   invitesSent              Invite[]           @relation("InviteSentBy")
   invitesFor               Invite[]           @relation("InviteFor")
 
@@ -490,6 +493,30 @@ model ProjectKpiTarget {
 
   @@unique([userId, year, projectId, itemTitle])
   @@index([workspaceId, year])
+}
+
+enum KpiKind {
+  REQUESTS
+  PROJECTS
+}
+
+/// Manual exception to who appears on a Team KPI table. No row = the automatic rule.
+model KpiRosterEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  kind        KpiKind
+  included    Boolean
+  updatedById String
+  updatedAt   DateTime @updatedAt
+
+  user      User @relation("KpiRosterUser", fields: [userId], references: [id])
+  updatedBy User @relation("KpiRosterUpdater", fields: [updatedById], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, kind])
+  @@index([workspaceId, kind])
 }
 
 /// A named group of Library links (e.g. "Product Knowledge"). `icon` is a key from a small fixed lucide set.

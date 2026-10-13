@@ -148,6 +148,22 @@ describe("mergeUsers", () => {
     expect(await db.raw.projectTaskEvent.count({ where: { actorId: into.id } })).toBe(1);
   });
 
+  it("keeps the survivor's roster entry for a clashing kind and moves the rest, including who updated them", async () => {
+    const from = await person();
+    const into = await person();
+    const entry = (userId: string, kind: "REQUESTS" | "PROJECTS", included: boolean, updatedById = admin.id) =>
+      db.prisma.kpiRosterEntry.create({ data: { userId, kind, included, updatedById } });
+    await entry(into.id, "REQUESTS", true);
+    await entry(from.id, "REQUESTS", false);
+    await entry(from.id, "PROJECTS", false, from.id);
+    await entry(admin.id, "PROJECTS", true, from.id);
+    await mergeUsers(db.prisma, admin, from.id, into.id);
+    const rows = await db.raw.kpiRosterEntry.findMany({ where: { userId: into.id }, orderBy: { kind: "asc" } });
+    expect(rows.map((r) => [r.kind, r.included, r.updatedById])).toEqual([["REQUESTS", true, admin.id], ["PROJECTS", false, into.id]]);
+    expect(await db.raw.kpiRosterEntry.count({ where: { updatedById: into.id } })).toBe(2);
+    expect(await db.raw.kpiRosterEntry.count({ where: { OR: [{ userId: from.id }, { updatedById: from.id }] } })).toBe(0);
+  });
+
   it("keeps the later chat read for a clashing request", async () => {
     const T1 = new Date("2026-10-01T00:00:00Z");
     const T2 = new Date("2026-10-02T00:00:00Z");
