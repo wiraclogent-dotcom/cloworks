@@ -154,22 +154,25 @@ export async function targetYears(db: ScopedDb): Promise<number[]> {
   return [...years].sort((a, b) => b - a);
 }
 
-/** The distinct item titles of a project with who owns rows in each, for the "add targets" picker. `year` is reserved for the UI call site. */
+/** The distinct item titles of a project with the people targeted on each in `year`, for the "add targets" picker. */
 export async function itemOptions(
   db: ScopedDb,
   projectId: string,
-  _year: number,
+  year: number,
 ): Promise<{ itemTitle: string; assignedTo: { userId: string; name: string }[] }[]> {
-  const rows = await db.projectTask.findMany({
-    where: { projectId },
-    select: { title: true, owner: { select: { id: true, name: true } } },
-    orderBy: { position: "asc" },
-  });
-  const byTitle = new Map<string, Map<string, { userId: string; name: string }>>();
-  for (const r of rows) {
-    let owners = byTitle.get(r.title);
-    if (!owners) byTitle.set(r.title, (owners = new Map()));
-    if (r.owner) owners.set(r.owner.id, { userId: r.owner.id, name: r.owner.name });
+  const [rows, targets] = await Promise.all([
+    db.projectTask.findMany({ where: { projectId }, select: { title: true }, orderBy: { position: "asc" } }),
+    db.projectKpiTarget.findMany({ where: { projectId, year }, select: { itemTitle: true, userId: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] }),
+  ]);
+  const users = targets.length
+    ? await db.user.findMany({ where: { id: { in: [...new Set(targets.map((t) => t.userId))] } }, select: { id: true, name: true } })
+    : [];
+  const names = new Map(users.map((u) => [u.id, u.name]));
+  const byTitle = new Map<string, { userId: string; name: string }[]>();
+  for (const r of rows) if (!byTitle.has(r.title)) byTitle.set(r.title, []);
+  for (const t of targets) {
+    const list = byTitle.get(t.itemTitle);
+    if (list && !list.some((a) => a.userId === t.userId)) list.push({ userId: t.userId, name: names.get(t.userId) ?? "" });
   }
-  return [...byTitle].map(([itemTitle, owners]) => ({ itemTitle, assignedTo: [...owners.values()] }));
+  return [...byTitle].map(([itemTitle, assignedTo]) => ({ itemTitle, assignedTo }));
 }

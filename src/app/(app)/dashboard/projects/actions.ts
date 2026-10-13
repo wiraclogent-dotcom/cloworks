@@ -27,11 +27,9 @@ export async function addProjectTargets(input: {
 
 export async function removeProjectTarget(targetId: string): Promise<ProjectTargetResult> {
   return withUser<ProjectTargetResult, ProjectTargetResult>(requireUser, async (user) => {
-    const db = dbFor(user);
-    // Read the owner first so the right person page is revalidated; the lib function still does the permission check.
-    const t = typeof targetId === "string" && targetId ? await db.projectKpiTarget.findFirst({ where: { id: targetId }, select: { userId: true } }) : null;
-    const r = await removeProjectTargetWith(db, user, targetId);
-    if (r.ok) revalidateKpi(t?.userId ?? "");
-    return r;
+    const r = await removeProjectTargetWith(dbFor(user), user, targetId);
+    if (!r.ok) return r;
+    revalidateKpi(r.userId);
+    return { ok: true };
   }, unauthResult);
 }

@@ -54,6 +54,15 @@ describe("project KPI loaders and target actions", () => {
   const target = (userId: string, projectId: string, itemTitle: string, year = 2026) =>
     db.prisma.projectKpiTarget.create({ data: { userId, year, projectId, itemTitle, createdById: lead.id } });
 
+  /** A finished item (started 2026-10-01, finished `days` later) targeted for 2026 by each of `userIds`. */
+  const done = async (userIds: string[], title: string, days: number, dueDate = "2026-11-30") => {
+    const r = await row(projA, title, { ownerId: userIds[0], stage: "FINAL_ARTWORK", startDate: new Date("2026-10-01T00:00:00+07:00"), dueDate: new Date(`${dueDate}T00:00:00+07:00`) });
+    await db.prisma.projectTaskEvent.create({
+      data: { taskId: r.id, kind: "STAGE", fromValue: "APPROVAL", toValue: "FINAL_ARTWORK", actorId: userIds[0], at: new Date(new Date("2026-10-01T00:00:00+07:00").getTime() + days * 86_400_000) },
+    });
+    for (const u of userIds) await target(u, projA, title);
+  };
+
   describe("loadPersonProjectKpi", () => {
     it("buckets Q4, unscheduled, other-year, excluded and otherWork", async () => {
       await row(projA, "Poster", { ownerId: fadliId, stage: "MANUSCRIPT", dueDate: new Date("2026-11-20T00:00:00+07:00") });
@@ -90,22 +99,40 @@ describe("project KPI loaders and target actions", () => {
 
     it("uses team-wide cycle days for the speed score", async () => {
       // Team items finished in Q4 take 1, 2, 3 and (fadli) 4 days: team median 2.5, fadli's median 4 -> speed 100 * 2.5 / 4 = 62.5 -> 63.
-      const done = async (userId: string, title: string, days: number) => {
-        const r = await row(projA, title, { ownerId: userId, stage: "FINAL_ARTWORK", startDate: new Date("2026-10-01T00:00:00+07:00"), dueDate: new Date("2026-11-30T00:00:00+07:00") });
-        await db.prisma.projectTaskEvent.create({
-          data: { taskId: r.id, kind: "STAGE", fromValue: "APPROVAL", toValue: "FINAL_ARTWORK", actorId: userId, at: new Date(new Date("2026-10-01T00:00:00+07:00").getTime() + days * 86_400_000) },
-        });
-        await target(userId, projA, title);
-      };
-      await done(smId, "S1", 1);
-      await done(smId, "S2", 2);
-      await done(smId, "S3", 3);
-      await done(fadliId, "F1", 4);
+      await done([smId], "S1", 1);
+      await done([smId], "S2", 2);
+      await done([smId], "S3", 3);
+      await done([fadliId], "F1", 4);
 
       const k = await loadPersonProjectKpi(db.prisma, fadliId, 2026, NOW);
       expect(k.quarters[4].score.parts.speed).toBe(63);
       const team = await loadTeamProjectKpi(db.prisma, 2026, NOW);
       expect(team.find((p) => p.userId === fadliId)!.quarters[4].score.parts.speed).toBe(63);
+    });
+  });
+
+  describe("team cycle days", () => {
+    it("counts an item targeted by two people once", async () => {
+      // Items A=2, B=4, C=6 (sm) and E=20 (fadli, who also targets A). Deduplicated team median of [2,4,6,20] is 5;
+      // fadli's median is (2+20)/2 = 11 -> speed 100*5/11 = 45. Counting A twice would give median 4 -> 36.
+      await done([smId, fadliId], "A", 2);
+      await done([smId], "B", 4);
+      await done([smId], "C", 6);
+      await done([fadliId], "E", 20);
+      const k = await loadPersonProjectKpi(db.prisma, fadliId, 2026, NOW);
+      expect(k.quarters[4].score.parts.speed).toBe(45);
+    });
+
+    it("ignores a target bucketed in another year", async () => {
+      // Team items 2, 4, 6 (sm) and 8 (fadli): median 5 -> fadli speed 100*5/8 = 63. X (1 day) is a 2026 target but due in
+      // Q4 2027, so it is unscheduled for 2026 and must not join the median (it would make it 4 -> 50).
+      await done([smId], "A", 2);
+      await done([smId], "B", 4);
+      await done([smId], "C", 6);
+      await done([fadliId], "F", 8);
+      await done([smId], "X", 1, "2027-11-10");
+      const k = await loadPersonProjectKpi(db.prisma, fadliId, 2026, NOW);
+      expect(k.quarters[4].score.parts.speed).toBe(63);
     });
   });
 
@@ -137,17 +164,23 @@ describe("project KPI loaders and target actions", () => {
   });
 
   describe("itemOptions", () => {
-    it("lists each distinct title once with its owners", async () => {
+    it("lists each distinct title once with the people targeted in that year only", async () => {
       await row(projA, "Poster", { ownerId: fadliId });
-      await row(projA, "Poster", { ownerId: smId, position: 2 });
+      await row(projA, "Poster", { ownerId: lead.id, position: 2 }); // row owner without a target: not listed
       await row(projA, "Poster", { ownerId: fadliId, position: 3 });
       await row(projA, "Banner", { ownerId: null });
+      await target(fadliId, projA, "Poster", 2026);
+      await target(smId, projA, "Poster", 2026);
+      await target(lead.id, projA, "Poster", 2025); // other year
+      await target(lead.id, projB, "Poster", 2026); // other project
       const opts = await itemOptions(db.prisma, projA, 2026);
       expect(opts.map((o) => o.itemTitle).sort()).toEqual(["Banner", "Poster"]);
       const poster = opts.find((o) => o.itemTitle === "Poster")!;
       expect(poster.assignedTo.map((a) => a.name).sort()).toEqual(["fadli", "sm"]);
       expect(poster.assignedTo.find((a) => a.name === "sm")!.userId).toBe(smId);
       expect(opts.find((o) => o.itemTitle === "Banner")!.assignedTo).toEqual([]);
+      const y25 = await itemOptions(db.prisma, projA, 2025);
+      expect(y25.find((o) => o.itemTitle === "Poster")!.assignedTo.map((a) => a.name)).toEqual(["lead"]);
     });
   });
 
@@ -185,8 +218,28 @@ describe("project KPI loaders and target actions", () => {
     it("rejects an unknown or inactive person", async () => {
       expect(await addProjectTargetsWith(db.prisma, leadUser(), input({ userId: "nobody" }))).toMatchObject({ ok: false, code: "NOT_FOUND" });
       await db.prisma.user.update({ where: { id: smId }, data: { active: false } });
-      expect(await addProjectTargetsWith(db.prisma, leadUser(), input({ userId: smId }))).toMatchObject({ ok: false, code: "NOT_FOUND" });
-      await db.prisma.user.update({ where: { id: smId }, data: { active: true } });
+      try {
+        expect(await addProjectTargetsWith(db.prisma, leadUser(), input({ userId: smId }))).toMatchObject({ ok: false, code: "NOT_FOUND" });
+      } finally {
+        await db.prisma.user.update({ where: { id: smId }, data: { active: true } });
+      }
+    });
+
+    it("returns VALIDATION for malformed payloads instead of throwing", async () => {
+      const bad = [null, undefined, "x", 5, input({ itemTitles: "Poster" }), input({ itemTitles: [1] }), input({ itemTitles: [null] }), input({ itemTitles: [""] }), input({ userId: 7 }), input({ projectId: null })];
+      for (const b of bad) {
+        expect(await addProjectTargetsWith(db.prisma, leadUser(), b as never), JSON.stringify(b)).toMatchObject({ ok: false, code: "VALIDATION" });
+      }
+      expect(await addProjectTargets(null as never)).toMatchObject({ ok: false, code: "VALIDATION" });
+      expect(await db.prisma.projectKpiTarget.count()).toBe(0);
+    });
+
+    it("caps item titles at 200 distinct", async () => {
+      const titles = (n: number) => Array.from({ length: n }, (_, i) => `Item ${i}`);
+      expect(await addProjectTargetsWith(db.prisma, leadUser(), input({ itemTitles: titles(201) }))).toMatchObject({ ok: false, code: "VALIDATION" });
+      // 201 entries but only 200 distinct is within the cap (then NOT_FOUND since the items do not exist).
+      expect(await addProjectTargetsWith(db.prisma, leadUser(), input({ itemTitles: [...titles(200), "Item 0"] }))).toMatchObject({ ok: false, code: "NOT_FOUND" });
+      expect(await db.prisma.projectKpiTarget.count()).toBe(0);
     });
 
     it("validates year and item titles", async () => {
@@ -206,7 +259,7 @@ describe("project KPI loaders and target actions", () => {
       expect(await db.prisma.projectKpiTarget.count()).toBe(1);
       expect(await removeProjectTargetWith(db.prisma, leadUser(), otherTarget)).toMatchObject({ ok: false, code: "NOT_FOUND" });
       expect(await db.raw.projectKpiTarget.count({ where: { id: otherTarget } })).toBe(1);
-      expect(await removeProjectTargetWith(db.prisma, leadUser(), t.id)).toMatchObject({ ok: true });
+      expect(await removeProjectTargetWith(db.prisma, leadUser(), t.id)).toEqual({ ok: true, userId: fadliId });
       expect(await db.prisma.projectKpiTarget.count()).toBe(0);
       expect(await removeProjectTargetWith(db.prisma, leadUser(), t.id)).toMatchObject({ ok: false, code: "NOT_FOUND" });
     });

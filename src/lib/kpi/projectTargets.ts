@@ -3,9 +3,14 @@ import { can } from "@/lib/permissions";
 import type { SessionUser } from "@/lib/session-core";
 
 export type ProjectTargetCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "UNAUTHENTICATED";
-export type ProjectTargetResult = { ok: true } | { ok: false; code: ProjectTargetCode; message: string };
+export type ProjectTargetFailure = { ok: false; code: ProjectTargetCode; message: string };
+export type ProjectTargetResult = { ok: true } | ProjectTargetFailure;
+/** Removing reports whose target it was, so the caller can revalidate that person's page. */
+export type RemoveProjectTargetResult = { ok: true; userId: string } | ProjectTargetFailure;
 
-const fail = (code: ProjectTargetCode, message: string): ProjectTargetResult => ({ ok: false, code, message });
+const fail = (code: ProjectTargetCode, message: string): ProjectTargetFailure => ({ ok: false, code, message });
+
+const MAX_ITEMS = 200;
 
 type Actor = Pick<SessionUser, "id" | "appRole">;
 
@@ -16,6 +21,7 @@ export async function addProjectTargetsWith(
   input: { userId: string; year: number; projectId: string; itemTitles: string[] },
 ): Promise<ProjectTargetResult> {
   if (!can(actor.appRole, "dashboard.team")) return fail("FORBIDDEN", "Only leads and admins can set project targets.");
+  if (!input || typeof input !== "object") return fail("VALIDATION", "Invalid request.");
   const { userId, year, projectId, itemTitles } = input;
   if (typeof userId !== "string" || !userId) return fail("VALIDATION", "Choose a person.");
   if (typeof projectId !== "string" || !projectId) return fail("VALIDATION", "Choose a project.");
@@ -26,6 +32,7 @@ export async function addProjectTargetsWith(
     return fail("VALIDATION", "Choose at least one item.");
   }
   const titles = [...new Set(itemTitles)];
+  if (titles.length > MAX_ITEMS) return fail("VALIDATION", `Choose at most ${MAX_ITEMS} items at a time.`);
 
   const person = await db.user.findFirst({ where: { id: userId, active: true }, select: { id: true } });
   if (!person) return fail("NOT_FOUND", "Person not found.");
@@ -42,9 +49,11 @@ export async function addProjectTargetsWith(
   return { ok: true };
 }
 
-export async function removeProjectTargetWith(db: ScopedDb, actor: Actor, targetId: string): Promise<ProjectTargetResult> {
+export async function removeProjectTargetWith(db: ScopedDb, actor: Actor, targetId: string): Promise<RemoveProjectTargetResult> {
   if (!can(actor.appRole, "dashboard.team")) return fail("FORBIDDEN", "Only leads and admins can set project targets.");
   if (typeof targetId !== "string" || !targetId) return fail("NOT_FOUND", "Target not found.");
+  const target = await db.projectKpiTarget.findFirst({ where: { id: targetId }, select: { userId: true } });
+  if (!target) return fail("NOT_FOUND", "Target not found.");
   const { count } = await db.projectKpiTarget.deleteMany({ where: { id: targetId } });
-  return count === 0 ? fail("NOT_FOUND", "Target not found.") : { ok: true };
+  return count === 0 ? fail("NOT_FOUND", "Target not found.") : { ok: true, userId: target.userId };
 }
