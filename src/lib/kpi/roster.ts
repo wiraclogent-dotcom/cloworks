@@ -43,12 +43,10 @@ export function rosterCandidates(db: ScopedDb): Promise<{ id: string; name: stri
 type Person = { id: string; name: string; jobRole: JobRole };
 
 /**
- * Requests roster: the automatic people with the overrides applied, sorted by name. Added people are loaded in one
- * query; an override for someone who has since left or become a requester is ignored.
+ * Requests roster: the automatic people with the overrides applied, always sorted by name. Added people are loaded in
+ * one query; an override for someone who has since left or become a requester is ignored.
  */
-export async function rosterPeople(db: ScopedDb, kind: KpiKind, automatic: Person[]): Promise<Person[]> {
-  const entries = await loadRosterEntries(db, kind);
-  if (entries.length === 0) return automatic;
+export async function rosterPeople(db: ScopedDb, automatic: Person[], entries: { userId: string; included: boolean }[]): Promise<Person[]> {
   const wanted = new Set(resolveRoster(automatic.map((p) => p.id), entries));
   const have = new Set(automatic.map((p) => p.id));
   const missing = [...wanted].filter((id) => !have.has(id));
@@ -61,10 +59,21 @@ export async function rosterPeople(db: ScopedDb, kind: KpiKind, automatic: Perso
   return [...automatic.filter((p) => wanted.has(p.id)), ...added].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** Drops duplicates; null when the list is over the cap. */
+function capped(userIds: string[]): string[] | null {
+  const ids = [...new Set(userIds)];
+  return ids.length > MAX_PEOPLE ? null : ids;
+}
+
 /**
  * Leads and admins set the full list of people shown on a Team KPI table. `automaticIds` is what the table would show
- * with no overrides; only the differences are stored (an override that matches the automatic rule is deleted). Only
- * candidates are considered, so someone shown for another reason (e.g. an inactive designer with history) is untouched.
+ * with no overrides for the period being edited; combined with the stored entries it gives who is shown now, and an
+ * override is upserted for each candidate whose ticked state differs from that. Existing overrides are never deleted
+ * here: they are standing, and one that is irrelevant to this month or year may matter for another. Only candidates
+ * are considered, so someone shown for another reason (e.g. an inactive designer with history) is untouched.
+ *
+ * It TRUSTS the caller's `automaticIds`: never wire it directly to a server action. `setKpiRosterWith` recomputes
+ * the list on the server.
  */
 export async function setRosterWith(
   db: ScopedDb,
@@ -76,24 +85,26 @@ export async function setRosterWith(
   const { kind, userIds, automaticIds } = input;
   if (!KINDS.includes(kind)) return fail("VALIDATION", "Choose Requests or Projects.");
   if (!Array.isArray(userIds) || userIds.some((id) => typeof id !== "string" || !id)) return fail("VALIDATION", "Invalid list of people.");
-  const desired = new Set(userIds);
-  if (desired.size > MAX_PEOPLE) return fail("VALIDATION", `Choose at most ${MAX_PEOPLE} people.`);
+  const ids = capped(userIds);
+  if (!ids) return fail("VALIDATION", `Choose at most ${MAX_PEOPLE} people.`);
+  const desired = new Set(ids);
 
   const candidates = await rosterCandidates(db);
   const known = new Set(candidates.map((c) => c.id));
-  if ([...desired].some((id) => !known.has(id))) return fail("NOT_FOUND", "One of those people was not found.");
+  if (ids.some((id) => !known.has(id))) return fail("NOT_FOUND", "One of those people was not found.");
 
-  const automatic = new Set(automaticIds);
-  const ops = candidates.map((c) => {
-    const want = desired.has(c.id);
-    if (want === automatic.has(c.id)) return db.kpiRosterEntry.deleteMany({ where: { userId: c.id, kind } });
-    return db.kpiRosterEntry.upsert({
-      where: { userId_kind: { userId: c.id, kind } },
-      create: { userId: c.id, kind, included: want, updatedById: actor.id },
-      update: { included: want, updatedById: actor.id },
+  const shown = new Set(resolveRoster(automaticIds, await loadRosterEntries(db, kind)));
+  const ops = candidates
+    .filter((c) => desired.has(c.id) !== shown.has(c.id))
+    .map((c) => {
+      const included = desired.has(c.id);
+      return db.kpiRosterEntry.upsert({
+        where: { userId_kind: { userId: c.id, kind } },
+        create: { userId: c.id, kind, included, updatedById: actor.id },
+        update: { included, updatedById: actor.id },
+      });
     });
-  });
-  await db.$transaction(ops);
+  if (ops.length > 0) await db.$transaction(ops);
   return { ok: true };
 }
 
@@ -121,6 +132,8 @@ export async function setKpiRosterWith(db: ScopedDb, actor: Actor, input: SetKpi
   }
   // Check the list before the lookups below so a malformed request does no database work.
   if (!Array.isArray(userIds) || userIds.some((id) => typeof id !== "string" || !id)) return fail("VALIDATION", "Invalid list of people.");
+  const ids = capped(userIds);
+  if (!ids) return fail("VALIDATION", `Choose at most ${MAX_PEOPLE} people.`);
   const automaticIds = await automaticRosterIds(db, kind, { month, year });
-  return setRosterWith(db, actor, { kind, userIds, automaticIds });
+  return setRosterWith(db, actor, { kind, userIds: ids, automaticIds });
 }

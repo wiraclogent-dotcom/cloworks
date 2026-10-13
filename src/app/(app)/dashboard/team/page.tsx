@@ -52,15 +52,20 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     const now = new Date();
     const { year } = parseProjectKpiParams(sp, now);
     const canManage = can(viewer.appRole, "dashboard.team");
-    const entries = await loadRosterEntries(db, "PROJECTS");
-    const [kpis, years, candidates] = await Promise.all([
-      loadTeamProjectKpi(db, year, now, {
-        extraUserIds: entries.filter((e) => e.included).map((e) => e.userId),
-        excludeUserIds: entries.filter((e) => !e.included).map((e) => e.userId),
-      }),
+    const [{ entries, kpis }, years, candidates] = await Promise.all([
+      loadRosterEntries(db, "PROJECTS").then(async (entries) => ({
+        entries,
+        kpis: await loadTeamProjectKpi(db, year, now, {
+          extraUserIds: entries.filter((e) => e.included).map((e) => e.userId),
+          excludeUserIds: entries.filter((e) => !e.included).map((e) => e.userId),
+        }),
+      })),
       targetYears(db),
       canManage ? rosterCandidates(db) : Promise.resolve([]),
     ]);
+    // An empty table is "hidden" when removals took out people who do have targets this year.
+    const removed = entries.filter((e) => !e.included).map((e) => e.userId);
+    const hiddenByRoster = kpis.length === 0 && removed.length > 0 && (await db.projectKpiTarget.count({ where: { year, userId: { in: removed } } })) > 0;
     const yearOptions = [...(years.includes(year) ? years : [year, ...years])].sort((a, b) => b - a);
     return (
       <>
@@ -72,18 +77,19 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
           </>} />
         <section aria-labelledby="team-projects">
           <h2 id="team-projects" className="sr-only">People</h2>
-          <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={canManage} />
+          <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={canManage} hiddenByRoster={hiddenByRoster} />
         </section>
       </>
     );
   }
   const month = parseMonthParam(sp.month);
-  const [targets, requests] = await Promise.all([loadTargets(db, [month]), loadKpiRequests(db, [month])]);
   const canManage = can(viewer.appRole, "dashboard.team");
-  const [people, candidates] = await Promise.all([
-    listTeamKpiPeople(db, targets).then((automatic) => rosterPeople(db, "REQUESTS", automatic)),
+  const [targets, requests, entries, candidates] = await Promise.all([
+    loadTargets(db, [month]), loadKpiRequests(db, [month]), loadRosterEntries(db, "REQUESTS"),
     canManage ? rosterCandidates(db) : Promise.resolve([]),
   ]);
+  const automatic = await listTeamKpiPeople(db, targets);
+  const people = await rosterPeople(db, automatic, entries);
   const rows: TeamRow[] = people.map((u) => {
     const t = targets.find((x) => x.userId === u.id) ?? null;
     return {
@@ -99,7 +105,11 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
     <>
       <PageHeader breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} title="Team KPI" description={monthLabel(month)} actions={<><KpiViewToggle view="requests" base="/dashboard/team" params={sp} /><MonthPicker month={month} current={jakartaMonth(new Date())} action="/dashboard/team" />{canManage ? <ManagePeopleDialog kind="REQUESTS" candidates={candidates} selected={people.map((p) => p.id)} month={month} /> : null}</>} />
       {rows.length === 0 ? (
-        <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
+        automatic.length > 0 ? (
+          <EmptyState art="empty-kpi" icon={<Users />} title="No one is shown." description={canManage ? "Use Manage people to add someone." : undefined} />
+        ) : (
+          <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
+        )
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="team-summary">

@@ -25,6 +25,11 @@ export type PersonProjectKpi = {
   yearScore: number | null;
 };
 
+/** Whether the person has any target this year (scored, unscheduled or excluded). */
+export function hasProjectTargets(k: Pick<PersonProjectKpi, "quarters" | "unscheduled" | "excluded">): boolean {
+  return k.unscheduled.length + k.excluded.length + QUARTERS.reduce((n, q) => n + k.quarters[q].items.length, 0) > 0;
+}
+
 type TargetRow = { id: string; userId: string; projectId: string; itemTitle: string };
 const keyOf = (projectId: string, title: string) => `${projectId}\u0000${title}`;
 const dead = (f: ItemFacts) => f.state === "cancelled" || f.state === "removed";
@@ -154,10 +159,8 @@ export async function loadTeamProjectKpi(
   if (kpis.length === 0) return [];
   const users = await db.user.findMany({ where: { id: { in: kpis.map((k) => k.userId) } }, select: { id: true, name: true, active: true, appRole: true } });
   const byId = new Map(users.map((u) => [u.id, u]));
-  const hasTargets = (k: PersonProjectKpi) =>
-    k.unscheduled.length + k.excluded.length + QUARTERS.reduce((n, q) => n + k.quarters[q].items.length, 0) > 0;
   return kpis
-    .filter((k) => hasTargets(k) || (byId.get(k.userId)?.active === true && byId.get(k.userId)?.appRole !== "REQUESTER"))
+    .filter((k) => hasProjectTargets(k) || (byId.get(k.userId)?.active === true && byId.get(k.userId)?.appRole !== "REQUESTER"))
     .map((k) => ({ ...k, name: byId.get(k.userId)?.name ?? "" }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }

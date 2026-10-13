@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Target } from "lucide-react";
-import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
+import { Target, Users } from "lucide-react";
+import { hasProjectTargets, type PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
@@ -30,7 +30,7 @@ export function projectTeamRows(kpis: (PersonProjectKpi & { name: string })[]): 
         userId: k.userId, name: k.name, quarters: qs.map((s) => s.score), year: k.yearScore,
         done: qs.reduce((n, s) => n + s.done, 0), items: qs.reduce((n, s) => n + s.items, 0),
         onTimePct: onTime + late === 0 ? null : Math.round((onTime / (onTime + late)) * 100),
-        hasTargets: k.unscheduled.length + k.excluded.length + ([1, 2, 3, 4] as const).reduce((n, q) => n + k.quarters[q].items.length, 0) > 0,
+        hasTargets: hasProjectTargets(k),
       };
     });
 }
@@ -39,7 +39,14 @@ const cmp = (a: ProjectTeamRow, b: ProjectTeamRow) =>
   a.year === b.year ? a.name.localeCompare(b.name) : a.year === null ? 1 : b.year === null ? -1 : b.year - a.year;
 
 /** Team › Projects: score per quarter and for the year, highest year score first, people without a score last. */
-export function ProjectTeamTable({ rows, year, canOpen = true }: { rows: ProjectTeamRow[]; year: number; canOpen?: boolean }) {
+export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = false }: {
+  rows: ProjectTeamRow[]; year: number; canOpen?: boolean;
+  /** Nobody shows because Manage people hid everyone who has targets (not because there are none). */
+  hiddenByRoster?: boolean;
+}) {
+  if (rows.length === 0 && hiddenByRoster) {
+    return <EmptyState art="empty-kpi" icon={<Users />} title={`No one is shown for ${year}.`} description={canOpen ? "Use Manage people to add someone." : undefined} />;
+  }
   if (rows.length === 0) {
     return <EmptyState art="empty-kpi" icon={<Target />} title={`No project targets for ${year} yet.`} description="Add targets from a person's Project KPI page." />;
   }

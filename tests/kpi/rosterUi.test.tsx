@@ -106,6 +106,23 @@ describe("ProjectTeamTable with a person who has no targets", () => {
   });
 });
 
+describe("ProjectTeamTable empty states", () => {
+  it("says no one is shown, with the Manage people hint for managers, when the roster hides everyone", () => {
+    render(<ProjectTeamTable rows={[]} year={2026} canOpen hiddenByRoster />);
+    expect(screen.getByText("No one is shown for 2026.")).toBeTruthy();
+    expect(screen.getByText("Use Manage people to add someone.")).toBeTruthy();
+  });
+  it("keeps the hint from viewers who cannot manage", () => {
+    render(<ProjectTeamTable rows={[]} year={2026} canOpen={false} hiddenByRoster />);
+    expect(screen.getByText("No one is shown for 2026.")).toBeTruthy();
+    expect(screen.queryByText("Use Manage people to add someone.")).toBeNull();
+  });
+  it("keeps the no-targets text otherwise", () => {
+    render(<ProjectTeamTable rows={[]} year={2026} />);
+    expect(screen.getByText("No project targets for 2026 yet.")).toBeTruthy();
+  });
+});
+
 describe("projectTeamRows", () => {
   const emptyScore = { score: null, parts: { onTime: null, completion: null, speed: null, revisions: null, slips: null }, usedParts: [], items: 0, done: 0, onTimeCount: 0, lateCount: 0 } as const;
   const emptyQ = () => ({ score: { ...emptyScore, usedParts: [] as never[] }, items: [] });

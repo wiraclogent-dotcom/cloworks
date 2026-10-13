@@ -48,6 +48,7 @@ describe("Team KPI roster", () => {
     h.user = { id: leadId, appRole: "LEAD" };
     await db.raw.kpiRosterEntry.deleteMany({});
     await db.prisma.projectKpiTarget.deleteMany({});
+    await db.prisma.kpiTarget.deleteMany({});
   });
 
   describe("rosterCandidates", () => {
@@ -91,12 +92,23 @@ describe("Team KPI roster", () => {
       }
     });
 
-    it("writes included=false when a lead removes an automatic person, and deleting it again re-adds them", async () => {
+    it("writes included=false when a lead removes an automatic person, and included=true when they are put back", async () => {
       const auto = [anaId, budiId];
       expect(await setRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [budiId], automaticIds: auto })).toEqual({ ok: true });
       expect(await entries("REQUESTS")).toEqual([[anaId, false]]);
       expect(await setRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [anaId, budiId], automaticIds: auto })).toEqual({ ok: true });
-      expect(await entries("REQUESTS")).toEqual([]);
+      expect(await entries("REQUESTS")).toEqual([[anaId, true]]);
+    });
+
+    it("never deletes an override and does not write one for someone whose visibility did not change", async () => {
+      const auto = [anaId, budiId];
+      await setRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [budiId], automaticIds: auto }); // Ana hidden
+      // Saving the same list leaves the existing override as it was.
+      await setRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [budiId], automaticIds: auto });
+      expect(await entries("REQUESTS")).toEqual([[anaId, false]]);
+      // A save that touches nobody writes nothing new.
+      await setRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [budiId], automaticIds: [budiId] });
+      expect(await entries("REQUESTS")).toEqual([[anaId, false]]);
     });
 
     it("writes included=true for a non-automatic person and stores who changed it", async () => {
@@ -142,12 +154,43 @@ describe("Team KPI roster", () => {
       expect(await entries("REQUESTS")).toEqual([[caraId, true]]);
     });
 
+    it("keeps a standing removal when someone saves a different year with that person unticked", async () => {
+      await db.prisma.projectKpiTarget.create({ data: { userId: anaId, year: 2026, projectId, itemTitle: "X", createdById: leadId } });
+      await db.prisma.projectKpiTarget.create({ data: { userId: budiId, year: 2027, projectId, itemTitle: "Y", createdById: leadId } });
+      // 2026: remove Ana.
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [], year: 2026 })).toEqual({ ok: true });
+      expect(await entries("PROJECTS")).toEqual([[anaId, false]]);
+      // 2027: Ana is not shown (override), Budi is; the dialog saves with Ana unticked and Budi kept.
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [budiId], year: 2027 })).toEqual({ ok: true });
+      expect(await entries("PROJECTS")).toEqual([[anaId, false]]);
+      const NOW = new Date("2026-10-13T05:00:00Z");
+      const rows = await loadTeamProjectKpi(db.prisma, 2026, NOW, { excludeUserIds: [anaId] });
+      expect(rows.map((r) => r.name)).toEqual([]); // Ana still hidden in 2026
+    });
+
+    it("keeps a standing removal across months for Requests", async () => {
+      await db.prisma.kpiTarget.create({ data: { userId: caraId, month: "2026-10", role: "DESIGNER", targetTasks: 3 } });
+      // October: Cara shows (DESIGNER target) and is removed.
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [anaId], month: "2026-10" })).toEqual({ ok: true });
+      expect(await entries("REQUESTS")).toEqual([[caraId, false]]);
+      // November: she has no target, is not shown, and a save with her unticked must not drop the override.
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [anaId], month: "2026-11" })).toEqual({ ok: true });
+      expect(await entries("REQUESTS")).toEqual([[caraId, false]]);
+    });
+
     it("validates month and year", async () => {
       expect(await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [], month: "2026-13" })).toMatchObject({ ok: false, code: "VALIDATION" });
       expect(await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [] })).toMatchObject({ ok: false, code: "VALIDATION" });
       expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [], year: 1999 })).toMatchObject({ ok: false, code: "VALIDATION" });
       expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [], year: 2026.5 })).toMatchObject({ ok: false, code: "VALIDATION" });
       expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [] })).toMatchObject({ ok: false, code: "VALIDATION" });
+    });
+
+    it("dedupes the list and caps it before any database work", async () => {
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [caraId, caraId, caraId], year: 2026 })).toEqual({ ok: true });
+      expect(await entries("PROJECTS")).toEqual([[caraId, true]]);
+      const many = Array.from({ length: 201 }, (_, i) => `x${i}`);
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: many, year: 2026 })).toMatchObject({ ok: false, code: "VALIDATION" });
     });
 
     it("the action is forbidden for creatives, reports unauthenticated as data, and revalidates on success", async () => {
@@ -179,9 +222,20 @@ describe("Team KPI roster", () => {
         { userId: goneId, kind: "REQUESTS", included: true, updatedById: leadId, workspaceId: "clogent" }, // inactive since: dropped
         { userId: reqId, kind: "REQUESTS", included: true, updatedById: leadId, workspaceId: "clogent" }, // demoted to requester: dropped
       ] });
-      const people = await rosterPeople(db.prisma, "REQUESTS", auto);
+      const people = await rosterPeople(db.prisma, auto, await loadRosterEntries(db.prisma, "REQUESTS"));
       expect(people.map((p) => p.name)).toEqual(["Ana", "Cara"]);
       expect(people[1]).toMatchObject({ id: caraId, jobRole: "OTHER" });
+    });
+
+    it("returns the automatic list unchanged when there are no entries", async () => {
+      const auto = [{ id: anaId, name: "Ana", jobRole: "DESIGNER" as const }, { id: budiId, name: "Budi", jobRole: "OTHER" as const }];
+      expect(await rosterPeople(db.prisma, auto, [])).toEqual(auto);
+    });
+
+    it("sorts by name with overrides or without", async () => {
+      const auto = [{ id: caraId, name: "Cara", jobRole: "OTHER" as const }, { id: anaId, name: "Ana", jobRole: "DESIGNER" as const }];
+      expect((await rosterPeople(db.prisma, auto, [])).map((p) => p.name)).toEqual(["Ana", "Cara"]);
+      expect((await rosterPeople(db.prisma, auto, [{ userId: budiId, included: true }])).map((p) => p.name)).toEqual(["Ana", "Budi", "Cara"]);
     });
   });
 
