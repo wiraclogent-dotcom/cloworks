@@ -15,7 +15,8 @@ const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, back: vi.fn(), refresh: vi.fn() }) }));
 
 import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
-import { ProjectScoreHeader } from "@/components/kpi/project/ProjectScoreHeader";
+import { ProjectScoreHeader, MEASURE_HELP } from "@/components/kpi/project/ProjectScoreHeader";
+import { MeasureInfo } from "@/components/kpi/project/MeasureInfo";
 import { TargetRow, targetBadge } from "@/components/kpi/project/TargetList";
 import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
@@ -72,6 +73,45 @@ describe("ProjectScoreHeader", () => {
     render(<ProjectScoreHeader label="Q4 score" score={e.score} parts={e.parts} usedParts={e.usedParts} />);
     expect(screen.queryByText(/Based on/)).toBeNull();
     expect(screen.getAllByText("—").length).toBe(6);
+  });
+});
+
+describe("measure info", () => {
+  const LABELS = { onTime: "On time", completion: "Completion", speed: "Speed", revisions: "Revisions", slips: "Slips" } as const;
+  it("gives each of the five tiles an info button", () => {
+    const s = score();
+    render(<ProjectScoreHeader label="Q4 score" score={s.score} parts={s.parts} usedParts={s.usedParts} />);
+    for (const l of Object.values(LABELS)) {
+      const b = screen.getByRole("button", { name: `What is ${l}?` });
+      expect(b.getAttribute("type")).toBe("button");
+    }
+    expect(screen.getAllByRole("button").length).toBe(5);
+  });
+  it("has the exact help copy", () => {
+    expect(MEASURE_HELP).toEqual({
+      onTime: "Share of items finished on or before their current due date. An item past its due date and not yet finished counts as late straight away.",
+      completion: "How far the items have moved through the stages, on average. Final artwork = 100%, Approval = 80%, First preview = 20%.",
+      speed: "Days from start to Final artwork, compared with the team's usual time. As fast as the team or faster = 100. Needs at least 3 finished items across the team this quarter.",
+      revisions: "Starts at 100 and drops 25 points each time an item moves back a stage, averaged across the items.",
+      slips: "Starts at 100 and drops 25 points each time a due date is pushed later, averaged across the items. Pushes made together within a minute count once.",
+    });
+  });
+  it("opens on click with the weighted title, the help and the muted footer, and closes on Escape", async () => {
+    const s = score();
+    render(<ProjectScoreHeader label="Q4 score" score={s.score} parts={s.parts} usedParts={s.usedParts} />);
+    expect(screen.queryByText("On time · 50%")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "What is On time?" }));
+    expect(await screen.findByText("On time · 50%")).toBeTruthy();
+    expect(screen.getByText(MEASURE_HELP.onTime)).toBeTruthy();
+    expect(screen.getByText("— means there's no data yet. This measure's weight is shared among the others.")).toBeTruthy();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByText("On time · 50%")).toBeNull());
+  });
+  it("titles every measure with its weight", async () => {
+    render(<MeasureInfo label="Speed" weight={0.1} help={MEASURE_HELP.speed} />);
+    fireEvent.click(screen.getByRole("button", { name: "What is Speed?" }));
+    expect(await screen.findByText("Speed · 10%")).toBeTruthy();
+    expect(screen.getByText(MEASURE_HELP.speed)).toBeTruthy();
   });
 });
 
