@@ -111,7 +111,7 @@ added yet (add it with the CLI the first time you need it, then use it).
 | Need | Use (shadcn) | Replaces (kit / hand-rolled) | Status |
 |---|---|---|---|
 | Action button, icon-only button, link styled as button | `Button` (`size="icon"` for icon-only, `asChild` for `<Link>`) | `ui/Button`, `buttonClass()`, `ui/IconButton`, local `iconBtn`/`yearBtn` classes | Migrated |
-| Text field, textarea, label, hint, error | `Input`, `Textarea`, `Label` (`labelClassName` for a `<legend>`/`<span>`), `FieldDescription`, `FieldError` | `fieldClass()`, `labelClass`, `hintClass`, kit `FieldError`. Error look comes from `aria-invalid`. | Migrated |
+| Text field, textarea, label, hint, error | `Input`, `Textarea`, `Label` (`labelClassName` from `label-class` for a `<legend>`/`<span>`), `FieldDescription`, `FieldError` | `fieldClass()`, `labelClass`, `hintClass`, kit `FieldError`. Error look comes from `aria-invalid`. | Migrated |
 | Select in a form | `NativeSelect` (native picker on phones; `className` = wrapper width, `selectClassName` = the select) | `<select className={fieldClass(...)}>`, `selectControl` | Migrated |
 | Custom dropdown list (icons, rich rows) | `Select` | – | In use |
 | Search-as-you-type picker | `Combobox` | – | Planned |

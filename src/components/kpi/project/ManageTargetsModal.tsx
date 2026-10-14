@@ -6,7 +6,8 @@ import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
-import { Label, labelClassName } from "@/components/shadcn/label";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { Checkbox } from "@/components/shadcn/checkbox";
 

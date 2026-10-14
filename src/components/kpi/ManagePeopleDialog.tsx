@@ -6,7 +6,7 @@ import { Users } from "lucide-react";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
-import { labelClassName } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { Checkbox } from "@/components/shadcn/checkbox";
 

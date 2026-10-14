@@ -144,7 +144,7 @@ describe("month picker, skeletons, access denied", () => {
     expect(document.querySelector('input[type="month"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
     fireEvent.click(trigger);
-    const panel = screen.getByRole("group", { name: "Choose a month" });
+    const panel = screen.getByRole("dialog", { name: "Choose a month" });
     expect(within(panel).getByText("2026")).toBeTruthy();
     const mar = within(panel).getByRole("link", { name: "March 2026" });
     expect(mar.getAttribute("href")).toBe("/dashboard?month=2026-03&user=u9");

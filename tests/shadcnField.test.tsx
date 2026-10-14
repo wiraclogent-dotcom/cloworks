@@ -6,7 +6,8 @@ import path from "node:path";
 import { srcFiles } from "./helpers/srcFiles";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Label, labelClassName } from "@/components/shadcn/label";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { Field, FieldLabel, FieldDescription, FieldError } from "@/components/shadcn/field";
 
 afterEach(cleanup);
@@ -69,6 +70,13 @@ describe("Label", () => {
     expect(c).toContain("text-compact");
     expect(c).toContain("font-medium");
     expect(labelClassName).toContain("text-compact font-medium");
+  });
+
+  it("labelClassName lives in a server-safe module, not in the \"use client\" label.tsx", () => {
+    // A string exported from a client module reaches a server component as a client reference, not a string.
+    const dir = path.resolve(__dirname, "../src/components/shadcn");
+    expect(readFileSync(path.join(dir, "label-class.ts"), "utf8")).not.toMatch(/["']use client["']/);
+    expect(readFileSync(path.join(dir, "label.tsx"), "utf8")).not.toMatch(/export\s*\{[^}]*labelClassName/);
   });
 
   it("names its control through htmlFor", () => {

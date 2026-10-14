@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within, waitFor, act } from "@testing-library/react";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, back: vi.fn() }) }));
@@ -155,13 +155,29 @@ describe("Library editor", () => {
   it("Delete asks first and only deletes after confirming", async () => {
     view();
     menu("Alpha deck", "Delete");
-    const d = screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' });
+    const d = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
     expect(A.deleteItem).not.toHaveBeenCalled();
     fireEvent.click(within(d).getByRole("button", { name: "Cancel" }));
     expect(A.deleteItem).not.toHaveBeenCalled();
     menu("Alpha deck", "Delete");
-    fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Delete" }));
+    fireEvent.click(within(screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(A.deleteItem).toHaveBeenCalledWith("r1"));
+  });
+
+  it("the delete confirmation is an alertdialog: a click outside does not cancel it, Esc does", async () => {
+    view();
+    menu("Alpha deck", "Delete");
+    const d = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
+    expect(within(d).getByText("This removes the link for everyone in the workspace.")).toBeTruthy();
+    // Radix registers its outside-pointer listener on the next tick after opening.
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const overlay = document.querySelector("[data-slot=alert-dialog-overlay]")!;
+    fireEvent.pointerDown(overlay); fireEvent.pointerUp(overlay); fireEvent.click(overlay);
+    expect(screen.queryByRole("alertdialog")).not.toBeNull();
+    expect(document.activeElement).toBe(within(d).getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(d, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(A.deleteItem).not.toHaveBeenCalled();
   });
 
   it("Categories dialog renames, adds, moves and shows the not-empty message", async () => {
@@ -227,7 +243,7 @@ describe("Library editor", () => {
     await waitFor(() => expect(document.activeElement).toBe(add));
     // From the row menu the item unmounts, so focus goes to the row's Actions trigger.
     menu("Alpha deck", "Delete");
-    fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
+    fireEvent.click(within(screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" })));
   });
 
@@ -244,7 +260,7 @@ describe("Library editor", () => {
     fireEvent.click(within(d).getByRole("button", { name: "Close" }));
 
     menu("Alpha deck", "Delete");
-    const del = screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' });
+    const del = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
     fireEvent.click(within(del).getByRole("button", { name: "Delete" }));
     expect(await within(del).findByText("Something went wrong. Try again.")).toBeTruthy();
     expect((within(del).getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(false);

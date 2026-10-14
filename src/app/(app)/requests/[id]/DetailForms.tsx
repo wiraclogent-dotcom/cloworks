@@ -18,7 +18,8 @@ import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
-import { Label, labelClassName } from "@/components/shadcn/label";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { FieldDescription } from "@/components/shadcn/field";
 import { Switch } from "@/components/ui/Switch";
 

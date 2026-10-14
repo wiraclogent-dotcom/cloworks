@@ -1,8 +1,11 @@
 import { extendTailwindMerge } from "tailwind-merge";
 
 // `text-compact` (13px, globals.css) is a font size, not a colour: without this tailwind-merge would let
-// `text-compact` and `text-muted-foreground` knock each other out.
-const twMerge = extendTailwindMerge({ extend: { classGroups: { "font-size": [{ text: ["compact"] }] } } });
+// `text-compact` and `text-muted-foreground` knock each other out. Likewise `shadow-card` / `shadow-raised`
+// (the --shadow-* tokens) are shadow sizes: they must replace and be replaced by `shadow-none` / `shadow-sm`.
+const twMerge = extendTailwindMerge({
+  extend: { classGroups: { "font-size": [{ text: ["compact"] }], shadow: [{ shadow: ["card", "raised"] }] } },
+});
 
 /**
  * Joins class names, skipping falsy values, and resolves Tailwind conflicts so the LAST class wins

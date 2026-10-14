@@ -48,7 +48,7 @@ export function MonthPicker({ month, current, userId, action, keep }: {
           <span>{label(month)}</span>
           <ChevronDown aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-180" />
         </PopoverTrigger>
-        <PopoverContent role="group" aria-label="Choose a month" align="end" sideOffset={8} collisionPadding={16} className="w-64 p-3">
+        <PopoverContent aria-label="Choose a month" align="end" sideOffset={8} collisionPadding={16} className="w-64 p-3">
           <div className="mb-2 flex items-center justify-between">
             <Button variant="ghost" size="icon-sm" aria-label="Previous year" className="[&_svg]:size-4" onClick={() => setYear((y) => y - 1)} disabled={year <= 2000}>
               <ChevronLeft aria-hidden="true" strokeWidth={1.75} />

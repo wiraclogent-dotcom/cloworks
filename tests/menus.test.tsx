@@ -106,14 +106,14 @@ describe("Menus and popovers", () => {
     render(<MonthPicker month="2026-03" current="2026-10" action="/dashboard" />);
     const trigger = screen.getByRole("button", { name: "Month: March 2026" });
     fireEvent.click(trigger);
-    expect(screen.getByRole("group", { name: "Choose a month" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Choose a month" })).toBeTruthy();
     await clickOutside();
-    await waitFor(() => expect(screen.queryByRole("group", { name: "Choose a month" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Choose a month" })).toBeNull());
 
     fireEvent.click(trigger);
-    const panel = screen.getByRole("group", { name: "Choose a month" });
+    const panel = screen.getByRole("dialog", { name: "Choose a month" });
     fireEvent.keyDown(within(panel).getByRole("link", { name: "May 2026" }), { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("group", { name: "Choose a month" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Choose a month" })).toBeNull());
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 

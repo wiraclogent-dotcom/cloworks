@@ -66,6 +66,8 @@ describe("Select trigger matches Input", () => {
     expect(opt.className).toContain("focus:bg-muted");
     expect(opt.className).toContain("data-[state=checked]:font-medium");
     expect(opt.className).toMatch(/data-\[highlighted\]:bg-muted|focus:bg-muted/);
+    // 36px touch row, same as the menu rows.
+    expect(opt.className.split(/\s+/)).toContain("min-h-9");
   });
 });
 

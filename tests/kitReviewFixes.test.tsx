@@ -25,6 +25,14 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
   ])("%j → %s", (parts, out) => {
     expect(cn(...parts)).toBe(out);
   });
+  it("shadow-card and shadow-raised are shadow sizes: they conflict with other sizes, not with shadow colours", () => {
+    expect(cn("shadow-card", "shadow-none")).toBe("shadow-none");
+    expect(cn("shadow-none", "shadow-card")).toBe("shadow-card");
+    expect(cn("shadow-card", "shadow-raised")).toBe("shadow-raised");
+    expect(cn("shadow-raised", "shadow-sm")).toBe("shadow-sm");
+    expect(cn("shadow-card", "shadow-red-500")).toBe("shadow-card shadow-red-500");
+    expect(cn("shadow-raised", "shadow-foreground/10")).toBe("shadow-raised shadow-foreground/10");
+  });
   it("keeps non-conflicting token colour + size classes and skips falsy values", () => {
     expect(cn("text-foreground", false, "text-compact", null, undefined, 0)).toBe("text-foreground text-compact");
     expect(cn("text-compact", "text-muted-foreground")).toBe("text-compact text-muted-foreground");
