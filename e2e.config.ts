@@ -10,8 +10,12 @@ if (existsSync(".env")) process.loadEnvFile(".env");
 const url = process.env.APP_URL ?? "http://localhost:3000";
 const app = {
   url,
-  // Reuses the dev server when it already runs (start Postgres first: `npm run db:dev`).
-  command: { executable: "npm", args: ["run", "dev"], reuseExisting: true, log: ".e2e/logs/app.log" },
+  // Reuses the dev server when it already runs (start Postgres first: `npm run db:dev`). A server e2e starts itself
+  // never sends email: empty RESEND_API_KEY/EMAIL_FROM win over .env (tests/e2e/flows writes requests).
+  command: {
+    executable: "npm", args: ["run", "dev"], reuseExisting: true, log: ".e2e/logs/app.log",
+    env: { RESEND_API_KEY: "", EMAIL_FROM: "" },
+  },
 };
 
 // Agent steps (tests/e2e/agent) need a model: the Anthropic API (ANTHROPIC_API_KEY) first, else the Command Code

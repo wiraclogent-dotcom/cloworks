@@ -21,7 +21,8 @@
     "dev:session": "tsx scripts/dev-session.ts",
     "set-password": "tsx scripts/set-password.ts",
     "test:e2e": "E2E_TELEMETRY_DISABLED=1 e2e run tests/e2e/auth.setup.e2e.ts tests/e2e/smoke",
-    "test:e2e:agent": "E2E_TELEMETRY_DISABLED=1 e2e run tests/e2e/auth.setup.e2e.ts tests/e2e/agent"
+    "test:e2e:agent": "E2E_TELEMETRY_DISABLED=1 e2e run tests/e2e/auth.setup.e2e.ts tests/e2e/agent",
+    "test:e2e:flows": "E2E_TELEMETRY_DISABLED=1 e2e run tests/e2e/auth.setup.e2e.ts tests/e2e/flows"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
