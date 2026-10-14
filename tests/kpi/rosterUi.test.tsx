@@ -11,10 +11,7 @@ import { ManagePeopleDialog } from "@/components/kpi/ManagePeopleDialog";
 import { ProjectTeamTable, projectTeamRows, type ProjectTeamRow } from "@/components/kpi/project/ProjectTeamTable";
 import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
 
-// jsdom has no showModal on <dialog>.
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
   setKpiRoster.mockReset(); refresh.mockReset();
 });
 afterEach(cleanup);
@@ -30,8 +27,8 @@ describe("ManagePeopleDialog", () => {
     open();
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("heading", { name: "Manage people · Requests KPI" })).toBeTruthy();
-    const boxes = within(dialog).getAllByRole("checkbox") as HTMLInputElement[];
-    expect(boxes.map((b) => [b.closest("label")!.textContent, b.checked])).toEqual([["Ana", true], ["Budi", false], ["Cara", true]]);
+    const boxes = within(dialog).getAllByRole("checkbox");
+    expect(boxes.map((b) => [b.closest("label")!.textContent, b.getAttribute("aria-checked") === "true"])).toEqual([["Ana", true], ["Budi", false], ["Cara", true]]);
   });
 
   it("is titled Projects KPI for the projects kind", () => {
@@ -41,7 +38,7 @@ describe("ManagePeopleDialog", () => {
 
   it("does not tick selected ids that are not candidates", () => {
     open({ selected: ["a", "ghost"] });
-    expect((screen.getAllByRole("checkbox") as HTMLInputElement[]).filter((b) => b.checked)).toHaveLength(1);
+    expect(screen.getAllByRole("checkbox").filter((b) => b.getAttribute("aria-checked") === "true")).toHaveLength(1);
   });
 
   it("saves the ticked ids with the month, then closes and refreshes", async () => {
@@ -70,7 +67,7 @@ describe("ManagePeopleDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByText("Only leads and admins can manage the team.")).toBeTruthy();
     expect(screen.getByRole("dialog")).toBeTruthy();
-    expect((screen.getByRole("checkbox", { name: "Budi" }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("checkbox", { name: "Budi" }).getAttribute("aria-checked")).toBe("true");
     expect(refresh).not.toHaveBeenCalled();
   });
 

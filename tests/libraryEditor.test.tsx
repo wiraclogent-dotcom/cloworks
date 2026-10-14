@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, fireEvent, within, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent, within, waitFor, act } from "@testing-library/react";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh, back: vi.fn() }) }));
@@ -16,8 +16,6 @@ import type { LibraryRow } from "@/lib/libraryView";
 beforeEach(() => {
   refresh.mockReset();
   for (const f of Object.values(A)) f.mockReset().mockResolvedValue({ ok: true });
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(cleanup);
 
@@ -37,8 +35,10 @@ const rows = [
 const brandOptions = [{ id: "b1", name: "Clogent" }, { id: "b2", name: "Bubble Wash" }];
 const view = (o: Partial<React.ComponentProps<typeof LibraryView>> = {}) =>
   render(<LibraryView rows={rows} categories={cats} brands={[]} brandOptions={brandOptions} canManage now={new Date("2026-10-10T00:00:00Z")} {...o} />);
+/** Radix menus open on pointerdown or Enter/Space/ArrowDown (a bare click event does not open them in jsdom). */
+const openMenu = (trigger: HTMLElement) => { trigger.focus(); fireEvent.keyDown(trigger, { key: "Enter" }); };
 const menu = (title: string, item: string) => {
-  fireEvent.click(screen.getByRole("button", { name: `Actions for ${title}` }));
+  openMenu(screen.getByRole("button", { name: `Actions for ${title}` }));
   fireEvent.click(screen.getByRole("menuitem", { name: item }));
 };
 
@@ -76,7 +76,7 @@ describe("Library editor", () => {
     const err = await within(d).findByText("Link must be an http(s) link");
     const input = within(d).getByLabelText("Link");
     expect(input.getAttribute("aria-invalid")).toBe("true");
-    expect(input.getAttribute("aria-describedby")).toBe(err.closest("p")!.id);
+    expect(input.getAttribute("aria-describedby")).toBe(err.closest("[data-slot=field-error]")!.id);
     expect(refresh).not.toHaveBeenCalled();
   });
 
@@ -124,8 +124,8 @@ describe("Library editor", () => {
     view();
     menu("Alpha deck", "Pin");
     await waitFor(() => expect(A.setPinned).toHaveBeenCalledWith("r1", true));
-    fireEvent.click(screen.getByRole("button", { name: "Actions for Alpha deck" }));
-    expect((screen.getByRole("menuitem", { name: "Move up" }) as HTMLButtonElement).disabled).toBe(true);
+    openMenu(screen.getByRole("button", { name: "Actions for Alpha deck" }));
+    expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
     await waitFor(() => expect(A.moveItem).toHaveBeenCalledWith("r1", "down"));
   });
@@ -142,26 +142,42 @@ describe("Library editor", () => {
     view({ rows: [row({ id: "r1", title: "Alpha deck", pinned: true }), row({ id: "r3", title: "Gamma", sortOrder: 1 })] });
     const trigger = screen.getAllByRole("button", { name: "Actions for Alpha deck" });
     expect(trigger).toHaveLength(2);
-    fireEvent.click(trigger[0]);
+    openMenu(trigger[0]);
     expect(screen.queryByRole("menuitem", { name: "Move up" })).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Move down" })).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Edit" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Unpin" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Delete" })).toBeTruthy();
-    fireEvent.click(trigger[1]);
+    openMenu(trigger[1]);
     expect(screen.getAllByRole("menuitem", { name: "Move down" })).toHaveLength(1);
   });
 
   it("Delete asks first and only deletes after confirming", async () => {
     view();
     menu("Alpha deck", "Delete");
-    const d = screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' });
+    const d = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
     expect(A.deleteItem).not.toHaveBeenCalled();
     fireEvent.click(within(d).getByRole("button", { name: "Cancel" }));
     expect(A.deleteItem).not.toHaveBeenCalled();
     menu("Alpha deck", "Delete");
-    fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Delete" }));
+    fireEvent.click(within(screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Delete" }));
     await waitFor(() => expect(A.deleteItem).toHaveBeenCalledWith("r1"));
+  });
+
+  it("the delete confirmation is an alertdialog: a click outside does not cancel it, Esc does", async () => {
+    view();
+    menu("Alpha deck", "Delete");
+    const d = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
+    expect(within(d).getByText("This removes the link for everyone in the workspace.")).toBeTruthy();
+    // Radix registers its outside-pointer listener on the next tick after opening.
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    const overlay = document.querySelector("[data-slot=alert-dialog-overlay]")!;
+    fireEvent.pointerDown(overlay); fireEvent.pointerUp(overlay); fireEvent.click(overlay);
+    expect(screen.queryByRole("alertdialog")).not.toBeNull();
+    expect(document.activeElement).toBe(within(d).getByRole("button", { name: "Cancel" }));
+    fireEvent.keyDown(d, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(A.deleteItem).not.toHaveBeenCalled();
   });
 
   it("Categories dialog renames, adds, moves and shows the not-empty message", async () => {
@@ -217,17 +233,18 @@ describe("Library editor", () => {
     expect(A.moveCategory).toHaveBeenCalledTimes(1);
   });
 
-  it("returns focus to the opener when a dialog closes", () => {
+  it("returns focus to the opener when a dialog closes", async () => {
     view();
     const add = screen.getByRole("button", { name: "Add link" });
     add.focus();
     fireEvent.click(add);
     fireEvent.click(within(screen.getByRole("dialog", { name: "Add link" })).getByRole("button", { name: "Close" }));
-    expect(document.activeElement).toBe(add);
+    // Radix moves focus back on the next tick after the dialog unmounts.
+    await waitFor(() => expect(document.activeElement).toBe(add));
     // From the row menu the item unmounts, so focus goes to the row's Actions trigger.
     menu("Alpha deck", "Delete");
-    fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" }));
+    fireEvent.click(within(screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" })));
   });
 
   it("recovers when an action rejects", async () => {
@@ -243,7 +260,7 @@ describe("Library editor", () => {
     fireEvent.click(within(d).getByRole("button", { name: "Close" }));
 
     menu("Alpha deck", "Delete");
-    const del = screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' });
+    const del = screen.getByRole("alertdialog", { name: 'Delete "Alpha deck"?' });
     fireEvent.click(within(del).getByRole("button", { name: "Delete" }));
     expect(await within(del).findByText("Something went wrong. Try again.")).toBeTruthy();
     expect((within(del).getByRole("button", { name: "Delete" }) as HTMLButtonElement).disabled).toBe(false);

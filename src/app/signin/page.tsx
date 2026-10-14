@@ -7,10 +7,12 @@ import { first } from "@/lib/authForm";
 import { safeNext } from "@/lib/joinTokens";
 import { LINKED_MESSAGE, PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { passwordSignIn } from "./actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { cn } from "@/components/ui/cn";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit, providerButton } from "@/components/auth/styles";
@@ -30,9 +32,9 @@ const nextOf = (raw: string | string[] | undefined) => {
 function Notice({ searchParams }: { searchParams: SP }) {
   const sp = use(searchParams);
   const notice = signInErrorMessage(sp.error);
-  if (notice) return <Alert tone="danger">{notice}</Alert>;
-  if (sp.changed) return <Alert tone="success">{PASSWORD_CHANGED_MESSAGE}</Alert>;
-  return sp.linked ? <Alert tone="info">{LINKED_MESSAGE}</Alert> : null;
+  if (notice) return <Alert variant="destructive"><AlertDescription>{notice}</AlertDescription></Alert>;
+  if (sp.changed) return <Alert variant="success"><AlertDescription>{PASSWORD_CHANGED_MESSAGE}</AlertDescription></Alert>;
+  return sp.linked ? <Alert><AlertDescription>{LINKED_MESSAGE}</AlertDescription></Alert> : null;
 }
 
 /** Carries `?next=` into a form (sanitised here and again by the action). */
@@ -84,7 +86,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
                   await signIn("microsoft-entra-id", { redirectTo: "/requests" });
                 }}
               >
-                <SubmitButton block className={providerButton} pendingLabel="Opening Microsoft…">
+                <SubmitButton variant="outline" className={cn("w-full", providerButton)} pendingLabel="Opening Microsoft…">
                   <MicrosoftMark />Continue with Microsoft
                 </SubmitButton>
               </form>
@@ -96,22 +98,22 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
         <form action={passwordSignIn} className="space-y-4">
           <Suspense fallback={null}><NextField searchParams={searchParams} /></Suspense>
           <div>
-            <label htmlFor="signin-email" className={labelClass}>Email</label>
-            <input id="signin-email" name="email" type="email" autoComplete="username" placeholder="name@clogent.co.id" required className={fieldClass({ className: "h-11" })} />
+            <Label htmlFor="signin-email">Email</Label>
+            <Input id="signin-email" name="email" type="email" autoComplete="username" placeholder="name@clogent.co.id" required className="h-11" />
           </div>
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="signin-password" className="text-[13px] font-medium text-foreground">Password</label>
-              <Link href="/forgot" className="text-[13px] font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
+              <label htmlFor="signin-password" className="text-compact font-medium text-foreground">Password</label>
+              <Link href="/forgot" className="text-compact font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
             </div>
-            <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
+            <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className="h-11" />
           </div>
           <RememberMe id="signin-remember" />
-          <SubmitButton variant="primary" block className={brandSubmit} pendingLabel="Signing in…">
+          <SubmitButton variant="default" className={cn("w-full", brandSubmit)} pendingLabel="Signing in…">
             Sign in
           </SubmitButton>
         </form>
-        <p className="text-sm text-foreground-secondary">
+        <p className="text-sm text-muted-foreground">
           New here? <Suspense fallback={<Link href="/signup" className={signUpLink}>Create an account</Link>}><SignUpLink searchParams={searchParams} /></Suspense>
         </p>
       </div>

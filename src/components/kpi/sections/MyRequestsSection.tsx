@@ -10,7 +10,8 @@ import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { ProgressBar } from "@/components/kpi/ProgressBar";
 import { TrendChart } from "@/components/kpi/TrendChart";
 import { cn } from "@/components/ui/cn";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 
 const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone }> = {
   tasksDone: { icon: <CircleCheckBig />, tone: "done" },
@@ -40,7 +41,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
     <KpiSection id="requests" title="Requests"
       controls={<MonthPicker month={month} current={jakartaMonth(new Date())} userId={own ? undefined : subject.id} action="/dashboard" keep={keep} />}>
       {isEmpty ? (
-        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground-secondary">No request work in {monthLabel(month)}.</p>
+        <Card className="px-4 py-3"><EmptyState size="inline" title={`No request work in ${monthLabel(month)}.`} /></Card>
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="kpi-numbers">
@@ -49,12 +50,12 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card lg:grid-cols-4">
               {tiles.map((tile, i) => (
                 <li key={tile.key} data-kpi={tile.key} className={cn("flex min-w-0 flex-col gap-2 bg-card p-4", i === tiles.length - 1 && tiles.length % 2 === 1 && "col-span-2")}>
-                  <span className="flex items-center gap-1.5 text-[13px] text-foreground-secondary">
+                  <span className="flex items-center gap-1.5 text-compact text-muted-foreground">
                     <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{TILE_LOOK[tile.key].icon}</span>
                     {tile.label}
                   </span>
                   <span className="text-2xl leading-8 font-semibold text-foreground tabular-nums">{tile.value}</span>
-                  {tile.hint ? <span className="text-xs leading-4 text-foreground-secondary">{tile.hint}</span> : null}
+                  {tile.hint ? <span className="text-xs leading-4 text-muted-foreground">{tile.hint}</span> : null}
                 </li>
               ))}
             </ul>
@@ -63,10 +64,10 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <section aria-labelledby="headline">
               <CardHeader className="mb-4">
                 <CardTitle id="headline" as="h3">Monthly target</CardTitle>
-                <p className="text-[13px] text-foreground-secondary">Tasks done vs target, {monthLabel(month)}</p>
+                <p className="text-compact text-muted-foreground">Tasks done vs target, {monthLabel(month)}</p>
               </CardHeader>
               <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={`Tasks done vs target, ${monthLabel(month)}`} />
-              {target?.note ? <p className="mt-3 text-sm text-foreground-secondary">Note: {target.note}</p> : null}
+              {target?.note ? <p className="mt-3 text-sm text-muted-foreground">Note: {target.note}</p> : null}
             </section>
           </Card>
           <TrendChart points={points} headingLevel={3} />

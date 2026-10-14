@@ -3,11 +3,13 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
-import { tableClass } from "@/components/ui/table";
-import { cn } from "@/components/ui/cn";
+import { Badge } from "@/components/shadcn/badge";
+import { Card } from "@/components/shadcn/card";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
+import { cn, focusRing } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { listLinkablePeople } from "@/lib/linkPerson";
@@ -18,8 +20,8 @@ import { MemberTabs, parseMemberTab } from "./MemberTabs";
 import { RequestsList, type RequestRow } from "./RequestsList";
 import { ActiveToggle, EditUserForm, LoginEmailForm, MergeForm, PasswordForm } from "./UserForms";
 
-function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
-  return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
+function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Badge>[0]["tone"] } } & Record<`data-${string}`, string>) {
+  return <Badge tone={chip.tone} {...rest}>{chip.label}</Badge>;
 }
 
 const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -51,7 +53,7 @@ export async function UsersContent({ tab, merged }: { tab?: string; merged?: str
     <>
       <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
         description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
-      {merged && <Alert tone="success" className="mb-4">Merged into {merged}.</Alert>}
+      {merged && <Alert variant="success" className="mb-4"><AlertDescription>Merged into {merged}.</AlertDescription></Alert>}
       <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
       <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
       {panel}
@@ -76,66 +78,65 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
       select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
     })
     .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash })));
-  const t = tableClass({ minWidth: "min-w-[60rem]" });
 
   const view = (
     <>
-      <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
-        <table className={t.table}>
-          <caption className="sr-only">All people</caption>
-          <thead>
-            <tr>
+      <Card className="overflow-hidden p-0">
+        <Table containerClassName="max-h-[calc(100dvh-15rem)]" className="min-w-[60rem]">
+          <TableCaption className="sr-only">All people</TableCaption>
+          <TableHeader>
+            <TableRow>
               {["Name", "Job role", "App role", "Login email", "Status", "Manage"].map((h) => (
-                <th key={h} scope="col" className={t.th}>{h}</th>
+                <TableHead key={h} scope="col">{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map((u) => (
-              <tr key={u.id} className={cn(t.tr, "align-top")}>
-                <th scope="row" className={cn(t.rowHeader, "align-top")}>
+              <TableRow key={u.id} className="align-top">
+                <TableRowHeader className="align-top">
                   <div className="flex items-start gap-2.5">
                     <Avatar name={u.name} size="md" decorative className={cn(!u.active && "opacity-60")} />
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{u.name}</p>
-                      <p className="text-xs font-normal text-foreground-secondary">
+                      <p className="text-xs font-normal text-muted-foreground">
                         <span className="sr-only">Full name: </span>{u.fullName}
                         <span aria-hidden="true"> · </span>
                         <span className="sr-only">Title: </span>{u.title ?? "—"}
                       </p>
                     </div>
                   </div>
-                </th>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
-                <td className={cn(t.td, "align-top break-all")}>
-                  {u.email ?? <span className="text-foreground-secondary italic">No login</span>}
+                </TableRowHeader>
+                <TableCell className="align-top"><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></TableCell>
+                <TableCell className="align-top"><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></TableCell>
+                <TableCell className="align-top break-all">
+                  {u.email ?? <span className="text-muted-foreground italic">No login</span>}
                   {u.email && (
-                    <p className="mt-0.5 text-xs text-foreground-secondary" data-has-password={String(u.hasPassword)}>
+                    <p className="mt-0.5 text-xs text-muted-foreground" data-has-password={String(u.hasPassword)}>
                       {u.hasPassword ? "Password set" : "No password yet"}
                     </p>
                   )}
-                </td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
-                <td className={cn(t.td, "min-w-72 align-top")}>
-                  <details className="group">
-                    <summary className="inline-flex cursor-pointer items-center gap-1 rounded-md font-medium text-link hover:underline">
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />Edit {u.name}
-                    </summary>
-                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-surface-muted p-3">
+                </TableCell>
+                <TableCell className="align-top"><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></TableCell>
+                <TableCell className="min-w-72 align-top">
+                  <Collapsible className="group">
+                    <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-left font-medium text-link hover:underline", focusRing)}>
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />Edit {u.name}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent keepMounted className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />
                       <ActiveToggle u={u} />
                       <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name, fullName: o.fullName }))} />
-                    </div>
-                  </details>
-                </td>
-              </tr>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </>
   );
   return { users, view };

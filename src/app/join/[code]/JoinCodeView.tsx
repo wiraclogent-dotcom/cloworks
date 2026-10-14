@@ -7,10 +7,11 @@ import { joinWithCodeAction } from "@/app/lobby/actions";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
 import { brandSubmit } from "@/components/auth/styles";
-import { buttonClass } from "@/components/ui/Button";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { cn } from "@/components/ui/cn";
 
-const lead = "mt-3 text-base leading-relaxed text-foreground-secondary";
+const lead = "mt-3 text-base leading-relaxed text-muted-foreground";
 
 /** Unknown or switched-off code: dead-link copy. Otherwise by visitor: sign up / sign in, Request to join, or already in. */
 export async function JoinCodeView({ params }: { params: Promise<{ code: string }> }) {
@@ -20,7 +21,7 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
     return (
       <div>
         <h1 className={authTitleClass}>Link not working</h1>
-        <div className="mt-8"><Alert tone="warning">This link no longer works. Ask your admin for a new one.</Alert></div>
+        <div className="mt-8"><Alert variant="warning"><AlertDescription>This link no longer works. Ask your admin for a new one.</AlertDescription></Alert></div>
       </div>
     );
   }
@@ -32,7 +33,7 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
       {visitor.kind === "member" ? (
         <>
           <p className={lead}>You&apos;re already in {join.workspaceName}.</p>
-          <a href={ENTER_PATH} className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</a>
+          <Button asChild variant="default" className={`w-full mt-8 ${brandSubmit}`}><a href={ENTER_PATH}>Go to requests</a></Button>
         </>
       ) : visitor.kind === "applicant" ? (
         <>
@@ -47,8 +48,8 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
         <>
           <p className={lead}>Create an account, or sign in, and an admin of {join.workspaceName} will let you in.</p>
           <div className="mt-8 space-y-3">
-            <Link href={`/signup?join=${encodeURIComponent(code)}`} className={buttonClass({ variant: "primary", block: true, className: brandSubmit })}>Create account</Link>
-            <Link href={`/signin?next=${encodeURIComponent(here)}`} className={buttonClass({ variant: "secondary", block: true, className: "h-11 text-[15px]" })}>Sign in</Link>
+            <Button asChild variant="default" className={cn("w-full", brandSubmit)}><Link href={`/signup?join=${encodeURIComponent(code)}`}>Create account</Link></Button>
+            <Button asChild variant="outline" className="w-full h-11 text-[15px]"><Link href={`/signin?next=${encodeURIComponent(here)}`}>Sign in</Link></Button>
           </div>
         </>
       )}

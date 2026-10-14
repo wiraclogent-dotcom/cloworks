@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { removeProjectTarget } from "@/app/(app)/dashboard/projects/actions";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 
 /** The × on a target row. Removing is undoable (add it again), so there is no confirm step; a failure shows under the row. */
 export function RemoveTargetButton({ targetId, label }: { targetId: string; label: string }) {
@@ -22,7 +22,16 @@ export function RemoveTargetButton({ targetId, label }: { targetId: string; labe
   }
   return (
     <>
-      <IconButton size="sm" aria-label={`Remove target ${label}`} icon={<X />} disabled={pending} onClick={remove} />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Remove target ${label}`}
+        disabled={pending}
+        onClick={remove}
+        title={`Remove target ${label}`}
+      >
+        <X />
+      </Button>
       <span role="alert" className="basis-full text-xs text-danger empty:hidden">{error}</span>
     </>
   );

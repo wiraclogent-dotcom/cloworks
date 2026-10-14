@@ -4,14 +4,14 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Pencil } from "lucide-react";
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { cn } from "@/components/ui/cn";
-import { fieldClass } from "@/components/ui/Field";
-import { tableClass } from "@/components/ui/table";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { daysLeft } from "@/lib/daysLeft";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
 import type { ProjectItem } from "@/lib/projectItemList";
@@ -22,8 +22,8 @@ import { AddDetailForm } from "@/app/(app)/projects/[id]/tasks/AddDetailForm";
 import { TaskRow, type TaskRowData } from "@/app/(app)/projects/[id]/tasks/TaskRow";
 import { renameItem, setItemStage, setItemStatus } from "@/app/(app)/projects/[id]/tasks/actions";
 import { ITEM_OPEN_EVENT, slugFromHash } from "./ItemHashOpener";
+import { Card } from "@/components/shadcn/card";
 
-const tbl = tableClass();
 
 function segmentOf(key: ProjectStage | ProjectStatus | "none", mode: TaskMode): { label: string; tone: Tone } {
   if (key === "none") return { label: mode === "status" ? "No status yet" : "No stage yet", tone: "tag-neutral" };
@@ -116,7 +116,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
   }
 
   return (
-    <div ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card shadow-card">
+    <Card ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="min-w-0 scroll-mt-4 p-0">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
         <div className="flex min-w-0 flex-1 basis-56 items-center gap-1">
         <button
@@ -127,27 +127,29 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           onClick={() => setOpen((o) => !o)}
           className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <ChevronRight aria-hidden="true" className={cn("size-4 shrink-0 text-foreground-secondary transition-transform duration-150", open && "rotate-90")} />
+          <ChevronRight aria-hidden="true" className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-150", open && "rotate-90")} />
           <span className="min-w-0">
             <span className={cn("block truncate text-sm font-medium", item.allCancelled ? "text-foreground-muted line-through" : "text-foreground")}>{item.title}</span>
-            <span className="block text-xs text-foreground-secondary">{variants}</span>
+            <span className="block text-xs text-muted-foreground">{variants}</span>
           </span>
         </button>
         {canManage && !renaming && (
-          <IconButton
-            size="sm"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             className="size-7 shrink-0 [&_svg]:size-3.5"
             ref={renameBtnRef}
             aria-label={`Rename item ${item.title}`}
             title="Rename item"
-            icon={<Pencil aria-hidden="true" />}
             onClick={() => { setError(null); setDraft(item.title); setRenaming(true); }}
-          />
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
         )}
         </div>
 
         <div className="flex basis-40 flex-col gap-1">
-          <div aria-hidden="true" className="flex h-2 w-full gap-px overflow-hidden rounded-full bg-surface-muted">
+          <div aria-hidden="true" className="flex h-2 w-full gap-px overflow-hidden rounded-full bg-muted">
             {item.counts.map((c) => (
               <div key={c.key} data-segment={c.key} data-tone={segmentOf(c.key, mode).tone} className="h-full bg-tone-accent" style={{ width: `${(c.n / total) * 100}%` }} />
             ))}
@@ -160,22 +162,23 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
         <AvatarStack names={item.owners} max={3} size="sm" label="Owners" />
 
         <div className="min-w-24 text-sm">
-          {item.dueDate ? <DeadlineChip daysLeft={daysLeft(item.dueDate)} /> : item.dueTbc ? <span className="text-foreground-secondary">TBC</span> : <span className="text-foreground-muted">—</span>}
+          {item.dueDate ? <DeadlineChip daysLeft={daysLeft(item.dueDate)} /> : item.dueTbc ? <span className="text-muted-foreground">TBC</span> : <span className="text-foreground-muted">—</span>}
         </div>
 
         {canManage && !item.allCancelled && (
           <div className="flex items-center gap-1.5">
-            <select
+            <NativeSelect
               ref={selectRef}
               aria-label={`Set all variants of ${item.title}`}
               value={setAll}
               onChange={(e) => setSetAll(e.target.value)}
-              className={fieldClass({ kind: "select", size: "sm", className: "w-36" })}
+              size="sm"
+              className="w-36"
             >
               <option value="">Set all to…</option>
               {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-            <Button size="sm" variant="secondary" aria-label={`Apply to all variants of ${item.title}`} disabled={!setAll || pending} onClick={applyAll}>
+            </NativeSelect>
+            <Button size="sm" variant="outline" aria-label={`Apply to all variants of ${item.title}`} disabled={!setAll || pending} onClick={applyAll}>
               {pending && setAll ? "Applying…" : "Apply"}
             </Button>
           </div>
@@ -187,54 +190,52 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           onSubmit={(e) => { e.preventDefault(); saveName(); }}
           className="flex flex-wrap items-center gap-2 px-3 pb-2.5"
         >
-          <input
+          <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape") { setRenaming(false); setError(null); } }}
             aria-label={`New name for ${item.title}`}
             disabled={pending}
             ref={renameInputRef}
-            className={fieldClass({ size: "sm", className: "min-w-56 flex-1" })}
+            className="min-w-56 flex-1" size="sm"
           />
-          <Button type="submit" size="sm" variant="primary" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
+          <Button type="submit" size="sm" variant="default" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setRenaming(false); setError(null); }}>Cancel</Button>
         </form>
       )}
 
       {canManage && !item.allCancelled && (
-        <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-foreground-secondary" : "sr-only"}>{note}</p>
+        <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-muted-foreground" : "sr-only"}>{note}</p>
       )}
 
-      {error && <div className="px-3 pb-2.5"><Alert tone="danger">{error}</Alert></div>}
+      {error && <div className="px-3 pb-2.5"><Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert></div>}
 
       {open && (
         <div id={panelId} className="border-t border-border">
-          <div className={cn(tbl.wrapper, "max-w-full overflow-x-auto rounded-none border-0 shadow-none")}>
-            <table className={tbl.table}>
-              <thead className={tbl.thead}>
-                <tr>
-                  {["Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
-                    <th key={h} scope="col" className={tbl.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((t, i) => (
-                  <TaskRow
-                    key={t.id}
-                    hideItem
-                    isFirst={i === 0}
-                    isLast={i === rows.length - 1}
-                    projectId={projectId}
-                    canManage={canManage}
-                    owners={owners}
-                    mode={mode}
-                    task={t}
-                  />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {["Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
+                  <TableHead key={h} scope="col">{h}</TableHead>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((t, i) => (
+                <TaskRow
+                  key={t.id}
+                  hideItem
+                  isFirst={i === 0}
+                  isLast={i === rows.length - 1}
+                  projectId={projectId}
+                  canManage={canManage}
+                  owners={owners}
+                  mode={mode}
+                  task={t}
+                />
+              ))}
+            </TableBody>
+          </Table>
           {canManage && (
             <div className="border-t border-border p-3">
               <AddDetailForm projectId={projectId} mode={mode} owners={owners} defaultTitle={item.title} label="Add variant" />
@@ -242,6 +243,6 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

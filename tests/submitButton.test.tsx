@@ -9,7 +9,7 @@ describe("SubmitButton", () => {
   it("is a submit button that shows the pending label, a spinner and blocks repeat clicks while the form submits", async () => {
     let finish = () => {};
     const action = () => new Promise<void>((r) => { finish = r; });
-    render(<form action={action}><SubmitButton variant="primary" pendingLabel="Signing in…">Sign in</SubmitButton></form>);
+    render(<form action={action}><SubmitButton variant="default" pendingLabel="Signing in…">Sign in</SubmitButton></form>);
     const btn = screen.getByRole("button", { name: "Sign in" });
     expect(btn.getAttribute("type")).toBe("submit");
     fireEvent.click(btn);

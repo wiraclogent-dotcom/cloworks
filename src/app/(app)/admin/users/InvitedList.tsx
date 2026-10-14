@@ -3,63 +3,62 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AdminFormState } from "@/lib/adminForm";
-import { AdminForm, ConfirmAction, Labeled, control, type FormCtx } from "@/components/admin/AdminForm";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Chip } from "@/components/ui/Chip";
-import { tableClass } from "@/components/ui/table";
-import { cn } from "@/components/ui/cn";
+import { AdminForm, ConfirmAction, Labeled, type FormCtx } from "@/components/admin/AdminForm";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { enumLabel } from "@/lib/adminChips";
 import { PersonRoleFields } from "./PersonRoleFields";
 import { inviteMember, resendMemberInvite, revokeMemberInvite } from "./actions";
+import { Input } from "@/components/shadcn/input";
 
 export type InviteRow = { id: string; email: string; appRole: string; jobRole: string; invitedBy: string; linkedName: string | null; expiresOn: string; expired: boolean };
 
 function ResendButton({ email }: { email: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" variant="secondary" size="sm" loading={pending} aria-label={`Resend invite to ${email}`}>Resend</Button>;
+  return <Button type="submit" variant="outline" size="sm" loading={pending} aria-label={`Resend invite to ${email}`}>Resend</Button>;
 }
 
 /** Open invites (not accepted, not revoked); an expired one stays so it can be resent. */
 export function InvitedList({ invites, linkable }: { invites: InviteRow[]; linkable: LinkablePerson[] }) {
-  const t = tableClass({ minWidth: "min-w-[44rem]" });
   return (
     <div className="space-y-5">
-      <div className={cn(t.wrapper, "max-h-[calc(100dvh-24rem)]")}>
-        <table className={t.table}>
-          <caption className="sr-only">Open invites</caption>
-          <thead>
-            <tr>{["Email", "Roles", "Invited by", "Expires", "Manage"].map((h) => <th key={h} scope="col" className={t.th}>{h}</th>)}</tr>
-          </thead>
-          <tbody>
+      <Card className="overflow-hidden p-0">
+        <Table containerClassName="max-h-[calc(100dvh-24rem)]" className="min-w-[44rem]">
+          <TableCaption className="sr-only">Open invites</TableCaption>
+          <TableHeader>
+            <TableRow>{["Email", "Roles", "Invited by", "Expires", "Manage"].map((h) => <TableHead key={h} scope="col">{h}</TableHead>)}</TableRow>
+          </TableHeader>
+          <TableBody>
             {invites.length === 0 && (
-              <tr><td colSpan={5} className={cn(t.td, "text-foreground-secondary")}>No open invites.</td></tr>
+              <TableRow className="hover:bg-transparent"><TableCell colSpan={5} className="text-muted-foreground">No open invites.</TableCell></TableRow>
             )}
             {invites.map((i) => (
-              <tr key={i.id} className={cn(t.tr, "align-top")}>
-                <th scope="row" className={cn(t.rowHeader, "align-top break-all")}>{i.email}
-                  {i.linkedName && <p className="mt-0.5 text-xs font-normal text-foreground-secondary">for {i.linkedName}</p>}
-                </th>
-                <td className={cn(t.td, "align-top")}>{enumLabel(i.appRole)} · {enumLabel(i.jobRole)}</td>
-                <td className={cn(t.td, "align-top")}>{i.invitedBy}</td>
-                <td className={cn(t.td, "align-top")}>
-                  {i.expired ? <Chip tone="cancelled">Expired</Chip> : <span>{i.expiresOn}</span>}
-                  {i.expired && <p className="mt-0.5 text-xs text-foreground-secondary">{i.expiresOn}</p>}
-                </td>
-                <td className={cn(t.td, "align-top")}>
+              <TableRow key={i.id} className="align-top">
+                <TableRowHeader className="align-top break-all">{i.email}
+                  {i.linkedName && <p className="mt-0.5 text-xs font-normal text-muted-foreground">for {i.linkedName}</p>}
+                </TableRowHeader>
+                <TableCell className="align-top">{enumLabel(i.appRole)} · {enumLabel(i.jobRole)}</TableCell>
+                <TableCell className="align-top">{i.invitedBy}</TableCell>
+                <TableCell className="align-top">
+                  {i.expired ? <Badge tone="cancelled">Expired</Badge> : <span>{i.expiresOn}</span>}
+                  {i.expired && <p className="mt-0.5 text-xs text-muted-foreground">{i.expiresOn}</p>}
+                </TableCell>
+                <TableCell className="align-top">
                   <div className="flex flex-wrap items-start gap-2">
                     <ResendForm id={i.id} email={i.email} />
                     <ConfirmAction action={revokeMemberInvite} prefix={`revoke-${i.id}`} hidden={{ inviteId: i.id }}
                       triggerLabel="Revoke" triggerAriaLabel={`Revoke invite for ${i.email}`}
                       question={`Revoke the invite for ${i.email}? Their link stops working.`} confirmLabel={`Yes, revoke ${i.email}`} />
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       <Card>
         <section aria-labelledby="invite-h">
@@ -81,7 +80,7 @@ function ResendForm({ id, email }: { id: string; email: string }) {
     <form action={run} className="space-y-1">
       <input type="hidden" name="inviteId" value={id} />
       <ResendButton email={email} />
-      {state && <p role={state.ok ? "status" : "alert"} className="text-[13px] font-medium text-foreground-secondary">{state.ok ? state.message : `Error: ${state.message}`}</p>}
+      {state && <p role={state.ok ? "status" : "alert"} className="text-compact font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
     </form>
   );
 }
@@ -91,7 +90,7 @@ function InviteFields({ linkable, v, idFor, aria }: { linkable: LinkablePerson[]
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Labeled id={idFor("email")} label="Email">
-        <input id={idFor("email")} name="email" type="email" autoComplete="off" required className={control} defaultValue={v("email")} {...aria()} />
+        <Input id={idFor("email")} name="email" type="email" autoComplete="off" required defaultValue={v("email")} {...aria()} />
       </Labeled>
       <PersonRoleFields linkable={linkable} v={v} idFor={idFor} name="userId" label="Existing person (optional)" noneLabel="New person" />
     </div>

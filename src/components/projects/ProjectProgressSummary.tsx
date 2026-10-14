@@ -1,6 +1,6 @@
 import type { ProjectStatus } from "@prisma/client";
-import { Card } from "@/components/ui/Card";
-import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
 import type { ItemRowInput, ProjectItem } from "@/lib/projectItemList";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
 import { PROJECT_STAGES, finalShare, stageCounts, statusCounts, taskMode } from "@/lib/projectProgress";
@@ -36,9 +36,9 @@ export function ProjectProgressSummary({ rows, items }: { rows: ItemRowInput[]; 
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="text-2xl font-semibold text-foreground tabular-nums">{`${percent}% done`}</p>
-        <p className="text-sm text-foreground-secondary tabular-nums">{`${doneItems} of ${counted.length} ${counted.length === 1 ? "item" : "items"} done`}</p>
+        <p className="text-sm text-muted-foreground tabular-nums">{`${doneItems} of ${counted.length} ${counted.length === 1 ? "item" : "items"} done`}</p>
       </div>
-      <div aria-hidden="true" className="mt-3 flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-surface-muted">
+      <div aria-hidden="true" className="mt-3 flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-muted">
         {segments.map((s) => (
           <div key={s.key} data-segment={s.key} data-tone={s.tone} className="h-full bg-tone-accent" style={{ width: `${(s.n / total) * 100}%` }} />
         ))}
@@ -47,7 +47,7 @@ export function ProjectProgressSummary({ rows, items }: { rows: ItemRowInput[]; 
         {segments.map((s) => <li key={s.key}>{`${s.label}: ${s.n}`}</li>)}
       </ul>
       <div aria-hidden="true" className="mt-3 flex flex-wrap gap-1.5">
-        {segments.map((s) => <Chip key={s.key} tone={s.tone}>{`${s.label} ${s.n}`}</Chip>)}
+        {segments.map((s) => <Badge key={s.key} tone={s.tone}>{`${s.label} ${s.n}`}</Badge>)}
       </div>
     </Card>
   );

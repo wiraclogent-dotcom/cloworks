@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { jakartaDate } from "@/lib/createRequest";
 import { ProjectForm } from "./ProjectForm";
 
 /** Shared by the full pages and the intercepted modals so both render the same form. */
 export async function NewProjectContent() {
   const { user, db } = await requireScope();
-  if (!can(user.appRole, "project.manage")) return <Alert tone="danger">You are not allowed to create projects.</Alert>;
+  if (!can(user.appRole, "project.manage")) return <Alert variant="destructive"><AlertDescription>You are not allowed to create projects.</AlertDescription></Alert>;
   const [brands, owners] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
@@ -18,7 +18,7 @@ export async function NewProjectContent() {
 
 export async function EditProjectContent({ params }: { params: Promise<{ id: string }> }) {
   const { user, db } = await requireScope();
-  if (!can(user.appRole, "project.manage")) return <Alert tone="danger">You are not allowed to edit projects.</Alert>;
+  if (!can(user.appRole, "project.manage")) return <Alert variant="destructive"><AlertDescription>You are not allowed to edit projects.</AlertDescription></Alert>;
   const { id } = await params;
   const project = await db.project.findUnique({ where: { id } });
   if (!project) notFound();

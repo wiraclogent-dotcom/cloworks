@@ -10,8 +10,8 @@ import { AccessDenied } from "@/components/AccessDenied";
 import { KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { buttonClass } from "@/components/ui/Button";
 import { canViewPersonKpi, parseUserParam } from "../../params";
+import { Button } from "@/components/shadcn/button";
 
 /** Tab title: "Project KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Project KPI" };
@@ -31,7 +31,7 @@ async function PersonContent({ params, searchParams }: {
   if (!subject) {
     return (
       <EmptyState role="alert" titleAs="h1" art="empty-search" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
-        action={<Link href="/dashboard/team" className={buttonClass({ variant: "secondary" })}><ArrowLeft aria-hidden="true" />Back to team</Link>} />
+        action={<Button asChild variant="outline"><Link href="/dashboard/team"><ArrowLeft aria-hidden="true" />Back to team</Link></Button>} />
     );
   }
 
@@ -48,7 +48,7 @@ async function PersonContent({ params, searchParams }: {
           : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
         title={`${subject.name} · Project KPI ${year}`}
         description="Quarterly score from the project items this person is measured on."
-        actions={canTeam ? <Link href="/dashboard/team" className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : undefined} />
+        actions={canTeam ? <Button asChild variant="ghost" size="sm"><Link href="/dashboard/team"><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : undefined} />
       <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} />
     </>
   );

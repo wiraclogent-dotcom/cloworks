@@ -17,8 +17,8 @@ import { BoardCard, CARD_OVERLAY, CardFace } from "./BoardCard";
 import { celebrate, centreOf } from "@/lib/celebrate";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
-import { Alert } from "./ui/Alert";
-import { Button } from "./ui/Button";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "./ui/cn";
 
 /** Arrow Left/Right jumps the lifted card to the neighbouring column instead of nudging it 25px. */
@@ -41,7 +41,7 @@ export type BoardColumnView = BoardColumn & { moreHref: string | null; tableHref
 type Totals = Partial<Record<RequestStatus, number>>;
 
 /** Quiet text-link look for the column footer (Show more / Open all in table). */
-const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-surface hover:underline underline-offset-2", focusRing);
+const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-card hover:underline underline-offset-2", focusRing);
 
 function Column({ status, total, shown, dragFrom, moreHref, tableHref, children }: {
   status: RequestStatus; total: number; shown: number; dragFrom: RequestStatus | null; moreHref: string | null; tableHref: string; children: React.ReactNode;
@@ -61,10 +61,10 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
         dragging && !legal && "opacity-60",
       )}>
       <h2 id={id} data-column-header=""
-        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-[13px] font-semibold text-tone-text">
+        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-compact font-semibold text-tone-text">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
-        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-xs leading-4 font-medium text-foreground-secondary tabular-nums shadow-card">{total}</span>
+        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-card px-2 py-0.5 text-xs leading-4 font-medium text-muted-foreground tabular-nums shadow-card">{total}</span>
       </h2>
       {dragging && (
         <p className="mb-2 flex flex-none items-center gap-1.5 px-1 text-xs font-medium text-foreground">
@@ -75,7 +75,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
         {children}
       </div>
       {total > 0 && (
-        <div className="mt-1 flex-none border-t border-border px-1 pt-2 text-xs text-foreground-secondary">
+        <div className="mt-1 flex-none border-t border-border px-1 pt-2 text-xs text-muted-foreground">
           <p className="tabular-nums">Showing {shown} of {total}</p>
           {remaining > 0 && (
             <p className="mt-1 -ml-1.5 flex flex-wrap gap-x-1 gap-y-1">
@@ -183,12 +183,12 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   return (
     <div data-page-wide="">
       {message && (
-        <Alert tone="danger" className="mb-3"
-          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
-          <p>{message}</p>
+        <Alert variant="destructive" className="mb-3">
+          <AlertDescription><p>{message}</p></AlertDescription>
+          <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button></AlertAction>
         </Alert>
       )}
-      {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
+      {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
         <div className="relative grid gap-4 overflow-x-auto rounded-2xl bg-[var(--board-canvas)] bg-[image:radial-gradient(var(--board-dot)_1px,transparent_1px)] p-3 pb-4 [background-size:18px_18px]" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
@@ -198,7 +198,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
               <Column key={col.status} status={col.status} total={totals[col.status] ?? 0} shown={inCol.length}
                 dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref}>
                 {inCol.length === 0 ? (
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-surface/60 px-3 py-6 text-center text-[13px] text-foreground-secondary">
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-card/60 px-3 py-6 text-center text-compact text-muted-foreground">
                     <Inbox aria-hidden="true" strokeWidth={1.75} className="size-5" />
                     <p>No requests here</p>
                   </div>

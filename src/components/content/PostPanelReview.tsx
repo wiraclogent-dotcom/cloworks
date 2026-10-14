@@ -4,8 +4,11 @@ import { useId, useState, type FormEvent } from "react";
 import { CheckCheck, Undo2 } from "lucide-react";
 import { sendBackPost } from "@/app/(app)/content/actions";
 import type { PostPanelView } from "@/lib/content/panelView";
-import { Button } from "@/components/ui/Button";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { MediaStrip } from "./MediaStrip";
 import { FORMAT_LABEL } from "./PostPanelEditor";
 
@@ -14,13 +17,12 @@ const DATE_FMT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "shor
 const longDay = (ymd: string) => DATE_FMT.format(new Date(`${ymd}T00:00:00Z`));
 
 function ReadOnly({ id, label, value, multiline = false }: { id: string; label: string; value: string; multiline?: boolean }) {
-  const cls = fieldClass({ kind: multiline ? "textarea" : "input", className: "bg-surface-muted" });
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>{label}</label>
+      <Label htmlFor={id}>{label}</Label>
       {multiline
-        ? <textarea id={id} readOnly value={value} rows={Math.min(8, Math.max(2, value.split("\n").length))} className={cls} />
-        : <input id={id} readOnly value={value} className={cls} />}
+        ? <Textarea id={id} readOnly value={value} rows={Math.min(8, Math.max(2, value.split("\n").length))} className="bg-muted" />
+        : <Input id={id} readOnly value={value} className="bg-muted" />}
     </div>
   );
 }
@@ -46,14 +48,13 @@ function SendBack({ postId, onCancel }: { postId: string; onCancel: () => void }
   }
   return (
     <form onSubmit={submit} noValidate className="flex flex-col gap-2 rounded-lg border border-border p-3">
-      <label htmlFor={`${uid}-note`} className={labelClass}>Feedback note</label>
-      <textarea id={`${uid}-note`} value={note} onChange={(e) => setNote(e.target.value)} rows={3} autoFocus
-        placeholder="What should the author change?" aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined}
-        className={fieldClass({ kind: "textarea", invalid: !!error })} />
+      <Label htmlFor={`${uid}-note`}>Feedback note</Label>
+      <Textarea id={`${uid}-note`} value={note} onChange={(e) => setNote(e.target.value)} rows={3} autoFocus
+        placeholder="What should the author change?" aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined} />
       <FieldError id={`${uid}-err`}>{error}</FieldError>
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" type="submit" variant="primary" disabled={!note.trim()} loading={pending}>Send back</Button>
+        <Button size="sm" type="submit" variant="default" disabled={!note.trim()} loading={pending}>Send back</Button>
       </div>
     </form>
   );
@@ -84,8 +85,8 @@ export function PostPanelReview({ view, onApprove, approving }: { view: PostPane
       {can.approve ? (
         sendingBack ? <SendBack postId={post.id} onCancel={() => setSendingBack(false)} /> : (
           <div className="flex flex-wrap justify-end gap-2">
-            <Button icon={<Undo2 />} onClick={() => setSendingBack(true)}>Send back…</Button>
-            <Button variant="primary" icon={<CheckCheck />} loading={approving} onClick={onApprove}>Approve…</Button>
+            <Button variant="outline" icon={<Undo2 />} onClick={() => setSendingBack(true)}>Send back…</Button>
+            <Button variant="default" icon={<CheckCheck />} loading={approving} onClick={onApprove}>Approve…</Button>
           </div>
         )
       ) : null}

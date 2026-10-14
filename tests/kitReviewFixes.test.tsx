@@ -3,9 +3,8 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { cn } from "@/components/ui/cn";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
-import { fieldClass } from "@/components/ui/Field";
+import { Button, buttonVariants } from "@/components/shadcn/button";
+import { inputClass } from "@/components/shadcn/input";
 import { useDarkMode } from "@/components/ui/darkMode";
 import { readThemePref, resetThemeMemory, setThemePref } from "@/lib/theme";
 
@@ -16,29 +15,39 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
   it.each([
     [["h-9 px-4", "h-10"], "px-4 h-10"],
     [["size-8", "size-9"], "size-9"],
-    [["bg-surface", "bg-sidebar-hover"], "bg-sidebar-hover"],
-    [["text-foreground-secondary", "text-sidebar-foreground"], "text-sidebar-foreground"],
+    [["bg-card", "bg-sidebar-hover"], "bg-sidebar-hover"],
+    [["text-muted-foreground", "text-sidebar-foreground"], "text-sidebar-foreground"],
     [["border-input", "border-danger"], "border-danger"],
     [["shadow-card", "shadow-raised"], "shadow-raised"],
     [["rounded-md", "rounded-full"], "rounded-full"],
-    [["text-sm", "text-[13px]"], "text-[13px]"],
+    [["text-sm", "text-compact"], "text-compact"],
+    [["text-compact", "text-sm"], "text-sm"],
   ])("%j → %s", (parts, out) => {
     expect(cn(...parts)).toBe(out);
   });
+  it("shadow-card and shadow-raised are shadow sizes: they conflict with other sizes, not with shadow colours", () => {
+    expect(cn("shadow-card", "shadow-none")).toBe("shadow-none");
+    expect(cn("shadow-none", "shadow-card")).toBe("shadow-card");
+    expect(cn("shadow-card", "shadow-raised")).toBe("shadow-raised");
+    expect(cn("shadow-raised", "shadow-sm")).toBe("shadow-sm");
+    expect(cn("shadow-card", "shadow-red-500")).toBe("shadow-card shadow-red-500");
+    expect(cn("shadow-raised", "shadow-foreground/10")).toBe("shadow-raised shadow-foreground/10");
+  });
   it("keeps non-conflicting token colour + size classes and skips falsy values", () => {
-    expect(cn("text-foreground", false, "text-[13px]", null, undefined, 0)).toBe("text-foreground text-[13px]");
+    expect(cn("text-foreground", false, "text-compact", null, undefined, 0)).toBe("text-foreground text-compact");
+    expect(cn("text-compact", "text-muted-foreground")).toBe("text-compact text-muted-foreground");
     expect(cn("text-xs", "text-tone-text")).toBe("text-xs text-tone-text");
   });
   it("a className override on a kit component replaces the default", () => {
-    expect(buttonClass({ className: "h-10" })).not.toMatch(/\bh-9\b/);
-    expect(fieldClass({ className: "h-8" }).split(" ")).not.toContain("h-9");
+    expect(buttonVariants({ variant: "outline", className: "h-10" })).not.toMatch(/\bh-9\b/);
+    expect(cn(inputClass(), "h-8").split(" ")).not.toContain("h-9");
   });
 });
 
 describe("placeholders use the AA placeholder token", () => {
-  it("fieldClass uses placeholder:text-placeholder", () => {
-    expect(fieldClass()).toContain("placeholder:text-placeholder");
-    expect(fieldClass()).not.toContain("foreground-muted");
+  it("inputClass uses placeholder:text-placeholder", () => {
+    expect(inputClass()).toContain("placeholder:text-placeholder");
+    expect(inputClass()).not.toContain("foreground-muted");
   });
 });
 
@@ -81,7 +90,7 @@ describe("Avatar / touch targets", () => {
     expect(screen.getByRole("img", { name: "Rina" })).toBeTruthy();
   });
   it("sm buttons and icon buttons extend their hit area to 36px", () => {
-    render(<><Button size="sm">Go</Button><IconButton size="sm" aria-label="More" icon={<svg />} /></>);
+    render(<><Button variant="outline" size="sm">Go</Button><Button variant="ghost" size="icon-sm" aria-label="More"><svg /></Button></>);
     expect(screen.getByRole("button", { name: "Go" }).className).toMatch(/after:-inset-y-0\.5/);
     expect(screen.getByRole("button", { name: "More" }).className).toMatch(/after:-inset-0\.5/);
   });

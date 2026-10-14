@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, within } from "@testing-library/react";
 import { Calendar } from "@/components/shadcn/calendar";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 
 // jsdom lacks these; Radix popover positioning calls them.
 class RO { observe() {} unobserve() {} disconnect() {} }
@@ -88,20 +88,20 @@ describe("DatePicker", () => {
     expect(formatJakartaDay(new Date("2026-10-08T00:00:00+07:00"))).toBe("8 Oct 2026");
   });
 
-  it("looks like a field: same classes as fieldClass()", () => {
+  it("looks like a field: carries every class <Input> sets except its block layout", () => {
     render(<DatePicker aria-label="Due" value={null} />);
-    const cls = screen.getByRole("button", { name: /Due/ }).className;
-    for (const token of ["rounded-lg", "border-input", "bg-surface", "h-9", "px-3", "text-sm", "focus-visible:outline-ring"]) {
-      expect(cls).toContain(token);
-    }
-    expect(fieldClass()).toContain("h-9");
+    const cls = screen.getByRole("button", { name: /Due/ }).className.split(/\s+/);
+    const { getByLabelText } = render(<Input aria-label="Plain" />);
+    const input = getByLabelText("Plain").className.split(/\s+/).filter((t) => t !== "block" && t !== "min-w-0" && !t.startsWith("placeholder:"));
+    expect(input).toContain("h-9");
+    expect(input.filter((t) => !cls.includes(t))).toEqual([]);
   });
 
   it("size sm matches the small field height and invalid uses the danger border", () => {
     render(<DatePicker aria-label="Due" value={null} size="sm" aria-invalid />);
     const btn = screen.getByRole("button", { name: /Due/ });
     expect(btn.className).toContain("h-8");
-    expect(btn.className).toContain("border-danger");
+    expect(btn.className).toContain("aria-invalid:border-danger");
     expect(btn.getAttribute("aria-invalid")).toBe("true");
   });
 

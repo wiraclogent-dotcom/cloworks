@@ -23,6 +23,12 @@ import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { mergeSummary } from "@/app/(app)/admin/users/UserForms";
 
 const when = (s: string) => new Date(s);
+/** Opens a person's collapsed "Edit <name>" panel and returns it. */
+const openEdit = (name: string) => {
+  const toggle = screen.getByRole("button", { name: `Edit ${name}` });
+  fireEvent.click(toggle);
+  return toggle.closest("[data-slot=collapsible]") as HTMLElement;
+};
 const pending = [
   { applicantId: "p1", name: "Andi", email: "andi@gmail.com", source: "LINK", requestedAt: when("2026-10-10T08:00:00Z"), rejectedAt: null },
   { applicantId: "p2", name: "Sari", email: "sari@clogent.co.id", source: "DOMAIN", requestedAt: when("2026-10-09T08:00:00Z"), rejectedAt: null },
@@ -74,7 +80,7 @@ describe("Members page", () => {
     expect(screen.getByText("https://cloworks.test/join/abc123")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reset link" })).toBeTruthy();
-    expect((screen.getByRole("switch") as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText("People with @clogent.co.id can request to join")).toBeTruthy();
   });
 
@@ -84,7 +90,7 @@ describe("Members page", () => {
     render(await UsersContent({}));
     expect(screen.queryByText(/can request to join/)).toBeNull();
     expect(screen.getByText("/join/abc123")).toBeTruthy();
-    expect((screen.getByRole("switch") as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
   });
 
   it("the switch submits the opposite state; Reset link asks first", async () => {
@@ -93,7 +99,10 @@ describe("Members page", () => {
     render(await UsersContent({}));
     fireEvent.click(screen.getByRole("switch"));
     await waitFor(() => expect(act.toggleInviteLink).toHaveBeenCalledTimes(1));
-    expect((act.toggleInviteLink.mock.calls[0][1] as FormData).get("enabled")).toBe("false");
+    const posted = act.toggleInviteLink.mock.calls[0][1] as FormData;
+    expect(posted.get("enabled")).toBe("false");
+    // the unnamed switch posts nothing of its own
+    expect([...posted.keys()]).toEqual(["enabled"]);
     fireEvent.click(screen.getByRole("button", { name: "Reset link" }));
     expect(act.resetInviteLink).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /yes, reset/i }));
@@ -158,6 +167,19 @@ describe("Members page", () => {
     expect((act.approveRequest.mock.calls[0][1] as FormData).get("linkUserId")).toBe("u1");
   });
 
+  it("an Edit panel keeps what was typed when it is collapsed and opened again", async () => {
+    render(await UsersContent({}));
+    const panel = openEdit("Yosi");
+    fireEvent.change(within(panel).getByLabelText("Title"), { target: { value: "Senior designer (draft)" } });
+    const toggle = screen.getByRole("button", { name: "Edit Yosi" });
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    // Closed: still in the page (like <details>), but hidden from everyone.
+    expect(within(panel).queryByRole("button", { name: "Save changes for Yosi" })).toBeNull();
+    fireEvent.click(toggle);
+    expect((within(panel).getByLabelText("Title") as HTMLInputElement).value).toBe("Senior designer (draft)");
+  });
+
   it("Merge: review shows the summary and Merge confirms with both ids; a failed review shows the error", async () => {
     const counts = { requested: 2, assigned: 1, statusEvents: 0, deadlineEvents: 0, comments: 1, attachments: 0, kpiTargets: 0, notifications: 5, chatReads: 3, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
     act.previewMerge.mockResolvedValueOnce({ ok: false, error: "Both people have a login. Clear one login email first." });
@@ -167,7 +189,7 @@ describe("Members page", () => {
     });
     act.mergePerson.mockResolvedValue({ ok: true, message: "Merged.", values: {}, nonce: "m" });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
     expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["Choose a person", "Rina — Rina S"]); // not Yosi himself
     fireEvent.change(pick, { target: { value: "u3" } });
@@ -190,7 +212,7 @@ describe("Members page", () => {
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
     });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…");
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
@@ -223,7 +245,7 @@ describe("Members page", () => {
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
     });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
@@ -305,10 +327,11 @@ describe("Members page", () => {
 
   it("Rejected list is collapsed and offers Undo", async () => {
     act.undoRejectRequest.mockResolvedValue({ ok: true, message: "Back in requests.", values: {}, nonce: "z" });
-    const { container } = render(await UsersContent({ tab: "requests" }));
-    const details = container.querySelector("details") as HTMLDetailsElement;
-    expect(details.open).toBe(false);
-    expect(within(details).getByText("Rejected (1)")).toBeTruthy();
+    render(await UsersContent({ tab: "requests" }));
+    const toggle = screen.getByRole("button", { name: "Rejected (1)" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: "Undo reject for Rudi" })).toBeNull();
+    fireEvent.click(toggle);
     fireEvent.click(screen.getByRole("button", { name: "Undo reject for Rudi" }));
     await waitFor(() => expect(act.undoRejectRequest).toHaveBeenCalledTimes(1));
     expect((act.undoRejectRequest.mock.calls[0][1] as FormData).get("applicantId")).toBe("r1");

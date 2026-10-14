@@ -3,9 +3,9 @@ import { Target, Users } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import { hasProjectTargets, type PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { buttonClass } from "@/components/ui/Button";
-import { TeamPersonCell, TeamTableFrame, teamT as t } from "@/components/kpi/TeamTableParts";
-import { cn } from "@/components/ui/cn";
+import { TeamPersonCell, TeamTableFrame } from "@/components/kpi/TeamTableParts";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import { Button } from "@/components/shadcn/button";
 
 export type ProjectTeamRow = {
   userId: string;
@@ -61,31 +61,31 @@ export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = 
   const hrefOf = (userId: string) => `/dashboard/projects/${userId}?year=${year}`;
   return (
     <TeamTableFrame caption={`Project KPI per person for ${year}`} minWidth={canOpen ? "min-w-[46rem] lg:min-w-0" : "min-w-[38rem] lg:min-w-0"}>
-      <thead>
-        <tr>
-          <th scope="col" className={cn(t.th, "w-full")}>Person</th>
-          {["Q1", "Q2", "Q3", "Q4", "Year"].map((h) => <th key={h} scope="col" className={cn(t.th, t.numeric)}>{h}</th>)}
-          <th scope="col" className={cn(t.th, t.numeric)}>Done</th>
-          <th scope="col" className={cn(t.th, t.numeric)}>On time</th>
-          {canOpen ? <th scope="col" className={cn(t.th, "w-44")}>Targets</th> : null}
-        </tr>
-      </thead>
-      <tbody>
+      <TableHeader>
+        <TableRow>
+          <TableHead scope="col" className="w-full">Person</TableHead>
+          {["Q1", "Q2", "Q3", "Q4", "Year"].map((h) => <TableHead key={h} scope="col" numeric>{h}</TableHead>)}
+          <TableHead scope="col" numeric>Done</TableHead>
+          <TableHead scope="col" numeric>On time</TableHead>
+          {canOpen ? <TableHead scope="col" className="w-44">Targets</TableHead> : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {[...rows].sort(cmp).map((r) => (
-          <tr key={r.userId} className={t.tr}>
+          <TableRow key={r.userId}>
             <TeamPersonCell name={r.name} role={r.role} href={canOpen ? hrefOf(r.userId) : undefined} />
-            {r.quarters.map((s, i) => <td key={i} className={cn(t.td, t.numeric)}>{num(s)}</td>)}
-            <td className={cn(t.td, t.numeric, "font-semibold")}>{num(r.year)}</td>
-            <td className={cn(t.td, t.numeric)}>{r.done}/{r.items}</td>
-            <td className={cn(t.td, t.numeric)}>{num(r.onTimePct, "%")}</td>
+            {r.quarters.map((s, i) => <TableCell key={i} numeric>{num(s)}</TableCell>)}
+            <TableCell numeric className="font-semibold">{num(r.year)}</TableCell>
+            <TableCell numeric>{r.done}/{r.items}</TableCell>
+            <TableCell numeric>{num(r.onTimePct, "%")}</TableCell>
             {canOpen ? (
-              <td className={t.td}>
-                <Link href={hrefOf(r.userId)} aria-label={`${r.hasTargets ? "Open" : "Set"} targets for ${r.name}`} className={buttonClass({ variant: "secondary", size: "sm" })}>{r.hasTargets ? "Open" : "Set targets"}</Link>
-              </td>
+              <TableCell>
+                <Button asChild variant="outline" size="sm"><Link href={hrefOf(r.userId)} aria-label={`${r.hasTargets ? "Open" : "Set"} targets for ${r.name}`}>{r.hasTargets ? "Open" : "Set targets"}</Link></Button>
+              </TableCell>
             ) : null}
-          </tr>
+          </TableRow>
         ))}
-      </tbody>
+      </TableBody>
     </TeamTableFrame>
   );
 }

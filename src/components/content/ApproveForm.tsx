@@ -6,9 +6,13 @@ import { CheckCheck } from "lucide-react";
 import { approvePost } from "@/app/(app)/content/actions";
 import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
 import { parseFieldSchema, type FieldDef } from "@/lib/fieldSchema";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Values = Record<string, string | boolean>;
 
@@ -26,10 +30,10 @@ function fieldsOf(defs: FieldDef[], values: Values): Record<string, unknown> {
 function Row({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>
+      <Label htmlFor={id}>
         {label}
         {required ? <span aria-hidden="true" className="text-danger"> *</span> : null}
-      </label>
+      </Label>
       {children}
       <FieldError id={`${id}-err`}>{error}</FieldError>
     </div>
@@ -90,30 +94,29 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   }
 
   const id = (k: string) => `${uid}-${k}`;
-  const props = (k: string, kind: "input" | "select" = "input") => ({
+  const props = (k: string) => ({
     id: id(k),
-    className: fieldClass({ kind, invalid: !!errors[k] }),
     "aria-invalid": errors[k] ? (true as const) : undefined,
     "aria-describedby": errors[k] ? `${id(k)}-err` : undefined,
   });
 
   return (
     <form aria-label="Approve & create request" onSubmit={submit} noValidate className="flex flex-col gap-3">
-      {message ? <Alert tone="danger">{message}</Alert> : null}
+      {message ? <Alert variant="destructive"><AlertDescription>{message}</AlertDescription></Alert> : null}
       <Row id={id("title")} label="Title" required error={errors.title}>
-        <input {...props("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+        <Input {...props("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
       </Row>
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("divisionId")} label="Division" required error={errors.divisionId}>
-          <select {...props("divisionId", "select")} value={divisionId} onChange={(e) => setDivisionId(e.target.value)}>
+          <NativeSelect {...props("divisionId")} value={divisionId} onChange={(e) => setDivisionId(e.target.value)}>
             <option value="" disabled>Select a division</option>
             {form.divisions.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
         <Row id={id("typeId")} label="Type" error={errors.typeId}>
-          <select {...props("typeId", "select")} value={typeId} onChange={(e) => { setTypeId(e.target.value); setValues({}); }}>
+          <NativeSelect {...props("typeId")} value={typeId} onChange={(e) => { setTypeId(e.target.value); setValues({}); }}>
             {form.types.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
       </div>
       {defs.map((f) => {
@@ -121,8 +124,8 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         if (f.type === "checkbox") {
           return (
             <div key={f.key}>
-              <label className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-                <input type="checkbox" id={id(k)} checked={values[f.key] === true} onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.checked }))}
+              <label className="flex items-center gap-2 text-compact font-medium text-foreground">
+                <Checkbox id={id(k)} checked={values[f.key] === true} onCheckedChange={(c) => setValues((v) => ({ ...v, [f.key]: c === true }))}
                   aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `${id(k)}-err` : undefined} />
                 {f.label}
                 {f.required ? <span aria-hidden="true" className="text-danger"> *</span> : null}
@@ -136,42 +139,42 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         return (
           <Row key={f.key} id={id(k)} label={f.label} required={f.required} error={errors[k]}>
             {f.type === "select" ? (
-              <select {...props(k, "select")} value={value} onChange={(e) => set(e.target.value)}>
+              <NativeSelect {...props(k)} value={value} onChange={(e) => set(e.target.value)}>
                 <option value="">Select…</option>
                 {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              </NativeSelect>
             ) : (
-              <input {...props(k)} type={f.type === "url" ? "url" : "text"} value={value} onChange={(e) => set(e.target.value)} />
+              <Input {...props(k)} type={f.type === "url" ? "url" : "text"} value={value} onChange={(e) => set(e.target.value)} />
             )}
           </Row>
         );
       })}
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("assigneeIds")} label="Assignee" error={errors.assigneeIds}>
-          <select {...props("assigneeIds", "select")} value={designerId} onChange={(e) => setDesignerId(e.target.value)}>
+          <NativeSelect {...props("assigneeIds")} value={designerId} onChange={(e) => setDesignerId(e.target.value)}>
             <option value="">Unassigned</option>
             {form.team.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
         <Row id={id("deadline")} label="Deadline" error={errors.deadline}>
-          <input {...props("deadline")} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          <Input {...props("deadline")} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </Row>
         <Row id={id("outputCount")} label="Outputs" error={errors.outputCount}>
-          <input {...props("outputCount")} type="number" min={1} step={1} inputMode="numeric" value={outputCount} onChange={(e) => setOutputCount(e.target.value)} />
+          <Input {...props("outputCount")} type="number" min={1} step={1} inputMode="numeric" value={outputCount} onChange={(e) => setOutputCount(e.target.value)} />
         </Row>
         <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-[13px] font-medium text-foreground">
-            <input type="checkbox" checked={needsMotion} onChange={(e) => setNeedsMotion(e.target.checked)} />
+          <label className="flex items-center gap-2 text-compact font-medium text-foreground">
+            <Checkbox checked={needsMotion} onCheckedChange={(c) => setNeedsMotion(c === true)} />
             Needs motion
           </label>
         </div>
       </div>
-      <p className="text-xs text-foreground-secondary">
+      <p className="text-xs text-muted-foreground">
         {`Brief → request notes · ${mockupCount} mock-up${mockupCount === 1 ? "" : "s"} → attachments · requester = ${authorName}`}
       </p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" variant="primary" icon={<CheckCheck />} loading={pending}>Approve &amp; create</Button>
+        <Button type="submit" variant="default" icon={<CheckCheck />} loading={pending}>Approve &amp; create</Button>
       </div>
     </form>
   );

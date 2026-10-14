@@ -1,5 +1,6 @@
 import { googleSignIn } from "@/app/signin/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { cn } from "@/components/ui/cn";
 import { providerButton } from "./styles";
 
 export function GoogleMark() {
@@ -18,7 +19,7 @@ export function GoogleButton({ next }: { next?: string }) {
   return (
     <form action={googleSignIn}>
       {next && <input type="hidden" name="next" value={next} />}
-      <SubmitButton block className={providerButton} pendingLabel="Opening Google…">
+      <SubmitButton variant="outline" className={cn("w-full", providerButton)} pendingLabel="Opening Google…">
         <GoogleMark />Continue with Google
       </SubmitButton>
     </form>
@@ -28,7 +29,7 @@ export function GoogleButton({ next }: { next?: string }) {
 /** "──── or use your password ────" */
 export function OrDivider({ children = "or use your password" }: { children?: string }) {
   return (
-    <div className="flex items-center gap-3 pt-2 text-[13px] text-foreground-secondary">
+    <div className="flex items-center gap-3 pt-2 text-compact text-muted-foreground">
       <span aria-hidden="true" className="h-px flex-1 bg-border" />
       {children}
       <span aria-hidden="true" className="h-px flex-1 bg-border" />

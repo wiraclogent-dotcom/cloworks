@@ -20,8 +20,6 @@ const DAY8 = "Thursday 8 October: 3 briefs, Fafa 2, Dimas 1";
 
 beforeEach(() => {
   narrow = false;
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(cleanup);
 

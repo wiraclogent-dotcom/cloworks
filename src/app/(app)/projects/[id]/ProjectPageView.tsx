@@ -10,11 +10,11 @@ import { ProjectItemsList } from "@/components/projects/ProjectItemsList";
 import { ItemHashOpener } from "@/components/projects/ItemHashOpener";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusChip } from "@/components/ui/StatusChip";
-import { buttonClass } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { groupItems } from "@/lib/projectItemList";
 import { productSummaries, taskMode } from "@/lib/projectProgress";
 import { jakartaIso } from "@/lib/projectTasks";
+import { Button } from "@/components/shadcn/button";
 
 /** What the page loads: the project with brand and owner names, rows (with owner name) and milestones. */
 export type ProjectPageProject = Prisma.ProjectGetPayload<{
@@ -64,7 +64,7 @@ export function ProjectPageView({ project, canManage, brands, owners, taskOwners
         actions={
           <span className="flex flex-wrap items-center gap-2">
             <StatusChip status={project.status} kind="project" />
-            <Link href="/projects" className={buttonClass({ variant: "secondary" })}>Back to projects</Link>
+            <Button asChild variant="outline"><Link href="/projects">Back to projects</Link></Button>
           </span>
         }
       />

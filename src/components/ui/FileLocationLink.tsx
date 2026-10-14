@@ -31,7 +31,7 @@ export function FileLocationLink({ href, name, children, className }: { href: st
     <span className="inline-flex max-w-full min-w-0 items-center gap-1.5" title={href}>
       <span className={cn("min-w-0 break-all", !name && "font-mono text-xs")}>{name ?? href}</span>
       <button type="button" onClick={copy} aria-label={copied ? "Path copied" : `Copy server path ${href}`}
-        className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-link hover:bg-surface-muted", focusRing)}>
+        className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-link hover:bg-muted", focusRing)}>
         {copied ? <Check aria-hidden="true" strokeWidth={1.75} className="size-3.5" /> : <Copy aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}
         {copied ? "Copied" : "Copy path"}
       </button>

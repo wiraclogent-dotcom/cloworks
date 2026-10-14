@@ -10,7 +10,7 @@ export default function ForgotPage() {
   return (
     <AuthShell title="Reset your password" intro="Enter the email you signed up with and we'll send you a link to choose a new password.">
       <ForgotForm />
-      <p className="text-sm text-foreground-secondary">
+      <p className="text-sm text-muted-foreground">
         Remembered it? <Link href="/signin" className="font-medium text-brand-deep-blue underline-offset-4 hover:underline">Sign in</Link>
       </p>
     </AuthShell>

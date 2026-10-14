@@ -10,8 +10,8 @@ import type { ApproveFormData } from "@/lib/content/approve";
 import type { PostPanelView } from "@/lib/content/panelView";
 import { relativeTime } from "@/lib/relativeTime";
 import { STATUS_LABEL as REQUEST_STATUS_LABEL } from "@/lib/statusLabels";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ApproveForm } from "./ApproveForm";
 import { CommentsSection } from "./CommentsSection";
@@ -56,9 +56,9 @@ function DeletePost({ postId, closeHref }: { postId: string; closeHref: string }
       {error ? <p role="alert" className="mr-auto text-xs text-danger">{error}</p> : null}
       {confirming ? (
         <>
-          <span className="text-[13px] text-foreground-secondary">Delete this post and its media?</span>
+          <span className="text-compact text-muted-foreground">Delete this post and its media?</span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>Keep</Button>
-          <Button size="sm" variant="danger" loading={pending} onClick={remove}>Delete</Button>
+          <Button size="sm" variant="destructive" loading={pending} onClick={remove}>Delete</Button>
         </>
       ) : (
         <Button size="sm" variant="ghost" icon={<Trash2 />} onClick={() => setConfirming(true)}>Delete post</Button>
@@ -102,21 +102,21 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
   const published = post.kind === "PUBLISHED";
   return (
     <aside aria-label="Post details"
-      className={cn("flex flex-col gap-4 bg-surface p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
+      className={cn("flex flex-col gap-4 bg-card p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
         "xl:rounded-xl xl:border xl:border-border xl:shadow-card")}>
       <header className="flex items-center gap-2">
-        {approveForm ? <h2 className="text-sm font-semibold text-foreground">Approve &amp; create request</h2> : (
+        {approveForm ? <h2 className="text-base font-semibold text-heading">Approve &amp; create request</h2> : (
           <>
             {!published ? (
-              <span data-badge="" data-tone={STATUS_TONE[post.status]} className="rounded bg-tone-tint px-1.5 py-0.5 text-[11px] font-semibold text-tone-text">
+              <span data-badge="" data-tone={STATUS_TONE[post.status]} className="rounded bg-tone-tint px-1.5 py-0.5 text-xs font-semibold text-tone-text">
                 {STATUS_LABEL[post.status]}
               </span>
             ) : null}
-            <h2 className="text-sm font-semibold text-foreground">{published ? `Posted ${SURFACE_TITLE[post.surface].toLowerCase()}` : SURFACE_TITLE[post.surface]}</h2>
+            <h2 className="text-base font-semibold text-heading">{published ? `Posted ${SURFACE_TITLE[post.surface].toLowerCase()}` : SURFACE_TITLE[post.surface]}</h2>
           </>
         )}
         <Link href={closeHref} aria-label="Close" title="Close"
-          className={cn("ml-auto flex size-8 items-center justify-center rounded-lg text-foreground-secondary hover:bg-surface-muted hover:text-foreground [&_svg]:size-4", focusRing)}>
+          className={cn("ml-auto flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4", focusRing)}>
           <X aria-hidden="true" />
         </Link>
       </header>
@@ -127,15 +127,15 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
           onApproved={(id) => { setApproveForm(null); setRequestId(id); router.refresh(); }} />
       ) : (
         <>
-          {lock ? <p className="text-xs text-foreground-secondary" suppressHydrationWarning>{lock}</p> : null}
+          {lock ? <p className="text-xs text-muted-foreground" suppressHydrationWarning>{lock}</p> : null}
           {request ? (
             <Link href={`/requests/${request.id}`}
-              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-surface-muted [&_svg]:size-4", focusRing)}>
+              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-compact font-medium text-foreground hover:bg-muted [&_svg]:size-4", focusRing)}>
               <span className="flex-1">{request.status ? `View request · ${REQUEST_STATUS_LABEL[request.status]}` : "View request"}</span>
               <ExternalLink aria-hidden="true" />
             </Link>
           ) : null}
-          {message ? <Alert tone="danger">{message}</Alert> : null}
+          {message ? <Alert variant="destructive"><AlertDescription>{message}</AlertDescription></Alert> : null}
           {can.edit
             ? <PostPanelEditor view={view} />
             : <PostPanelReview view={view} onApprove={startApprove} approving={loadingApprove} />}

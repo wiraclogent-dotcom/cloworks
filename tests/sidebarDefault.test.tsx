@@ -24,9 +24,12 @@ describe("CSS contract", () => {
   it("collapses with no attribute only inside the 768–1279.98px media query; stored choices use explicit values", () => {
     expect(RAIL_DEFAULT_QUERY).toBe("(min-width: 768px) and (max-width: 1279.98px)");
     const block = css.slice(css.indexOf("@media (min-width: 768px) and (max-width: 1279.98px)"));
-    expect(block.slice(0, block.indexOf("@media (min-width: 1280px)"))).toMatch(/:root:not\(\[data-sidebar\]\) \.app-sidebar \{\s*width: 64px;/);
-    expect(css).toMatch(/@media \(min-width: 1280px\) \{\s*:root:not\(\[data-sidebar\]\) \.app-sidebar \.sb-collapsed-only \{\s*display: none;/);
-    expect(css).toContain(':root[data-sidebar="expanded"] .app-sidebar .sb-collapsed-only');
+    const rail = block.slice(0, block.indexOf("}\n}") + 3);
+    expect(rail).toMatch(/:root:not\(\[data-sidebar\]\) \.app-sidebar \{\s*width: 64px;/);
+    expect(rail).toContain(":root:not([data-sidebar]) .app-sidebar .sb-expanded-only");
+    expect(css).toContain(':root[data-sidebar="collapsed"] .app-sidebar .sb-expanded-only');
+    // Nothing renders a collapsed-only part any more, so no rule for it either.
+    expect(css).not.toContain("sb-collapsed-only");
     expect(css).not.toContain(':root:not([data-sidebar="collapsed"])');
   });
 });

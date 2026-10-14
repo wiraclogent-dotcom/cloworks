@@ -92,16 +92,14 @@ describe("D8 tap targets", () => {
     expect(container.firstElementChild!.className).toContain("text-[11px]");
     expect(container.firstElementChild!.className).not.toMatch(/text-\[(9|10)px\]/);
   });
-  it("mobile drawer: focus moves in even when the first focus() is a no-op (hidden until the transition starts)", () => {
-    vi.useFakeTimers();
-    const real = HTMLElement.prototype.focus;
-    let blocked = true;
-    vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (this: HTMLElement) { if (!blocked) real.call(this); });
+  // The drawer used to be the <aside>, `visibility: hidden` until its slide transition started, so the first focus()
+  // could be a no-op and needed timed retries. It is a shadcn Sheet now: mounted visible when it opens, so focus lands
+  // at once (also checked in a real browser at 375px: on the close button 50ms after Enter on the menu button).
+  it("mobile drawer: focus moves in at once (the drawer is never visibility-hidden while open)", () => {
     render(<AppFrame nav={null} footer={null}><p>x</p></AppFrame>);
     fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
-    expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Close navigation" }));
-    blocked = false;
-    act(() => { vi.advanceTimersByTime(250); });
+    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    expect(drawer.className).not.toMatch(/(^|\s)invisible(\s|$)|visibility/);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close navigation" }));
   });
 });

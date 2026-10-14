@@ -16,7 +16,7 @@ export function NotificationItem({ item, now }: { item: InboxItem; now: Date }) 
       <span aria-hidden="true" className={cn("mt-1.5 size-2 shrink-0 rounded-full", unread ? "bg-unread-dot" : "bg-transparent")} />
       <span className="min-w-0 flex-1">
         {unread && <span className="sr-only">Unread: </span>}
-        <span className={cn("line-clamp-2 break-words text-sm", unread ? "font-medium text-foreground" : "text-foreground-secondary")}>{item.message}</span>
+        <span className={cn("line-clamp-2 break-words text-sm", unread ? "font-medium text-foreground" : "text-muted-foreground")}>{item.message}</span>
         <span className="mt-0.5 block text-xs text-foreground-muted">{relativeTime(new Date(item.createdAt), now)}</span>
       </span>
     </span>

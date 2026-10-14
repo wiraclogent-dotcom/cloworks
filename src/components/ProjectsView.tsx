@@ -4,9 +4,9 @@ import { splitProjects } from "@/lib/projects";
 import { ProjectRowsTable, ProjectTable, type ProjectRow } from "./ProjectTable";
 import { ProjectTimeline } from "./ProjectTimeline";
 import { PageHeader } from "./ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "./ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { CollapsibleSection } from "./ui/CollapsibleSection";
-import { buttonClass } from "./ui/Button";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * The /projects page body: header, the timeline and the brand-grouped table for ACTIVE projects, then collapsible
@@ -21,9 +21,9 @@ export function ProjectsView({ rows, canManage, now }: { rows: ProjectRow[]; can
       <PageHeader breadcrumb={[{ label: "Work" }, { label: "Projects" }]} title="Projects" count={active.length}
         description={["Active projects grouped by brand, soonest due first", ...closedParts].join(" · ")}
         actions={canManage && (
-          <Link href="/projects/new" className={buttonClass({ variant: "primary" })}>
+          <Button asChild variant="default"><Link href="/projects/new">
             <Plus aria-hidden="true" />New project
-          </Link>
+          </Link></Button>
         )} />
       {active.length > 0 && (
         <Card className="mb-5">

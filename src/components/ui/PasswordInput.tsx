@@ -1,22 +1,23 @@
 "use client";
 
-import { useState, type InputHTMLAttributes } from "react";
+import { useState, type ComponentProps } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn, focusRing } from "./cn";
-import { fieldClass } from "./Field";
+import { Input } from "@/components/shadcn/input";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
+type Props = Omit<ComponentProps<typeof Input>, "type">;
 
 /**
- * Password field with a show/hide toggle inside it on the right. Takes every input prop except `type`; `className`
- * defaults to `fieldClass()` (pass the form's own control class to match its other fields). The toggle is a real
+ * Password field with a show/hide toggle inside it on the right. Takes every `Input` prop except `type` (e.g.
+ * `className="h-11"` for the sign-in height). The toggle is a real
  * `type="button"` (never submits), keyboard focusable, labelled "Show password" / "Hide password" with aria-pressed.
  */
 export function PasswordInput({ className, ...props }: Props) {
   const [shown, setShown] = useState(false);
   return (
     <div className="relative">
-      <input {...props} type={shown ? "text" : "password"} className={cn(className ?? fieldClass(), "pr-10")} />
+      <Input {...props} type={shown ? "text" : "password"} className={cn("pr-10", className)} />
       <button
         type="button"
         onClick={() => setShown((v) => !v)}
@@ -24,7 +25,7 @@ export function PasswordInput({ className, ...props }: Props) {
         aria-pressed={shown}
         aria-controls={props.id}
         className={cn(
-          "absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-foreground-secondary",
+          "absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-muted-foreground",
           "transition-colors duration-150 ease-out hover:text-foreground disabled:cursor-not-allowed",
           focusRing,
         )}
@@ -40,7 +41,7 @@ export function PasswordInput({ className, ...props }: Props) {
 export function RememberMe({ id }: { id: string }) {
   return (
     <div className="flex items-center gap-2">
-      <input id={id} name="remember" type="checkbox" value="1" className="size-4 accent-primary" />
+      <Checkbox id={id} name="remember" value="1" />
       <label htmlFor={id} className="text-sm text-foreground">Remember me</label>
     </div>
   );

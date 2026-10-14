@@ -11,7 +11,7 @@ import { ProfileMenu } from "./shell/ProfileMenu";
 import { PhotoDirectory } from "./shell/PhotoDirectory";
 import { NotificationBell } from "./shell/NotificationBell";
 import { ChatDock } from "./chat/ChatDock";
-import { Skeleton } from "./ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 
 /**
@@ -21,7 +21,7 @@ import { Skeleton } from "./ui/Skeleton";
 function NavGroup({ id, label, divided = false, children }: { id: string; label: string; divided?: boolean; children: React.ReactNode }) {
   return (
     <div className={divided ? "mt-3 border-t border-sidebar-border pt-3" : undefined}>
-      <p id={id} className="sb-label px-2.5 pb-1.5 text-[13px] font-medium text-sidebar-foreground-secondary">{label}</p>
+      <p id={id} className="sb-label px-2.5 pb-1.5 text-compact font-medium text-sidebar-foreground-secondary">{label}</p>
       <ul aria-labelledby={id} className="space-y-0.5">{children}</ul>
     </div>
   );
@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
       profile={
         <div className="flex items-center gap-2">
-          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><NotificationBell /></Suspense>
-          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><NotificationBell /></Suspense>
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><ProfileMenu /></Suspense>
           <Suspense fallback={null}><PhotoDirectory /></Suspense>
         </div>
       }

@@ -28,13 +28,13 @@ export async function ArticleContent({ params }: { params: Promise<{ slug: strin
           <nav aria-label="Guide navigation" className="mt-8 flex justify-between gap-4 border-t border-border pt-4 text-sm">
             {prev ? (
               <Link href={`/help/${prev.slug}`} className="text-foreground hover:underline">
-                <span className="block text-xs text-foreground-secondary">Previous</span>
+                <span className="block text-xs text-muted-foreground">Previous</span>
                 {prev.title}
               </Link>
             ) : <span />}
             {next ? (
               <Link href={`/help/${next.slug}`} className="ml-auto text-right text-foreground hover:underline">
-                <span className="block text-xs text-foreground-secondary">Next</span>
+                <span className="block text-xs text-muted-foreground">Next</span>
                 {next.title}
               </Link>
             ) : null}

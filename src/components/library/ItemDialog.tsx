@@ -4,12 +4,16 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
-import { cn } from "@/components/ui/cn";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
+import { FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "./LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export type ItemDraft = {
   id?: string; title: string; url: string; description: string | null;
@@ -78,55 +82,58 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
   return (
     <LibraryDialog title={editing ? "Edit link" : "Add link"} onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
+        {formError ? <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert> : null}
         <div>
-          <label htmlFor={`${uid}-title`} className={labelClass}>Title</label>
-          <input {...f("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} autoFocus
-            className={fieldClass({ invalid: !!errors.title })} />
+          <Label htmlFor={`${uid}-title`}>Title</Label>
+          <Input {...f("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} autoFocus />
           {err("title")}
         </div>
         <div>
-          <label htmlFor={`${uid}-url`} className={labelClass}>Link</label>
-          <input {...f("url")} type="url" inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://"
-            className={fieldClass({ invalid: !!errors.url })} />
+          <Label htmlFor={`${uid}-url`}>Link</Label>
+          <Input {...f("url")} type="url" inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
           {err("url")}
         </div>
         <div>
-          <label htmlFor={`${uid}-description`} className={labelClass}>Description</label>
-          <textarea {...f("description")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300}
-            className={fieldClass({ kind: "textarea", invalid: !!errors.description })} />
+          <Label htmlFor={`${uid}-description`}>Description</Label>
+          <Textarea {...f("description")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} />
           {err("description")}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor={`${uid}-categoryId`} className={labelClass}>Category</label>
-            <select {...f("categoryId")} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
-              className={fieldClass({ kind: "select", invalid: !!errors.categoryId })}>
+            <Label htmlFor={`${uid}-categoryId`}>Category</Label>
+            <NativeSelect {...f("categoryId")} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            </NativeSelect>
             {err("categoryId")}
           </div>
           <div>
-            <label htmlFor={`${uid}-brandId`} className={labelClass}>Brand</label>
-            <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
-              className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
+            <Label htmlFor={`${uid}-brandId`}>Brand</Label>
+            <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
               <option value="">No brand</option>
               {brandOptions.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
             {err("brandId")}
           </div>
         </div>
         <fieldset aria-describedby={errors.files ? `${uid}-files-err` : `${uid}-files-hint`}>
-          <legend className={labelClass}>Extra files</legend>
-          <p id={`${uid}-files-hint`} className="mb-2 text-xs text-foreground-secondary">Other versions of this link, e.g. the AI file or a mockup. Each shows as a small link on the row.</p>
+          <legend className={labelClassName}>Extra files</legend>
+          <p id={`${uid}-files-hint`} className="mb-2 text-xs text-muted-foreground">Other versions of this link, e.g. the AI file or a mockup. Each shows as a small link on the row.</p>
           <div className="space-y-2">
             {files.map((file) => (
               <div key={file.key} className="flex items-center gap-2">
-                <input aria-label="File label" value={file.label} onChange={(e) => setFile(file.key, { label: e.target.value })} maxLength={30} placeholder="AI"
-                  className={cn(fieldClass({ invalid: !!errors.files }), "w-24 shrink-0")} />
-                <input aria-label="File link" type="url" inputMode="url" value={file.url} onChange={(e) => setFile(file.key, { url: e.target.value })} placeholder="https://"
-                  className={cn(fieldClass({ invalid: !!errors.files }), "min-w-0 flex-1")} />
-                <IconButton aria-label={`Remove file ${file.label.trim() || "row"}`} icon={<X />} onClick={() => setFiles((cur) => cur.filter((f) => f.key !== file.key))} />
+                <Input aria-label="File label" value={file.label} onChange={(e) => setFile(file.key, { label: e.target.value })} maxLength={30} placeholder="AI"
+                  aria-invalid={!!errors.files || undefined} className="w-24 shrink-0" />
+                <Input aria-label="File link" type="url" inputMode="url" value={file.url} onChange={(e) => setFile(file.key, { url: e.target.value })} placeholder="https://"
+                  aria-invalid={!!errors.files || undefined} className="min-w-0 flex-1" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove file ${file.label.trim() || "row"}`}
+                  onClick={() => setFiles((cur) => cur.filter((f) => f.key !== file.key))}
+                  title={`Remove file ${file.label.trim() || "row"}`}
+                >
+                  <X />
+                </Button>
               </div>
             ))}
           </div>
@@ -137,12 +144,12 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
           {err("files")}
         </fieldset>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-primary" />
+          <Checkbox checked={pinned} onCheckedChange={(c) => setPinned(c === true)} />
           Pinned
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending}>{editing ? "Save changes" : "Add link"}</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={pending}>{editing ? "Save changes" : "Add link"}</Button>
         </div>
       </form>
     </LibraryDialog>

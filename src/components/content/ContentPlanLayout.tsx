@@ -17,7 +17,7 @@ export function ContentPlanLayout({ view, brands, panel }: { view: ContentPlanVi
     return can.manageChannels ? (
       <EmptyState art="empty-content" icon={<LayoutGrid />} title="Add your first channel"
         description="Add a brand's Instagram account to start planning its feed, reels and stories."
-        action={<AddChannelButton brands={brands} variant="primary" icon={<Plus />}>Add channel</AddChannelButton>} />
+        action={<AddChannelButton brands={brands} variant="default" icon={<Plus />}>Add channel</AddChannelButton>} />
     ) : (
       <EmptyState art="empty-content" icon={<LayoutGrid />} title="No channels yet" description="A lead adds each brand's Instagram account here before posts can be planned." />
     );
@@ -25,7 +25,7 @@ export function ContentPlanLayout({ view, brands, panel }: { view: ContentPlanVi
   return (
     <div className={cn("grid gap-5 lg:grid-cols-[13.5rem_minmax(0,1fr)]", !!panel && "xl:grid-cols-[13.5rem_minmax(0,1fr)_minmax(0,26rem)]")}>
       <ChannelList channels={view.channels} currentId={channel.id} tab={tab} canManage={can.manageChannels} brands={brands} />
-      <div className="min-w-0 rounded-xl bg-surface-muted px-3 py-6 sm:px-6">
+      <div className="min-w-0 rounded-xl bg-muted px-3 py-6 sm:px-6">
         <PhonePreview channel={channel} tab={tab} planned={view.planned} published={view.published} canDraft={can.draft} selectedId={postId} />
       </div>
       {/* Below xl the panel is a full-screen sheet (PostPanel), so it never stacks under the phone. */}

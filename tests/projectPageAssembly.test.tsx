@@ -56,7 +56,12 @@ describe("project page assembly", () => {
     const order = Array.from(container.querySelectorAll("[data-piece], [data-closed-section]")).map((el) =>
       el.getAttribute("data-piece") ?? `section:${el.getAttribute("data-closed-section")}`);
     expect(order).toEqual(["details", "progress", "attention", "items", "opener", "section:timeline", "timeline", "section:milestones", "milestones"]);
-    for (const id of ["timeline", "milestones"]) expect(container.querySelector(`details[data-closed-section="${id}"]`)?.hasAttribute("open")).toBe(false);
+    // Closed sections keep their body in the page, hidden (as the old <details> did).
+    for (const id of ["timeline", "milestones"]) {
+      const section = container.querySelector(`[data-closed-section="${id}"]`)!;
+      expect(section.getAttribute("data-state")).toBe("closed");
+      expect(section.querySelector(`[data-piece="${id}"]`)!.closest("[hidden]")).not.toBeNull();
+    }
   });
 
   it("hands the stage mode to Needs attention and no href to the timeline", () => {

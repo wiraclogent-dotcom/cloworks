@@ -4,10 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { labelClass } from "@/components/ui/Field";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Props = {
   kind: "REQUESTS" | "PROJECTS";
@@ -29,7 +30,7 @@ export function ManagePeopleDialog(props: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button icon={<Users aria-hidden="true" />} onClick={() => setOpen(true)}>Manage people</Button>
+      <Button variant="outline" icon={<Users aria-hidden="true" />} onClick={() => setOpen(true)}>Manage people</Button>
       {open ? <Picker {...props} onClose={() => setOpen(false)} /> : null}
     </>
   );
@@ -67,16 +68,16 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
     <LibraryDialog title={`Manage people · ${kind === "REQUESTS" ? "Requests" : "Projects"} KPI`} onClose={onClose}>
       <form onSubmit={save} className="space-y-4">
         <fieldset className="space-y-1">
-          <legend className={labelClass}>People shown on the team table</legend>
-          <p className="mb-1.5 text-xs leading-4 text-foreground-secondary">
+          <legend className={labelClassName}>People shown on the team table</legend>
+          <p className="mb-1.5 text-xs leading-4 text-muted-foreground">
             This only changes this table. It stays the same for every {kind === "REQUESTS" ? "month" : "year"}; requests, targets and scores are not affected.
           </p>
-          {candidates.length === 0 ? <p className="text-sm text-foreground-secondary">There is nobody to choose from.</p> : (
+          {candidates.length === 0 ? <p className="text-sm text-muted-foreground">There is nobody to choose from.</p> : (
             <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
               {candidates.map((c) => (
                 <li key={c.id}>
                   <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-foreground">
-                    <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={picked.has(c.id)} onChange={() => toggle(c.id)} />
+                    <Checkbox checked={picked.has(c.id)} onCheckedChange={() => toggle(c.id)} />
                     <span className="min-w-0 break-words">{c.name}</span>
                   </label>
                 </li>
@@ -85,11 +86,11 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
           )}
         </fieldset>
 
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={saving}>Save</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={saving}>Save</Button>
         </div>
       </form>
     </LibraryDialog>

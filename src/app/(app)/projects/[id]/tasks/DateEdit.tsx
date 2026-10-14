@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Calendar } from "@/components/shadcn/calendar";
 import { isoToLocal, jakartaTodayLocal, localToIso } from "@/components/ui/DatePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
@@ -46,7 +46,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
         <button
           type="button"
           aria-label={`Edit ${what.toLowerCase()} for ${label}: ${display}`}
-          className="rounded-md px-1 -mx-1 text-left tabular-nums underline decoration-dotted underline-offset-4 hover:bg-surface-muted"
+          className="rounded-md px-1 -mx-1 text-left tabular-nums underline decoration-dotted underline-offset-4 hover:bg-muted"
         >
           {display}
         </button>
@@ -63,7 +63,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
       >
         <div className="grid gap-3">
           <div role="group" aria-label={`${what} for ${label}`} className="grid gap-1.5">
-            <p className="text-xs font-medium text-foreground-secondary">{what}</p>
+            <p className="text-xs font-medium text-muted-foreground">{what}</p>
             <Calendar
               mode="single"
               required
@@ -76,8 +76,8 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
           <div className="flex items-center justify-between">
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
             <div className="flex gap-1.5">
-              <Button size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
-              <Button size="sm" variant="primary" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
+              <Button size="sm" variant="default" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
                 {pending ? "Saving…" : "Save"}
               </Button>
             </div>

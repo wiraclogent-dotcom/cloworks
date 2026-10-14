@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, act, within } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act, within, waitFor } from "@testing-library/react";
 
 let pathname = "/requests/new";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
@@ -67,38 +67,73 @@ describe("AppFrame / sidebar shell", () => {
     expect(localStorage.getItem("ct-sidebar")).toBe("expanded");
   });
 
-  it("mobile drawer: opens from the hamburger, focus moves in, Escape closes and returns focus", () => {
+  // The drawer is a shadcn Sheet (side="left", a Radix modal dialog) since the shadcn-first migration; it was the
+  // desktop <aside> slid in with a hand-made backdrop, inert and focus code. The user contract is unchanged.
+  it("mobile drawer opens from the menu button, traps focus, closes on Esc and returns focus", async () => {
     shell();
     const burger = screen.getByRole("button", { name: "Open navigation" });
-    expect(burger.getAttribute("aria-controls")).toBe("app-sidebar");
+    expect(burger.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(burger);
     expect(burger.getAttribute("aria-expanded")).toBe("true");
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close navigation" }));
+    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    expect(drawer.getAttribute("data-side")).toBe("left");
+    expect(document.getElementById(burger.getAttribute("aria-controls")!)).toBe(drawer);
+    // The sidebar's parts live in the drawer while it is open (not twice on the page).
+    expect(within(drawer).getByRole("navigation", { name: "Main" })).toBeTruthy();
+    expect(within(drawer).getByRole("button", { name: "Sign out" })).toBeTruthy();
+    expect(document.querySelectorAll("nav[aria-label='Main']")).toHaveLength(1);
+    const close = within(drawer).getByRole("button", { name: "Close navigation" });
+    expect(document.activeElement).toBe(close);
     expect(document.getElementById("main")!.hasAttribute("inert")).toBe(true);
-    fireEvent.keyDown(document, { key: "Escape" });
+    // Focus is trapped: Shift+Tab from the first control wraps to the last one inside the drawer.
+    await act(async () => { fireEvent.keyDown(close, { key: "Tab", shiftKey: true }); });
+    expect(drawer.contains(document.activeElement)).toBe(true);
+    expect(document.activeElement).not.toBe(close);
+    await act(async () => { fireEvent.keyDown(document.activeElement!, { key: "Escape" }); });
+    expect(screen.queryByRole("dialog")).toBeNull();
     expect(burger.getAttribute("aria-expanded")).toBe("false");
-    expect(document.activeElement).toBe(burger);
+    // Radix returns focus on the next tick.
+    await waitFor(() => expect(document.activeElement).toBe(burger));
     expect(document.getElementById("main")!.hasAttribute("inert")).toBe(false);
+    expect(document.querySelectorAll("nav[aria-label='Main']")).toHaveLength(1);
   });
 
-  it("mobile drawer: backdrop click and the close button both close it; body scroll is never locked", () => {
+  it("mobile drawer: a backdrop click and the close button both close it", async () => {
     shell();
     const burger = screen.getByRole("button", { name: "Open navigation" });
     fireEvent.click(burger);
-    expect(document.body.style.overflow).toBe("");
-    fireEvent.click(screen.getByTestId("sidebar-backdrop"));
+    // Radix starts listening for outside pointer-downs on the tick after the drawer mounts.
+    await act(async () => { await new Promise((r) => setTimeout(r, 10)); });
+    const backdrop = document.querySelector("[data-slot='sheet-overlay']")!;
+    expect(backdrop).toBeTruthy();
+    await act(async () => { fireEvent.pointerDown(backdrop); fireEvent.click(backdrop); });
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(burger.getAttribute("aria-expanded")).toBe("false");
     fireEvent.click(burger);
-    fireEvent.click(screen.getByRole("button", { name: "Close navigation" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Close navigation" })); });
     expect(burger.getAttribute("aria-expanded")).toBe("false");
-    expect(screen.queryByTestId("sidebar-backdrop")).toBeNull();
+    expect(document.querySelector("[data-slot='sheet-overlay']")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(burger));
   });
 
-  it("mobile drawer: following a link closes it", () => {
+  it("mobile drawer: following a link closes it", async () => {
     shell();
     const burger = screen.getByRole("button", { name: "Open navigation" });
     fireEvent.click(burger);
-    fireEvent.click(screen.getByRole("link", { name: "Projects" }));
+    await act(async () => { fireEvent.click(within(screen.getByRole("dialog")).getByRole("link", { name: "Projects" })); });
     expect(burger.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("the drawer is never in the server HTML, and the desktop sidebar is CSS-hidden below 768px", async () => {
+    const { renderToString } = await import("react-dom/server");
+    const markup = renderToString(
+      <AppFrame nav={<nav aria-label="Main"><ul><li>x</li></ul></nav>} footer={null}><p>x</p></AppFrame>,
+    );
+    expect(markup).not.toMatch(/role="dialog"|data-slot="sheet-(content|overlay)"/);
+    const aside = new DOMParser().parseFromString(markup, "text/html").getElementById("app-sidebar")!;
+    expect(aside.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "md:flex", "app-sidebar"]));
+    expect(aside.querySelector("nav[aria-label='Main']")).toBeTruthy();
   });
 });

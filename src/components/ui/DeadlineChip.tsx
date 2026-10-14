@@ -1,7 +1,7 @@
 import { CalendarClock, CalendarX, Clock, TriangleAlert } from "lucide-react";
 import { deadlineState, deadlineText } from "@/lib/deadline";
 import type { Tone } from "@/lib/palette";
-import { Chip } from "./Chip";
+import { Badge } from "@/components/shadcn/badge";
 
 const ICON = { "aria-hidden": true, strokeWidth: 1.75 } as const;
 
@@ -14,5 +14,5 @@ export function DeadlineChip({ daysLeft, className }: { daysLeft: number | null;
   const state = deadlineState(daysLeft);
   const tone: Tone = state === "overdue" ? "overdue" : state === "due-soon" ? "due-soon" : "tag-neutral";
   const icon = state === "overdue" ? <TriangleAlert {...ICON} /> : state === "due-soon" ? <Clock {...ICON} /> : state === "none" ? <CalendarX {...ICON} /> : <CalendarClock {...ICON} />;
-  return <Chip tone={tone} icon={icon} data-deadline={state} className={`tabular-nums ${className ?? ""}`}>{deadlineText(daysLeft)}</Chip>;
+  return <Badge tone={tone} data-deadline={state} className={`tabular-nums ${className ?? ""}`}>{icon}{deadlineText(daysLeft)}</Badge>;
 }

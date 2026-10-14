@@ -4,7 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import type { RequestRow } from "@/lib/requests";
 import Link from "next/link";
 import { GripVertical, Link2 } from "lucide-react";
-import { BrandTag } from "./ui/Chip";
+import { BrandTag } from "./ui/BrandTag";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { NeedsMotionChip } from "./ui/NeedsMotionChip";
 import { assigneeLabel } from "@/lib/assignees";
@@ -38,7 +38,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
   const code = `REQ-${card.id.slice(-4).toUpperCase()}`;
   return (
     <>
-      <div className="flex items-center justify-between gap-2 text-xs text-foreground-secondary">
+      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
         <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap" title="Request code">
           <Link2 aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />
           <span className="font-medium tabular-nums">{code}</span>
@@ -54,7 +54,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
         ) : card.title}
       </p>
       <div data-card-chips="" className="mt-1.5 space-y-2">
-        <p className="text-[13px] text-foreground-secondary">{card.divisionName}</p>
+        <p className="text-compact text-muted-foreground">{card.divisionName}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <BrandTag name={card.brandName} />
           {open && <DeadlineChip daysLeft={card.daysLeft} />}
@@ -66,17 +66,17 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
         {/* The requester keeps its natural width (up to half); the assignee side is the one that truncates. */}
         <p className="inline-flex max-w-1/2 shrink-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
           <Avatar name={card.requesterName} size="sm" decorative />
-          <span className="min-w-0 truncate text-foreground-secondary">{card.requesterName}</span>
+          <span className="min-w-0 truncate text-muted-foreground">{card.requesterName}</span>
           <span className="sr-only">Requester: {card.requesterName}</span>
         </p>
         {shared ? (
           <span className="inline-flex min-w-0 items-center gap-1.5" title={`Assignees: ${names.join(", ")}`} data-card-assignee="shared">
-            <span aria-hidden="true" className="min-w-0 truncate text-foreground-secondary">{assigneeLabel(names)}</span>
+            <span aria-hidden="true" className="min-w-0 truncate text-muted-foreground">{assigneeLabel(names)}</span>
             <AvatarStack names={names} max={3} size="sm" label="Assignees" />
           </span>
         ) : (
           <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={assigneeName ? "assigned" : "unassigned"}>
-            <span className="truncate text-foreground-secondary">{assigneeName ?? "Unassigned"}</span>
+            <span className="truncate text-muted-foreground">{assigneeName ?? "Unassigned"}</span>
             {assigneeName ? <Avatar name={assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
           </span>
         )}
@@ -107,8 +107,8 @@ export function BoardCard({ card, canMove, busy, dragging }: { card: RequestRow;
         handle={canMove ? (
           <button type="button" ref={setActivatorNodeRef} {...attributes} aria-label={`Drag “${card.title}”`} disabled={busy}
             className={cn(
-              "-mt-0.5 -mr-1 inline-flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-foreground-secondary transition-opacity duration-150",
-              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-surface-muted",
+              "-mt-0.5 -mr-1 inline-flex size-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-opacity duration-150",
+              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-muted",
               focusRing,
             )}>
             <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-4" />

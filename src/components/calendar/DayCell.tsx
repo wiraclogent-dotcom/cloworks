@@ -23,15 +23,15 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
       data-drop={dragging ? (disabled ? "invalid" : isOver ? "over" : "valid") : undefined}
       className={cn(
         "flex min-h-28 min-w-0 flex-col rounded-lg border p-1 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
-        day.inMonth ? "bg-surface" : "bg-surface-muted",
+        day.inMonth ? "bg-card" : "bg-muted",
         day.isToday ? "border-ring" : "border-border",
         dragging && !disabled && isOver ? "bg-accent outline-ring outline-solid" : "outline-transparent",
-        disabled && "opacity-50",
+        disabled && "opacity-55",
       )}>
       <p className="mb-1 flex items-center gap-1 px-0.5 text-xs">
         <span aria-hidden="true" className={cn(
           "inline-flex size-6 items-center justify-center rounded-full tabular-nums",
-          day.isToday ? "bg-accent font-semibold text-accent-foreground" : day.inMonth ? "text-foreground" : "text-foreground-secondary",
+          day.isToday ? "bg-accent font-semibold text-accent-foreground" : day.inMonth ? "text-foreground" : "text-muted-foreground",
         )}>{Number(day.day.slice(8))}</span>
         {day.isToday && <span className="font-medium text-link">Today</span>}
       </p>
@@ -44,7 +44,7 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
       )}
       {more > 0 && (
         <button type="button" aria-haspopup="dialog" aria-label={`${more} more on ${dayLabel(day.day)}`} onClick={() => onMore(day.day)}
-          className={cn("mt-1 self-start rounded-md px-1 py-0.5 text-xs font-medium text-link hover:bg-surface-muted hover:underline", focusRing)}>
+          className={cn("mt-1 self-start rounded-md px-1 py-0.5 text-xs font-medium text-link hover:bg-muted hover:underline", focusRing)}>
           {`+${more} more`}
         </button>
       )}

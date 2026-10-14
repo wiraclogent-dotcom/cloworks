@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Button } from "@/components/shadcn/button";
 import { changeProfilePhoto, clearProfilePhoto } from "./photoActions";
 
 /** Output size in pixels. A square, centred crop keeps every photo well under the server's limit. */
@@ -61,26 +62,21 @@ export function PhotoEditor({ hasPhoto }: { hasPhoto: boolean }) {
         onChange={(e) => onPick(e.target.files?.[0])}
       />
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          disabled={pending}
-          onClick={() => input.current?.click()}
-          className="inline-flex h-8 items-center rounded-lg border border-input px-3 text-[13px] font-medium text-foreground hover:bg-surface-muted disabled:opacity-60"
-        >
+        <Button variant="outline" size="sm" disabled={pending} onClick={() => input.current?.click()}>
           {pending ? "Saving…" : hasPhoto ? "Change photo" : "Add photo"}
-        </button>
+        </Button>
         {hasPhoto ? (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             disabled={pending}
             onClick={() => startTransition(async () => { const r = await clearProfilePhoto(); setMessage(r.ok ? "Photo removed." : r.message); })}
-            className="inline-flex h-8 items-center rounded-lg px-3 text-[13px] font-medium text-foreground-secondary hover:bg-surface-muted disabled:opacity-60"
           >
             Remove
-          </button>
+          </Button>
         ) : null}
       </div>
-      {message ? <p role="status" className="text-center text-xs text-foreground-secondary">{message}</p> : null}
+      {message ? <p role="status" className="text-center text-xs text-muted-foreground">{message}</p> : null}
     </div>
   );
 }

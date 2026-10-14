@@ -30,7 +30,7 @@ export async function SignUpView({ searchParams }: { searchParams: SignUpSearch 
         </div>
       )}
       <SignUpForm join={join} next={join ? undefined : next} minLength={MIN_PASSWORD_LENGTH} />
-      <p className="text-sm text-foreground-secondary">
+      <p className="text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href={next ? `/signin?next=${encodeURIComponent(next)}` : "/signin"} className="font-medium text-brand-deep-blue underline-offset-4 hover:underline">Sign in</Link>
       </p>

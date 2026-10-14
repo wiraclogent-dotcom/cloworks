@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 
 class RO { observe() {} unobserve() {} disconnect() {} }
 beforeEach(() => {
@@ -17,22 +17,23 @@ afterEach(cleanup);
 
 const root = path.resolve(__dirname, "..");
 const src = (p: string) => readFileSync(path.join(root, "src/components/shadcn", p), "utf8");
-// Utilities fieldClass sets for a block-level text input that a flex trigger deliberately replaces.
-const LAYOUT_ONLY = new Set(["block", "w-full", "pr-8"]);
+// Utilities Input sets for a block-level text input that a flex trigger deliberately replaces.
+const LAYOUT_ONLY = new Set(["block", "w-full", "min-w-0"]);
 
 function tokens(cls: string) { return cls.split(/\s+/).filter(Boolean); }
 
-describe("Select trigger matches fieldClass()", () => {
-  for (const [size, shadcnSize] of [["md", "default"], ["sm", "sm"]] as const) {
-    it(`carries every fieldClass token (size ${size})`, () => {
+describe("Select trigger matches Input", () => {
+  for (const size of ["default", "sm"] as const) {
+    it(`carries every Input class (size ${size})`, () => {
       render(
         <Select>
-          <SelectTrigger size={shadcnSize} aria-label="Pick"><SelectValue placeholder="Choose" /></SelectTrigger>
+          <SelectTrigger size={size} aria-label="Pick"><SelectValue placeholder="Choose" /></SelectTrigger>
           <SelectContent><SelectItem value="a">A</SelectItem></SelectContent>
         </Select>,
       );
       const have = new Set(tokens(screen.getByRole("combobox", { name: "Pick" }).className));
-      const missing = tokens(fieldClass({ size })).filter((t) => !LAYOUT_ONLY.has(t) && !have.has(t));
+      const input = render(<Input size={size} aria-label="Text" />).getByRole("textbox", { name: "Text" });
+      const missing = tokens(input.className).filter((t) => !LAYOUT_ONLY.has(t) && !have.has(t));
       expect(missing).toEqual([]);
     });
   }
@@ -47,8 +48,8 @@ describe("Select trigger matches fieldClass()", () => {
     const trigger = screen.getByRole("combobox", { name: "Pick" });
     expect(trigger.className).toContain("data-[placeholder]:text-placeholder");
     expect(trigger.className).toContain("aria-invalid:border-danger");
-    expect(trigger.className).not.toMatch(/border-destructive|text-muted-foreground|rounded-md/);
-    expect(container.querySelector("svg")!.getAttribute("class")).toContain("text-foreground-secondary");
+    expect(trigger.className).not.toMatch(/border-destructive|rounded-md/);
+    expect(container.querySelector("svg")!.getAttribute("class")).toContain("text-muted-foreground");
   });
 
   it("content and items use the popover surface and muted hover; the selected item is medium weight", () => {
@@ -62,17 +63,19 @@ describe("Select trigger matches fieldClass()", () => {
     const list = screen.getByRole("listbox").closest("[data-slot=select-content]")!;
     for (const t of ["bg-popover", "border-border", "shadow-raised", "rounded-lg"]) expect(list.className).toContain(t);
     const opt = screen.getAllByRole("option")[0];
-    expect(opt.className).toContain("focus:bg-surface-muted");
+    expect(opt.className).toContain("focus:bg-muted");
     expect(opt.className).toContain("data-[state=checked]:font-medium");
-    expect(opt.className).toMatch(/data-\[highlighted\]:bg-surface-muted|focus:bg-surface-muted/);
+    expect(opt.className).toMatch(/data-\[highlighted\]:bg-muted|focus:bg-muted/);
+    // 36px touch row, same as the menu rows.
+    expect(opt.className.split(/\s+/)).toContain("min-h-9");
   });
 });
 
 describe("open/close animations use the app's keyframes", () => {
   for (const f of ["select.tsx", "popover.tsx"]) {
-    it(`${f} has no tw-animate-css utilities (that package is not installed)`, () => {
+    // "No tw-animate-css utilities" is checked for every shadcn file in tests/shadcnFolder.test.tsx.
+    it(`${f} opens and closes with animate-pop-in / animate-pop-out`, () => {
       const s = src(f);
-      expect(s).not.toMatch(/animate-in|animate-out|fade-in|fade-out|zoom-in|zoom-out|slide-in-from|slide-out-to/);
       expect(s).toContain("data-[state=open]:animate-pop-in");
       expect(s).not.toMatch(/data-\[state=open\]:animate-pop(?!-)/);
       expect(s).toContain("data-[state=closed]:animate-pop-out");
@@ -88,28 +91,5 @@ describe("open/close animations use the app's keyframes", () => {
     expect(css).toMatch(/@keyframes pop-out/);
     // The blanket reduced-motion rule shortens every animation, so Radix Presence still unmounts on time.
     expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\*,/);
-  });
-});
-
-describe("unused shadcn files are gone", () => {
-  const deleted = ["badge", "button", "card", "input", "progress", "table"];
-  it("the files no longer exist", () => {
-    for (const f of deleted) expect(existsSync(path.join(root, `src/components/shadcn/${f}.tsx`))).toBe(false);
-  });
-  it("nothing imports them", () => {
-    const files: string[] = [];
-    const walk = (dir: string) => {
-      for (const e of readdirSync(dir)) {
-        if (e === "node_modules" || e === ".next") continue;
-        const p = path.join(dir, e);
-        if (statSync(p).isDirectory()) walk(p); else if (/\.(ts|tsx)$/.test(e) && !p.endsWith("shadcnCleanup.test.tsx")) files.push(p);
-      }
-    };
-    walk(path.join(root, "src")); walk(path.join(root, "tests"));
-    const re = new RegExp(`shadcn/(${deleted.join("|")})["']`);
-    expect(files.filter((f) => re.test(readFileSync(f, "utf8")))).toEqual([]);
-  });
-  it("the shadcn folder holds only what the app uses", () => {
-    expect(readdirSync(path.join(root, "src/components/shadcn")).sort()).toEqual(["calendar.tsx", "popover.tsx", "select.tsx"]);
   });
 });

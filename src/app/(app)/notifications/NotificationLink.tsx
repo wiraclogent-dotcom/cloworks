@@ -23,7 +23,7 @@ export function NotificationLink({ item, now }: { item: InboxItem; now: Date }) 
     if (!r.ok && wasUnread) setOverride(undefined);
   }
   return (
-    <button type="button" onClick={() => void open()} className={cn("block w-full rounded-md hover:bg-surface-muted", readAt === null && unreadRow, focusRing)}>
+    <button type="button" onClick={() => void open()} className={cn("block w-full rounded-md hover:bg-muted", readAt === null && unreadRow, focusRing)}>
       <NotificationItem item={{ ...item, readAt }} now={now} />
     </button>
   );

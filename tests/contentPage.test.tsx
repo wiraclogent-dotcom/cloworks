@@ -13,9 +13,6 @@ vi.mock("@/app/(app)/content/actions", () => ({
 import { ContentPlanLayout } from "@/components/content/ContentPlanLayout";
 import type { ContentPlanView, TileView } from "@/lib/content/view";
 
-// jsdom has no showModal on <dialog>.
-HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const tile = (o: Partial<TileView> & { id: string }): TileView => ({

@@ -28,7 +28,7 @@ export function AuthShell({ title, intro, children }: { title: ReactNode; intro?
             <LogoMark size={30} />
             Cloworks
           </Link>
-          <Link href="/" className="rounded-md px-3 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-muted hover:text-foreground">
+          <Link href="/" className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
             Back to home
           </Link>
         </header>
@@ -36,7 +36,7 @@ export function AuthShell({ title, intro, children }: { title: ReactNode; intro?
         <main id="main" className="flex flex-1 items-center px-4 pt-6 pb-16 sm:px-8">
           <div className="animate-rise mx-auto w-full max-w-[400px]">
             {title !== null && <h1 className={authTitleClass}>{title}</h1>}
-            {intro && <p className="mt-3 text-base leading-relaxed text-foreground-secondary">{intro}</p>}
+            {intro && <p className="mt-3 text-base leading-relaxed text-muted-foreground">{intro}</p>}
             <div className={cn(title !== null && "mt-8")}>{children}</div>
           </div>
         </main>
