@@ -3,7 +3,7 @@
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
-import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
+import { addAttachment, addComment, setAssignees, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
 import { celebrate } from "@/lib/celebrate";
 import { moveRequest, rescheduleRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
@@ -129,7 +129,7 @@ export function AssigneePicker({ requestId, current, options }: { requestId: str
     setError(null);
     start(async () => {
       try {
-        const r = await assignRequest(requestId, next || null);
+        const r = await setAssignees(requestId, next ? [next] : []);
         if (r.ok) router.refresh(); else { setValue(prev); setError(r.message); }
       } catch {
         setValue(prev);

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from "vitest";
 import { notifyWith, buildMessage, type Mailer, type NotifyInput } from "@/lib/notify";
 import { createMailerFromEnv } from "@/lib/mailer";
-import { addAttachmentWith, addCommentWith, assignRequestWith } from "@/lib/collab";
+import { addAttachmentWith, addCommentWith, setAssigneesWith } from "@/lib/collab";
 import { transitionRequestWith } from "@/lib/transition";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
@@ -261,17 +261,20 @@ describe("notifications", () => {
       await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: null, status: "REQUESTED" } });
     });
 
-    it("assign notifies only the new assignee; not on unassign or same assignee", async () => {
-      await assignRequestWith(db.prisma, lead(), reqId, ids.dimas, notifier);
+    it("assign notifies only the new assignee; not on same assignee; unassign notifies the removed person", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatchObject({ userIds: [ids.dimas], type: "ASSIGNED", actorId: ids.lia, requestId: reqId });
       expect(calls[0].message).toBe("Lia assigned you to “Poster”");
-      await assignRequestWith(db.prisma, lead(), reqId, ids.dimas, notifier);
-      await assignRequestWith(db.prisma, lead(), reqId, null, notifier);
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
       expect(calls).toHaveLength(1);
+      await setAssigneesWith(db.prisma, lead(), reqId, [], notifier);
+      expect(calls).toHaveLength(2);
+      expect(calls[1]).toMatchObject({ userIds: [ids.dimas], type: "UNASSIGNED", actorId: ids.lia, requestId: reqId });
+      expect(calls[1].message).toBe("Lia removed you from “Poster”");
     });
     it("failed assignment does not notify", async () => {
-      await assignRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, ids.dimas, notifier);
+      await setAssigneesWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, [ids.dimas], notifier);
       expect(calls).toHaveLength(0);
     });
     it("comment: mention beats comment, requester/assignee get COMMENT, author excluded", async () => {
@@ -360,6 +363,12 @@ describe("buildMessage DEADLINE", () => {
   it("describes a move and a first-time set", () => {
     expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "10 Oct", to: "14 Oct" })).toBe("Wira moved the deadline of “Banner” from 10 Oct to 14 Oct");
     expect(buildMessage("DEADLINE", "Wira", "Banner", { from: "", to: "14 Oct" })).toBe("Wira set the deadline of “Banner” to 14 Oct");
+  });
+});
+
+describe("buildMessage UNASSIGNED", () => {
+  it("says who removed you", () => {
+    expect(buildMessage("UNASSIGNED", "Lia", "Banner")).toBe("Lia removed you from “Banner”");
   });
 });
 

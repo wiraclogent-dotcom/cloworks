@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole, JobRole } from "@prisma/client";
 import { seed } from "../prisma/seedCore";
 import { createRequestWith } from "@/lib/createRequest";
-import { assignRequestWith } from "@/lib/collab";
+import { setAssigneesWith } from "@/lib/collab";
 import { transitionRequestWith, TransitionError } from "@/lib/transition";
 import { notifyWith, type Mailer, type Notifier } from "@/lib/notify";
 import { setTargetWith } from "@/lib/kpi/targets";
@@ -66,7 +66,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   it("denies actions outside the role, and unassigned DONE", async () => {
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toBeInstanceOf(TransitionError);
-    expect(await assignRequestWith(db.prisma, u.Fadli, reqId, u.Fadli.id, notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+    expect(await setAssigneesWith(db.prisma, u.Fadli, reqId, [u.Fadli.id], notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     const t = { userId: u.Fadli.id, month: MONTH, role: "DESIGNER" as const, targetTasks: 10 };
     expect(await setTargetWith(db.prisma, u.Fadli, t)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     expect(await setTargetWith(db.prisma, u.Fafa, t)).toMatchObject({ ok: false, code: "FORBIDDEN" });
@@ -90,7 +90,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   });
 
   it("lead assigns Fadli; Fadli finishes with 2 outputs and a folder", async () => {
-    expect(await assignRequestWith(db.prisma, u.Idzni, reqId, u.Fadli.id, notifier)).toEqual({ ok: true });
+    expect(await setAssigneesWith(db.prisma, u.Idzni, reqId, [u.Fadli.id], notifier)).toMatchObject({ ok: true });
     expect((await state()).assigneeId).toBe(u.Fadli.id);
 
     // REQUESTED -> ON_PROGRESS -> FIRST_LOOK, one revision loop (FIRST_LOOK -> ON_PROGRESS -> FIRST_LOOK), then DONE

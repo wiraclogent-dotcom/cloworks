@@ -6,7 +6,7 @@ import { renderEmail, safeBaseUrl } from "./emailLayout";
 
 export type { Mailer } from "./mailer";
 export { safeBaseUrl } from "./emailLayout";
-export type NotificationType = "ASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE" | "DESIGN_SENT" | "ATTACHMENT";
+export type NotificationType = "ASSIGNED" | "UNASSIGNED" | "COMMENT" | "MENTION" | "STATUS" | "DEADLINE" | "DESIGN_SENT" | "ATTACHMENT";
 /** `email: false` stores the in-app row only (default: email it too when the type is in EMAILED_TYPES and a mailer is configured). */
 export type NotifyInput = { actorId: string; userIds: string[]; requestId: string; type: NotificationType; message: string; email?: boolean };
 export type Notifier = (input: NotifyInput) => Promise<void>;
@@ -23,6 +23,7 @@ export const NOTIFY_DEADLINE_MS = 5000;
 
 const SUBJECTS: Record<NotificationType, string> = {
   ASSIGNED: "Assigned to you",
+  UNASSIGNED: "Removed from a request",
   COMMENT: "New comment",
   MENTION: "You were mentioned",
   STATUS: "Status changed",
@@ -55,6 +56,7 @@ export function buildMessage(
   const t = cleanLine(title, 120);
   switch (type) {
     case "ASSIGNED": return `${a} assigned you to “${t}”`;
+    case "UNASSIGNED": return `${a} removed you from “${t}”`;
     case "COMMENT": return `${a} commented on “${t}”`;
     case "MENTION": return `${a} mentioned you in “${t}”`;
     case "DESIGN_SENT": return `${a} sent the design for “${t}” for review`;

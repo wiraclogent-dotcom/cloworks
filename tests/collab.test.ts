@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { addCommentWith, assignRequestWith, addAttachmentWith, removeAttachmentWith, splitMentions } from "@/lib/collab";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
+import { addCommentWith, setAssigneesWith, addAttachmentWith, removeAttachmentWith, splitMentions } from "@/lib/collab";
+import type { NotifyInput } from "@/lib/notify";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("collaboration cores", () => {
@@ -82,43 +83,110 @@ describe("collaboration cores", () => {
     expect(segs.filter((s) => s.mention).map((s) => s.text)).toEqual(["@irsyad"]);
   });
 
-  describe("assignRequestWith", () => {
-    it("lead can assign and unassign", async () => {
-      expect(await assignRequestWith(db.prisma, actor("lead", "LEAD"), reqId, ids.dimas)).toEqual({ ok: true });
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.dimas);
-      expect(await assignRequestWith(db.prisma, actor("lead", "LEAD"), reqId, null)).toEqual({ ok: true });
+  describe("setAssigneesWith", () => {
+    const rows = async (id = reqId) => (await db.prisma.requestAssignee.findMany({ where: { requestId: id } })).map((r) => r.userId).sort();
+    const sorted = (...k: string[]) => k.map((x) => ids[x]).sort();
+    const calls: NotifyInput[] = [];
+    const notifier = async (i: NotifyInput) => { calls.push(i); };
+    const lead = () => actor("lead", "LEAD");
+    beforeEach(async () => {
+      calls.length = 0;
+      await db.prisma.requestAssignee.deleteMany({ where: { requestId: reqId } });
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: null } });
+    });
+
+    it("stores several assignees and sends one ASSIGNED notification to all of them", async () => {
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier)).toEqual({ ok: true, added: [ids.dimas, ids.irsyad], removed: [] });
+      expect(await rows()).toEqual(sorted("dimas", "irsyad"));
+      const assigned = calls.filter((c) => c.type === "ASSIGNED");
+      expect(assigned).toHaveLength(1);
+      expect(assigned[0]).toMatchObject({ userIds: [ids.dimas, ids.irsyad], actorId: ids.lead, requestId: reqId });
+      expect(calls).toHaveLength(1);
+    });
+    it("removing someone notifies them with UNASSIGNED and sends no ASSIGNED", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier);
+      calls.length = 0;
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier)).toEqual({ ok: true, added: [], removed: [ids.dimas] });
+      expect(await rows()).toEqual([ids.irsyad]);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "UNASSIGNED", userIds: [ids.dimas] });
+    });
+    it("an empty list clears every assignee", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier);
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [], notifier)).toMatchObject({ ok: true, added: [], removed: expect.arrayContaining([ids.dimas, ids.irsyad]) });
+      expect(await rows()).toEqual([]);
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBeNull();
     });
-    it("a creative, or a requester on someone else's request, is forbidden", async () => {
-      expect(await assignRequestWith(db.prisma, actor("dimas", "CREATIVE"), reqId, ids.dimas)).toMatchObject({ ok: false, code: "FORBIDDEN" });
-      expect(await assignRequestWith(db.prisma, actor("other", "REQUESTER"), reqId, ids.dimas)).toMatchObject({ ok: false, code: "FORBIDDEN" });
-    });
-    it("the requester can pick the designer for their own request", async () => {
-      expect(await assignRequestWith(db.prisma, actor("author", "REQUESTER"), reqId, ids.irsyad)).toEqual({ ok: true });
+    it("keeps Request.assigneeId on the first assignee while the legacy column exists", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
+      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.dimas);
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier);
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.irsyad);
-      expect(await assignRequestWith(db.prisma, actor("author", "REQUESTER"), reqId, null)).toEqual({ ok: true });
     });
-    it("rejects inactive and requester-role assignees, unknown user/request, cancelled request", async () => {
-      const lead = actor("lead", "LEAD");
-      expect(await assignRequestWith(db.prisma, lead, reqId, ids.gone)).toMatchObject({ ok: false, code: "INVALID" });
-      expect(await assignRequestWith(db.prisma, lead, reqId, ids.author)).toMatchObject({ ok: false, code: "INVALID" });
-      expect(await assignRequestWith(db.prisma, lead, reqId, "nope")).toMatchObject({ ok: false, code: "NOT_FOUND" });
-      expect(await assignRequestWith(db.prisma, lead, "nope", ids.dimas)).toMatchObject({ ok: false, code: "NOT_FOUND" });
-      expect(await assignRequestWith(db.prisma, lead, cancelledId, ids.dimas)).toMatchObject({ ok: false, code: "INVALID" });
+    it("duplicates in the list store one row", async () => {
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad, ids.irsyad], notifier)).toMatchObject({ ok: true, added: [ids.irsyad] });
+      expect(await rows()).toEqual([ids.irsyad]);
     });
-    it("only assigns members of the creative team", async () => {
-      const r = await assignRequestWith(db.prisma, actor("lead", "LEAD"), reqId, ids.lead);
+    it("saving the same list again changes nothing and notifies nobody", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
+      calls.length = 0;
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier)).toEqual({ ok: true, added: [], removed: [] });
+      expect(calls).toHaveLength(0);
+    });
+    it("a creative, or a requester on someone else's request, is forbidden", async () => {
+      expect(await setAssigneesWith(db.prisma, actor("dimas", "CREATIVE"), reqId, [ids.dimas], notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+      expect(await setAssigneesWith(db.prisma, actor("other", "REQUESTER"), reqId, [ids.dimas], notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+      expect(await rows()).toEqual([]);
+    });
+    it("the requester can pick the designers for their own request", async () => {
+      expect(await setAssigneesWith(db.prisma, actor("author", "REQUESTER"), reqId, [ids.irsyad], notifier)).toMatchObject({ ok: true });
+      expect(await rows()).toEqual([ids.irsyad]);
+      expect(await setAssigneesWith(db.prisma, actor("author", "REQUESTER"), reqId, [], notifier)).toMatchObject({ ok: true });
+    });
+    it("rejects an inactive person and leaves the existing rows alone", async () => {
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
+      const r = await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.gone], notifier);
+      expect(r).toEqual({ ok: false, code: "INVALID", message: "That person is no longer active." });
+      expect(await rows()).toEqual([ids.dimas]);
+    });
+    it("rejects requester-role people, unknown user/request, cancelled request", async () => {
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.author], notifier)).toMatchObject({ ok: false, code: "INVALID" });
+      expect(await setAssigneesWith(db.prisma, lead(), reqId, ["nope"], notifier)).toMatchObject({ ok: false, code: "NOT_FOUND" });
+      expect(await setAssigneesWith(db.prisma, lead(), "nope", [ids.dimas], notifier)).toMatchObject({ ok: false, code: "NOT_FOUND" });
+      expect(await setAssigneesWith(db.prisma, lead(), cancelledId, [ids.dimas], notifier)).toEqual({ ok: false, code: "INVALID", message: "A cancelled request cannot be reassigned." });
+      expect(await rows()).toEqual([]);
+    });
+    it("only adds members of the creative team", async () => {
+      const r = await setAssigneesWith(db.prisma, lead(), reqId, [ids.lead], notifier);
       expect(r).toEqual({ ok: false, code: "INVALID", message: "Only creative team members can be assignees." });
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).not.toBe(ids.lead);
+      expect(await rows()).toEqual([]);
+    });
+    it("an inactive person who is already assigned may stay while others are added", async () => {
+      await db.prisma.requestAssignee.create({ data: { requestId: reqId, userId: ids.gone } });
+      const r = await setAssigneesWith(db.prisma, lead(), reqId, [ids.gone, ids.irsyad], notifier);
+      expect(r).toEqual({ ok: true, added: [ids.irsyad], removed: [] });
+      expect(await rows()).toEqual(sorted("gone", "irsyad"));
+    });
+    it("the actor never gets their own notification", async () => {
+      // A lead who is also on the team adds themselves and a colleague: only the colleague hears about it.
+      await setAssigneesWith(db.prisma, actor("dimas", "LEAD"), reqId, [ids.dimas, ids.irsyad], notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "ASSIGNED", userIds: [ids.irsyad] });
+      calls.length = 0;
+      await setAssigneesWith(db.prisma, actor("dimas", "LEAD"), reqId, [ids.irsyad], notifier);
+      expect(calls).toHaveLength(0);
+      await setAssigneesWith(db.prisma, actor("dimas", "LEAD"), reqId, [], notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "UNASSIGNED", userIds: [ids.irsyad] });
     });
   });
 
-  describe("assignRequestWith atomicity", () => {
+  describe("setAssigneesWith atomicity", () => {
     it("does not reassign a request that gets cancelled between the checks and the update", async () => {
       const p = db.prisma;
       const base = await p.request.findUniqueOrThrow({ where: { id: reqId } });
       const racing = await p.request.create({ data: { title: "race", brandId: base.brandId, divisionId: base.divisionId, typeId: base.typeId, requesterId: base.requesterId } });
-      // Wrap the client so the request is cancelled right after assignRequestWith reads it.
+      // Wrap the client so the request is cancelled right after setAssigneesWith reads it.
       const racy = new Proxy(p, {
         get(t, prop, recv) {
           if (prop !== "request") return Reflect.get(t, prop, recv);
@@ -136,9 +204,10 @@ describe("collaboration cores", () => {
           });
         },
       });
-      const r = await assignRequestWith(racy, actor("lead", "LEAD"), racing.id, ids.dimas);
+      const r = await setAssigneesWith(racy, actor("lead", "LEAD"), racing.id, [ids.dimas]);
       expect(r).toMatchObject({ ok: false, code: "INVALID" });
       expect((await p.request.findUniqueOrThrow({ where: { id: racing.id } })).assigneeId).toBeNull();
+      expect(await p.requestAssignee.count({ where: { requestId: racing.id } })).toBe(0);
     });
   });
 

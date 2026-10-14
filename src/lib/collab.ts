@@ -3,6 +3,7 @@ import { can } from "./permissions";
 import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 import { mentionTokens } from "./mentions";
+import { ASSIGNEE_ORDER, addedAndRemoved } from "./assignees";
 
 export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "UNAUTHENTICATED";
 export type CollabFail = { ok: false; code: CollabCode; message: string };
@@ -71,40 +72,65 @@ export async function addCommentWith(
   return { ok: true, commentId: c.id, mentionedUserIds };
 }
 
-export async function assignRequestWith(
+class CancelledDuringAssign extends Error {}
+
+/**
+ * Makes `userIds` the request's assignees. Leads and admins change any request; whoever filed it may too. Only the
+ * people being added are checked (active, on the creative team): someone already assigned who has since left stays
+ * until they are removed. Added people get ASSIGNED, removed people UNASSIGNED, both in-app only after the commit.
+ */
+export async function setAssigneesWith(
   db: PrismaClient,
   user: Actor,
   requestId: string,
-  assigneeId: string | null,
+  userIds: string[],
   notifier: Notifier = notifierFor(db),
-): Promise<{ ok: true } | CollabFail> {
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, requesterId: true, title: true } });
-  // Leads and admins assign any request; whoever filed a request may pick its designer too.
+): Promise<{ ok: true; added: string[]; removed: string[] } | CollabFail> {
+  const req = await db.request.findUnique({
+    where: { id: requestId },
+    select: { status: true, requesterId: true, title: true, assignees: { select: { userId: true } } },
+  });
+  // Leads and admins assign any request; whoever filed a request may pick its designers too.
   if (!can(user.appRole, "request.assign") && req?.requesterId !== user.id)
     return fail("FORBIDDEN", "Only the requester, leads and admins can assign this request.");
   if (!req) return fail("NOT_FOUND", "Request not found.");
   if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
-  if (assigneeId !== null) {
-    const a = await db.user.findUnique({ where: { id: assigneeId }, select: { active: true, appRole: true, jobRole: true } });
+  if (!Array.isArray(userIds)) return fail("INVALID", "Pick who should work on this request.");
+  const { added, removed } = addedAndRemoved(req.assignees.map((a) => a.userId), userIds);
+  for (const id of added) {
+    const a = await db.user.findUnique({ where: { id }, select: { active: true, appRole: true, jobRole: true } });
     if (!a) return fail("NOT_FOUND", "Assignee not found.");
     if (!a.active) return fail("INVALID", "That person is no longer active.");
     if (a.appRole === "REQUESTER") return fail("INVALID", "Requesters cannot be assignees. Pick a creative, lead or admin.");
     // Same rule as listCreativeTeam (src/lib/team.ts): the creative team is the designers.
     if (a.jobRole !== "DESIGNER") return fail("INVALID", "Only creative team members can be assignees.");
   }
-  // Atomic guard: a request cancelled after the reads above matches 0 rows instead of being reassigned.
-  const res = await db.request.updateMany({ where: { id: requestId, status: { not: "CANCELLED" } }, data: { assigneeId } });
-  if (res.count === 0) {
+  try {
+    await db.$transaction(async (tx) => {
+      if (removed.length) await tx.requestAssignee.deleteMany({ where: { requestId, userId: { in: removed } } });
+      if (added.length) await tx.requestAssignee.createMany({ data: added.map((userId) => ({ requestId, userId })), skipDuplicates: true });
+      // Until Request.assigneeId is dropped, keep it on the first assignee so unconverted readers stay right.
+      const first = await tx.requestAssignee.findFirst({ where: { requestId }, orderBy: [...ASSIGNEE_ORDER], select: { userId: true } });
+      // Atomic guard: a request cancelled after the reads above matches 0 rows, and the changes above roll back.
+      const res = await tx.request.updateMany({ where: { id: requestId, status: { not: "CANCELLED" } }, data: { assigneeId: first?.userId ?? null } });
+      if (res.count === 0) throw new CancelledDuringAssign();
+    });
+  } catch (e) {
+    if (!(e instanceof CancelledDuringAssign)) throw e;
     const now = await db.request.findUnique({ where: { id: requestId }, select: { status: true } });
     return now ? fail("INVALID", "A cancelled request cannot be reassigned.") : fail("NOT_FOUND", "Request not found.");
   }
-  if (assigneeId !== null && assigneeId !== req.assigneeId) {
+  const tell = (type: "ASSIGNED" | "UNASSIGNED", ids: string[], actorName: string) => {
+    const to = ids.filter((id) => id !== user.id);
+    return to.length ? notifier({ actorId: user.id, userIds: to, requestId, type, message: buildMessage(type, actorName, req.title) }) : Promise.resolve();
+  };
+  if (added.length || removed.length)
     await bestEffort(async () => {
       const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
-      await notifier({ actorId: user.id, userIds: [assigneeId], requestId, type: "ASSIGNED", message: buildMessage("ASSIGNED", actor?.name ?? "Someone", req.title) });
+      const name = actor?.name ?? "Someone";
+      await Promise.allSettled([tell("ASSIGNED", added, name), tell("UNASSIGNED", removed, name)]);
     });
-  }
-  return { ok: true };
+  return { ok: true, added, removed };
 }
 
 export async function addAttachmentWith(

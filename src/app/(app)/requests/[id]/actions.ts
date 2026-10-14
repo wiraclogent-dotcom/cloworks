@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { dbFor, requireUser, type ScopedDb } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
-import { addAttachmentWith, addCommentWith, assignRequestWith, removeAttachmentWith, setIncludeKpiWith, setNeedsMotionWith, type CollabFail } from "@/lib/collab";
+import { addAttachmentWith, addCommentWith, setAssigneesWith, removeAttachmentWith, setIncludeKpiWith, setNeedsMotionWith, type CollabFail } from "@/lib/collab";
 import type { SessionUser } from "@/lib/session-core";
 
 /**
@@ -21,8 +21,11 @@ export async function addComment(requestId: string, body: string): Promise<{ ok:
   });
 }
 
-export async function assignRequest(requestId: string, assigneeId: string | null): Promise<{ ok: true } | CollabFail> {
-  return run((u, db) => assignRequestWith(db, u, requestId, assigneeId));
+export async function setAssignees(requestId: string, userIds: string[]): Promise<{ ok: true } | CollabFail> {
+  return run(async (u, db) => {
+    const r = await setAssigneesWith(db, u, requestId, userIds);
+    return r.ok ? { ok: true as const } : r;
+  });
 }
 
 export async function addAttachment(requestId: string, input: { name: string; url: string }): Promise<{ ok: true } | CollabFail> {

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
-  addComment: vi.fn(), addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: vi.fn(), setNeedsMotion: vi.fn(),
+  addComment: vi.fn(), addAttachment: vi.fn(), setAssignees: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: vi.fn(), setNeedsMotion: vi.fn(),
 }));
 vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn(), rescheduleRequest: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
