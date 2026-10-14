@@ -5,6 +5,7 @@ import type { BriefItem } from "@/lib/briefCalendar";
 import { dayLabel } from "@/lib/calendar";
 import { StatusBadge } from "../status";
 import { cn, focusRing } from "../ui/cn";
+import { EmptyState } from "../ui/EmptyState";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/shadcn/dialog";
 
 /**
@@ -23,7 +24,7 @@ export function BriefDayDialog({ day, items, onClose }: { day: string; items: Br
           <DialogDescription className="tabular-nums">{count}</DialogDescription>
         </DialogHeader>
         {groups.size === 0 ? (
-          <p className="text-sm text-muted-foreground">No briefs this day.</p>
+          <EmptyState size="inline" title="No briefs this day." />
         ) : (
           <div className="space-y-4">
             {[...groups].map(([id, g]) => (

@@ -7,6 +7,7 @@ import { dayLabel, utc, weekdayOf } from "@/lib/calendar";
 import { Card } from "@/components/shadcn/card";
 import { useNarrow } from "../useNarrow";
 import { cn, focusRing } from "../ui/cn";
+import { EmptyState } from "../ui/EmptyState";
 import { BriefDayDialog } from "./BriefDayDialog";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -159,7 +160,7 @@ export function BriefCalendar({ model, typeOrder }: {
       <Card asChild className="overflow-hidden p-0"><section aria-labelledby="brief-weeks-h">
         <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-sm font-semibold text-heading">Briefs per requester, per week</h2>
         {model.rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-muted-foreground">No briefs this month yet.</p>
+          <EmptyState size="inline" title="No briefs this month yet." className="px-4 py-6" />
         ) : (
           <div className="overflow-x-auto">
             <table aria-label="Briefs per requester per week" data-tone="first-look" className="w-full text-sm tabular-nums">

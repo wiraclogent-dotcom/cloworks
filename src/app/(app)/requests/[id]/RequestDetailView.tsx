@@ -126,7 +126,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                     ))}
                   </dl>
                 )}
-                {!req.briefUrl && !req.notes && extra.length === 0 && <p className="text-sm text-muted-foreground">No brief link or notes were added.</p>}
+                {!req.briefUrl && !req.notes && extra.length === 0 && <EmptyState size="inline" title="No brief link or notes were added." />}
               </div>
             </section>
           </Card>
