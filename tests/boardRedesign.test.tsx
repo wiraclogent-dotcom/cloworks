@@ -142,9 +142,8 @@ describe("board columns", () => {
 });
 
 describe("Done dialog (restyled)", () => {
-  // Regression: inside the request side panel (a native <dialog>), an Escape that was only stopPropagation'd still
-  // fired the panel's cancel event, so one Escape closed the Done dialog and the whole panel.
-  it("Escape cancels only this dialog: it claims the key so an enclosing <dialog> does not close too", () => {
+  // Esc over the request side panel closing only this dialog (not the panel too) is in tests/dialogs.test.tsx.
+  it("Escape cancels this dialog and claims the key", () => {
     const onCancel = vi.fn();
     render(<DoneDialog title="Poster" onCancel={onCancel} onSubmit={() => {}} />);
     const notCanceled = fireEvent.keyDown(screen.getByLabelText(/Number of outputs/), { key: "Escape" });
@@ -153,12 +152,14 @@ describe("Done dialog (restyled)", () => {
   });
 
   it("keeps the labelled modal, kit fields and buttons, and inline errors with an icon", () => {
-    render(<DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} />);
+    render(<><button type="button">Board card</button><DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} /></>);
     const dialog = screen.getByRole("dialog", { name: "Mark as done" });
-    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.getAttribute("aria-describedby")).toBe(screen.getByText(/is finished\. Tell us what was delivered\./).id);
+    // Modal: the page behind is hidden from assistive tech (Radix sets aria-hidden on it) and dimmed by the backdrop.
+    expect(screen.queryByRole("button", { name: "Board card" })).toBeNull();
     expect(dialog.className).toMatch(/rounded-xl/);
     expect(dialog.className).toMatch(/shadow-raised/);
-    expect(dialog.parentElement!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
+    expect(document.querySelector("[data-slot=dialog-overlay]")!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
     expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-muted/);
     expect(screen.getByRole("button", { name: "Mark as done" }).className).toMatch(/bg-primary/);
     const count = screen.getByLabelText(/Number of outputs/);

@@ -59,9 +59,6 @@ beforeEach(() => {
   reschedule.mockReset();
   refresh.mockReset();
   mockNarrow(false);
-  // jsdom has no showModal/close on <dialog>.
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 

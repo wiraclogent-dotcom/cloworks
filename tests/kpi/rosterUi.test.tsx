@@ -11,10 +11,7 @@ import { ManagePeopleDialog } from "@/components/kpi/ManagePeopleDialog";
 import { ProjectTeamTable, projectTeamRows, type ProjectTeamRow } from "@/components/kpi/project/ProjectTeamTable";
 import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
 
-// jsdom has no showModal on <dialog>.
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
   setKpiRoster.mockReset(); refresh.mockReset();
 });
 afterEach(cleanup);

@@ -26,10 +26,7 @@ import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi, TargetItem } from "@/lib/kpi/projectQueries";
 import type { QuarterScore } from "@/lib/kpi/projectScore";
 
-// jsdom has no showModal on <dialog>.
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
   addProjectTargets.mockReset(); removeProjectTarget.mockReset(); loadItemOptions.mockReset(); push.mockReset();
 });
 afterEach(cleanup);

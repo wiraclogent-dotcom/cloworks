@@ -17,9 +17,8 @@ const ALLOWED: Record<string, string> = {
   "components/BoardCard.tsx": "BoardCard owns the drag and hover shadow of a board card",
   // A radio drawn as a card: the border and tint follow the checked state of the input inside it.
   "components/ui/RadioCards.tsx": "RadioCards is a radio group drawn as cards; the surface follows the checked state",
-  // Overlays are not page cards: they float (`shadow-raised`) and are replaced by shadcn Dialog in a later task of this
-  // migration. The chat dock is the same: a fixed launcher button and panel.
-  "components/DoneDialog.tsx": "modal surface (shadow-raised); becomes shadcn Dialog",
+  // Overlays are not page cards: they float (`shadow-raised`). Dialogs are shadcn Dialog now; the chat dock is a fixed
+  // launcher button and a non-modal panel.
   "components/chat/ChatDockView.tsx": "floating chat launcher button (shadow-raised, fixed position)",
 };
 

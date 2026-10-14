@@ -21,9 +21,6 @@ vi.mock("@/components/media/MediaUpload", () => ({
 import { ChannelList } from "@/components/content/ChannelList";
 import type { ChannelSummary } from "@/lib/content/view";
 
-// jsdom has no showModal on <dialog>.
-HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-
 // jsdom never loads images; Radix Avatar shows a photo only once `new Image()` reports it loaded.
 beforeEach(() => { vi.clearAllMocks(); vi.stubGlobal("Image", class { complete = true; naturalWidth = 1; addEventListener() {} removeEventListener() {} }); });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });

@@ -111,8 +111,8 @@ component is gone.
 | Custom dropdown list (icons, rich rows) | `Select` | – | In use |
 | Search-as-you-type picker | `Combobox` | – | Planned |
 | Verification code | `Input OTP` | `/verify` code field | Planned |
-| Dialog / confirm | `Dialog`, `Alert Dialog` | `ui/Modal`, `calendar/DayDialog`, `library/LibraryDialog`, `briefs/BriefDayDialog`, `DoneDialog` | Planned |
-| Side panel / mobile drawer | `Sheet` | `Modal side="right"`, AppFrame drawer | Planned |
+| Dialog / confirm | `Dialog` + `DialogContent` (X top-right; `showClose={false}` to place it yourself with `DialogCloseButton`), `DialogHeader`, `DialogTitle`, `DialogDescription` (or `aria-describedby={undefined}`), `DialogFooter`; `AlertDialog` for confirms. A dialog mounted only while open takes `open` + `onOpenChange={(o) => { if (!o) onClose(); }}`; focus returns to whatever opened it. Kit `ui/Modal` (intercepted routes: closing goes `router.back()`) and `library/LibraryDialog` compose them; `tests/overlayUsage.test.ts` fails on a new `<dialog>` or `role="dialog"` | `ui/Modal` native `<dialog>`, `calendar/DayDialog`, `library/LibraryDialog`, `briefs/BriefDayDialog`, `DoneDialog` | Migrated |
+| Side panel / mobile drawer | `Sheet` + `SheetContent` (`side` right/left, full width on phones; width via `className`), `SheetHeader`, `SheetTitle` | `Modal side="right"` (migrated), AppFrame drawer | In use |
 | Menu of actions | `Dropdown Menu` | Radix `DropdownMenu` used directly (profile, bell), `role="menu"` in `LibraryRow` | Planned |
 | Floating panel (filters, month picker, info) | `Popover` | `<details>` popovers in `FilterBar`, `MonthPicker` | In use |
 | Hint on hover/focus | `Tooltip` | `title=""` on icon buttons | Planned |

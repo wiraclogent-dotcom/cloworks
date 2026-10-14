@@ -44,8 +44,6 @@ import { MyRequestsSection } from "@/components/kpi/sections/MyRequestsSection";
 import { MyProjectsSection } from "@/components/kpi/sections/MyProjectsSection";
 
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
   push.mockReset();
   queries.loadKpiRequests.mockReset().mockResolvedValue([]);
   queries.loadTargets.mockReset().mockResolvedValue([]);

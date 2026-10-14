@@ -16,8 +16,6 @@ import type { LibraryRow } from "@/lib/libraryView";
 beforeEach(() => {
   refresh.mockReset();
   for (const f of Object.values(A)) f.mockReset().mockResolvedValue({ ok: true });
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(cleanup);
 
@@ -217,17 +215,18 @@ describe("Library editor", () => {
     expect(A.moveCategory).toHaveBeenCalledTimes(1);
   });
 
-  it("returns focus to the opener when a dialog closes", () => {
+  it("returns focus to the opener when a dialog closes", async () => {
     view();
     const add = screen.getByRole("button", { name: "Add link" });
     add.focus();
     fireEvent.click(add);
     fireEvent.click(within(screen.getByRole("dialog", { name: "Add link" })).getByRole("button", { name: "Close" }));
-    expect(document.activeElement).toBe(add);
+    // Radix moves focus back on the next tick after the dialog unmounts.
+    await waitFor(() => expect(document.activeElement).toBe(add));
     // From the row menu the item unmounts, so focus goes to the row's Actions trigger.
     menu("Alpha deck", "Delete");
     fireEvent.click(within(screen.getByRole("dialog", { name: 'Delete "Alpha deck"?' })).getByRole("button", { name: "Cancel" }));
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Actions for Alpha deck" })));
   });
 
   it("recovers when an action rejects", async () => {
