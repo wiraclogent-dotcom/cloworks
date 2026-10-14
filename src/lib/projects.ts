@@ -189,9 +189,11 @@ export function splitProjects<T extends { status: ProjectStatus; title: string; 
 export type ProjectFormValues = {
   title: string; subTitle: string; brandId: string; ownerId: string; status: string; startDate: string; dueDate: string; fileUrl: string;
 };
-export type ProjectFormState = {
+export type ProjectFormFailure = {
   ok: false; code: ProjectErrorCode | "UNAUTHENTICATED"; message: string; fieldErrors?: Record<string, string>; values: ProjectFormValues; nonce: string;
-} | null;
+};
+/** `null` before the first submit; `{ ok: true }` only comes from the stay-on-page save (the redirecting one never returns success). */
+export type ProjectFormState = ProjectFormFailure | { ok: true; nonce: string } | null;
 
 export function projectValuesFromForm(fd: FormData): ProjectFormValues {
   const s = (k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
@@ -201,7 +203,7 @@ export function projectValuesFromForm(fd: FormData): ProjectFormValues {
 /** Create (no id) or full-form update (id). Expected failures come back as state; unexpected ones throw. */
 export async function submitProjectWith(
   db: PrismaClient, user: Actor, fd: FormData, id?: string,
-): Promise<{ ok: true; id: string } | NonNullable<ProjectFormState>> {
+): Promise<{ ok: true; id: string } | ProjectFormFailure> {
   const values = projectValuesFromForm(fd);
   const input = { ...values, status: values.status as ProjectStatus };
   try {

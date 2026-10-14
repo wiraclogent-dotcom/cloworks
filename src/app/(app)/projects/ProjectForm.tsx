@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { submitProject } from "./actions";
+import { submitProject, submitProjectInPlace } from "./actions";
 import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
 import Link from "next/link";
@@ -24,11 +24,22 @@ function Field({ id, label, error, required, children }: { id: string; label: st
 }
 
 /** Create (no `projectId`) or edit form. `initial` pre-fills an edit. Typed input survives a failed submit. */
-export function ProjectForm({ brands, owners, initial, projectId }: { brands: Opt[]; owners: Opt[]; initial?: ProjectFormValues; projectId?: string }) {
-  const [state, action, pending] = useActionState<ProjectFormState, FormData>(submitProject.bind(null, projectId ?? null), null);
+export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved, onCancel }: {
+  brands: Opt[]; owners: Opt[]; initial?: ProjectFormValues; projectId?: string;
+  /** Edit without leaving the page: saves through `submitProjectInPlace` (no redirect). Needs `projectId`. */
+  stay?: boolean;
+  /** Called once when a stay-on-page save succeeds. */
+  onSaved?: () => void;
+  /** Renders Cancel as a button calling this, instead of the link back to /projects. */
+  onCancel?: () => void;
+}) {
+  const [state, action, pending] = useActionState<ProjectFormState, FormData>(
+    stay && projectId ? submitProjectInPlace.bind(null, projectId) : submitProject.bind(null, projectId ?? null), null,
+  );
   const formRef = useRef<HTMLFormElement>(null);
-  const errs = (state && state.fieldErrors) || {};
-  const v = state?.values ?? initial;
+  const failed = state && !state.ok ? state : null;
+  const errs = failed?.fieldErrors || {};
+  const v = failed?.values ?? initial;
   const props = (k: string, kind: "input" | "select" = "input") => ({
     id: k, name: k, className: fieldClass({ kind, invalid: !!errs[k] }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
@@ -43,14 +54,21 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   const rendered = new Set(["title", "subTitle", "brandId", "ownerId", "status", "startDate", "dueDate", "fileUrl"]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
   const hasFieldErrors = Object.keys(errs).length > 0;
-  const generic = state ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
+  const generic = failed ? (hasFieldErrors ? orphan.join(" ") : failed.message) : "";
   const LABELS: Record<string, string> = { title: "Title", subTitle: "Sub title", brandId: "Brand", ownerId: "Owner", status: "Status", startDate: "Start date", dueDate: "Due date", fileUrl: "File link" };
   const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? "");
   const nonce = state?.nonce ?? "initial";
 
+  const savedNonce = state?.ok ? state.nonce : null;
+  const onSavedRef = useRef(onSaved);
+  useEffect(() => { onSavedRef.current = onSaved; });
   useEffect(() => {
-    if (state?.nonce) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-  }, [state?.nonce]);
+    if (savedNonce) onSavedRef.current?.();
+  }, [savedNonce]);
+
+  useEffect(() => {
+    if (failed) formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state?.nonce]); // eslint-disable-line react-hooks/exhaustive-deps -- re-run per submit, `failed` is derived from it
 
   return (
     <>
@@ -104,7 +122,9 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
         <Button type="submit" variant="primary" loading={pending}>
           {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
         </Button>
-        <Link href="/projects" className={buttonClass({ variant: "ghost" })}>Cancel</Link>
+        {onCancel
+          ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+          : <Link href="/projects" className={buttonClass({ variant: "ghost" })}>Cancel</Link>}
       </div>
     </form>
     </>
