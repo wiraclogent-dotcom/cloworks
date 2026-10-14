@@ -121,7 +121,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
               <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-sidebar-foreground-secondary" />
               <input type="search" disabled placeholder="Search" title="Search: coming soon"
                 className="h-9 w-full rounded-lg border border-border bg-card pr-9 pl-8 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70" />
-              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-[11px] text-muted-foreground">/</kbd>
+              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-xs text-muted-foreground">/</kbd>
             </label>
           </div>
 

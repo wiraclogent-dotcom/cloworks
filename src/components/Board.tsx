@@ -61,7 +61,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
         dragging && !legal && "opacity-60",
       )}>
       <h2 id={id} data-column-header=""
-        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-[13px] font-semibold text-tone-text">
+        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-compact font-semibold text-tone-text">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
         <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-card px-2 py-0.5 text-xs leading-4 font-medium text-muted-foreground tabular-nums shadow-card">{total}</span>
@@ -198,7 +198,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
               <Column key={col.status} status={col.status} total={totals[col.status] ?? 0} shown={inCol.length}
                 dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref}>
                 {inCol.length === 0 ? (
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-card/60 px-3 py-6 text-center text-[13px] text-muted-foreground">
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-card/60 px-3 py-6 text-center text-compact text-muted-foreground">
                     <Inbox aria-hidden="true" strokeWidth={1.75} className="size-5" />
                     <p>No requests here</p>
                   </div>

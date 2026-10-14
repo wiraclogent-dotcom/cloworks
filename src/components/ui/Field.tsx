@@ -21,7 +21,7 @@ export function fieldClass({ kind = "input", invalid = false, size = "md", class
 }
 
 /** Field label: 13px/500. */
-export const labelClass = "mb-1.5 block text-[13px] font-medium text-foreground";
+export const labelClass = "mb-1.5 block text-compact font-medium text-foreground";
 /** Helper text under a field. */
 export const hintClass = "mt-1.5 text-xs text-muted-foreground";
 
@@ -29,7 +29,7 @@ export const hintClass = "mt-1.5 text-xs text-muted-foreground";
 export function FieldError({ id, children, className }: { id: string; children?: ReactNode; className?: string }) {
   if (!children) return null;
   return (
-    <p id={id} className={cn("mt-1.5 flex items-start gap-1.5 text-[13px] text-danger", className)}>
+    <p id={id} className={cn("mt-1.5 flex items-start gap-1.5 text-compact text-danger", className)}>
       <CircleAlert aria-hidden="true" strokeWidth={1.75} className="mt-0.5 size-3.5 shrink-0" />
       <span>{children}</span>
     </p>

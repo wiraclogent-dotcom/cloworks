@@ -78,7 +78,7 @@ export function KpiSectionSkeleton({ title, tiles = 3, id }: { title: string; ti
     <div id={id} className={id ? "scroll-mt-4" : undefined}>
     <Busy label={`Loading ${title}…`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 className="font-display text-xl leading-7 font-semibold text-heading">{title}</h2>
+        <h2 className="text-base font-semibold text-heading">{title}</h2>
         <Skeleton className="h-9 w-36" rounded="full" />
       </div>
       {tiles > 0 ? (

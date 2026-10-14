@@ -56,7 +56,7 @@ function DeletePost({ postId, closeHref }: { postId: string; closeHref: string }
       {error ? <p role="alert" className="mr-auto text-xs text-danger">{error}</p> : null}
       {confirming ? (
         <>
-          <span className="text-[13px] text-muted-foreground">Delete this post and its media?</span>
+          <span className="text-compact text-muted-foreground">Delete this post and its media?</span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>Keep</Button>
           <Button size="sm" variant="danger" loading={pending} onClick={remove}>Delete</Button>
         </>
@@ -108,7 +108,7 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
         {approveForm ? <h2 className="text-sm font-semibold text-foreground">Approve &amp; create request</h2> : (
           <>
             {!published ? (
-              <span data-badge="" data-tone={STATUS_TONE[post.status]} className="rounded bg-tone-tint px-1.5 py-0.5 text-[11px] font-semibold text-tone-text">
+              <span data-badge="" data-tone={STATUS_TONE[post.status]} className="rounded bg-tone-tint px-1.5 py-0.5 text-xs font-semibold text-tone-text">
                 {STATUS_LABEL[post.status]}
               </span>
             ) : null}
@@ -130,7 +130,7 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
           {lock ? <p className="text-xs text-muted-foreground" suppressHydrationWarning>{lock}</p> : null}
           {request ? (
             <Link href={`/requests/${request.id}`}
-              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted [&_svg]:size-4", focusRing)}>
+              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-compact font-medium text-foreground hover:bg-muted [&_svg]:size-4", focusRing)}>
               <span className="flex-1">{request.status ? `View request · ${REQUEST_STATUS_LABEL[request.status]}` : "View request"}</span>
               <ExternalLink aria-hidden="true" />
             </Link>

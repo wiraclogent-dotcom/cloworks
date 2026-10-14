@@ -134,7 +134,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
         ) : null}
       </div>
       {view.warnDate ? (
-        <div data-tone="due-soon" className="flex flex-wrap items-center gap-2 rounded-lg bg-tone-tint px-3 py-2 text-[13px] text-tone-text [&_svg]:size-4">
+        <div data-tone="due-soon" className="flex flex-wrap items-center gap-2 rounded-lg bg-tone-tint px-3 py-2 text-compact text-tone-text [&_svg]:size-4">
           <TriangleAlert aria-hidden="true" />
           <span className="flex-1">This date is out of order with the posts above it.</span>
           <Button size="sm" variant="secondary" disabled={submitting} onClick={() => change("plannedAt", view.warnDate!, true)}>{`Set to ${shortDay(view.warnDate)}`}</Button>

@@ -36,7 +36,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
         <CardHeader><CardTitle id="invite-link-h">Invite link</CardTitle></CardHeader>
         {path ? (
           <div className="flex flex-wrap items-center gap-2">
-            <code className="min-w-0 flex-1 rounded-md bg-muted px-2.5 py-1.5 text-[13px] break-all text-foreground">{`${base}${path}`}</code>
+            <code className="min-w-0 flex-1 rounded-md bg-muted px-2.5 py-1.5 text-compact break-all text-foreground">{`${base}${path}`}</code>
             <Button type="button" variant="secondary" size="sm" onClick={copy}>
               {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copied ? "Copied" : "Copy"}
             </Button>
@@ -50,7 +50,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
             <input type="hidden" name="enabled" value={String(!enabled)} />
             <Switch id="join-link-enabled" label="Link is on" description={enabled ? "Anyone with the link can request to join." : "The link shows nothing until you turn it on."}
               checked={enabled} onChange={() => formRef.current?.requestSubmit()} />
-            {state && <p role={state.ok ? "status" : "alert"} className="mt-1 text-[13px] font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
+            {state && <p role={state.ok ? "status" : "alert"} className="mt-1 text-compact font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
           </form>
           <ConfirmAction action={resetInviteLink} prefix="reset-link" hidden={{}} triggerLabel="Reset link"
             question="Reset the link? The current one stops working at once."

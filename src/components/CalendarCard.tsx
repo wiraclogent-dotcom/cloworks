@@ -40,19 +40,19 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
         </div>
       <div className="mt-0.5 flex items-center justify-between gap-1">
         {isOverdue(card, today) ? (
-          <span className="rounded px-1 text-[11px] leading-4 font-medium bg-tone-tint text-tone-text">Overdue</span>
+          <span className="rounded px-1 text-xs leading-4 font-medium bg-tone-tint text-tone-text">Overdue</span>
         ) : card.deadlineDay === null ? (
-          <span className="text-[11px] leading-4 text-muted-foreground">No deadline</span>
+          <span className="text-xs leading-4 text-muted-foreground">No deadline</span>
         ) : <span />}
         <span className="inline-flex shrink-0 items-center gap-1">
           {handle}
           {names.length >= 2 ? (
             <span className="inline-flex" title={`Assignees: ${names.join(", ")}`}>
-              <AvatarStack names={names} max={2} size="sm" label="Assignees" className="[&>span]:size-5 [&>span]:text-[9px]" />
+              <AvatarStack names={names} max={2} size="sm" label="Assignees" className="[&>span]:size-5 [&>span]:text-xs" />
             </span>
           ) : (
             <span className="inline-flex" title={assignee} aria-label={assignee} role="img">
-              {assigneeName ? <Avatar name={assigneeName} size="sm" decorative className="size-5 text-[9px]" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
+              {assigneeName ? <Avatar name={assigneeName} size="sm" decorative className="size-5 text-xs" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
             </span>
           )}
         </span>

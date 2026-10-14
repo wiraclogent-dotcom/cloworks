@@ -101,8 +101,8 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
           </div>
           <div>
             <div className="mb-1.5 flex items-center justify-between">
-              <label htmlFor="signin-password" className="text-[13px] font-medium text-foreground">Password</label>
-              <Link href="/forgot" className="text-[13px] font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
+              <label htmlFor="signin-password" className="text-compact font-medium text-foreground">Password</label>
+              <Link href="/forgot" className="text-compact font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
             </div>
             <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
           </div>

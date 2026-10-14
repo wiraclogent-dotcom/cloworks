@@ -118,7 +118,7 @@ export function ProjectTable({ rows, canManage, now, emptyTitle = "No projects y
           <section key={g.brand ?? "__none"} aria-labelledby={hid} className={cn(gi > 0 && "border-t border-border")}>
             <div data-tone={g.brand ? brandTone(g.brand) : "tag-neutral"} data-group-header=""
               className="flex items-center gap-2 border-l-4 border-tone-accent bg-muted px-4 py-2.5">
-              <h2 id={hid} className="text-[15px] font-semibold text-foreground">{g.brand ?? "No brand"}</h2>
+              <h2 id={hid} className="text-base font-semibold text-heading">{g.brand ?? "No brand"}</h2>
               <CountPill value={g.projects.length} aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-card" />
             </div>
             <ProjectRowsTable rows={g.projects} canManage={canManage} now={now} />

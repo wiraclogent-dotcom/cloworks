@@ -19,7 +19,7 @@ export function RadioCards({ name, legend, options, value, defaultValue, onChang
   const groupDescribedBy = [describedBy, hid].filter(Boolean).join(" ") || undefined;
   return (
     <fieldset aria-describedby={groupDescribedBy} className={cn("min-w-0", className)}>
-      <legend className="mb-1.5 text-[13px] font-medium text-foreground">{legend}</legend>
+      <legend className="mb-1.5 text-compact font-medium text-foreground">{legend}</legend>
       <div className={cn("grid gap-3", columns === 1 ? "grid-cols-1" : columns === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
         {options.map((o) => (
           <label key={o.value}
@@ -34,7 +34,7 @@ export function RadioCards({ name, legend, options, value, defaultValue, onChang
             ) : null}
             <span className="min-w-0 flex-1">
               <span id={`${name}-${o.value}-title`} className="block text-sm font-medium text-foreground">{o.title}</span>
-              {o.description ? <span id={`${name}-${o.value}-desc`} className="mt-0.5 block text-[13px] text-muted-foreground">{o.description}</span> : null}
+              {o.description ? <span id={`${name}-${o.value}-desc`} className="mt-0.5 block text-compact text-muted-foreground">{o.description}</span> : null}
             </span>
             {/* Named by the card title only; the description is announced as its description. */}
             <input type="radio" name={name} value={o.value} required={required}

@@ -46,7 +46,7 @@ export function MonthPicker({ month, current, userId, action, keep }: {
   const cell = "inline-flex h-9 items-center justify-center rounded-lg text-sm tabular-nums";
   return (
     <div className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-[13px] font-medium text-muted-foreground">Month</span>
+      <span aria-hidden="true" className="text-compact font-medium text-muted-foreground">Month</span>
       <details ref={ref} className="group relative" onToggle={(e) => { if (e.currentTarget.open) setYear(Number(month.slice(0, 4))); }}>
         <summary aria-label={`Month: ${label(month)}`}
           className={cn(
@@ -90,7 +90,7 @@ export function MonthPicker({ month, current, userId, action, keep }: {
             })}
           </ul>
           <div className="mt-2 flex justify-end border-t border-border pt-2">
-            <Link href={href(current)} onClick={close} className={cn("rounded-md px-2 py-1 text-[13px] font-medium text-link hover:underline", focusRing)}>This month</Link>
+            <Link href={href(current)} onClick={close} className={cn("rounded-md px-2 py-1 text-compact font-medium text-link hover:underline", focusRing)}>This month</Link>
           </div>
         </div>
       </details>

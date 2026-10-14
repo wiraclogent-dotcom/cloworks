@@ -38,7 +38,7 @@ export function NewPostTile({ channelId, tab }: { channelId: string; tab: Conten
         <Plus aria-hidden="true" />
       </button>
       {error ? (
-        <p role="alert" className="pointer-events-none absolute inset-x-1 bottom-1 rounded bg-background/90 px-1 text-center text-[10px] leading-3.5 text-danger">
+        <p role="alert" className="pointer-events-none absolute inset-x-1 bottom-1 rounded bg-background/90 px-1 text-center text-xs leading-4 text-danger">
           {error}
         </p>
       ) : null}

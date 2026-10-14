@@ -80,7 +80,7 @@ function WhatHappensNext({ assignee }: { assignee: string }) {
             <span aria-hidden="true" data-tone="done" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tone-tint text-tone-text [&_svg]:size-4">{s.icon}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground"><span className="sr-only">Step {i + 1}: </span>{s.title}</p>
-              <p className="mt-0.5 text-[13px] text-muted-foreground">{s.text}</p>
+              <p className="mt-0.5 text-compact text-muted-foreground">{s.text}</p>
             </div>
           </li>
         ))}

@@ -64,8 +64,8 @@ const BRIEFERS: { name: string; days: boolean[] }[] = [
 function BriefWeek() {
   return (
     <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
-      <figcaption className="mb-4 text-[13px] font-semibold text-foreground">Brief calendar, this week</figcaption>
-      <table className="w-full border-separate border-spacing-y-2 text-[13px]">
+      <figcaption className="mb-4 text-compact font-semibold text-foreground">Brief calendar, this week</figcaption>
+      <table className="w-full border-separate border-spacing-y-2 text-compact">
         <thead>
           <tr>
             <th scope="col" className="sr-only">Person</th>
@@ -103,7 +103,7 @@ const QUEUE: { title: string; due: string; tone: "due-soon" | "overdue" | "tag-n
 function DesignerQueue() {
   return (
     <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
-      <figcaption className="mb-3 text-[13px] font-semibold text-foreground">Assigned to you</figcaption>
+      <figcaption className="mb-3 text-compact font-semibold text-foreground">Assigned to you</figcaption>
       <ul className="divide-y divide-border">
         {QUEUE.map((q) => (
           <li key={q.title} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3">
@@ -127,7 +127,7 @@ const TARGET = 20;
 function TeamKpi() {
   return (
     <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
-      <figcaption className="mb-4 flex items-baseline justify-between text-[13px]">
+      <figcaption className="mb-4 flex items-baseline justify-between text-compact">
         <span className="font-semibold text-foreground">Team KPI, October</span>
         <span className="text-muted-foreground">Target {TARGET} each</span>
       </figcaption>
@@ -137,7 +137,7 @@ function TeamKpi() {
           const fill = pct >= 100 ? "bg-progress-complete" : pct >= 70 ? "bg-progress-mid" : "bg-progress-low";
           return (
             <li key={m.name}>
-              <div className="mb-1.5 flex items-center justify-between text-[13px]">
+              <div className="mb-1.5 flex items-center justify-between text-compact">
                 <span className="inline-flex items-center gap-2 font-medium text-foreground"><Avatar name={m.name} size="sm" decorative />{m.name}</span>
                 <span className="text-muted-foreground tabular-nums">{m.done} of {TARGET} done</span>
               </div>
@@ -213,7 +213,7 @@ export function Landing() {
         <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16">
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-6">
             <div className="text-center lg:text-left">
-              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-[13px] font-medium text-muted-foreground shadow-card backdrop-blur">
+              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-compact font-medium text-muted-foreground shadow-card backdrop-blur">
                 <span aria-hidden="true" className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-brand-aqua opacity-60" /><span className="relative size-2 rounded-full bg-brand-aqua" /></span>
                 Clogent&apos;s creative studio, in one board
               </p>
@@ -231,7 +231,7 @@ export function Landing() {
                   <CirclePlay aria-hidden="true" />See how it works
                 </a>
               </div>
-              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-[13px] text-muted-foreground lg:justify-start">
+              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-compact text-muted-foreground lg:justify-start">
                 <span aria-hidden="true" className="inline-flex -space-x-2.5">
                   {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-9 text-xs" />)}
                 </span>
@@ -354,7 +354,7 @@ export function Landing() {
       </main>
 
       <footer className="border-t border-white/10 bg-[var(--brand-deep-blue-night)] text-white/70">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-[13px] sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-compact sm:px-6">
           <span className="inline-flex items-center gap-2"><LogoMark size={20} />Cloworks, the Clogent creative team&apos;s request tracker</span>
           <span>Clogent</span>
         </div>

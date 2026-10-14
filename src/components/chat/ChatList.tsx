@@ -62,12 +62,12 @@ export function ChatList({ chats, error = null, onRetry, selectedId, userId, now
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
                   <span className={cn("min-w-0 flex-1 truncate text-sm", c.unread > 0 ? "font-semibold text-foreground" : "font-medium text-foreground")}>{c.title}</span>
-                  <span className="shrink-0 text-[11px] text-muted-foreground">{relativeTime(c.lastMessage.createdAt, now)}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{relativeTime(c.lastMessage.createdAt, now)}</span>
                 </span>
                 <span className="mt-0.5 flex items-center gap-2">
-                  <span className={cn("min-w-0 flex-1 truncate text-[13px]", c.unread > 0 ? "text-foreground" : "text-muted-foreground")}>{preview(c, userId)}</span>
+                  <span className={cn("min-w-0 flex-1 truncate text-compact", c.unread > 0 ? "text-foreground" : "text-muted-foreground")}>{preview(c, userId)}</span>
                   {c.unread > 0 && (
-                    <span className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground">
+                    <span className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-xs leading-none font-semibold text-destructive-foreground">
                       <span className="sr-only">, </span>{c.unread > 9 ? "9+" : c.unread}<span className="sr-only"> unread</span>
                     </span>
                   )}

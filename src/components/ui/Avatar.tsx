@@ -10,7 +10,7 @@ const SIZE: Record<AvatarSize, string> = {
   // Initials never below 11px (QA D8): the small avatar is 24px.
   sm: "size-6 text-[11px]",
   md: "size-7 text-[11px]",
-  lg: "size-9 text-[13px]",
+  lg: "size-9 text-compact",
 };
 
 type Common = {

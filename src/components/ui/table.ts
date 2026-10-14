@@ -11,7 +11,7 @@ export function tableClass({ compact = false, minWidth }: { compact?: boolean; m
   const pad = compact ? "px-3 py-1.5" : "px-3 py-2.5";
   return {
     wrapper: "relative overflow-auto rounded-xl border border-border bg-card shadow-card",
-    table: cn("w-full border-collapse text-left text-[13px] text-foreground", minWidth),
+    table: cn("w-full border-collapse text-left text-compact text-foreground", minWidth),
     thead: "",
     th: cn("sticky top-0 z-10 border-b border-border bg-muted font-semibold whitespace-nowrap text-muted-foreground text-xs", pad),
     tr: "border-t border-border first:border-t-0 transition-colors duration-150 hover:bg-muted/60",

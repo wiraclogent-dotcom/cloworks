@@ -12,7 +12,7 @@ type Opt = { id: string; name: string };
 
 /** Pill-style field: 32px, full radius, 3:1 outline, Aqua focus ring; an active filter gets the Aqua tint. */
 const pill = (active = false) => cn(
-  "h-8 rounded-full border text-[13px] transition-colors duration-150 ease-out hover:border-muted-foreground",
+  "h-8 rounded-full border text-compact transition-colors duration-150 ease-out hover:border-muted-foreground",
   active ? "border-ring bg-accent text-accent-foreground" : "border-input bg-card text-foreground",
   focusRing,
 );
@@ -21,7 +21,7 @@ const pill = (active = false) => cn(
  * toolbar row reads as one set. `active` raises it like a selected segment.
  */
 const toolbarField = (active = false) => cn(
-  "h-10 rounded-xl text-[13px] font-medium transition-colors duration-150 ease-out",
+  "h-10 rounded-xl text-compact font-medium transition-colors duration-150 ease-out",
   active ? "bg-card text-foreground shadow-card ring-1 ring-ring" : "bg-muted text-muted-foreground hover:text-foreground",
   focusRing,
 );

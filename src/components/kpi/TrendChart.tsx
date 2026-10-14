@@ -16,7 +16,7 @@ function ChartTooltip({ active, payload }: TipProps) {
   const p = active ? payload?.[0]?.payload : undefined;
   if (!p) return null;
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-[13px] text-card-foreground shadow-raised">
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-compact text-card-foreground shadow-raised">
       <p className="mb-1 font-semibold">{p.label}</p>
       <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="size-2.5 rounded-sm bg-chart-done" />Tasks done: {p.tasksDone}</p>
       <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="h-0.5 w-2.5 rounded-full bg-chart-target" />Target: {p.target ?? "—"}</p>
@@ -38,7 +38,7 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>
             <Heading className="text-base font-semibold text-foreground">Last {points.length} months</Heading>
-            <figcaption className="text-[13px] text-muted-foreground">Tasks done vs target, last {points.length} months</figcaption>
+            <figcaption className="text-compact text-muted-foreground">Tasks done vs target, last {points.length} months</figcaption>
           </div>
           <ul aria-hidden="true" className="flex items-center gap-4 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-done" />Tasks done</li>
@@ -61,7 +61,7 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
         </div>
       </figure>
       <details className="group mt-3 border-t border-border pt-3">
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md text-[13px] font-medium text-link [&::-webkit-details-marker]:hidden">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md text-compact font-medium text-link [&::-webkit-details-marker]:hidden">
           <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />
           View as table
         </summary>

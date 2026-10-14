@@ -81,7 +81,7 @@ function ResendForm({ id, email }: { id: string; email: string }) {
     <form action={run} className="space-y-1">
       <input type="hidden" name="inviteId" value={id} />
       <ResendButton email={email} />
-      {state && <p role={state.ok ? "status" : "alert"} className="text-[13px] font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
+      {state && <p role={state.ok ? "status" : "alert"} className="text-compact font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
     </form>
   );
 }

@@ -360,7 +360,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
         <span className="relative inline-flex shrink-0 text-link">
           <MessagesSquare aria-hidden="true" strokeWidth={1.75} className="size-5.5" />
           {count > 0 && (
-            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-card">
+            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-xs leading-none font-semibold text-destructive-foreground ring-2 ring-card">
               {count > 9 ? "9+" : count}
             </span>
           )}

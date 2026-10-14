@@ -11,7 +11,7 @@ export function KpiSection({ id, title, controls, autoScroll = false, children }
   return (
     <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-4 space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h2 id={`${id}-title`} className="font-display text-xl leading-7 font-semibold text-heading">{title}</h2>
+        <h2 id={`${id}-title`} className="text-base font-semibold text-heading">{title}</h2>
         {controls ? <div className="flex flex-wrap items-center gap-2">{controls}</div> : null}
       </div>
       {children}

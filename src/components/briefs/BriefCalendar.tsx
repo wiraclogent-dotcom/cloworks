@@ -33,7 +33,7 @@ const heatLevel = (v: number, max: number) => (v === 0 || max === 0 ? 0 : Math.m
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <li aria-label={label} className="flex items-baseline justify-between gap-3 border-b border-border py-2.5 last:border-b-0">
-      <span className="text-[13px] text-muted-foreground">{label}</span>
+      <span className="text-compact text-muted-foreground">{label}</span>
       <span className="text-right">
         <span className="text-base font-semibold text-foreground tabular-nums">{value}</span>
         {note && <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{note}</span>}
@@ -58,7 +58,7 @@ function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["su
           );
         })}
       </div>
-      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-muted-foreground">
+      <div aria-hidden="true" className="mt-1 flex justify-between text-xs text-muted-foreground">
         <span>{shortDay(days[0].day).slice(4)}</span><span>{shortDay(days[days.length - 1].day).slice(4)}</span>
       </div>
     </div>
@@ -66,11 +66,11 @@ function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["su
 }
 
 /** A person's circle in their avatar colour, the count inside above 1 (same look as the original brief calendar). */
-function Dot({ person, count, size = "size-5" }: { person: BriefPerson; count?: number; size?: string }) {
+function Dot({ person, count, size = "h-5 min-w-5 px-0.5" }: { person: BriefPerson; count?: number; size?: string }) {
   const c = avatarColor(person.name);
   return (
     <span aria-hidden="true" data-person={person.id} style={{ backgroundColor: c.tint, color: c.text, borderColor: c.text }}
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border-2 text-[11px] leading-none font-semibold tabular-nums", size)}>
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border-2 text-xs leading-none font-semibold tabular-nums", size)}>
       {count && count > 1 ? count : null}
     </span>
   );
@@ -96,7 +96,7 @@ function Dots({ day, items, align }: { day: BriefDay; items: BriefItem[]; align:
         </span>
       ))}
       {more > 0 && (
-        <span aria-hidden="true" data-more="" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-border-strong px-1 text-[11px] leading-none font-semibold text-muted-foreground tabular-nums">
+        <span aria-hidden="true" data-more="" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-border-strong px-1 text-xs leading-none font-semibold text-muted-foreground tabular-nums">
           +{more}
         </span>
       )}
@@ -125,7 +125,7 @@ export function BriefCalendar({ model, typeOrder }: {
       <section aria-label="Month summary" className="rounded-xl border border-border bg-card p-4 shadow-card sm:p-5">
         <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <li aria-label="Briefs this month" className="min-w-0">
-            <span className="text-[13px] text-muted-foreground">Briefs this month</span>
+            <span className="text-compact text-muted-foreground">Briefs this month</span>
             <span className="mt-0.5 block text-4xl leading-none font-semibold tracking-tight text-foreground tabular-nums">{s.total}</span>
             <DayStrip days={days} busiest={s.busiest} />
           </li>
@@ -230,7 +230,7 @@ export function BriefCalendar({ model, typeOrder }: {
                         "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
                         d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-muted-foreground" : "text-foreground",
                       )}>{Number(d.day.slice(8))}</span>
-                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-[11px] text-muted-foreground tabular-nums">{d.count}</span>}
+                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-xs text-muted-foreground tabular-nums">{d.count}</span>}
                     </span>
                     <Dots day={d} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>

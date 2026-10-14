@@ -11,7 +11,7 @@ const off = buttonClass({ variant: "ghost", size: "sm", className: "pointer-even
  */
 export function Pagination({ text, page, pageCount, hrefFor }: { text: string; page: number; pageCount: number; hrefFor: (page: number) => string }) {
   return (
-    <nav aria-label="Pagination" className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 border-t border-border bg-card px-3 py-2 text-[13px] text-muted-foreground sm:grid-cols-[1fr_auto_1fr]">
+    <nav aria-label="Pagination" className="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 border-t border-border bg-card px-3 py-2 text-compact text-muted-foreground sm:grid-cols-[1fr_auto_1fr]">
       <p className="tabular-nums" aria-live="polite">{text}</p>
       {pageCount > 1 && (
         <>

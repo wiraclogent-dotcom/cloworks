@@ -82,7 +82,7 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
           {status && <StatusChip status={status} kind="request" className="mt-0.5" />}
         </div>
         <Link href={`/requests/${encodeURIComponent(conv.id)}`} onClick={onOpenRequest}
-          className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-link hover:bg-muted", focusRing)}>
+          className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-compact font-medium text-link hover:bg-muted", focusRing)}>
           Open request<ExternalLink aria-hidden="true" className="size-3.5" />
         </Link>
       </div>
@@ -124,12 +124,12 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
                     return (
                       <Fragment key={m.id}>
                         {newDay && (
-                          <li role="separator" className="my-2 flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+                          <li role="separator" className="my-2 flex items-center gap-3 text-xs font-medium text-muted-foreground">
                             <span aria-hidden="true" className="h-px flex-1 bg-border" />{dayLabel(m.createdAt, now)}<span aria-hidden="true" className="h-px flex-1 bg-border" />
                           </li>
                         )}
                         <li className={cn("flex max-w-[80%] flex-col", mine ? "ml-auto items-end" : "items-start", showName && "mt-1.5")}>
-                          {showName && <span className="mb-0.5 px-1 text-[11px] font-medium text-muted-foreground">{m.author.name}</span>}
+                          {showName && <span className="mb-0.5 px-1 text-xs font-medium text-muted-foreground">{m.author.name}</span>}
                           <div className={cn(
                             "rounded-2xl px-3 py-1.5",
                             mine ? "rounded-br-md bg-accent text-accent-foreground" : "rounded-bl-md bg-muted text-foreground",
@@ -140,7 +140,7 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
                                 : <Fragment key={j}>{s.text}</Fragment>)}
                             </p>
                           </div>
-                          <time dateTime={m.createdAt.toISOString()} className="mt-0.5 px-1 text-[10px] text-muted-foreground">{timeFmt.format(m.createdAt)}</time>
+                          <time dateTime={m.createdAt.toISOString()} className="mt-0.5 px-1 text-xs text-muted-foreground">{timeFmt.format(m.createdAt)}</time>
                         </li>
                       </Fragment>
                     );

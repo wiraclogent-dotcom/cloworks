@@ -65,7 +65,7 @@ export function PhotoEditor({ hasPhoto }: { hasPhoto: boolean }) {
           type="button"
           disabled={pending}
           onClick={() => input.current?.click()}
-          className="inline-flex h-8 items-center rounded-lg border border-input px-3 text-[13px] font-medium text-foreground hover:bg-muted disabled:opacity-60"
+          className="inline-flex h-8 items-center rounded-lg border border-input px-3 text-compact font-medium text-foreground hover:bg-muted disabled:opacity-60"
         >
           {pending ? "Saving…" : hasPhoto ? "Change photo" : "Add photo"}
         </button>
@@ -74,7 +74,7 @@ export function PhotoEditor({ hasPhoto }: { hasPhoto: boolean }) {
             type="button"
             disabled={pending}
             onClick={() => startTransition(async () => { const r = await clearProfilePhoto(); setMessage(r.ok ? "Photo removed." : r.message); })}
-            className="inline-flex h-8 items-center rounded-lg px-3 text-[13px] font-medium text-muted-foreground hover:bg-muted disabled:opacity-60"
+            className="inline-flex h-8 items-center rounded-lg px-3 text-compact font-medium text-muted-foreground hover:bg-muted disabled:opacity-60"
           >
             Remove
           </button>

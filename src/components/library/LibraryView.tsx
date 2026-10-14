@@ -31,7 +31,7 @@ export type LibraryViewProps = {
 
 const chipClass = (on: boolean) =>
   cn(
-    "inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
+    "inline-flex h-8 items-center rounded-full border px-3 text-compact font-medium whitespace-nowrap transition-colors duration-150",
     on ? "border-transparent bg-accent text-accent-foreground" : "border-border-strong bg-card text-foreground hover:bg-muted",
     focusRing,
   );

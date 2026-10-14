@@ -21,12 +21,14 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
     [["border-input", "border-danger"], "border-danger"],
     [["shadow-card", "shadow-raised"], "shadow-raised"],
     [["rounded-md", "rounded-full"], "rounded-full"],
-    [["text-sm", "text-[13px]"], "text-[13px]"],
+    [["text-sm", "text-compact"], "text-compact"],
+    [["text-compact", "text-sm"], "text-sm"],
   ])("%j → %s", (parts, out) => {
     expect(cn(...parts)).toBe(out);
   });
   it("keeps non-conflicting token colour + size classes and skips falsy values", () => {
-    expect(cn("text-foreground", false, "text-[13px]", null, undefined, 0)).toBe("text-foreground text-[13px]");
+    expect(cn("text-foreground", false, "text-compact", null, undefined, 0)).toBe("text-foreground text-compact");
+    expect(cn("text-compact", "text-muted-foreground")).toBe("text-compact text-muted-foreground");
     expect(cn("text-xs", "text-tone-text")).toBe("text-xs text-tone-text");
   });
   it("a className override on a kit component replaces the default", () => {

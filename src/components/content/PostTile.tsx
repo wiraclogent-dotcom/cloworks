@@ -60,7 +60,7 @@ export function PostTile({ tile, channelId, tab, published = false, selected = f
       ) : null}
       {!published ? (
         <span data-badge="" data-tone={STATUS_TONE[tile.status]}
-          className="absolute top-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-tone-tint px-1 py-px text-[10px] leading-3.5 font-semibold text-tone-text">
+          className="absolute top-1 left-1 max-w-[calc(100%-0.5rem)] truncate rounded bg-tone-tint px-1 py-px text-xs leading-4 font-semibold text-tone-text">
           {STATUS_LABEL[tile.status]}
         </span>
       ) : null}
@@ -70,7 +70,7 @@ export function PostTile({ tile, channelId, tab, published = false, selected = f
           <TriangleAlert aria-hidden="true" />
         </span>
       ) : null}
-      <span className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-1 text-[10px] leading-3.5 font-medium">
+      <span className="absolute inset-x-1 bottom-1 flex items-center justify-between gap-1 text-xs leading-4 font-medium">
         {tile.plannedAt && !published ? (
           <span aria-hidden="true" className="rounded bg-background/85 px-1 text-foreground tabular-nums">{shortDay(tile.plannedAt)}</span>
         ) : <span />}

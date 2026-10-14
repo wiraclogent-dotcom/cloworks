@@ -28,7 +28,7 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-lg font-semibold text-foreground tabular-nums">{text}</p>
         {level ? (
-          <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1 text-compact text-muted-foreground">
             {level === "complete" ? <Check aria-hidden="true" strokeWidth={2.25} className="size-4 text-progress-complete" /> : null}
             {PROGRESS_LEVEL_LABEL[level].replace(/^./, (c) => c.toUpperCase())}
           </span>

@@ -73,7 +73,7 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
         className={cn("relative inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", focusRing)}>
         <Bell aria-hidden="true" strokeWidth={1.75} className="size-5" />
         {count > 0 && (
-          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
+          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-xs leading-none font-semibold text-destructive-foreground ring-2 ring-background">
             {count > 9 ? "9+" : count}
           </span>
         )}

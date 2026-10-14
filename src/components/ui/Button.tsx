@@ -19,7 +19,7 @@ const VARIANTS: Record<ButtonVariant, string> = {
 
 const SIZES: Record<ButtonSize, string> = {
   // 32px visual, 36px touch target (transparent ::after extends the hit area 2px up and down).
-  sm: "relative h-8 px-3 text-[13px] after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-['']",
+  sm: "relative h-8 px-3 text-compact after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-['']",
   md: "h-9 px-4 text-sm",
 };
 

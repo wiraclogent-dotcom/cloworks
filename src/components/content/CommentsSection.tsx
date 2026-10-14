@@ -42,7 +42,7 @@ export function CommentsSection({ postId, comments, canComment }: { postId: stri
         <ul className="flex flex-col gap-1.5">
           {comments.map((c) => (
             <li key={c.id} data-feedback={c.isFeedback ? "" : undefined} data-tone={c.isFeedback ? "due-soon" : undefined}
-              className={cn("rounded-lg px-3 py-2 text-[13px]", c.isFeedback ? "bg-tone-tint" : "bg-muted")}>
+              className={cn("rounded-lg px-3 py-2 text-compact", c.isFeedback ? "bg-tone-tint" : "bg-muted")}>
               <p className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{c.authorName}</span>
                 {c.isFeedback ? " · feedback" : null}

@@ -80,7 +80,7 @@ export function LibraryRowItem({ row, now, actions }: { row: Row; now: Date; act
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{row.title}</span>
-        {row.description ? <span className="block truncate text-[13px] text-muted-foreground">{row.description}</span> : null}
+        {row.description ? <span className="block truncate text-compact text-muted-foreground">{row.description}</span> : null}
       </span>
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
         {row.brandName ? <BrandTag name={row.brandName} /> : null}

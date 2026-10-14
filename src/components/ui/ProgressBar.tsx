@@ -14,7 +14,7 @@ export function ProgressBar({ value, max = 100, label, hideLabel = false, valueT
   return (
     <div className={className}>
       {!hideLabel ? (
-        <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px]">
+        <div className="mb-1.5 flex items-center justify-between gap-2 text-compact">
           <span className="font-medium text-foreground">{label}</span>
           <span className="inline-flex items-center gap-1 text-muted-foreground tabular-nums">
             {complete ? <Check aria-hidden="true" strokeWidth={2} className="size-3.5 text-link" /> : null}

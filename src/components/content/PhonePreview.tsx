@@ -75,7 +75,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold text-foreground">@{channel.handle}</h2>
           <p className="truncate text-sm font-medium text-foreground">{channel.displayName}</p>
-          {channel.bio ? <p className="mt-0.5 text-[13px] whitespace-pre-line text-muted-foreground">{channel.bio}</p> : null}
+          {channel.bio ? <p className="mt-0.5 text-compact whitespace-pre-line text-muted-foreground">{channel.bio}</p> : null}
           <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
             {`${channel.plannedCount} planned · ${channel.awaiting} awaiting approval`}
           </p>

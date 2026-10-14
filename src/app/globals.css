@@ -283,6 +283,8 @@
 [data-tone="tag-neutral"] { --tone-accent: var(--status-tag-neutral-accent); --tone-tint: var(--status-tag-neutral-tint); --tone-text: var(--status-tag-neutral-text); }
 
 @theme inline {
+  --text-compact: 0.8125rem;
+  --text-compact--line-height: 1.125rem;
   --color-brand-deep-blue: var(--brand-deep-blue);
   --color-brand-aqua: var(--brand-aqua);
   --color-brand-aqua-strong: var(--brand-aqua-strong);

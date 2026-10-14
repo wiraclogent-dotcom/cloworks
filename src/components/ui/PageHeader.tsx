@@ -22,7 +22,7 @@ export function PageHeader({ title, count, description, switcher, actions, bread
         // min-h-12 + pr-24: the app layout pins the bell and the profile menu (36 + 8 + 36px) in this row's top-right corner (AppFrame).
         <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-24 pb-3">
           <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+            <ol className="flex flex-wrap items-center gap-1.5 text-compact text-muted-foreground">
               {breadcrumb.map((c, i) => (
                 <li key={`${i}-${c.label}`} className="flex items-center gap-1.5">
                   {i > 0 ? <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-3.5 text-foreground-muted" /> : null}

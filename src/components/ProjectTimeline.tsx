@@ -33,7 +33,7 @@ export function ProjectTimeline({ projects, today, href }: {
   const legend = PROJECT_STATUSES.filter((st) => drawn.has(st));
   return (
     <div>
-      <p className="mb-3 text-[13px] text-muted-foreground">
+      <p className="mb-3 text-compact text-muted-foreground">
         Weeks start on Monday. Each bar is labelled with its dates and status.
         {layout.truncated && " Showing the first 26 weeks only; later parts of longer projects are cut off."}
         {layout.omitted.length > 0 && ` Not drawn because they start after this range: ${layout.omitted.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
@@ -75,7 +75,7 @@ export function ProjectTimeline({ projects, today, href }: {
               );
               const url = href?.(p);
               return (
-                <li key={b.id} className="border-t border-border text-[13px] first:border-t-0">
+                <li key={b.id} className="border-t border-border text-compact first:border-t-0">
                   {url ? (
                     <Link href={url} aria-label={`${p.title}, ${range}${p.status ? `, ${PROJECT_STATUS_LABEL[p.status]}` : ""}`}
                       className={cn(ROW, "hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring")}>
@@ -88,7 +88,7 @@ export function ProjectTimeline({ projects, today, href }: {
           </ol>
           {layout.todayPct !== null && (
             <div aria-hidden="true" data-today="" className="pointer-events-none absolute top-0 bottom-0 w-0.5 bg-danger" style={{ left: `calc(var(--label-w) + (100% - var(--label-w)) * ${layout.todayPct / 100})` }}>
-              <span className="absolute top-1 left-1 rounded bg-destructive px-1 text-[10px] leading-4 font-semibold text-destructive-foreground">Today</span>
+              <span className="absolute top-1 left-1 rounded bg-destructive px-1 text-xs leading-4 font-semibold text-destructive-foreground">Today</span>
             </div>
           )}
         </div>

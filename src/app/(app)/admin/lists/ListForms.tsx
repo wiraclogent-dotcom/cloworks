@@ -39,7 +39,7 @@ export function TypeForm({ t }: { t?: { id: string; name: string; active: boolea
             Active (shown on the new request form)
           </label>
           <Labeled id={idFor("fieldSchema")} label="Field schema (JSON array)">
-            <textarea id={idFor("fieldSchema")} name="fieldSchema" rows={8} spellCheck={false} className={`${textareaControl} font-mono text-[13px]`} defaultValue={v("fieldSchema", t?.schemaText ?? "[]")} {...aria()} />
+            <textarea id={idFor("fieldSchema")} name="fieldSchema" rows={8} spellCheck={false} className={`${textareaControl} font-mono text-compact`} defaultValue={v("fieldSchema", t?.schemaText ?? "[]")} {...aria()} />
           </Labeled>
           <p className={hintClass}>
             Each field: key, label, type (text, select, checkbox or url), optional required and, for select, options.

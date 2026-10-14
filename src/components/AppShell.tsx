@@ -21,7 +21,7 @@ import { Skeleton } from "./ui/Skeleton";
 function NavGroup({ id, label, divided = false, children }: { id: string; label: string; divided?: boolean; children: React.ReactNode }) {
   return (
     <div className={divided ? "mt-3 border-t border-sidebar-border pt-3" : undefined}>
-      <p id={id} className="sb-label px-2.5 pb-1.5 text-[13px] font-medium text-sidebar-foreground-secondary">{label}</p>
+      <p id={id} className="sb-label px-2.5 pb-1.5 text-compact font-medium text-sidebar-foreground-secondary">{label}</p>
       <ul aria-labelledby={id} className="space-y-0.5">{children}</ul>
     </div>
   );

@@ -49,7 +49,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card lg:grid-cols-4">
               {tiles.map((tile, i) => (
                 <li key={tile.key} data-kpi={tile.key} className={cn("flex min-w-0 flex-col gap-2 bg-card p-4", i === tiles.length - 1 && tiles.length % 2 === 1 && "col-span-2")}>
-                  <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5 text-compact text-muted-foreground">
                     <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{TILE_LOOK[tile.key].icon}</span>
                     {tile.label}
                   </span>
@@ -63,7 +63,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <section aria-labelledby="headline">
               <CardHeader className="mb-4">
                 <CardTitle id="headline" as="h3">Monthly target</CardTitle>
-                <p className="text-[13px] text-muted-foreground">Tasks done vs target, {monthLabel(month)}</p>
+                <p className="text-compact text-muted-foreground">Tasks done vs target, {monthLabel(month)}</p>
               </CardHeader>
               <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={`Tasks done vs target, ${monthLabel(month)}`} />
               {target?.note ? <p className="mt-3 text-sm text-muted-foreground">Note: {target.note}</p> : null}

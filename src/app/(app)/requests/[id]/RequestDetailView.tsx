@@ -49,7 +49,7 @@ function ExtLink({ href, children, className }: { href: string; children: React.
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 py-2 text-sm">
-      <dt className="text-[13px] text-muted-foreground">{label}</dt>
+      <dt className="text-compact text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-words text-foreground">{children}</dd>
     </div>
   );
@@ -80,7 +80,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
     <article className="@container">
       {fullPage ? null : (
         <nav aria-label="Breadcrumb" className="mb-2">
-          <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-muted-foreground hover:text-foreground", focusRing)}>
+          <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-compact font-medium text-muted-foreground hover:text-foreground", focusRing)}>
             <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />Requests
           </Link>
         </nav>
@@ -111,7 +111,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                 ) : null}
                 {req.notes ? (
                   <div>
-                    <h3 className="mb-1 text-[13px] font-medium text-muted-foreground">Notes</h3>
+                    <h3 className="mb-1 text-compact font-medium text-muted-foreground">Notes</h3>
                     <p className="text-sm break-words whitespace-pre-wrap text-foreground">{req.notes}</p>
                   </div>
                 ) : null}

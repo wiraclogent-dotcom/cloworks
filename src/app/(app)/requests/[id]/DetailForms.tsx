@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/Switch";
 function ErrorLine({ id, message }: { id: string; message: string | null }) {
   if (!message) return null;
   return (
-    <p id={id} role="alert" className="mt-1.5 flex items-start gap-1.5 text-[13px] font-medium text-danger">
+    <p id={id} role="alert" className="mt-1.5 flex items-start gap-1.5 text-compact font-medium text-danger">
       <CircleAlert aria-hidden="true" strokeWidth={1.75} className="mt-0.5 size-3.5 shrink-0" />
       <span>{message}</span>
     </p>
@@ -115,7 +115,7 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
         className={buttonClass({ variant: "ghost", size: "sm" })}>
         <Trash2 aria-hidden="true" strokeWidth={1.75} />Remove
       </button>
-      {error && <span role="alert" className="ml-2 text-[13px] text-danger">{error}</span>}
+      {error && <span role="alert" className="ml-2 text-compact text-danger">{error}</span>}
     </span>
   );
 }
@@ -174,7 +174,7 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
       {list.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-1.5">
           {list.map((p) => (
-            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
+            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-muted py-0.5 pl-1 pr-0.5 text-compact text-foreground">
               <Avatar name={p.name} size="sm" decorative />
               <span className="min-w-0 truncate">{p.name}</span>
               <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply({ remove: p })}

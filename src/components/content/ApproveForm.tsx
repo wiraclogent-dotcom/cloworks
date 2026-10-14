@@ -121,7 +121,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         if (f.type === "checkbox") {
           return (
             <div key={f.key}>
-              <label className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+              <label className="flex items-center gap-2 text-compact font-medium text-foreground">
                 <input type="checkbox" id={id(k)} checked={values[f.key] === true} onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.checked }))}
                   aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `${id(k)}-err` : undefined} />
                 {f.label}
@@ -160,7 +160,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
           <input {...props("outputCount")} type="number" min={1} step={1} inputMode="numeric" value={outputCount} onChange={(e) => setOutputCount(e.target.value)} />
         </Row>
         <div className="flex items-end pb-2">
-          <label className="flex items-center gap-2 text-[13px] font-medium text-foreground">
+          <label className="flex items-center gap-2 text-compact font-medium text-foreground">
             <input type="checkbox" checked={needsMotion} onChange={(e) => setNeedsMotion(e.target.checked)} />
             Needs motion
           </label>

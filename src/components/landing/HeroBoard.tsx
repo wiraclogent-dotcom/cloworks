@@ -98,7 +98,7 @@ export function HeroBoard() {
       <div className="flex">
         {/* App sidebar */}
         <div className="hidden w-48 shrink-0 flex-col gap-1 border-r border-border bg-sidebar p-3 md:flex">
-          <span className="mb-3 flex items-center gap-2 px-1.5 text-[13px] font-semibold text-foreground"><LogoMark size={22} />Cloworks</span>
+          <span className="mb-3 flex items-center gap-2 px-1.5 text-compact font-semibold text-foreground"><LogoMark size={22} />Cloworks</span>
           <span className="mb-2 flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] text-muted-foreground [&_svg]:size-3.5">
             <Search />Search
           </span>

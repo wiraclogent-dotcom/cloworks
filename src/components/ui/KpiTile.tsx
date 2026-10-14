@@ -12,7 +12,7 @@ export function KpiTile({ icon, label, labelAddon, value, sub, tone = "done", cl
       <span aria-hidden="true" data-tone={tone} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tone-tint text-tone-text [&_svg]:size-5">{icon}</span>
       <div className="min-w-0">
         <p className="font-display text-[2rem] leading-9 font-bold tracking-[-0.02em] text-foreground tabular-nums">{typeof value === "number" ? <CountUp value={value} /> : value}</p>
-        <p className="mt-1 text-[13px] text-muted-foreground">{label}{labelAddon ? <span className="ml-1 inline-flex align-middle">{labelAddon}</span> : null}</p>
+        <p className="mt-1 text-compact text-muted-foreground">{label}{labelAddon ? <span className="ml-1 inline-flex align-middle">{labelAddon}</span> : null}</p>
         {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
       </div>
     </div>

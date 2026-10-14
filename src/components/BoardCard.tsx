@@ -54,7 +54,7 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
         ) : card.title}
       </p>
       <div data-card-chips="" className="mt-1.5 space-y-2">
-        <p className="text-[13px] text-muted-foreground">{card.divisionName}</p>
+        <p className="text-compact text-muted-foreground">{card.divisionName}</p>
         <div className="flex flex-wrap items-center gap-1.5">
           <BrandTag name={card.brandName} />
           {open && <DeadlineChip daysLeft={card.daysLeft} />}

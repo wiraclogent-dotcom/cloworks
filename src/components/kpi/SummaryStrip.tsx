@@ -22,7 +22,7 @@ export function SummaryStrip({ cells }: { cells: SummaryCell[] }) {
       <ul className={cn("grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card", five ? "md:grid-cols-6" : "md:grid-cols-4")}>
         {cells.map((c, i) => (
           <li key={c.key} data-kpi={c.key} className={cn("flex min-w-0 flex-col gap-2 bg-card p-4", five && FIVE_SPAN[i])}>
-            <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-compact text-muted-foreground">
               <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{ICON[c.key]}</span>
               {c.label}
             </span>
