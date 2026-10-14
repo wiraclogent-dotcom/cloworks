@@ -21,7 +21,7 @@ vi.mock("@/components/projects/ItemHashOpener", () => ({ ItemHashOpener: marker(
 vi.mock("@/components/ProjectTimeline", () => ({ ProjectTimeline: marker("timeline") }));
 vi.mock("@/app/(app)/projects/[id]/MilestoneList", () => ({ MilestoneList: marker("milestones") }));
 
-import ProjectTasksPage from "@/app/(app)/projects/[id]/tasks/page";
+import nextConfig from "../next.config";
 import { ProjectPageView, type ProjectPageProject } from "@/app/(app)/projects/[id]/ProjectPageView";
 
 afterEach(() => { cleanup(); for (const k of Object.keys(seen)) delete seen[k]; });
@@ -44,10 +44,9 @@ const view = (p = project(), canManage = true) => (
     taskOwners={[{ id: "u1", name: "Dewi" }]} now={new Date("2026-10-14T05:00:00Z")} />
 );
 
-describe("tasks page", () => {
-  it("redirects to the project page", async () => {
-    await expect(ProjectTasksPage({ params: Promise.resolve({ id: "p1" }) })).rejects.toThrow("NEXT_REDIRECT /projects/p1");
-    expect(redirect).toHaveBeenCalledWith("/projects/p1");
+describe("old all-details route", () => {
+  it("redirects /projects/:id/tasks to the project page before render (no page to prerender)", async () => {
+    expect(await nextConfig.redirects?.()).toContainEqual({ source: "/projects/:id/tasks", destination: "/projects/:id", permanent: false });
   });
 });
 
