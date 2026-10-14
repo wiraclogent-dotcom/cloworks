@@ -13,9 +13,9 @@ import { DeadlineChip } from "./ui/DeadlineChip";
 import { EmptyState } from "./ui/EmptyState";
 import { StatusChip } from "./ui/StatusChip";
 import { Card } from "./ui/Card";
-import { buttonClass } from "./ui/Button";
 import { tableClass } from "./ui/table";
 import { cn } from "./ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 export type ProjectRow = {
   id: string; title: string; subTitle: string | null; brandName: string | null; ownerName: string;
@@ -83,9 +83,9 @@ export function ProjectRowsTable({ rows, canManage, now }: { rows: ProjectRow[];
                 </td>
                 {canManage && (
                   <td className={cn(t.td, "text-right")}>
-                    <Link href={`/projects/${p.id}/edit`} className={buttonClass({ variant: "ghost", size: "sm", className: "px-2" })}>
+                    <Button asChild variant="ghost" size="sm" className="px-2"><Link href={`/projects/${p.id}/edit`}>
                       <Pencil aria-hidden="true" />Edit{" "}<span className="sr-only">{p.title}</span>
-                    </Link>
+                    </Link></Button>
                   </td>
                 )}
               </tr>

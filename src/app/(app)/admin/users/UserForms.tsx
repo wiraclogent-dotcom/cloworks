@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { enumLabel } from "@/lib/adminChips";
 import { personLabel } from "@/lib/personLabel";
@@ -54,7 +54,7 @@ export function EditUserForm({ u }: { u: UserRowData }) {
 
 export function LoginEmailForm({ u }: { u: UserRowData }) {
   return (
-    <AdminForm action={saveLoginEmail} prefix={`email-${u.id}`} submitLabel="Save login email" submitAriaLabel={`Save login email for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
+    <AdminForm action={saveLoginEmail} prefix={`email-${u.id}`} submitLabel="Save login email" submitAriaLabel={`Save login email for ${u.name}`} submitVariant="outline" hidden={{ userId: u.id }}>
       {({ v, idFor, aria }) => (
         <Labeled id={idFor("email")} label="Login email (leave empty to remove access)">
           <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email", u.email ?? "")} {...aria()} />
@@ -68,7 +68,7 @@ export function LoginEmailForm({ u }: { u: UserRowData }) {
 export function PasswordForm({ u }: { u: UserRowData }) {
   if (!u.email) return <p className="text-xs text-muted-foreground">Set a login email first, then a password.</p>;
   return (
-    <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
+    <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="outline" hidden={{ userId: u.id }}>
       {({ idFor, aria }) => (
         <Labeled id={idFor("password")} label={u.hasPassword ? "New password (signs them out everywhere)" : "Password (at least 10 characters)"}>
           <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
@@ -92,7 +92,7 @@ export function ActiveToggle({ u }: { u: UserRowData }) {
       />
     );
   return (
-    <AdminForm action={setUserActive} prefix={`active-${u.id}`} submitLabel="Reactivate" submitAriaLabel={`Reactivate ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id, active: "true" }}>
+    <AdminForm action={setUserActive} prefix={`active-${u.id}`} submitLabel="Reactivate" submitAriaLabel={`Reactivate ${u.name}`} submitVariant="outline" hidden={{ userId: u.id, active: "true" }}>
       {() => null}
     </AdminForm>
   );
@@ -197,7 +197,7 @@ export function MergeForm({ u, others }: { u: UserRowData; others: { id: string;
             {others.map((o) => <option key={o.id} value={o.id}>{personLabel(o)}</option>)}
           </select>
         </Labeled>
-        <Button type="submit" variant="secondary" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>
+        <Button type="submit" variant="outline" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>
       </form>
       {state && !state.ok && <Alert tone="danger">Error: {state.error}</Alert>}
       {state?.ok && state.preview.into.id === intoId && (

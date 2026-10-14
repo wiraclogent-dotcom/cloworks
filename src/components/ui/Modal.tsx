@@ -3,8 +3,8 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
-import { IconButton } from "./IconButton";
 import { cn } from "./cn";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * Route modal for intercepted routes (`@modal/(.)…`). Native `<dialog>` gives the focus trap and Esc;
@@ -30,7 +30,7 @@ export function Modal({ title, description, children, className, side = "center"
     };
   }, []);
 
-  const close = <IconButton aria-label="Close" icon={<X />} onClick={() => router.back()} />;
+  const close = <Button variant="ghost" size="icon" aria-label="Close" onClick={() => router.back()} title="Close"><X /></Button>;
   return (
     <dialog ref={ref} aria-labelledby="modal-title" aria-describedby={description ? "modal-desc" : undefined}
       onCancel={(e) => { e.preventDefault(); router.back(); }}

@@ -1,5 +1,6 @@
 import { googleSignIn } from "@/app/signin/actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { cn } from "@/components/ui/cn";
 import { providerButton } from "./styles";
 
 export function GoogleMark() {
@@ -18,7 +19,7 @@ export function GoogleButton({ next }: { next?: string }) {
   return (
     <form action={googleSignIn}>
       {next && <input type="hidden" name="next" value={next} />}
-      <SubmitButton block className={providerButton} pendingLabel="Opening Google…">
+      <SubmitButton variant="outline" className={cn("w-full", providerButton)} pendingLabel="Opening Google…">
         <GoogleMark />Continue with Google
       </SubmitButton>
     </form>

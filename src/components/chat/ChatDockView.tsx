@@ -8,8 +8,8 @@ import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage
 import { usePoll } from "@/lib/usePoll";
 import { ChatList } from "./ChatList";
 import { ChatConversation, type ConversationState } from "./ChatConversation";
-import { IconButton } from "../ui/IconButton";
 import { cn, focusRing } from "../ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 type Cursor = { at: Date; id: string };
 export type LatestUnread = { requestId: string; title: string };
@@ -375,9 +375,17 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
           <div className="flex items-center justify-between gap-2 border-b border-border py-2 pr-2 pl-4">
             <p className="text-sm font-semibold">Messages</p>
             <div className="flex items-center gap-1">
-              <IconButton aria-label={collapsed ? "Expand messages" : "Collapse to chat list"} size="sm" className="hidden md:inline-flex"
-                icon={collapsed ? <PanelRightOpen /> : <PanelRightClose />} onClick={() => setCollapsed(!collapsed)} />
-              <IconButton aria-label="Minimize messages" size="sm" icon={<ChevronDown />} onClick={minimize} />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label={collapsed ? "Expand messages" : "Collapse to chat list"}
+                className="hidden md:inline-flex"
+                onClick={() => setCollapsed(!collapsed)}
+                title={collapsed ? "Expand messages" : "Collapse to chat list"}
+              >
+                {collapsed ? <PanelRightOpen /> : <PanelRightClose />}
+              </Button>
+              <Button variant="ghost" size="icon-sm" aria-label="Minimize messages" onClick={minimize} title="Minimize messages"><ChevronDown /></Button>
             </div>
           </div>
           <div className="flex min-h-0 flex-1">

@@ -6,8 +6,8 @@ import { X } from "lucide-react";
 import type { BriefItem } from "@/lib/briefCalendar";
 import { dayLabel } from "@/lib/calendar";
 import { StatusBadge } from "../status";
-import { IconButton } from "../ui/IconButton";
 import { cn, focusRing } from "../ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * One day of the brief calendar: that day's requests grouped by who sent them, in order of their first brief. Native
@@ -39,7 +39,7 @@ export function BriefDayDialog({ day, items, onClose }: { day: string; items: Br
             <h2 id={titleId} className="text-base font-semibold text-heading">{dayLabel(day)}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{count}</p>
           </div>
-          <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
+          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose} title="Close"><X /></Button>
         </div>
         {groups.size === 0 ? (
           <p className="text-sm text-muted-foreground">No briefs this day.</p>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { kpiHref } from "@/lib/kpi/href";
 
@@ -42,7 +43,6 @@ export function MonthPicker({ month, current, userId, action, keep }: {
     return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
   }, []);
 
-  const yearBtn = cn("inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40", focusRing);
   const cell = "inline-flex h-9 items-center justify-center rounded-lg text-sm tabular-nums";
   return (
     <div className="flex items-center gap-2">
@@ -61,13 +61,13 @@ export function MonthPicker({ month, current, userId, action, keep }: {
         <div role="group" aria-label="Choose a month"
           className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-border bg-popover p-3 text-card-foreground shadow-raised">
           <div className="mb-2 flex items-center justify-between">
-            <button type="button" aria-label="Previous year" className={yearBtn} onClick={() => setYear((y) => y - 1)} disabled={year <= 2000}>
-              <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />
-            </button>
+            <Button variant="ghost" size="icon-sm" aria-label="Previous year" className="[&_svg]:size-4" onClick={() => setYear((y) => y - 1)} disabled={year <= 2000}>
+              <ChevronLeft aria-hidden="true" strokeWidth={1.75} />
+            </Button>
             <span aria-live="polite" className="text-sm font-semibold text-heading tabular-nums">{year}</span>
-            <button type="button" aria-label="Next year" className={yearBtn} onClick={() => setYear((y) => y + 1)} disabled={year >= maxYear}>
-              <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" />
-            </button>
+            <Button variant="ghost" size="icon-sm" aria-label="Next year" className="[&_svg]:size-4" onClick={() => setYear((y) => y + 1)} disabled={year >= maxYear}>
+              <ChevronRight aria-hidden="true" strokeWidth={1.75} />
+            </Button>
           </div>
           <ul className="grid grid-cols-4 gap-1">
             {SHORT.map((short, i) => {

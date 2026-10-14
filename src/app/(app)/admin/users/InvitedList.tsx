@@ -4,7 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AdminFormState } from "@/lib/adminForm";
 import { AdminForm, ConfirmAction, Labeled, control, type FormCtx } from "@/components/admin/AdminForm";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import { tableClass } from "@/components/ui/table";
@@ -18,7 +18,7 @@ export type InviteRow = { id: string; email: string; appRole: string; jobRole: s
 
 function ResendButton({ email }: { email: string }) {
   const { pending } = useFormStatus();
-  return <Button type="submit" variant="secondary" size="sm" loading={pending} aria-label={`Resend invite to ${email}`}>Resend</Button>;
+  return <Button type="submit" variant="outline" size="sm" loading={pending} aria-label={`Resend invite to ${email}`}>Resend</Button>;
 }
 
 /** Open invites (not accepted, not revoked); an expired one stays so it can be resent. */

@@ -5,9 +5,8 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, moveCategory, updateCategory, type LibraryActionResult } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { fieldClass } from "@/components/ui/Field";
-import { IconButton } from "@/components/ui/IconButton";
 import { CATEGORY_ICON_KEYS } from "./categoryIcons";
 import { LibraryDialog } from "./LibraryDialog";
 
@@ -33,11 +32,38 @@ function CategoryRow({ cat, first, last, run, pending }: {
       <input aria-label={`Name of ${cat.name}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
         className={fieldClass({ className: "min-w-0 flex-1" })} />
       <IconSelect label={`Icon for ${cat.name}`} value={icon} onChange={setIcon} disabled={pending} />
-      <Button size="sm" variant="secondary" disabled={!dirty || pending}
+      <Button size="sm" variant="outline" disabled={!dirty || pending}
         onClick={() => run(updateCategory(cat.id, { name: name.trim(), icon: icon || null }))}>Save</Button>
-      <IconButton size="sm" aria-label={`Move ${cat.name} up`} icon={<ArrowUp />} disabled={first || pending} onClick={() => run(moveCategory(cat.id, "up"))} />
-      <IconButton size="sm" aria-label={`Move ${cat.name} down`} icon={<ArrowDown />} disabled={last || pending} onClick={() => run(moveCategory(cat.id, "down"))} />
-      <IconButton size="sm" aria-label={`Delete ${cat.name}`} icon={<Trash2 />} disabled={pending} onClick={() => run(deleteCategory(cat.id))} />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${cat.name} up`}
+        disabled={first || pending}
+        onClick={() => run(moveCategory(cat.id, "up"))}
+        title={`Move ${cat.name} up`}
+      >
+        <ArrowUp />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${cat.name} down`}
+        disabled={last || pending}
+        onClick={() => run(moveCategory(cat.id, "down"))}
+        title={`Move ${cat.name} down`}
+      >
+        <ArrowDown />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Delete ${cat.name}`}
+        disabled={pending}
+        onClick={() => run(deleteCategory(cat.id))}
+        title={`Delete ${cat.name}`}
+      >
+        <Trash2 />
+      </Button>
     </li>
   );
 }
@@ -75,7 +101,7 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
         <input aria-label="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60}
           placeholder="New category" className={fieldClass({ className: "min-w-0 flex-1" })} />
         <IconSelect label="New category icon" value={newIcon} onChange={setNewIcon} disabled={pending} />
-        <Button variant="primary" disabled={newName.trim() === "" || pending} loading={pending} onClick={add}>Add category</Button>
+        <Button variant="default" disabled={newName.trim() === "" || pending} loading={pending} onClick={add}>Add category</Button>
       </div>
     </LibraryDialog>
   );

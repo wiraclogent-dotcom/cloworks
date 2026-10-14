@@ -3,8 +3,7 @@
 import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 import { Chip } from "@/components/ui/Chip";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { fieldClass } from "@/components/ui/Field";
@@ -54,7 +53,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
         />
       ) : (
         <div>
-          <Button size="sm" variant="secondary" icon={<Plus aria-hidden="true" />} onClick={() => setAdding(true)}>
+          <Button size="sm" variant="outline" icon={<Plus aria-hidden="true" />} onClick={() => setAdding(true)}>
             Add milestone
           </Button>
         </div>
@@ -87,9 +86,26 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
           <Chip tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Chip>
           {canManage && !confirming && (
             <>
-              <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title="Edit" aria-label={`Edit ${m.title}`} icon={<Pencil aria-hidden="true" />} onClick={onEdit} />
-              <IconButton size="sm" title="Delete" aria-label={`Delete ${m.title}`} icon={<Trash2 aria-hidden="true" />}
-                className="size-7 text-danger hover:text-danger [&_svg]:size-3.5" onClick={() => { setError(null); setConfirming(true); }} />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 [&_svg]:size-3.5"
+                title="Edit"
+                aria-label={`Edit ${m.title}`}
+                onClick={onEdit}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Delete"
+                aria-label={`Delete ${m.title}`}
+                className="size-7 text-danger hover:text-danger [&_svg]:size-3.5"
+                onClick={() => { setError(null); setConfirming(true); }}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
             </>
           )}
         </span>
@@ -97,7 +113,7 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
       {confirming && (
         <div role="group" aria-label={`Confirm deleting ${m.title}`} className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
           <span>Delete this milestone?</span>
-          <Button size="sm" variant="danger" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
+          <Button size="sm" variant="destructive" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)} autoFocus>Cancel</Button>
         </div>
       )}
@@ -140,7 +156,7 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="sm" variant="primary" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button type="submit" size="sm" variant="default" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );

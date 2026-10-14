@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Ellipsis, FileDown, FileText, Globe, HardDrive, Palette, Pencil, PenTool, Pin, PinOff, Presentation, Sheet, Trash2, type LucideIcon } from "lucide-react";
-import { IconButton } from "@/components/ui/IconButton";
 import { focusRing } from "@/components/ui/cn";
 import { BrandTag, Chip } from "@/components/ui/Chip";
 import { itemBadge, linkKind, type LibraryRow as Row, type LinkKind } from "@/lib/libraryView";
+import { Button } from "@/components/shadcn/button";
 
 const KIND_ICON: Record<LinkKind, LucideIcon> = {
   docs: FileText,
@@ -50,7 +50,17 @@ function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
   );
   return (
     <div ref={ref} className="relative shrink-0" onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}>
-      <IconButton size="sm" aria-label={`Actions for ${row.title}`} aria-haspopup="menu" aria-expanded={open} icon={<Ellipsis />} onClick={() => setOpen((o) => !o)} />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Actions for ${row.title}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        title={`Actions for ${row.title}`}
+      >
+        <Ellipsis />
+      </Button>
       {open ? (
         <div role="menu" aria-label={`Actions for ${row.title}`} className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-popover p-1 shadow-raised [&_svg]:size-4 [&_svg]:text-muted-foreground">
           {item("Edit", <Pencil />, actions.onEdit)}

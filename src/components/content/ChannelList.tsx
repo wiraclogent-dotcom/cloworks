@@ -9,10 +9,10 @@ import type { ChannelSummary } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
 import { CountPill } from "@/components/ui/Chip";
 import { fieldClass, labelClass } from "@/components/ui/Field";
-import { IconButton } from "@/components/ui/IconButton";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ChannelActions, type ChannelMove } from "./ChannelActions";
 import { AddChannelButton, type BrandOption } from "./ChannelForm";
+import { Button } from "@/components/shadcn/button";
 
 /** Channels in list order, grouped by brand id (a brand's group sits where its first channel is). */
 function byBrand(channels: ChannelSummary[]): ChannelSummary[][] {
@@ -67,8 +67,16 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
           </select>
         </div>
         {canManage && selected ? (
-          <IconButton aria-label="Manage selected channel" aria-expanded={managingSelected} icon={<Settings2 />} variant="secondary"
-            onClick={() => setManagingSelected((v) => !v)} />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Manage selected channel"
+            aria-expanded={managingSelected}
+            onClick={() => setManagingSelected((v) => !v)}
+            title="Manage selected channel"
+          >
+            <Settings2 />
+          </Button>
         ) : null}
         {add}
       </div>
@@ -94,8 +102,16 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
                           {c.awaiting ? <CountPill value={c.awaiting} aria-label={`${c.awaiting} awaiting approval`} /> : null}
                         </Link>
                         {canManage ? (
-                          <IconButton size="sm" aria-label={`Manage @${c.handle}`} aria-expanded={open} icon={<Settings2 />}
-                            onClick={() => setManaging(open ? null : c.id)} />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Manage @${c.handle}`}
+                            aria-expanded={open}
+                            onClick={() => setManaging(open ? null : c.id)}
+                            title={`Manage @${c.handle}`}
+                          >
+                            <Settings2 />
+                          </Button>
                         ) : null}
                       </div>
                       {canManage && open ? actions(c) : null}

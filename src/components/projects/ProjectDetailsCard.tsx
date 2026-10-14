@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ProjectStatus } from "@prisma/client";
 import { Pencil } from "lucide-react";
 import { ProjectForm } from "@/app/(app)/projects/ProjectForm";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { StatusChip } from "@/components/ui/StatusChip";
@@ -69,7 +69,7 @@ export function ProjectDetailsCard({ project, brands, owners, canManage }: { pro
   const day = (iso: string | null) => (iso ? formatJakartaDay(new Date(iso)) : MISSING);
   return (
     <Card>
-      <CardHeader actions={canManage ? <Button ref={editRef} size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button> : undefined}>
+      <CardHeader actions={canManage ? <Button variant="outline" ref={editRef} size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button> : undefined}>
         <CardTitle>Details</CardTitle>
       </CardHeader>
       <dl className="grid gap-x-6 gap-y-3 grid-cols-2 lg:grid-cols-3">

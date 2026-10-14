@@ -4,7 +4,7 @@ import { useId, useState, type FormEvent } from "react";
 import { CheckCheck, Undo2 } from "lucide-react";
 import { sendBackPost } from "@/app/(app)/content/actions";
 import type { PostPanelView } from "@/lib/content/panelView";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 import { MediaStrip } from "./MediaStrip";
 import { FORMAT_LABEL } from "./PostPanelEditor";
@@ -53,7 +53,7 @@ function SendBack({ postId, onCancel }: { postId: string; onCancel: () => void }
       <FieldError id={`${uid}-err`}>{error}</FieldError>
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button size="sm" type="submit" variant="primary" disabled={!note.trim()} loading={pending}>Send back</Button>
+        <Button size="sm" type="submit" variant="default" disabled={!note.trim()} loading={pending}>Send back</Button>
       </div>
     </form>
   );
@@ -84,8 +84,8 @@ export function PostPanelReview({ view, onApprove, approving }: { view: PostPane
       {can.approve ? (
         sendingBack ? <SendBack postId={post.id} onCancel={() => setSendingBack(false)} /> : (
           <div className="flex flex-wrap justify-end gap-2">
-            <Button icon={<Undo2 />} onClick={() => setSendingBack(true)}>Send back…</Button>
-            <Button variant="primary" icon={<CheckCheck />} loading={approving} onClick={onApprove}>Approve…</Button>
+            <Button variant="outline" icon={<Undo2 />} onClick={() => setSendingBack(true)}>Send back…</Button>
+            <Button variant="default" icon={<CheckCheck />} loading={approving} onClick={onApprove}>Approve…</Button>
           </div>
         )
       ) : null}

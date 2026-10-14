@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { CircleCheck } from "lucide-react";
-import { Button } from "./ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass, labelClass } from "./ui/Field";
 import { FILE_LOCATION_HINT, isFileLocation } from "@/lib/fileLocation";
 
@@ -84,7 +84,7 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
           </div>
           <div className="flex justify-end gap-2 pt-1">
             <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-            <Button type="submit" variant="primary">Mark as done</Button>
+            <Button type="submit" variant="default">Mark as done</Button>
           </div>
         </form>
       </div>

@@ -4,9 +4,9 @@ import { Brush, Check, Search, SlidersHorizontal, UserRound, X } from "lucide-re
 import { SCOPE_LABEL } from "@/lib/todayOverview";
 import type { ViewParams } from "@/app/(app)/requests/params";
 import { STATUS_LABEL } from "./status";
-import { buttonClass } from "./ui/Button";
 import { cn, focusRing } from "./ui/cn";
 import { SEGMENT_TRAY, segmentClass } from "./ui/SegmentedControl";
+import { Button } from "@/components/shadcn/button";
 
 type Opt = { id: string; name: string };
 
@@ -115,8 +115,8 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
             </select>
           </label>
           <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
-            <button type="submit" className={buttonClass({ variant: "primary", size: "sm" })}>Apply</button>
-            <Link href={clearHref} className={buttonClass({ variant: "ghost", size: "sm" })}><X aria-hidden="true" strokeWidth={1.75} />Clear filters</Link>
+            <Button variant="default" size="sm" type="submit">Apply</Button>
+            <Button asChild variant="ghost" size="sm"><Link href={clearHref}><X aria-hidden="true" strokeWidth={1.75} />Clear filters</Link></Button>
           </div>
         </div>
       </details>

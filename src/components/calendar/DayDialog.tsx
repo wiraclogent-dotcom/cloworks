@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import type { CalendarRow } from "@/lib/requests";
 import { dayLabel } from "@/lib/calendar";
 import { StaticCalendarCard } from "../CalendarCard";
-import { IconButton } from "../ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * "+N more": every card of one day in a native `<dialog>` (focus trap and Esc for free), styled like `ui/Modal` but
@@ -35,7 +35,7 @@ export function DayDialog({ day, cards, today, onClose }: { day: string; cards: 
             <h2 id={titleId} className="text-base font-semibold text-heading">{dayLabel(day)}</h2>
             <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{count}</p>
           </div>
-          <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
+          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose} title="Close"><X /></Button>
         </div>
         <ul className="space-y-2">
           {cards.map((c) => <StaticCalendarCard key={c.id} card={c} today={today} />)}

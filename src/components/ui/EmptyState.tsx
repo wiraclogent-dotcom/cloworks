@@ -5,7 +5,7 @@ import { cn } from "./cn";
 
 /**
  * Empty list / no results: illustration (or icon), one-line headline, one sentence, optional action (e.g. a
- * buttonClass link). `art` shows a brand illustration that gently floats; `icon` is the fallback when art is off
+ * `<Button asChild>` link). `art` shows a brand illustration that gently floats; `icon` is the fallback when art is off
  * or not given. `titleAs` makes the headline a real heading when the state replaces a whole page (403, not found:
  * `h1`); `role` announces it (e.g. "alert" for access denied).
  */

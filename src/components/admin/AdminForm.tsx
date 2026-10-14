@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AdminFormState } from "@/lib/adminForm";
 import { Alert } from "@/components/ui/Alert";
-import { Button, type ButtonVariant } from "@/components/ui/Button";
+import { Button, type ButtonProps } from "@/components/shadcn/button";
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { cn } from "@/components/ui/cn";
 
@@ -45,7 +45,7 @@ export function AdminForm({
   prefix,
   submitLabel,
   submitAriaLabel,
-  submitVariant = "primary",
+  submitVariant = "default",
   children,
   className,
   hidden,
@@ -55,7 +55,7 @@ export function AdminForm({
   submitLabel: string;
   /** Unique accessible name when the visible label repeats per row (e.g. "Save changes for Rina"). */
   submitAriaLabel?: string;
-  submitVariant?: ButtonVariant;
+  submitVariant?: ButtonProps["variant"];
   children: (ctx: FormCtx) => React.ReactNode;
   className?: string;
   hidden?: Record<string, string>;
@@ -135,8 +135,8 @@ export function ConfirmAction({
         <div role="group" aria-label={`Confirm: ${triggerLabel}`} data-tone="cancelled" className="space-y-2.5 rounded-lg border border-tone-accent/40 bg-tone-tint p-3">
           <p className="text-sm font-medium text-tone-text">{question}</p>
           <div className="flex flex-wrap gap-2">
-            <Button ref={confirmRef} type="submit" variant="danger" size="sm" loading={pending}>{pending ? "Working…" : confirmLabel}</Button>
-            <Button type="button" variant="secondary" size="sm" onClick={() => { setAsking(false); setTimeout(() => triggerRef.current?.focus(), 0); }}>Cancel</Button>
+            <Button ref={confirmRef} type="submit" variant="destructive" size="sm" loading={pending}>{pending ? "Working…" : confirmLabel}</Button>
+            <Button type="button" variant="outline" size="sm" onClick={() => { setAsking(false); setTimeout(() => triggerRef.current?.focus(), 0); }}>Cancel</Button>
           </div>
         </div>
       ) : (

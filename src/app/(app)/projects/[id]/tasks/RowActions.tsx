@@ -3,8 +3,7 @@
 import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 import { deleteTask, moveTask } from "./actions";
 
 /** Move up / move down / delete for one row while it is being edited. Delete asks for a second click to confirm. */
@@ -28,7 +27,7 @@ export function RowActions({ projectId, taskId, label, isFirst, isLast }: {
     return (
       <div role="group" aria-label={`Confirm deleting ${label}`} className="flex flex-wrap items-center gap-1.5 text-xs">
         <span>Delete this row?</span>
-        <Button size="sm" variant="danger" disabled={pending} onClick={() => run(() => deleteTask(projectId, taskId))}>
+        <Button size="sm" variant="destructive" disabled={pending} onClick={() => run(() => deleteTask(projectId, taskId))}>
           {pending ? "Deleting…" : "Delete"}
         </Button>
         <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)} autoFocus>Cancel</Button>
@@ -38,12 +37,39 @@ export function RowActions({ projectId, taskId, label, isFirst, isLast }: {
 
   return (
     <div className="flex items-center gap-0.5">
-      <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title="Move up" aria-label={`Move ${label} up`} icon={<ArrowUp aria-hidden="true" />}
-        disabled={pending || isFirst} onClick={() => run(() => moveTask(projectId, taskId, "up"))} />
-      <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title="Move down" aria-label={`Move ${label} down`} icon={<ArrowDown aria-hidden="true" />}
-        disabled={pending || isLast} onClick={() => run(() => moveTask(projectId, taskId, "down"))} />
-      <IconButton size="sm" className="size-7 text-danger hover:text-danger [&_svg]:size-3.5" title="Delete row" aria-label={`Delete ${label}`} icon={<Trash2 aria-hidden="true" />}
-        disabled={pending} onClick={() => { setError(null); setConfirming(true); }} />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="size-7 [&_svg]:size-3.5"
+        title="Move up"
+        aria-label={`Move ${label} up`}
+        disabled={pending || isFirst}
+        onClick={() => run(() => moveTask(projectId, taskId, "up"))}
+      >
+        <ArrowUp aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="size-7 [&_svg]:size-3.5"
+        title="Move down"
+        aria-label={`Move ${label} down`}
+        disabled={pending || isLast}
+        onClick={() => run(() => moveTask(projectId, taskId, "down"))}
+      >
+        <ArrowDown aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="size-7 text-danger hover:text-danger [&_svg]:size-3.5"
+        title="Delete row"
+        aria-label={`Delete ${label}`}
+        disabled={pending}
+        onClick={() => { setError(null); setConfirming(true); }}
+      >
+        <Trash2 aria-hidden="true" />
+      </Button>
       {error && <span role="alert" className="text-xs text-danger">{error}</span>}
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { IconButton } from "@/components/ui/IconButton";
 import { Chip } from "@/components/ui/Chip";
 import { StatusIcon } from "@/components/ui/StatusIcon";
 import { cn } from "@/components/ui/cn";
@@ -18,6 +17,7 @@ import { DateEdit } from "./DateEdit";
 import { EditableName, OwnerSelect } from "./DetailEdit";
 import { RowActions } from "./RowActions";
 import type { TaskMode } from "@/lib/projectProgress";
+import { Button } from "@/components/shadcn/button";
 
 const tbl = tableClass();
 // Cells keep one line (the inline editors sit beside their buttons); the wrapper scrolls sideways when needed.
@@ -62,15 +62,17 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
   const fileText = task.fileName ?? task.notes?.replace(/^Sheet file column: /, "") ?? (task.fileUrl ? "Open file" : "No file");
 
   const pencil = canManage && (
-    <IconButton
-      size="sm"
+    <Button
+      variant="ghost"
+      size="icon-sm"
       className="size-7 [&_svg]:size-3.5"
       aria-label={editing ? `Done editing ${label}` : `Edit ${label}`}
       aria-pressed={editing}
       title={editing ? "Done editing" : "Edit this row"}
-      icon={editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
       onClick={() => { setNameError(null); setEditing((e) => !e); }}
-    />
+    >
+      {editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+    </Button>
   );
   const actions = <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />;
 

@@ -10,10 +10,10 @@ import { authTitleClass } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit } from "@/components/auth/styles";
 import { Alert } from "@/components/ui/Alert";
-import { buttonClass } from "@/components/ui/Button";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { acceptInviteAction } from "./actions";
+import { Button } from "@/components/shadcn/button";
 
 const lead = "mt-3 text-base leading-relaxed text-muted-foreground";
 
@@ -32,7 +32,7 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
       <div>
         <h1 className={authTitleClass}>You&apos;re already a member</h1>
         <p className={lead}>You&apos;re signed in to a workspace already.</p>
-        <a href={ENTER_PATH} className={buttonClass({ variant: "primary", block: true, className: `mt-8 ${brandSubmit}` })}>Go to requests</a>
+        <Button asChild variant="default" className={`w-full mt-8 ${brandSubmit}`}><a href={ENTER_PATH}>Go to requests</a></Button>
       </div>
     );
   }

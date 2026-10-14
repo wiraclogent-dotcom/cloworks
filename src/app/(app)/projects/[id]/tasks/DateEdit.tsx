@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Calendar } from "@/components/shadcn/calendar";
 import { isoToLocal, jakartaTodayLocal, localToIso } from "@/components/ui/DatePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
@@ -76,8 +76,8 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
           <div className="flex items-center justify-between">
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
             <div className="flex gap-1.5">
-              <Button size="sm" variant="secondary" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
-              <Button size="sm" variant="primary" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => setOpen(false)}>Close</Button>
+              <Button size="sm" variant="default" disabled={pending || !draft || draft === current} onClick={() => save(draft)}>
                 {pending ? "Saving…" : "Save"}
               </Button>
             </div>

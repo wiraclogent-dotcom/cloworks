@@ -61,7 +61,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
               <li key={r.applicantId} aria-label={r.name} className="flex flex-wrap items-center justify-between gap-3">
                 <Who r={r} />
                 <AdminForm action={undoRejectRequest} prefix={`undo-${r.applicantId}`} submitLabel="Undo" submitAriaLabel={`Undo reject for ${r.name}`}
-                  submitVariant="secondary" hidden={{ applicantId: r.applicantId }}>
+                  submitVariant="outline" hidden={{ applicantId: r.applicantId }}>
                   {() => null}
                 </AdminForm>
               </li>

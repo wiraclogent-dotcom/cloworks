@@ -3,10 +3,10 @@ import type { ScopedDb } from "@/lib/db";
 import { kpiHref } from "@/lib/kpi/href";
 import { targetYears } from "@/lib/kpi/projectQueries";
 import type { Quarter } from "@/lib/kpi/projectItems";
-import { buttonClass } from "@/components/ui/Button";
 import { KpiSection } from "@/components/kpi/KpiSection";
 import { PersonProjectKpiSection } from "@/components/kpi/project/PersonProjectKpiSection";
 import { YearSelect } from "@/components/kpi/project/YearSelect";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * My KPI › Projects: the person's quarterly Project KPI for `year`, under a header with the year picker. `keep` is
@@ -30,7 +30,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
       {targetCount === 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
           <p className="text-sm text-muted-foreground">No project targets for {year}.</p>
-          {canTeam ? <Link href={`/dashboard/projects/${subject.id}?year=${year}`} className={buttonClass({ variant: "secondary", size: "sm" })}>Set targets</Link> : null}
+          {canTeam ? <Button asChild variant="outline" size="sm"><Link href={`/dashboard/projects/${subject.id}?year=${year}`}>Set targets</Link></Button> : null}
         </div>
       ) : (
         <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} yearSelect={false} headingLevel={3} />

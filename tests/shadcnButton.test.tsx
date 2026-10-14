@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import Link from "next/link";
 import { Plus, ArrowRight } from "lucide-react";
 import { Button, buttonVariants } from "@/components/shadcn/button";
 
@@ -102,7 +103,7 @@ describe("shadcn Button", () => {
   it("asChild renders the Link itself with button classes and no type", () => {
     render(
       <Button asChild variant="default">
-        <a href="/requests/new">New request</a>
+        <Link href="/requests/new">New request</Link>
       </Button>,
     );
     const a = screen.getByRole("link", { name: "New request" });

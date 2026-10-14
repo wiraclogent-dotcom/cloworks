@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type ChangeEvent } from "react";
 import { Plus, RotateCw } from "lucide-react";
 import { registerUpload, requestUploadSignature } from "@/app/(app)/content/actions";
 import { IMAGE_FORMATS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, VIDEO_FORMATS } from "@/lib/media/config";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 
 type Accept = "image" | "video" | "both";

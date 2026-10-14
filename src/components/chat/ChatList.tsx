@@ -4,8 +4,8 @@ import { MessagesSquare } from "lucide-react";
 import type { ChatSummary } from "@/lib/chat";
 import { relativeTime } from "@/lib/relativeTime";
 import { Skeleton } from "../ui/Skeleton";
-import { buttonClass } from "../ui/Button";
 import { cn, focusRing } from "../ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 /** "You: …" for your own last message, otherwise "Name: …". */
 function preview(c: ChatSummary, userId: string): string {
@@ -25,7 +25,7 @@ export function ChatList({ chats, error = null, onRetry, selectedId, userId, now
       <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error}</p>
         {onRetry && (
-          <button type="button" onClick={onRetry} className={buttonClass({ size: "sm" })}>Retry</button>
+          <Button variant="outline" size="sm" type="button" onClick={onRetry}>Retry</Button>
         )}
       </div>
     );

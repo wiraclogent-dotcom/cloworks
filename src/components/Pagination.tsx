@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { buttonClass } from "./ui/Button";
+import { Button, buttonVariants } from "@/components/shadcn/button";
 
-const link = buttonClass({ variant: "ghost", size: "sm" });
-const off = buttonClass({ variant: "ghost", size: "sm", className: "pointer-events-none opacity-55" });
+const off = buttonVariants({ variant: "ghost", size: "sm", className: "pointer-events-none opacity-55" });
 
 /**
  * Server component: plain links, so paging works without JS. `hrefFor(n)` builds the URL (other params preserved by
@@ -17,8 +16,8 @@ export function Pagination({ text, page, pageCount, hrefFor }: { text: string; p
         <>
           <span className="order-last col-span-2 text-center tabular-nums sm:order-none sm:col-span-1">Page {page} of {pageCount}</span>
           <div className="flex items-center justify-end gap-1">
-            {page > 1 ? <Link href={hrefFor(page - 1)} rel="prev" className={link}><ChevronLeft aria-hidden="true" strokeWidth={1.75} />Previous</Link> : <span aria-disabled="true" className={off}><ChevronLeft aria-hidden="true" strokeWidth={1.75} />Previous</span>}
-            {page < pageCount ? <Link href={hrefFor(page + 1)} rel="next" className={link}>Next<ChevronRight aria-hidden="true" strokeWidth={1.75} /></Link> : <span aria-disabled="true" className={off}>Next<ChevronRight aria-hidden="true" strokeWidth={1.75} /></span>}
+            {page > 1 ? <Button asChild variant="ghost" size="sm"><Link href={hrefFor(page - 1)} rel="prev"><ChevronLeft aria-hidden="true" strokeWidth={1.75} />Previous</Link></Button> : <span aria-disabled="true" className={off}><ChevronLeft aria-hidden="true" strokeWidth={1.75} />Previous</span>}
+            {page < pageCount ? <Button asChild variant="ghost" size="sm"><Link href={hrefFor(page + 1)} rel="next">Next<ChevronRight aria-hidden="true" strokeWidth={1.75} /></Link></Button> : <span aria-disabled="true" className={off}>Next<ChevronRight aria-hidden="true" strokeWidth={1.75} /></span>}
           </div>
         </>
       )}

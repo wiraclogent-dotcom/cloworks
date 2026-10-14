@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { labelClass } from "@/components/ui/Field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 
@@ -29,7 +29,7 @@ export function ManagePeopleDialog(props: Props) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button icon={<Users aria-hidden="true" />} onClick={() => setOpen(true)}>Manage people</Button>
+      <Button variant="outline" icon={<Users aria-hidden="true" />} onClick={() => setOpen(true)}>Manage people</Button>
       {open ? <Picker {...props} onClose={() => setOpen(false)} /> : null}
     </>
   );
@@ -88,8 +88,8 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
         {error ? <Alert tone="danger">{error}</Alert> : null}
 
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={saving}>Save</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={saving}>Save</Button>
         </div>
       </form>
     </LibraryDialog>

@@ -3,7 +3,7 @@
 import { safeAction } from "@/lib/safeAction";
 import { useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { fieldClass } from "@/components/ui/Field";
@@ -60,7 +60,7 @@ export function AddDetailForm({ projectId, mode, owners, defaultTitle = "", labe
   if (!open) {
     return (
       <div className="flex justify-end">
-        <Button variant="primary" icon={<Plus aria-hidden="true" />} onClick={() => { setError(null); setOpen(true); }}>
+        <Button variant="default" icon={<Plus aria-hidden="true" />} onClick={() => { setError(null); setOpen(true); }}>
           {label}
         </Button>
       </div>
@@ -118,7 +118,7 @@ export function AddDetailForm({ projectId, mode, owners, defaultTitle = "", labe
         {error && <p role="alert" className="text-sm text-danger sm:col-span-2">{error}</p>}
         <div className="flex items-center justify-end gap-2 sm:col-span-2">
           <Button variant="ghost" disabled={pending} onClick={() => { setForm(empty); setError(null); setOpen(false); }}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={pending}>{pending ? "Adding…" : label}</Button>
+          <Button type="submit" variant="default" disabled={pending}>{pending ? "Adding…" : label}</Button>
         </div>
       </form>
     </Card>

@@ -3,8 +3,7 @@
 import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 import { fieldClass } from "@/components/ui/Field";
 import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { setTaskFileUrl } from "./actions";
@@ -48,7 +47,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
             disabled={pending}
             autoFocus
           />
-          <Button type="submit" size="sm" variant="primary" disabled={pending}>Save</Button>
+          <Button type="submit" size="sm" variant="default" disabled={pending}>Save</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setDraft(url ?? ""); setError(null); setEditing(false); }}>Cancel</Button>
         </div>
         <p className="text-xs text-muted-foreground">Leave empty to remove the link.</p>
@@ -59,9 +58,16 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
 
   return (
     <div className="flex items-center gap-2">
-      <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title={url ? "Edit file link" : "Add file link"}
-        aria-label={`${url ? "Edit" : "Add"} file link for ${label}`} icon={url ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
-        onClick={() => { setDraft(url ?? ""); setError(null); setEditing(true); }} />
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="size-7 [&_svg]:size-3.5"
+        title={url ? "Edit file link" : "Add file link"}
+        aria-label={`${url ? "Edit" : "Add"} file link for ${label}`}
+        onClick={() => { setDraft(url ?? ""); setError(null); setEditing(true); }}
+      >
+        {url ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
+      </Button>
       {url ? (
         <FileLocationLink href={url} name={text} className="text-link underline-offset-2 hover:underline">{text}</FileLocationLink>
       ) : (

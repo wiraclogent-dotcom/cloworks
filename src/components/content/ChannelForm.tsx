@@ -7,7 +7,7 @@ import { planHref } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, type ButtonVariant } from "@/components/ui/Button";
+import { Button, type ButtonProps } from "@/components/shadcn/button";
 import { FieldError, fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { MediaUpload } from "@/components/media/MediaUpload";
@@ -103,8 +103,8 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending} disabled={brands.length === 0 || uploading}>{channel ? "Save" : "Add channel"}</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={pending} disabled={brands.length === 0 || uploading}>{channel ? "Save" : "Add channel"}</Button>
         </div>
       </form>
     </LibraryDialog>
@@ -112,8 +112,8 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
 }
 
 /** Button that opens <ChannelForm>. Channel managers only (the caller decides). */
-export function AddChannelButton({ brands, children, variant = "secondary", size = "md", icon }: {
-  brands: BrandOption[]; children: ReactNode; variant?: ButtonVariant; size?: "sm" | "md"; icon?: ReactNode;
+export function AddChannelButton({ brands, children, variant = "outline", size = "default", icon }: {
+  brands: BrandOption[]; children: ReactNode; variant?: ButtonProps["variant"]; size?: ButtonProps["size"]; icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (

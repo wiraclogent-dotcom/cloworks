@@ -7,7 +7,7 @@ import { approvePost } from "@/app/(app)/content/actions";
 import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
 import { parseFieldSchema, type FieldDef } from "@/lib/fieldSchema";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 
 type Values = Record<string, string | boolean>;
@@ -171,7 +171,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       </p>
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" variant="primary" icon={<CheckCheck />} loading={pending}>Approve &amp; create</Button>
+        <Button type="submit" variant="default" icon={<CheckCheck />} loading={pending}>Approve &amp; create</Button>
       </div>
     </form>
   );

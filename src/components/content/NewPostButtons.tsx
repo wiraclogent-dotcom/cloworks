@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { createPost } from "@/app/(app)/content/actions";
 import { planHref, TAB_SURFACE, type ContentTab } from "@/lib/content/params";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass } from "@/components/ui/Field";
 import { cn, focusRing } from "@/components/ui/cn";
 import { TILE_ASPECT } from "./PostTile";
@@ -82,7 +82,7 @@ export function AlreadyPostedButton({ channelId, tab }: { channelId: string; tab
       <input id={`${uid}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} required autoFocus
         aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined}
         className={fieldClass({ size: "sm", invalid: !!error, className: "w-auto" })} />
-      <Button type="submit" size="sm" variant="primary" loading={pending}>Add</Button>
+      <Button type="submit" size="sm" variant="default" loading={pending}>Add</Button>
       <Button size="sm" variant="ghost" onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>
       <FieldError id={`${uid}-err`} className="w-full justify-center">{error}</FieldError>
     </form>

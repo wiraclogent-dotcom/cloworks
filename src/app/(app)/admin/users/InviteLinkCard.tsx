@@ -3,7 +3,7 @@
 import { useActionState, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { ConfirmAction } from "@/components/admin/AdminForm";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Switch } from "@/components/ui/Switch";
 import type { AdminFormState } from "@/lib/adminForm";
@@ -37,7 +37,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
         {path ? (
           <div className="flex flex-wrap items-center gap-2">
             <code className="min-w-0 flex-1 rounded-md bg-muted px-2.5 py-1.5 text-compact break-all text-foreground">{`${base}${path}`}</code>
-            <Button type="button" variant="secondary" size="sm" onClick={copy}>
+            <Button type="button" variant="outline" size="sm" onClick={copy}>
               {copied ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}{copied ? "Copied" : "Copy"}
             </Button>
           </div>

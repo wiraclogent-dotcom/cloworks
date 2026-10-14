@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { addContentComment } from "@/app/(app)/content/actions";
 import type { PanelComment } from "@/lib/content/panelView";
 import { relativeTime } from "@/lib/relativeTime";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass } from "@/components/ui/Field";
 import { cn } from "@/components/ui/cn";
 
@@ -59,7 +59,7 @@ export function CommentsSection({ postId, comments, canComment }: { postId: stri
             aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined}
             className={fieldClass({ kind: "textarea", invalid: !!error, className: "min-h-16" })} />
           <FieldError id={`${uid}-err`}>{error}</FieldError>
-          <Button size="sm" type="submit" className="self-end" disabled={!body.trim()} loading={pending}>Comment</Button>
+          <Button variant="outline" size="sm" type="submit" className="self-end" disabled={!body.trim()} loading={pending}>Comment</Button>
         </form>
       ) : null}
     </section>

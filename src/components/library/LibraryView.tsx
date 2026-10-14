@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Folder, Pin, Plus, Search, Settings2 } from "lucide-react";
 import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CountPill } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -116,8 +116,8 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
         ) : null}
         {canManage ? (
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="secondary" icon={<Settings2 />} onClick={() => setManaging(true)}>Manage categories</Button>
-            <Button variant="primary" icon={<Plus />} disabled={categories.length === 0} onClick={() => setItemDraft(newItem())}>Add link</Button>
+            <Button variant="outline" icon={<Settings2 />} onClick={() => setManaging(true)}>Manage categories</Button>
+            <Button variant="default" icon={<Plus />} disabled={categories.length === 0} onClick={() => setItemDraft(newItem())}>Add link</Button>
           </div>
         ) : null}
       </div>
@@ -138,7 +138,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           icon={<Folder />}
           title="No categories yet"
           description="Create a category with Manage categories, then add links to it."
-          action={<Button variant="secondary" onClick={() => setManaging(true)}>Manage categories</Button>}
+          action={<Button variant="outline" onClick={() => setManaging(true)}>Manage categories</Button>}
         />
       ) : filtered.length === 0 && filtering ? (
         <EmptyState
@@ -146,7 +146,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           icon={<Search />}
           title="No links match"
           description="Try a different search or clear the filters."
-          action={<Button variant="secondary" onClick={clear}>Clear filters</Button>}
+          action={<Button variant="outline" onClick={clear}>Clear filters</Button>}
         />
       ) : filtered.length === 0 && !canManage ? (
         <EmptyState art="empty-library" icon={<Folder />} title="No links yet" description="Shared links will show up here." />
@@ -179,7 +179,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
                     <p className="text-sm text-muted-foreground">No links in this category yet.</p>
-                    {canManage ? <Button size="sm" variant="secondary" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
+                    {canManage ? <Button size="sm" variant="outline" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
                   </div>
                 )}
               </Card>

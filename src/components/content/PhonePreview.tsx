@@ -8,7 +8,7 @@ import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelView, TileView } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { PostTile, TILE_ASPECT, tileLabel } from "./PostTile";
 import { AlreadyPostedButton, NewPostTile } from "./NewPostButtons";

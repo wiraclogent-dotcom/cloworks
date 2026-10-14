@@ -5,8 +5,7 @@ import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 import { cn } from "@/components/ui/cn";
 import { LibraryDialog } from "./LibraryDialog";
@@ -126,7 +125,15 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
                   className={cn(fieldClass({ invalid: !!errors.files }), "w-24 shrink-0")} />
                 <input aria-label="File link" type="url" inputMode="url" value={file.url} onChange={(e) => setFile(file.key, { url: e.target.value })} placeholder="https://"
                   className={cn(fieldClass({ invalid: !!errors.files }), "min-w-0 flex-1")} />
-                <IconButton aria-label={`Remove file ${file.label.trim() || "row"}`} icon={<X />} onClick={() => setFiles((cur) => cur.filter((f) => f.key !== file.key))} />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`Remove file ${file.label.trim() || "row"}`}
+                  onClick={() => setFiles((cur) => cur.filter((f) => f.key !== file.key))}
+                  title={`Remove file ${file.label.trim() || "row"}`}
+                >
+                  <X />
+                </Button>
               </div>
             ))}
           </div>
@@ -141,8 +148,8 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
           Pinned
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending}>{editing ? "Save changes" : "Add link"}</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={pending}>{editing ? "Save changes" : "Add link"}</Button>
         </div>
       </form>
     </LibraryDialog>

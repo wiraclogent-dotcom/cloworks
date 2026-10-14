@@ -7,10 +7,9 @@ import type { TimelineRow } from "@/lib/requests";
 import { buildWindow, layoutRows, rangeLabel } from "@/lib/workload";
 import { TimelineChart } from "./timeline/TimelineChart";
 import { TimelineList } from "./timeline/TimelineList";
-import { buttonClass } from "./ui/Button";
 import { EmptyState } from "./ui/EmptyState";
-import { cn } from "./ui/cn";
 import { useNarrow } from "./useNarrow";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * Workload per person over one Monday-start week: one section per team member (+ Unassigned), one bar per open
@@ -30,26 +29,25 @@ export function RequestTimeline({ rows, people, week, today, assigneeId, prevHre
   const byId = useMemo(() => new Map(rows.map((r) => [r.id, r])), [rows]);
   const empty = persons.every((p) => p.count === 0);
 
-  const navLink = cn(buttonClass({ variant: "ghost", size: "sm" }), "px-2");
   return (
     <div data-page-wide="">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="text-base font-semibold text-heading">{rangeLabel(win.from, win.to)}</h2>
         <nav aria-label="Weeks" className="ml-auto flex items-center gap-1">
-          <Link href={prevHref} aria-label="Previous week" title="Previous week" className={navLink}><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
-          <Link href={nextHref} aria-label="Next week" title="Next week" className={navLink}><ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
-          <Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>
+          <Button asChild variant="ghost" size="sm" className="px-2"><Link href={prevHref} aria-label="Previous week" title="Previous week"><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link></Button>
+          <Button asChild variant="ghost" size="sm" className="px-2"><Link href={nextHref} aria-label="Next week" title="Next week"><ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>
         </nav>
       </div>
       {empty ? (
         filtered ? (
           <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters in this week"
             description="Try another search, other weeks, or clear the filters."
-            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
           <EmptyState art="empty-requests" icon={<ChartNoAxesGantt />} title="No open requests in this week"
             description="Open requests show up here from the day they were requested to their deadline."
-            action={<Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>} />
         )
       ) : narrow ? (
         <TimelineList persons={persons} rows={byId} />

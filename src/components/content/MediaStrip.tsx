@@ -7,10 +7,12 @@ import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import { setPostMedia } from "@/app/(app)/content/actions";
 import type { PanelMedia } from "@/lib/content/panelView";
 import { MediaUpload } from "@/components/media/MediaUpload";
-import { cn, focusRing } from "@/components/ui/cn";
+import { Button } from "@/components/shadcn/button";
+import { cn } from "@/components/ui/cn";
 import { STRIPES } from "./PostTile";
 
-const iconBtn = cn("flex size-5 items-center justify-center rounded bg-background/90 text-foreground hover:bg-background [&_svg]:size-3.5", focusRing);
+// Small overlay buttons inside a media tile: the shadcn icon-sm Button, shrunk to 20px.
+const iconBtn = "size-5 rounded bg-background/90 text-foreground hover:bg-background hover:text-foreground [&_svg]:size-3.5";
 
 /**
  * A row of thumbnails for one media role. With `editable`, each can be moved or removed and "+" uploads another;
@@ -78,11 +80,11 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
             {editable ? (
               <span className="absolute inset-x-0.5 top-0.5 flex justify-between gap-0.5">
                 <span className="flex gap-0.5">
-                  {i > 0 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} earlier`} disabled={locked} onClick={() => move(i, -1)}><ChevronLeft aria-hidden="true" /></button> : null}
-                  {i < list.length - 1 ? <button type="button" className={iconBtn} aria-label={`Move ${i + 1} later`} disabled={locked} onClick={() => move(i, 1)}><ChevronRight aria-hidden="true" /></button> : null}
+                  {i > 0 ? <Button variant="ghost" size="icon-sm" className={iconBtn} aria-label={`Move ${i + 1} earlier`} disabled={locked} onClick={() => move(i, -1)}><ChevronLeft aria-hidden="true" /></Button> : null}
+                  {i < list.length - 1 ? <Button variant="ghost" size="icon-sm" className={iconBtn} aria-label={`Move ${i + 1} later`} disabled={locked} onClick={() => move(i, 1)}><ChevronRight aria-hidden="true" /></Button> : null}
                 </span>
-                <button type="button" className={iconBtn} aria-label={`Remove ${i + 1}`} disabled={locked}
-                  onClick={() => void save(list.filter((x) => x.mediaId !== m.mediaId))}><X aria-hidden="true" /></button>
+                <Button variant="ghost" size="icon-sm" className={iconBtn} aria-label={`Remove ${i + 1}`} disabled={locked}
+                  onClick={() => void save(list.filter((x) => x.mediaId !== m.mediaId))}><X aria-hidden="true" /></Button>
               </span>
             ) : null}
           </li>

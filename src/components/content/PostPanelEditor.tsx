@@ -8,7 +8,7 @@ import { submitPost, updatePost } from "@/app/(app)/content/actions";
 import type { PostPatch } from "@/lib/content/posts";
 import type { PostPanelView } from "@/lib/content/panelView";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 import { MediaStrip } from "./MediaStrip";
 import { shortDay } from "./PostTile";
@@ -137,7 +137,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
         <div data-tone="due-soon" className="flex flex-wrap items-center gap-2 rounded-lg bg-tone-tint px-3 py-2 text-compact text-tone-text [&_svg]:size-4">
           <TriangleAlert aria-hidden="true" />
           <span className="flex-1">This date is out of order with the posts above it.</span>
-          <Button size="sm" variant="secondary" disabled={submitting} onClick={() => change("plannedAt", view.warnDate!, true)}>{`Set to ${shortDay(view.warnDate)}`}</Button>
+          <Button size="sm" variant="outline" disabled={submitting} onClick={() => change("plannedAt", view.warnDate!, true)}>{`Set to ${shortDay(view.warnDate)}`}</Button>
         </div>
       ) : null}
       {!published ? (
@@ -164,7 +164,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       <div className="flex flex-wrap items-center gap-3">
         <p role="status" className="text-xs text-muted-foreground">{save === "saving" ? "Saving…" : save === "saved" ? "Saved" : ""}</p>
         {can.submit ? (
-          <Button variant="primary" className="ml-auto" icon={<Send />} loading={submitting} onClick={submit}>Submit for approval</Button>
+          <Button variant="default" className="ml-auto" icon={<Send />} loading={submitting} onClick={submit}>Submit for approval</Button>
         ) : null}
       </div>
     </div>

@@ -2,8 +2,8 @@
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { X } from "lucide-react";
-import { IconButton } from "@/components/ui/IconButton";
 import { cn } from "@/components/ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 /**
  * Local native <dialog> for the Library editors (mounted only while open). showModal() gives the focus trap and Esc;
@@ -32,7 +32,7 @@ export function LibraryDialog({ title, onClose, children, wide = false }: {
       <div className="p-4 sm:p-6">
         <div className="mb-4 flex items-start justify-between gap-3">
           <h2 id={titleId} className="text-[22px] font-semibold text-heading">{title}</h2>
-          <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
+          <Button variant="ghost" size="icon" aria-label="Close" onClick={onClose} title="Close"><X /></Button>
         </div>
         {children}
       </div>

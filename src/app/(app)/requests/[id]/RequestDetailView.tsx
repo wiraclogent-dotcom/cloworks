@@ -17,9 +17,9 @@ import { BrandArt } from "@/components/ui/BrandArt";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
-import { buttonClass } from "@/components/ui/Button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { AssigneesPicker, AttachmentForm, CommentForm, DeadlineControl, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
+import { Button } from "@/components/shadcn/button";
 
 const day = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
@@ -105,7 +105,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
               <div className="mt-3 space-y-4">
                 {req.briefUrl ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <ExtLink href={req.briefUrl} className={buttonClass({ variant: "secondary", size: "sm" })}><FileText aria-hidden="true" strokeWidth={1.75} />Open brief<ExternalLink aria-hidden="true" strokeWidth={1.75} /></ExtLink>
+                    <Button asChild variant="outline" size="sm"><ExtLink href={req.briefUrl}><FileText aria-hidden="true" strokeWidth={1.75} />Open brief<ExternalLink aria-hidden="true" strokeWidth={1.75} /></ExtLink></Button>
                     <span className="min-w-0 truncate text-xs text-muted-foreground" title={req.briefUrl}>{req.briefUrl}</span>
                   </div>
                 ) : null}

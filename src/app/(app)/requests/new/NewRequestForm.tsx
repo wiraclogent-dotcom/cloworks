@@ -7,7 +7,7 @@ import { errorSummary } from "@/lib/formErrors";
 import Link from "next/link";
 import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, UserCheck } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 import { RadioCards } from "@/components/ui/RadioCards";
@@ -224,7 +224,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
           </div>
           <div className="flex flex-wrap gap-2 pb-px" role="group" aria-label="Quick deadline">
             {QUICK_DEADLINES.map((q) => (
-              <Button key={q.label} type="button" variant="secondary" size="sm"
+              <Button key={q.label} type="button" variant="outline" size="sm"
                 onClick={() => { if (deadlineRef.current) deadlineRef.current.value = jakartaDatePlus(q.days); }}>
                 {q.label}
               </Button>
@@ -234,10 +234,10 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="primary" loading={pending} icon={<Send aria-hidden="true" strokeWidth={1.75} />}>
+        <Button type="submit" variant="default" loading={pending} icon={<Send aria-hidden="true" strokeWidth={1.75} />}>
           {pending ? "Creating…" : "Create request"}
         </Button>
-        <Link href="/requests" className={buttonClass({ variant: "ghost" })}>Cancel</Link>
+        <Button asChild variant="ghost"><Link href="/requests">Cancel</Link></Button>
       </div>
     </form>
     <aside aria-label="What happens next" className="min-w-0">

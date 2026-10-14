@@ -8,8 +8,8 @@ import type { ChatMessage } from "@/lib/chat";
 import { splitMentions } from "@/lib/mentions";
 import { StatusChip } from "../ui/StatusChip";
 import { Skeleton } from "../ui/Skeleton";
-import { IconButton } from "../ui/IconButton";
 import { cn, focusRing } from "../ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "2-digit", minute: "2-digit" });
 const dayFmt = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" });
@@ -76,7 +76,16 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
-        <IconButton aria-label="Back to chats" size="sm" icon={<ArrowLeft />} onClick={onBack} className="md:hidden" />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label="Back to chats"
+          onClick={onBack}
+          className="md:hidden"
+          title="Back to chats"
+        >
+          <ArrowLeft />
+        </Button>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">{title ?? "Chat"}</p>
           {status && <StatusChip status={status} kind="request" className="mt-0.5" />}
@@ -159,10 +168,9 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
                   if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void submit(); }
                 }}
                 className="min-h-9 flex-1 resize-none rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground placeholder:text-placeholder focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring" />
-              <button type="submit" aria-label="Send" title="Send" disabled={blank || pending}
-                className={cn("inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-55", focusRing)}>
-                {pending ? <LoaderCircle aria-hidden="true" className="size-4 animate-spin" /> : <SendHorizontal aria-hidden="true" className="size-4" />}
-              </button>
+              <Button type="submit" variant="default" size="icon" aria-label="Send" title="Send" disabled={blank || pending} className="[&_svg]:size-4">
+                {pending ? <LoaderCircle aria-hidden="true" className="animate-spin" /> : <SendHorizontal aria-hidden="true" />}
+              </Button>
             </div>
           </form>
         </>

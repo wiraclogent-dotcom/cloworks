@@ -13,7 +13,7 @@ export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: 
       prefix={`${kind}-${id ?? "new"}`}
       submitLabel={id ? "Rename" : `Add ${noun}`}
       submitAriaLabel={id ? `Rename ${name}` : undefined}
-      submitVariant={id ? "secondary" : "primary"}
+      submitVariant={id ? "outline" : "default"}
       hidden={id ? { id } : undefined}
       className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2"
     >

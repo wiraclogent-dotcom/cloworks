@@ -7,7 +7,7 @@ import { deleteChannel, moveChannel } from "@/app/(app)/content/actions";
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { ChannelForm, type BrandOption } from "./ChannelForm";
 
@@ -36,8 +36,8 @@ function DeleteChannelDialog({ channel, current, tab, onClose }: { channel: Chan
       <p className="mb-4 text-sm text-muted-foreground">This removes the channel with every post planned or posted on it. It cannot be undone.</p>
       {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
       <div className="flex justify-end gap-2">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button variant="danger" loading={pending} onClick={confirm}>Delete</Button>
+        <Button variant="outline" onClick={onClose}>Cancel</Button>
+        <Button variant="destructive" loading={pending} onClick={confirm}>Delete</Button>
       </div>
     </LibraryDialog>
   );

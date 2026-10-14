@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronRight, Pencil } from "lucide-react";
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button } from "@/components/shadcn/button";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { cn } from "@/components/ui/cn";
@@ -134,15 +133,17 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           </span>
         </button>
         {canManage && !renaming && (
-          <IconButton
-            size="sm"
+          <Button
+            variant="ghost"
+            size="icon-sm"
             className="size-7 shrink-0 [&_svg]:size-3.5"
             ref={renameBtnRef}
             aria-label={`Rename item ${item.title}`}
             title="Rename item"
-            icon={<Pencil aria-hidden="true" />}
             onClick={() => { setError(null); setDraft(item.title); setRenaming(true); }}
-          />
+          >
+            <Pencil aria-hidden="true" />
+          </Button>
         )}
         </div>
 
@@ -175,7 +176,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
               <option value="">Set all to…</option>
               {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
-            <Button size="sm" variant="secondary" aria-label={`Apply to all variants of ${item.title}`} disabled={!setAll || pending} onClick={applyAll}>
+            <Button size="sm" variant="outline" aria-label={`Apply to all variants of ${item.title}`} disabled={!setAll || pending} onClick={applyAll}>
               {pending && setAll ? "Applying…" : "Apply"}
             </Button>
           </div>
@@ -196,7 +197,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
             ref={renameInputRef}
             className={fieldClass({ size: "sm", className: "min-w-56 flex-1" })}
           />
-          <Button type="submit" size="sm" variant="primary" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
+          <Button type="submit" size="sm" variant="default" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setRenaming(false); setError(null); }}>Cancel</Button>
         </form>
       )}

@@ -6,7 +6,7 @@ import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
 import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
@@ -119,12 +119,12 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
       </Field>
       </Card>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="primary" loading={pending}>
+        <Button type="submit" variant="default" loading={pending}>
           {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
         </Button>
         {onCancel
           ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-          : <Link href="/projects" className={buttonClass({ variant: "ghost" })}>Cancel</Link>}
+          : <Button asChild variant="ghost"><Link href="/projects">Cancel</Link></Button>}
       </div>
     </form>
     </>

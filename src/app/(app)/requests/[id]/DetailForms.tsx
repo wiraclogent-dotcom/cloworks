@@ -12,7 +12,7 @@ import { canTransition } from "@/lib/workflow";
 import { CircleAlert, Link2, MessageSquarePlus, Trash2, X } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
@@ -55,7 +55,7 @@ export function CommentForm({ requestId }: { requestId: string }) {
       <ErrorLine id={`${uid}-e`} message={error} />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p id={`${uid}-h`} className="text-xs text-muted-foreground">Type @ and a name to mention a teammate.</p>
-        <Button type="submit" variant="primary" size="sm" loading={pending} icon={<MessageSquarePlus aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Posting…" : "Post comment"}</Button>
+        <Button type="submit" variant="default" size="sm" loading={pending} icon={<MessageSquarePlus aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Posting…" : "Post comment"}</Button>
       </div>
     </form>
   );
@@ -91,7 +91,7 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
           <label htmlFor={`${uid}-u`} className={labelClass}>Link address</label>
           <input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder" className={fieldClass({ invalid: !!error })} aria-describedby={error ? `${uid}-e` : undefined} />
         </div>
-        <Button type="submit" variant="secondary" loading={pending} icon={<Link2 aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Adding…" : "Add link"}</Button>
+        <Button type="submit" variant="outline" loading={pending} icon={<Link2 aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Adding…" : "Add link"}</Button>
       </div>
       <ErrorLine id={`${uid}-e`} message={error} />
     </form>
@@ -104,17 +104,16 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
   const [pending, start] = useTransition();
   return (
     <span>
-      <button type="button" disabled={pending} aria-label={`Remove link “${name}”`}
+      <Button variant="ghost" size="sm" type="button" disabled={pending} aria-label={`Remove link “${name}”`}
         onClick={() => start(async () => {
           setError(null);
           try {
             const r = await removeAttachment(requestId, attachmentId);
             if (r.ok) router.refresh(); else setError(r.message);
           } catch { setError("Could not remove the link."); }
-        })}
-        className={buttonClass({ variant: "ghost", size: "sm" })}>
+        })}>
         <Trash2 aria-hidden="true" strokeWidth={1.75} />Remove
-      </button>
+      </Button>
       {error && <span role="alert" className="ml-2 text-compact text-danger">{error}</span>}
     </span>
   );
@@ -261,7 +260,7 @@ export function DeadlineControl({ requestId, current, minDay }: { requestId: str
       <div className="flex items-center gap-2">
         <input id={`${uid}-d`} type="date" value={value} min={minDay} disabled={pending} onChange={(e) => setValue(e.target.value)}
           aria-describedby={error ? `${uid}-e` : undefined} className={fieldClass({ invalid: !!error })} />
-        <Button type="submit" variant="secondary" size="sm" loading={pending} disabled={!value || value === current}>{pending ? "Saving…" : "Save"}</Button>
+        <Button type="submit" variant="outline" size="sm" loading={pending} disabled={!value || value === current}>{pending ? "Saving…" : "Save"}</Button>
       </div>
       {error && <Alert tone="danger" id={`${uid}-e`} className="mt-2">{error}</Alert>}
     </form>

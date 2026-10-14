@@ -14,7 +14,6 @@ import { RequestTable } from "@/components/RequestTable";
 import { FilterBar } from "@/components/FilterBar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton, TimelineSkeleton } from "@/components/RequestSkeletons";
 import { CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
@@ -25,6 +24,7 @@ import { jakartaDate } from "@/lib/createRequest";
 import { todayOverview } from "@/lib/todayOverview";
 import { listCreativeTeam } from "@/lib/team";
 import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./params";
+import { Button } from "@/components/shadcn/button";
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
 async function TodayLoader() {
@@ -64,7 +64,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         topBarActions={<>
           <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
         </>}
-        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
+        actions={<Button asChild variant="default"><Link href="/requests/new"><Plus aria-hidden="true" />New request</Link></Button>} />
       {p.view === "board" ? (
         <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-muted" />}><TodayLoader /></Suspense>
       ) : null}
@@ -88,7 +88,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         board.every((c) => c.total === 0) && filtered ? (
           <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
             description="Try another search or clear the filters."
-            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
           <Board canMove={can(user.appRole, "request.transition")} columns={board.map((c): BoardColumnView => {
             const limit = p.more[c.status] ?? BOARD_PAGE_SIZE;

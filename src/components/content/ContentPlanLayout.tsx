@@ -17,7 +17,7 @@ export function ContentPlanLayout({ view, brands, panel }: { view: ContentPlanVi
     return can.manageChannels ? (
       <EmptyState art="empty-content" icon={<LayoutGrid />} title="Add your first channel"
         description="Add a brand's Instagram account to start planning its feed, reels and stories."
-        action={<AddChannelButton brands={brands} variant="primary" icon={<Plus />}>Add channel</AddChannelButton>} />
+        action={<AddChannelButton brands={brands} variant="default" icon={<Plus />}>Add channel</AddChannelButton>} />
     ) : (
       <EmptyState art="empty-content" icon={<LayoutGrid />} title="No channels yet" description="A lead adds each brand's Instagram account here before posts can be planned." />
     );

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition, type
 import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
+import { Button } from "@/components/shadcn/button";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { sidebarRowClass } from "./classes";
 
@@ -79,10 +80,10 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
       <div className="flex min-h-dvh flex-1 flex-col md:flex-row">
         {/* Mobile top bar */}
         <header inert={open} className="sticky top-0 z-30 flex h-14 flex-none items-center gap-2 bg-sidebar px-2 text-sidebar-foreground md:hidden">
-          <button ref={menuButton} type="button" onClick={() => setOpen(true)} aria-expanded={open} aria-controls={SIDEBAR_ID} aria-label="Open navigation"
-            className="inline-flex size-10 items-center justify-center rounded-lg hover:bg-sidebar-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring">
-            <Menu aria-hidden="true" className="size-5" />
-          </button>
+          <Button ref={menuButton} variant="ghost" size="icon" onClick={() => setOpen(true)} aria-expanded={open} aria-controls={SIDEBAR_ID} aria-label="Open navigation"
+            className="size-10 text-inherit hover:bg-sidebar-hover hover:text-inherit focus-visible:outline-sidebar-ring [&_svg]:size-5">
+            <Menu aria-hidden="true" />
+          </Button>
           <LogoMark size={24} />
           <span className="text-[15px] font-semibold">Cloworks</span>
         </header>
@@ -107,10 +108,10 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
                 <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
               </div>
-              <button ref={closeButton} type="button" onClick={() => close()} aria-label="Close navigation"
-                className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring md:hidden">
-                <X aria-hidden="true" className="size-[18px]" />
-              </button>
+              <Button ref={closeButton} variant="ghost" size="icon" onClick={() => close()} aria-label="Close navigation"
+                className="text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-sidebar-ring md:hidden">
+                <X aria-hidden="true" />
+              </Button>
             </div>
           </div>
 

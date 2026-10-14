@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import type { AuthFormState } from "@/lib/authForm";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { resendAction, verifyAction } from "./actions";
 

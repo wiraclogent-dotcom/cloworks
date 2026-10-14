@@ -33,6 +33,9 @@ rewrites the `cn` import to `@/components/ui/cn`. Then, in the generated file:
 - Match our sizes and shape: controls 36px high (`h-9`), `size="sm"` 32px; controls `rounded-lg`, cards `rounded-xl`,
   badges `rounded-md`; overlays use `shadow-raised`, cards `shadow-card`; transitions 150 ms.
 - Keep Radix's roles, focus handling and keyboard support; don't strip `data-slot` attributes.
+- Always pass an explicit `variant` to `Button` (`default` is the primary look; use `outline` for a plain button);
+  `tests/buttonUsage.test.ts` enforces it. Icon-only buttons: `size="icon"` / `"icon-sm"` with `aria-label` and a
+  matching `title`. A link that looks like a button: `<Button asChild variant="…"><Link …/></Button>`.
 - Add our extra variants/props to the shadcn file itself (it is our code now), e.g. `Button` gets `loading` and
   `icon`. Don't wrap it in a second component just to add a prop.
 - Import from the file: `import { Button } from "@/components/shadcn/button"`.
@@ -102,7 +105,7 @@ component is gone.
 
 | Need | Use (shadcn) | Replaces (kit / hand-rolled) | Status |
 |---|---|---|---|
-| Action button, icon-only button, link styled as button | `Button` (`size="icon"` for icon-only, `asChild` for `<Link>`) | `ui/Button`, `buttonClass()`, `ui/IconButton`, local `iconBtn`/`yearBtn` classes | Planned |
+| Action button, icon-only button, link styled as button | `Button` (`size="icon"` for icon-only, `asChild` for `<Link>`) | `ui/Button`, `buttonClass()`, `ui/IconButton`, local `iconBtn`/`yearBtn` classes | Migrated |
 | Text field, textarea, label, hint, error | `Input`, `Textarea`, `Label`, `Field` | `fieldClass()`, `labelClass`, `hintClass`, `FieldError` | Planned |
 | Select in a form | `Native Select` (native picker on phones) | `<select className={fieldClass(...)}>` | Planned |
 | Custom dropdown list (icons, rich rows) | `Select` | – | In use |
@@ -150,7 +153,7 @@ shadcn part inside.
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
-Still here until migrated (see Component map, don't use in new code): `Button`, `IconButton`, `Field`, `Card`,
+Still here until migrated (see Component map, don't use in new code): `Field`, `Card`,
 `Chip`, `Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 

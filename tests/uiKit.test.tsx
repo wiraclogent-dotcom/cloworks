@@ -1,9 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
-import { Plus, Inbox } from "lucide-react";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Inbox } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -32,46 +30,6 @@ const noHex = (el: Element) => expect(el.outerHTML).not.toMatch(/#[0-9a-f]{6}\b|
 describe("cn", () => {
   it("joins truthy class names", () => {
     expect(cn("a", false, null, undefined, 0, "b")).toBe("a b");
-  });
-});
-
-describe("Button", () => {
-  it("renders a native button (type=button by default) with variant and size classes", () => {
-    render(<Button variant="primary" size="sm">Save</Button>);
-    const b = screen.getByRole("button", { name: "Save" });
-    expect(b.getAttribute("type")).toBe("button");
-    expect(b.className).toMatch(/bg-primary/);
-    expect(b.className).toMatch(/h-8/);
-    noHex(b);
-  });
-  it("loading: spinner, aria-busy, disabled, label kept", () => {
-    render(<Button loading>Saving…</Button>);
-    const b = screen.getByRole("button", { name: "Saving…" }) as HTMLButtonElement;
-    expect(b.disabled).toBe(true);
-    expect(b.getAttribute("aria-busy")).toBe("true");
-    expect(b.querySelector("svg.animate-spin")).toBeTruthy();
-  });
-  it("buttonClass styles links the same way, per variant", () => {
-    expect(buttonClass({ variant: "danger" })).toMatch(/bg-destructive/);
-    expect(buttonClass({ variant: "secondary" })).toMatch(/border-border-strong/);
-    expect(buttonClass({ variant: "ghost", size: "sm" })).toMatch(/h-8/);
-    expect(buttonClass({ block: true })).toMatch(/w-full/);
-    expect(buttonClass()).toMatch(/focus-visible:outline-ring/);
-  });
-  it("renders an icon before the label", () => {
-    render(<Button icon={<Plus aria-hidden="true" />}>New</Button>);
-    expect(screen.getByRole("button", { name: "New" }).querySelector("svg")).toBeTruthy();
-  });
-});
-
-describe("IconButton", () => {
-  it("uses aria-label as its name and tooltip", () => {
-    const onClick = vi.fn();
-    render(<IconButton aria-label="Add item" icon={<Plus aria-hidden="true" />} onClick={onClick} />);
-    const b = screen.getByRole("button", { name: "Add item" });
-    expect(b.getAttribute("title")).toBe("Add item");
-    fireEvent.click(b);
-    expect(onClick).toHaveBeenCalledOnce();
   });
 });
 

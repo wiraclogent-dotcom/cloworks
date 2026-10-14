@@ -3,8 +3,7 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { cn } from "@/components/ui/cn";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
+import { Button, buttonVariants } from "@/components/shadcn/button";
 import { fieldClass } from "@/components/ui/Field";
 import { useDarkMode } from "@/components/ui/darkMode";
 import { readThemePref, resetThemeMemory, setThemePref } from "@/lib/theme";
@@ -32,7 +31,7 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
     expect(cn("text-xs", "text-tone-text")).toBe("text-xs text-tone-text");
   });
   it("a className override on a kit component replaces the default", () => {
-    expect(buttonClass({ className: "h-10" })).not.toMatch(/\bh-9\b/);
+    expect(buttonVariants({ variant: "outline", className: "h-10" })).not.toMatch(/\bh-9\b/);
     expect(fieldClass({ className: "h-8" }).split(" ")).not.toContain("h-9");
   });
 });
@@ -83,7 +82,7 @@ describe("Avatar / touch targets", () => {
     expect(screen.getByRole("img", { name: "Rina" })).toBeTruthy();
   });
   it("sm buttons and icon buttons extend their hit area to 36px", () => {
-    render(<><Button size="sm">Go</Button><IconButton size="sm" aria-label="More" icon={<svg />} /></>);
+    render(<><Button variant="outline" size="sm">Go</Button><Button variant="ghost" size="icon-sm" aria-label="More"><svg /></Button></>);
     expect(screen.getByRole("button", { name: "Go" }).className).toMatch(/after:-inset-y-0\.5/);
     expect(screen.getByRole("button", { name: "More" }).className).toMatch(/after:-inset-0\.5/);
   });

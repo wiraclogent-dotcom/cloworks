@@ -11,6 +11,7 @@ import { fieldClass, labelClass } from "@/components/ui/Field";
 import { passwordSignIn } from "./actions";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
+import { cn } from "@/components/ui/cn";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit, providerButton } from "@/components/auth/styles";
@@ -84,7 +85,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
                   await signIn("microsoft-entra-id", { redirectTo: "/requests" });
                 }}
               >
-                <SubmitButton block className={providerButton} pendingLabel="Opening Microsoft…">
+                <SubmitButton variant="outline" className={cn("w-full", providerButton)} pendingLabel="Opening Microsoft…">
                   <MicrosoftMark />Continue with Microsoft
                 </SubmitButton>
               </form>
@@ -107,7 +108,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
             <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
           </div>
           <RememberMe id="signin-remember" />
-          <SubmitButton variant="primary" block className={brandSubmit} pendingLabel="Signing in…">
+          <SubmitButton variant="default" className={cn("w-full", brandSubmit)} pendingLabel="Signing in…">
             Sign in
           </SubmitButton>
         </form>

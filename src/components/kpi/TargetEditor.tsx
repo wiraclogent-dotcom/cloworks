@@ -4,7 +4,7 @@ import { useId, useState, useTransition } from "react";
 import type { JobRole } from "@prisma/client";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { fieldClass } from "@/components/ui/Field";
 import { cn } from "@/components/ui/cn";
 
@@ -40,7 +40,7 @@ export function TargetEditor({ userId, name, month, role, initial }: { userId: s
       <input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
         onChange={(e) => { setValue(e.target.value); setStatus(null); }}
         className={fieldClass({ size: "sm", className: "w-20 shrink-0 tabular-nums" })} />
-      <Button type="submit" variant="primary" size="sm" loading={pending} aria-label={`Save target for ${name}`} title={`Save target for ${name}`}
+      <Button type="submit" variant="default" size="sm" loading={pending} aria-label={`Save target for ${name}`} title={`Save target for ${name}`}
         icon={<Check aria-hidden="true" />} className="w-8 shrink-0 px-0">
         <span className="sr-only">{pending ? "Saving…" : "Save"}</span>
       </Button>

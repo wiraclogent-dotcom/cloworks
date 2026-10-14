@@ -18,7 +18,7 @@ import { celebrate, centreOf } from "@/lib/celebrate";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
 import { Alert } from "./ui/Alert";
-import { Button } from "./ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "./ui/cn";
 
 /** Arrow Left/Right jumps the lifted card to the neighbouring column instead of nudging it 25px. */

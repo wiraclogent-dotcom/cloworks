@@ -3,9 +3,9 @@ import { Target, Users } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import { hasProjectTargets, type PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { buttonClass } from "@/components/ui/Button";
 import { TeamPersonCell, TeamTableFrame, teamT as t } from "@/components/kpi/TeamTableParts";
 import { cn } from "@/components/ui/cn";
+import { Button } from "@/components/shadcn/button";
 
 export type ProjectTeamRow = {
   userId: string;
@@ -80,7 +80,7 @@ export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = 
             <td className={cn(t.td, t.numeric)}>{num(r.onTimePct, "%")}</td>
             {canOpen ? (
               <td className={t.td}>
-                <Link href={hrefOf(r.userId)} aria-label={`${r.hasTargets ? "Open" : "Set"} targets for ${r.name}`} className={buttonClass({ variant: "secondary", size: "sm" })}>{r.hasTargets ? "Open" : "Set targets"}</Link>
+                <Button asChild variant="outline" size="sm"><Link href={hrefOf(r.userId)} aria-label={`${r.hasTargets ? "Open" : "Set"} targets for ${r.name}`}>{r.hasTargets ? "Open" : "Set targets"}</Link></Button>
               </td>
             ) : null}
           </tr>

@@ -4,7 +4,7 @@ import { useId, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)/dashboard/projects/actions";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { fieldClass, labelClass } from "@/components/ui/Field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 
@@ -19,7 +19,7 @@ export function ManageTargetsModal({ userId, name, year, projects }: {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="primary" icon={<Plus aria-hidden="true" />} onClick={() => setOpen(true)}>Manage targets</Button>
+      <Button variant="default" icon={<Plus aria-hidden="true" />} onClick={() => setOpen(true)}>Manage targets</Button>
       {open ? <Picker userId={userId} name={name} year={year} projects={projects} onClose={() => setOpen(false)} /> : null}
     </>
   );
@@ -118,8 +118,8 @@ function Picker({ userId, name, year, projects, onClose }: {
         {error ? <Alert tone="danger">{error}</Alert> : null}
 
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={saving} disabled={picked.size === 0}>Save</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={saving} disabled={picked.size === 0}>Save</Button>
         </div>
       </form>
     </LibraryDialog>

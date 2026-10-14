@@ -11,7 +11,7 @@ import type { PostPanelView } from "@/lib/content/panelView";
 import { relativeTime } from "@/lib/relativeTime";
 import { STATUS_LABEL as REQUEST_STATUS_LABEL } from "@/lib/statusLabels";
 import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ApproveForm } from "./ApproveForm";
 import { CommentsSection } from "./CommentsSection";
@@ -58,7 +58,7 @@ function DeletePost({ postId, closeHref }: { postId: string; closeHref: string }
         <>
           <span className="text-compact text-muted-foreground">Delete this post and its media?</span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>Keep</Button>
-          <Button size="sm" variant="danger" loading={pending} onClick={remove}>Delete</Button>
+          <Button size="sm" variant="destructive" loading={pending} onClick={remove}>Delete</Button>
         </>
       ) : (
         <Button size="sm" variant="ghost" icon={<Trash2 />} onClick={() => setConfirming(true)}>Delete post</Button>
