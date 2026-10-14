@@ -1,6 +1,6 @@
 import { Busy } from "./RequestSkeletons";
 import { Card } from "@/components/shadcn/card";
-import { Skeleton } from "./ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn } from "./ui/cn";
 
 /** Page title + header actions placeholder (PageHeader shape). */
@@ -12,7 +12,7 @@ function HeaderSkeleton({ actions = 1 }: { actions?: number }) {
         <Skeleton className="h-4 w-28" />
       </div>
       <div className="ml-auto flex gap-2">
-        {Array.from({ length: actions }, (_, i) => <Skeleton key={i} className="h-9 w-36" rounded="full" />)}
+        {Array.from({ length: actions }, (_, i) => <Skeleton key={i} className="h-9 w-36 rounded-full" />)}
       </div>
     </div>
   );
@@ -21,7 +21,7 @@ function HeaderSkeleton({ actions = 1 }: { actions?: number }) {
 function TileSkeleton() {
   return (
     <Card data-skeleton-tile="" className="flex items-start gap-3">
-      <Skeleton className="size-10" rounded="xl" />
+      <Skeleton className="size-10 rounded-xl" />
       <div className="flex-1 space-y-2"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-7 w-16" /></div>
     </Card>
   );
@@ -37,7 +37,7 @@ function TableRowsSkeleton({ rows, cols }: { rows: number; cols: number }) {
       <Skeleton className="h-8 w-full" />
       {Array.from({ length: rows }, (_, r) => (
         <div key={r} data-skeleton-row="" className="flex items-center gap-3">
-          <Skeleton className="size-7" rounded="full" />
+          <Skeleton className="size-7 rounded-full" />
           {Array.from({ length: cols }, (_, c) => <Skeleton key={c} className={cn("h-4", c === 0 ? "w-40" : "flex-1")} />)}
         </div>
       ))}
@@ -53,7 +53,7 @@ export function KpiSkeleton() {
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 8 }, (_, i) => <TileSkeleton key={i} />)}
       </div>
-      <CardSkeleton className="mb-4 space-y-3"><Skeleton className="h-5 w-40" /><Skeleton className="h-3 w-full" rounded="full" /></CardSkeleton>
+      <CardSkeleton className="mb-4 space-y-3"><Skeleton className="h-5 w-40" /><Skeleton className="h-3 w-full rounded-full" /></CardSkeleton>
       <CardSkeleton><Skeleton className="h-5 w-40" /><Skeleton className="mt-4 h-56 w-full" /></CardSkeleton>
     </Busy>
   );
@@ -80,7 +80,7 @@ export function KpiSectionSkeleton({ title, tiles = 3, id }: { title: string; ti
     <Busy label={`Loading ${title}…`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="text-base font-semibold text-heading">{title}</h2>
-        <Skeleton className="h-9 w-36" rounded="full" />
+        <Skeleton className="h-9 w-36 rounded-full" />
       </div>
       {tiles > 0 ? (
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">

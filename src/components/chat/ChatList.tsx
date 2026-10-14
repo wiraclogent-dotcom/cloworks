@@ -3,7 +3,7 @@
 import { MessagesSquare } from "lucide-react";
 import type { ChatSummary } from "@/lib/chat";
 import { relativeTime } from "@/lib/relativeTime";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn, focusRing } from "../ui/cn";
 import { Button } from "@/components/shadcn/button";
 

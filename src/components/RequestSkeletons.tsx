@@ -1,4 +1,4 @@
-import { Skeleton } from "./ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { Card } from "@/components/shadcn/card";
 import { cn } from "./ui/cn";
 
@@ -18,11 +18,11 @@ function HeaderSkeleton() {
     <>
       <div className="mb-5 flex items-center gap-4">
         <Skeleton className="h-7 w-36" />
-        <Skeleton className="ml-auto h-9 w-40" rounded="xl" />
-        <Skeleton className="h-9 w-32" rounded="xl" />
+        <Skeleton className="ml-auto h-9 w-40 rounded-xl" />
+        <Skeleton className="h-9 w-32 rounded-xl" />
       </div>
       <div className="mb-4 flex flex-wrap gap-2.5">
-        {["w-52", "w-36", "w-36", "w-36", "w-36", "w-28"].map((w, i) => <Skeleton key={i} className={cn("h-8", w)} rounded="full" />)}
+        {["w-52", "w-36", "w-36", "w-36", "w-36", "w-28"].map((w, i) => <Skeleton key={i} className={cn("h-8", w, "rounded-full")} />)}
       </div>
     </>
   );
@@ -36,13 +36,13 @@ export function BoardSkeleton() {
       <div className="grid gap-3 overflow-hidden pb-4" style={{ gridTemplateColumns: "repeat(4, minmax(15rem, 1fr))" }} data-skeleton-board="">
         {[0, 1, 2, 3].map((c) => (
           <div key={c} data-skeleton-column="" className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-2">
-            <Skeleton className="h-9 w-full" rounded="xl" />
+            <Skeleton className="h-9 w-full rounded-xl" />
             {[0, 1, 2].map((k) => (
               <Card key={k} data-skeleton-card="" className="space-y-2.5">
                 <Skeleton className="h-4 w-4/5" />
                 <Skeleton className="h-4 w-3/5" />
                 <div className="flex gap-1.5"><Skeleton className="h-5 w-16" /><Skeleton className="h-5 w-20" /></div>
-                <div className="flex items-center justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="size-7" rounded="full" /></div>
+                <div className="flex items-center justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="size-7 rounded-full" /></div>
               </Card>
             ))}
           </div>
@@ -64,7 +64,7 @@ export function TableSkeleton() {
         {Array.from({ length: 8 }, (_, r) => (
           <div key={r} data-skeleton-row="" className="flex h-11 items-center gap-6 border-t border-border px-3 first:border-t-0">
             <Skeleton className="h-4 w-56" />
-            <Skeleton className="size-5" rounded="full" />
+            <Skeleton className="size-5 rounded-full" />
             <Skeleton className="h-4 w-24" />
             <Skeleton className="h-5 w-20" />
             <Skeleton className="h-4 w-20" />
@@ -82,12 +82,12 @@ export function CalendarSkeleton() {
       <HeaderSkeleton />
       <div className="mb-3 flex items-center gap-2">
         <Skeleton className="h-6 w-36" />
-        <Skeleton className="ml-auto h-8 w-32" rounded="xl" />
+        <Skeleton className="ml-auto h-8 w-32 rounded-xl" />
       </div>
       <div className="grid grid-cols-7 gap-1" data-skeleton-calendar="">
         {Array.from({ length: 35 }, (_, i) => (
           <div key={i} data-skeleton-day="" className="min-h-28 space-y-1.5 rounded-lg border border-border bg-card p-1.5">
-            <Skeleton className="size-5" rounded="full" />
+            <Skeleton className="size-5 rounded-full" />
             {i % 3 === 1 && <Skeleton className="h-9 w-full" />}
             {i % 5 === 2 && <Skeleton className="h-9 w-full" />}
           </div>
@@ -104,14 +104,14 @@ export function TimelineSkeleton() {
       <HeaderSkeleton />
       <div className="mb-3 flex items-center gap-2">
         <Skeleton className="h-6 w-44" />
-        <Skeleton className="ml-auto h-8 w-32" rounded="xl" />
+        <Skeleton className="ml-auto h-8 w-32 rounded-xl" />
       </div>
       <Card className="overflow-hidden p-0" data-skeleton-timeline="">
         <div className="h-9 border-b border-border bg-muted" />
         {[0, 1, 2, 3, 4].map((r) => (
           <div key={r} data-skeleton-person="" className="grid grid-cols-[12rem_minmax(0,1fr)] border-t border-border first:border-t-0">
             <div className="flex items-center gap-2 border-r border-border px-3 py-3">
-              <Skeleton className="size-6" rounded="full" />
+              <Skeleton className="size-6 rounded-full" />
               <Skeleton className="h-4 w-24" />
             </div>
             <div className="grid grid-cols-14 gap-y-1 py-2">

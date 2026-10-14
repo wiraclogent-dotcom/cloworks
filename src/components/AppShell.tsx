@@ -11,7 +11,7 @@ import { ProfileMenu } from "./shell/ProfileMenu";
 import { PhotoDirectory } from "./shell/PhotoDirectory";
 import { NotificationBell } from "./shell/NotificationBell";
 import { ChatDock } from "./chat/ChatDock";
-import { Skeleton } from "./ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 
 /**
@@ -71,8 +71,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
       profile={
         <div className="flex items-center gap-2">
-          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><NotificationBell /></Suspense>
-          <Suspense fallback={<Skeleton rounded="full" className="size-9" />}><ProfileMenu /></Suspense>
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><NotificationBell /></Suspense>
+          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><ProfileMenu /></Suspense>
           <Suspense fallback={null}><PhotoDirectory /></Suspense>
         </div>
       }

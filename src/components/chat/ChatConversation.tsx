@@ -7,7 +7,7 @@ import type { RequestStatus } from "@prisma/client";
 import type { ChatMessage } from "@/lib/chat";
 import { splitMentions } from "@/lib/mentions";
 import { StatusChip } from "../ui/StatusChip";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn, focusRing } from "../ui/cn";
 import { Button } from "@/components/shadcn/button";
 

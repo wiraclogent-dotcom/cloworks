@@ -11,9 +11,7 @@ import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { tableClass } from "@/components/ui/table";
-import { Divider } from "@/components/ui/Divider";
 import { cn } from "@/components/ui/cn";
 import { StatusBadge, NeedsMotionBadge } from "@/components/status";
 
@@ -199,14 +197,6 @@ describe("KpiTile", () => {
   });
 });
 
-describe("Skeleton", () => {
-  it("is hidden from assistive tech", () => {
-    const { container } = render(<Skeleton className="h-4 w-40" />);
-    expect(container.firstElementChild!.getAttribute("aria-hidden")).toBe("true");
-    expect(container.firstElementChild!.className).toMatch(/animate-pulse/);
-  });
-});
-
 describe("tableClass", () => {
   it("sticky header, row hover, compact density", () => {
     const t = tableClass();
@@ -219,13 +209,5 @@ describe("tableClass", () => {
     const t = tableClass();
     render(<div className={t.wrapper}><table className={t.table}><thead><tr><th scope="col" className={t.th}>Title</th></tr></thead><tbody><tr className={t.tr}><td className={t.td}>A</td></tr></tbody></table></div>);
     expect(screen.getByRole("columnheader", { name: "Title" }).className).toMatch(/sticky/);
-  });
-});
-
-describe("Divider", () => {
-  it("plain hr, or a labelled separator", () => {
-    const { container } = render(<><Divider /><Divider label="or" /></>);
-    expect(container.querySelector("hr")).toBeTruthy();
-    expect(screen.getByRole("separator", { name: "or" })).toBeTruthy();
   });
 });

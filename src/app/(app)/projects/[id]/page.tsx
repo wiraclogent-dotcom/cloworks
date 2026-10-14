@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ProjectPageView } from "./ProjectPageView";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 
 export const metadata: Metadata = { title: "Project" };
 

@@ -2,6 +2,7 @@
 
 import { UserPlus } from "lucide-react";
 import { avatarColor, initials } from "@/lib/palette";
+import { Avatar as AvatarRoot, AvatarFallback, AvatarImage } from "@/components/shadcn/avatar";
 import { cn } from "./cn";
 import { usePhotoFor } from "./photoDirectory";
 
@@ -24,7 +25,10 @@ type Common = {
   className?: string;
 };
 
-/** Round initials avatar. Same person (short name, case/space-insensitive) = same colour everywhere. */
+/**
+ * Round initials avatar on the shadcn Avatar. Same person (short name, case/space-insensitive) = same colour everywhere.
+ * The photo shows once it has loaded; the initials stay until then and when there is no photo or it fails.
+ */
 export function Avatar({ name, size = "md", ring, decorative, className, src }: Common & { name: string }) {
   const c = avatarColor(name);
   const known = usePhotoFor(name);
@@ -32,26 +36,24 @@ export function Avatar({ name, size = "md", ring, decorative, className, src }: 
   // No name = nothing to announce: hidden like a decorative avatar (never role="img" with aria-label="").
   const hidden = decorative || name.trim() === "";
   return (
-    <span {...(hidden ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={hidden ? undefined : name}
+    <AvatarRoot {...(hidden ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={hidden ? undefined : name}
       style={{ background: c.tint, color: c.text }}
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide uppercase select-none", SIZE[size], ring && "ring-2 ring-card", className)}>
-      {photo ? (
-        // eslint-disable-next-line @next/next/no-img-element -- a local API route, not an optimisable asset
-        <img src={photo} alt="" className="size-full rounded-full object-cover" />
-      ) : (
-        initials(name)
-      )}
-    </span>
+      className={cn("inline-flex font-semibold tracking-wide uppercase", SIZE[size], ring && "ring-2 ring-card", className)}>
+      {photo ? <AvatarImage src={photo} alt="" /> : null}
+      <AvatarFallback className="bg-transparent text-inherit">{initials(name)}</AvatarFallback>
+    </AvatarRoot>
   );
 }
 
 /** Dashed circle with a user-plus icon, for requests nobody is assigned to yet. */
 export function UnassignedAvatar({ size = "md", ring, decorative, className }: Common) {
   return (
-    <span {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Unassigned" })} title={decorative ? undefined : "Unassigned"}
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-input bg-card text-muted-foreground", SIZE[size], ring && "ring-2 ring-card", className)}>
-      <UserPlus aria-hidden="true" strokeWidth={1.75} className={size === "sm" ? "size-3.5" : size === "md" ? "size-3.5" : "size-4"} />
-    </span>
+    <AvatarRoot {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Unassigned" })} title={decorative ? undefined : "Unassigned"}
+      className={cn("inline-flex border border-dashed border-input bg-card text-muted-foreground", SIZE[size], ring && "ring-2 ring-card", className)}>
+      <AvatarFallback className="bg-transparent text-inherit">
+        <UserPlus aria-hidden="true" strokeWidth={1.75} className={size === "lg" ? "size-4" : "size-3.5"} />
+      </AvatarFallback>
+    </AvatarRoot>
   );
 }
 

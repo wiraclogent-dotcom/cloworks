@@ -2,7 +2,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { Card } from "@/components/shadcn/card";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { listCreativeTeam } from "@/lib/team";
 import { NewRequestForm } from "./NewRequestForm";
 
@@ -14,7 +14,7 @@ export function FormSkeleton() {
         <Skeleton className="h-5 w-36" />
         {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-9 w-full" />)}
       </Card>
-      <Skeleton className="h-48 w-full" rounded="xl" />
+      <Skeleton className="h-48 w-full rounded-xl" />
     </div></div>
   );
 }

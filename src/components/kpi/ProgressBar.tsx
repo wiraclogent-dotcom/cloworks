@@ -1,6 +1,7 @@
 import { Check } from "lucide-react";
 import { progressPercent } from "@/lib/kpi/format";
 import { PROGRESS_LEVEL_LABEL, progressLevel, type ProgressLevel } from "@/lib/kpi/presentation";
+import { Progress } from "@/components/shadcn/progress";
 import { cn } from "@/components/ui/cn";
 
 /** Fill colour per threshold (tokens; see PROGRESS_THRESHOLDS). Exported for the team table's compact bar. */
@@ -34,17 +35,13 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
           </span>
         ) : null}
       </div>
-      <div
-        role="progressbar"
+      <Progress
         aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={width}
         aria-valuetext={text}
-        className="h-3 w-full overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border"
-      >
-        <div className={cn("animate-bar h-full rounded-full transition-[width] duration-200 ease-out", level ? PROGRESS_FILL[level] : "bg-progress-mid")} style={{ width: `${width}%` }} />
-      </div>
+        value={width}
+        className="h-3"
+        indicatorClassName={cn("animate-bar", level ? PROGRESS_FILL[level] : "bg-progress-mid")}
+      />
     </div>
   );
 }

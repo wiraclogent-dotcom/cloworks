@@ -10,7 +10,7 @@ import type { InboxItem } from "@/lib/inbox";
 import { notificationHref } from "@/lib/notificationLinks";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 import { NotificationItem, unreadRow } from "../notifications/NotificationItem";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn, focusRing } from "../ui/cn";
 
 type Ok = { ok: true };

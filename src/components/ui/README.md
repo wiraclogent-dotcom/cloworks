@@ -121,13 +121,13 @@ component is gone.
 | Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
 | Inline message | `Alert` + `AlertTitle`, `AlertDescription`, `AlertAction` (`variant` default/success/warning/destructive; `role` defaults to alert for destructive, status otherwise, `null` = silent; `icon` swaps or drops the icon) | `ui/Alert` (`tone`, `title`, `action` props) | Migrated |
 | Empty list / no results / error page | `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle` (`asChild` for a heading), `EmptyDescription`, `EmptyContent`. Kit `ui/EmptyState` composes them (brand art, `titleAs`, `role`); `size="inline"` for a quiet one-line "No … yet" inside a card | ad-hoc "No … yet" paragraphs (the Board column placeholder stays: icon + dashed box) | Migrated |
-| Loading placeholder / spinner | `Skeleton`, `Spinner` | `ui/Skeleton`, `LoaderCircle` spinners | Planned |
-| Person | `Avatar` | `ui/Avatar` | Planned |
+| Loading placeholder / spinner | `Skeleton` (size and shape from `className`: `rounded-full`, `rounded-xl`; hidden from assistive tech), `Spinner` (announced as "Loading"; `aria-hidden="true"` when a label already says it). A spinner inside a button stays the button's own `loading` icon | `ui/Skeleton` (`rounded` prop), `LoaderCircle animate-spin` | Migrated |
+| Person | `Avatar`, `AvatarImage`, `AvatarFallback` (Radix: photo once loaded, initials until then). Kit `ui/Avatar` (`Avatar`, `UnassignedAvatar`, `AvatarStack`) composes them with the name palette, workspace photos and `decorative` | `<img>` + initials spans | Migrated |
 | On/off, choice | `Switch`, `Checkbox`, `Radio Group` | `ui/Switch`, `ui/RadioCards`, bare `accent-primary` checkboxes | Planned |
-| Progress | `Progress` | `ui/ProgressBar`, `kpi/ProgressBar` | Planned |
+| Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
 | Collapsible block | `Collapsible` / `Accordion` | `<details>` in `CollapsibleSection`, admin lists | Planned |
 | Table | `Table` | `tableClass()` | Planned |
-| Separator | `Separator` | `ui/Divider` | Planned |
+| Separator | `Separator` (decorative by default; `decorative={false}` for a real separator; `orientation`) | `ui/Divider` | Migrated |
 | Date picking | `Calendar` + `Popover` (our `DatePicker`) | – | In use |
 | Toast | `Toast` (Sonner) | inline `role="status"` messages after actions | Planned (decide per flow) |
 
@@ -156,8 +156,8 @@ shadcn part inside.
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
-`CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
+`Switch`, `RadioCards`, `SegmentedControl`,
+`CollapsibleSection`, `Modal`, `table.ts`. Their props are documented in the files themselves.
 
 ## Do
 

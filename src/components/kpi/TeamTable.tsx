@@ -3,6 +3,7 @@ import type { JobRole } from "@prisma/client";
 import { formatCount, formatDays, formatPercent, progressPercent } from "@/lib/kpi/format";
 import type { KpiResult } from "@/lib/kpi/metrics";
 import { PROGRESS_LEVEL_LABEL, progressLevel } from "@/lib/kpi/presentation";
+import { Progress } from "@/components/shadcn/progress";
 import { cn } from "@/components/ui/cn";
 import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
@@ -15,10 +16,7 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   const level = progressLevel(pct);
   return (
     <div data-level={level} className="flex items-center gap-2">
-      <div role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
-        className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border">
-        <div className={cn("h-full rounded-full", PROGRESS_FILL[level])} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
+      <Progress aria-label={`${name} progress`} aria-valuetext={`${pct}%`} value={Math.min(100, pct)} className="w-16 shrink-0" indicatorClassName={PROGRESS_FILL[level]} />
       <span className="inline-flex items-center gap-0.5 tabular-nums">
         {level === "complete" ? <Check aria-hidden="true" strokeWidth={2.25} className="size-3.5 text-progress-complete" /> : null}
         {pct}%
