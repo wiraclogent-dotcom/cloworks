@@ -59,7 +59,7 @@ export async function markChatReadWith(db: Db, userId: string, requestId: string
 /**
  * FROM/WHERE for messages from others, in chats I belong to, newer than my read position. Without a ChatRead row the
  * read position is the workspace's `chatSince` ("start fresh": comments from before chat launched count as read).
- * Raw SQL is not workspace-scoped, so the workspace is filtered explicitly on both tables.
+ * Raw SQL is not workspace-scoped, so the workspace is filtered explicitly (comment, request and assignee rows).
  * Aliases: `c` comment, `r` request, `w` workspace.
  */
 function unreadFrom(me: { id: string; workspaceId: string }): Prisma.Sql {
@@ -72,7 +72,8 @@ function unreadFrom(me: { id: string; workspaceId: string }): Prisma.Sql {
       AND c."authorId" <> ${me.id}
       AND c."createdAt" > COALESCE(cr."lastReadAt", w."chatSince")
       AND (r."requesterId" = ${me.id}
-           OR EXISTS (SELECT 1 FROM "RequestAssignee" ra WHERE ra."requestId" = r.id AND ra."userId" = ${me.id})
+           OR EXISTS (SELECT 1 FROM "RequestAssignee" ra WHERE ra."requestId" = r.id AND ra."userId" = ${me.id}
+                      AND ra."workspaceId" = ${me.workspaceId})
            OR EXISTS (SELECT 1 FROM "Comment" c2 WHERE c2."requestId" = r.id
                       AND (c2."authorId" = ${me.id} OR ${me.id} = ANY(c2.mentions))))`;
 }
