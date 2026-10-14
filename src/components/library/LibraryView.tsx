@@ -7,7 +7,7 @@ import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/libra
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { CountPill } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
@@ -172,7 +172,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                     <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />
                     {c.name}
                   </CardTitle>
-                  <CardAction><CountPill value={items.length} aria-label={`${items.length} links`} /></CardAction>
+                  <CardAction><Badge variant="count" aria-label={`${items.length} links`}>{items.length}</Badge></CardAction>
                 </CardHeader>
                 {items.length > 0 ? (
                   <div className="space-y-0.5">

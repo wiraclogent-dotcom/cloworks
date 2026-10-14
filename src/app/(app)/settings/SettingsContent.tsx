@@ -4,7 +4,7 @@ import { accountRows } from "@/lib/settings/account";
 import { photoUrl } from "@/lib/profilePhotoUrl";
 import { Avatar } from "@/components/ui/Avatar";
 import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { ChangePasswordForm } from "./ChangePasswordForm";
 import { PhotoEditor } from "./PhotoEditor";
 
@@ -38,8 +38,8 @@ export async function SettingsContent() {
           <p className="mt-4 text-lg font-semibold text-foreground">{fullName}</p>
           {title !== "—" ? <p className="text-sm text-muted-foreground">{title}</p> : null}
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-            <Chip>{value("Role")}</Chip>
-            <Chip>{value("Job role")}</Chip>
+            <Badge>{value("Role")}</Badge>
+            <Badge>{value("Job role")}</Badge>
           </div>
         </div>
         <dl className="mt-5 grid gap-4 border-t border-border pt-5">

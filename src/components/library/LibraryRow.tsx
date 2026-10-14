@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowDown, ArrowUp, Ellipsis, FileDown, FileText, Globe, HardDrive, Palette, Pencil, PenTool, Pin, PinOff, Presentation, Sheet, Trash2, type LucideIcon } from "lucide-react";
 import { focusRing } from "@/components/ui/cn";
-import { BrandTag, Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
+import { BrandTag } from "@/components/ui/BrandTag";
 import { itemBadge, linkKind, type LibraryRow as Row, type LinkKind } from "@/lib/libraryView";
 import { Button } from "@/components/shadcn/button";
 
@@ -94,7 +95,7 @@ export function LibraryRowItem({ row, now, actions }: { row: Row; now: Date; act
       </span>
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
         {row.brandName ? <BrandTag name={row.brandName} /> : null}
-        {badge ? <Chip tone="due-soon">{badge}</Chip> : null}
+        {badge ? <Badge tone="due-soon">{badge}</Badge> : null}
       </span>
     </a>
   );

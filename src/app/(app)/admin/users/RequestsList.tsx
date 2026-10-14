@@ -2,7 +2,7 @@
 
 import { AdminForm, ConfirmAction } from "@/components/admin/AdminForm";
 import { Card } from "@/components/shadcn/card";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { PersonRoleFields } from "./PersonRoleFields";
 import { approveRequest, rejectRequest, undoRejectRequest } from "./actions";
@@ -17,7 +17,7 @@ function Who({ r }: { r: RequestRow }) {
       <p className="font-medium text-foreground">{r.name}</p>
       <p className="text-sm break-all text-muted-foreground">{r.email}</p>
       <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <Chip>{SOURCE[r.source]}</Chip>
+        <Badge>{SOURCE[r.source]}</Badge>
         <span>{r.requestedAt}</span>
       </p>
     </div>

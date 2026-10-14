@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Check, Pencil } from "lucide-react";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { StatusIcon } from "@/components/ui/StatusIcon";
 import { cn } from "@/components/ui/cn";
 import { tableClass } from "@/components/ui/table";
@@ -120,12 +120,12 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
           editing ? (
             <StatusSelect projectId={projectId} taskId={task.id} value={task.status} label={label} />
           ) : task.status ? (
-            <Chip tone={PROJECT_STATUS_TONE[task.status]} icon={<StatusIcon status={task.status} />}>{TASK_STATUS_LABEL[task.status]}</Chip>
+            <Badge tone={PROJECT_STATUS_TONE[task.status]}><StatusIcon status={task.status} />{TASK_STATUS_LABEL[task.status]}</Badge>
           ) : "—"
         ) : editing ? (
           <StageSelect projectId={projectId} taskId={task.id} value={task.stage} label={label} />
         ) : task.stage ? (
-          <Chip>{PROJECT_STAGE_LABEL[task.stage]}</Chip>
+          <Badge>{PROJECT_STAGE_LABEL[task.stage]}</Badge>
         ) : "—"}
       </td>
       <td className={cell("tabular-nums")}>

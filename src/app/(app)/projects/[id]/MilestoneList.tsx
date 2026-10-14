@@ -4,7 +4,7 @@ import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/shadcn/input";
 import { formatJakartaDay } from "@/lib/projectTasks";
@@ -83,7 +83,7 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
         <span>{m.title}</span>
         <span className="flex items-center gap-2 tabular-nums text-muted-foreground">
           {formatJakartaDay(m.dateIso)}
-          <Chip tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Chip>
+          <Badge tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Badge>
           {canManage && !confirming && (
             <>
               <Button

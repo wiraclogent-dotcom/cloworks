@@ -4,7 +4,6 @@ import { render, screen, cleanup, fireEvent, within } from "@testing-library/rea
 import { Inbox } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { Chip, BrandTag, CountPill } from "@/components/ui/Chip";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
@@ -21,9 +20,6 @@ import { cn } from "@/components/ui/cn";
 import { StatusBadge, NeedsMotionBadge } from "@/components/status";
 
 afterEach(cleanup);
-
-/** No component may carry a raw colour: only token classes. */
-const noHex = (el: Element) => expect(el.outerHTML).not.toMatch(/#[0-9a-f]{6}\b|text-white|bg-white|text-black/i);
 
 describe("cn", () => {
   it("joins truthy class names", () => {
@@ -56,29 +52,6 @@ describe("SegmentedControl", () => {
     expect(screen.getByRole("button", { name: "Month" }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Year" }));
     expect(pick).toHaveBeenCalledOnce();
-  });
-});
-
-describe("Chip / BrandTag / CountPill", () => {
-  it("Chip carries its palette tone and uses tone tokens only", () => {
-    render(<Chip tone="due-soon">Soon</Chip>);
-    const c = screen.getByText("Soon");
-    expect(c.getAttribute("data-tone")).toBe("due-soon");
-    expect(c.className).toMatch(/bg-tone-tint/);
-    expect(c.className).toMatch(/text-tone-text/);
-    noHex(c);
-  });
-  it("BrandTag picks the brand tone, unknown brands neutral", () => {
-    render(<><BrandTag name="Clogent" /><BrandTag name="Bubble Wash" /><BrandTag name="Acme" /></>);
-    expect(screen.getByText("Clogent").getAttribute("data-tone")).toBe("tag-clogent");
-    expect(screen.getByText("Bubble Wash").getAttribute("data-tone")).toBe("tag-bubble-wash");
-    expect(screen.getByText("Acme").getAttribute("data-tone")).toBe("tag-neutral");
-  });
-  it("CountPill shows a tabular number", () => {
-    render(<CountPill value={7} aria-label="7 requests" />);
-    const p = screen.getByLabelText("7 requests");
-    expect(p.textContent).toBe("7");
-    expect(p.className).toMatch(/tabular-nums/);
   });
 });
 

@@ -2,7 +2,8 @@ import type { CSSProperties, ReactNode } from "react";
 import { Check, CheckCheck, Clapperboard, FilePlus2, MessageSquareText, Palette, UserCheck } from "lucide-react";
 import { Card } from "@/components/shadcn/card";
 import { Avatar } from "@/components/ui/Avatar";
-import { BrandTag, Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
+import { BrandTag } from "@/components/ui/BrandTag";
 import { cn } from "@/components/ui/cn";
 import { BrandArt } from "@/components/ui/BrandArt";
 import type { ArtName } from "@/lib/brand/art";
@@ -49,7 +50,7 @@ function AssignPicker() {
 function WorkCard() {
   return (
     <Frame>
-      <Chip tone="in-progress">On progress</Chip>
+      <Badge tone="in-progress">On progress</Badge>
       <p className="mt-2 font-medium text-foreground">October feed, 9 posts</p>
       <div className="mt-2.5 flex items-center gap-2">
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
@@ -79,7 +80,7 @@ function DoneCount() {
   return (
     <Frame>
       <div className="flex items-center justify-between">
-        <Chip tone="done">Done</Chip>
+        <Badge tone="done">Done</Badge>
         <span className="font-medium text-foreground tabular-nums">18 / 20</span>
       </div>
       <p className="mt-2 text-muted-foreground">Raka&apos;s October target</p>

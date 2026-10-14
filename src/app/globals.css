@@ -269,7 +269,7 @@
   --avatar-8-text: #d3dce8;
 }
 
-/* `data-tone` exposes one palette entry as --tone-accent/tint/text (Chip, StatusChip, column bars, Alert). */
+/* `data-tone` exposes one palette entry as --tone-accent/tint/text (Badge, StatusChip, column bars, Alert). */
 [data-tone="requested"] { --tone-accent: var(--status-requested-accent); --tone-tint: var(--status-requested-tint); --tone-text: var(--status-requested-text); }
 [data-tone="in-progress"] { --tone-accent: var(--status-in-progress-accent); --tone-tint: var(--status-in-progress-tint); --tone-text: var(--status-in-progress-text); }
 [data-tone="first-look"] { --tone-accent: var(--status-first-look-accent); --tone-tint: var(--status-first-look-tint); --tone-text: var(--status-first-look-text); }

@@ -4,7 +4,7 @@ import { daysLeft } from "@/lib/daysLeft";
 import { itemSlug } from "@/lib/projectItemList";
 import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { TargetItem } from "@/lib/kpi/projectQueries";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { Card } from "@/components/shadcn/card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -50,7 +50,7 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
         ) : item.dueDate ? (
           <span className="text-xs text-muted-foreground tabular-nums">Due {dateText(item.dueDate)}</span>
         ) : null}
-        <Chip tone={badge.tone} className={cn(badge.muted && "bg-transparent text-foreground-muted outline outline-1 -outline-offset-1 outline-border")}>{badge.text}</Chip>
+        <Badge tone={badge.tone} className={cn(badge.muted && "bg-transparent text-foreground-muted outline outline-1 -outline-offset-1 outline-border")}>{badge.text}</Badge>
         {canManage && item.targetId ? <RemoveTargetButton targetId={item.targetId} label={label} /> : null}
       </div>
     </li>

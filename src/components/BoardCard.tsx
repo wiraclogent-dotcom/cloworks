@@ -4,7 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import type { RequestRow } from "@/lib/requests";
 import Link from "next/link";
 import { GripVertical, Link2 } from "lucide-react";
-import { BrandTag } from "./ui/Chip";
+import { BrandTag } from "./ui/BrandTag";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { NeedsMotionChip } from "./ui/NeedsMotionChip";
 import { assigneeLabel } from "@/lib/assignees";

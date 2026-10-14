@@ -6,7 +6,7 @@ import type { AdminFormState } from "@/lib/adminForm";
 import { AdminForm, ConfirmAction, Labeled, type FormCtx } from "@/components/admin/AdminForm";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import type { LinkablePerson } from "@/lib/linkPerson";
@@ -45,7 +45,7 @@ export function InvitedList({ invites, linkable }: { invites: InviteRow[]; linka
                 <td className={cn(t.td, "align-top")}>{enumLabel(i.appRole)} · {enumLabel(i.jobRole)}</td>
                 <td className={cn(t.td, "align-top")}>{i.invitedBy}</td>
                 <td className={cn(t.td, "align-top")}>
-                  {i.expired ? <Chip tone="cancelled">Expired</Chip> : <span>{i.expiresOn}</span>}
+                  {i.expired ? <Badge tone="cancelled">Expired</Badge> : <span>{i.expiresOn}</span>}
                   {i.expired && <p className="mt-0.5 text-xs text-muted-foreground">{i.expiresOn}</p>}
                 </td>
                 <td className={cn(t.td, "align-top")}>

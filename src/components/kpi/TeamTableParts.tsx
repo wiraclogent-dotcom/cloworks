@@ -2,7 +2,7 @@ import Link from "next/link";
 import { MoveHorizontal } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 
@@ -42,7 +42,7 @@ export function TeamPersonCell({ name, role, href }: { name: string; role: JobRo
           {href ? (
             <Link href={href} className="-my-1 inline-flex min-h-7 items-center rounded-md font-medium text-foreground hover:text-link hover:underline">{name}</Link>
           ) : <span className="font-medium text-foreground">{name}</span>}
-          <div className="mt-0.5"><Chip tone="tag-neutral" data-role={role}>{JOB_ROLE_LABEL[role]}</Chip></div>
+          <div className="mt-0.5"><Badge tone="tag-neutral" data-role={role}>{JOB_ROLE_LABEL[role]}</Badge></div>
         </div>
       </div>
     </th>

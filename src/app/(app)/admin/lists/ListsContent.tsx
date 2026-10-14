@@ -5,7 +5,7 @@ import { AdminTabs } from "../AdminTabs";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { activeChip } from "@/lib/adminChips";
 import { NameForm, TypeForm } from "./ListForms";
 
@@ -58,7 +58,7 @@ export async function ListsContent() {
                       <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-90" />
                       {t.name}
                       <span className="sr-only"> · </span>
-                      <Chip tone={chip.tone}>{chip.label}</Chip>
+                      <Badge tone={chip.tone}>{chip.label}</Badge>
                     </summary>
                     <div className="border-t border-border p-3">
                       <TypeForm t={{ id: t.id, name: t.name, active: t.active, schemaText: JSON.stringify(t.fieldSchema, null, 2) }} />

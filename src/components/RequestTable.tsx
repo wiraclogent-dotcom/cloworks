@@ -6,7 +6,7 @@ import { NeedsMotionBadge, StatusBadge } from "./status";
 import { assigneeLabel } from "@/lib/assignees";
 import { Card } from "@/components/shadcn/card";
 import { Avatar, AvatarStack } from "./ui/Avatar";
-import { BrandTag } from "./ui/Chip";
+import { BrandTag } from "./ui/BrandTag";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { EmptyState } from "./ui/EmptyState";
 import { tableClass } from "./ui/table";

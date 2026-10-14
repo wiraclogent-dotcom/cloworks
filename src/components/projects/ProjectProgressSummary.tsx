@@ -1,6 +1,6 @@
 import type { ProjectStatus } from "@prisma/client";
 import { Card } from "@/components/shadcn/card";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import type { ItemRowInput, ProjectItem } from "@/lib/projectItemList";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
 import { PROJECT_STAGES, finalShare, stageCounts, statusCounts, taskMode } from "@/lib/projectProgress";
@@ -47,7 +47,7 @@ export function ProjectProgressSummary({ rows, items }: { rows: ItemRowInput[]; 
         {segments.map((s) => <li key={s.key}>{`${s.label}: ${s.n}`}</li>)}
       </ul>
       <div aria-hidden="true" className="mt-3 flex flex-wrap gap-1.5">
-        {segments.map((s) => <Chip key={s.key} tone={s.tone}>{`${s.label} ${s.n}`}</Chip>)}
+        {segments.map((s) => <Badge key={s.key} tone={s.tone}>{`${s.label} ${s.n}`}</Badge>)}
       </div>
     </Card>
   );

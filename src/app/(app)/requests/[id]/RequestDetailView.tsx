@@ -11,7 +11,8 @@ import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { STATUS_LABEL } from "@/components/status";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
-import { BrandTag, Chip, CountPill } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
+import { BrandTag } from "@/components/ui/BrandTag";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { BrandArt } from "@/components/ui/BrandArt";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
@@ -93,8 +94,8 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
         {people.length > 0 && <AvatarStack names={people.map((p) => p.name)} size="sm" label="Assignees" />}
         {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}
         {req.includeKpi
-          ? <Chip tone="done" icon={<Target aria-hidden="true" strokeWidth={1.75} />}>Counts toward KPI</Chip>
-          : <Chip tone="tag-neutral" icon={<CircleSlash aria-hidden="true" strokeWidth={1.75} />}>Not counted toward KPI</Chip>}
+          ? <Badge tone="done"><Target aria-hidden="true" strokeWidth={1.75} />Counts toward KPI</Badge>
+          : <Badge tone="tag-neutral"><CircleSlash aria-hidden="true" strokeWidth={1.75} />Not counted toward KPI</Badge>}
       </div>
 
       <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -154,7 +155,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
 
           <Card className="animate-rise" style={{ "--i": 2 } as CSSProperties}>
             <section aria-labelledby="comments-h">
-              <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <CountPill value={req.comments.length} /></CardTitle></CardHeader>
+              <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <Badge variant="count">{req.comments.length}</Badge></CardTitle></CardHeader>
               {req.comments.length === 0 ? (
                 <p className="mb-4 text-sm text-muted-foreground">No comments yet.</p>
               ) : (

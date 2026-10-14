@@ -7,7 +7,7 @@ import { Plus, Settings2 } from "lucide-react";
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
-import { CountPill } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Label } from "@/components/shadcn/label";
 import { cn, focusRing } from "@/components/ui/cn";
@@ -100,7 +100,7 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
                             on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-muted")}>
                           <Avatar name={c.displayName} src={c.avatarUrl} size="sm" decorative />
                           <span className="min-w-0 flex-1 truncate">@{c.handle}</span>
-                          {c.awaiting ? <CountPill value={c.awaiting} aria-label={`${c.awaiting} awaiting approval`} /> : null}
+                          {c.awaiting ? <Badge variant="count" aria-label={`${c.awaiting} awaiting approval`}>{c.awaiting}</Badge> : null}
                         </Link>
                         {canManage ? (
                           <Button

@@ -4,7 +4,7 @@ import { CalendarCheck, ChartColumn, FolderKanban, LayoutGrid, Plus, Search, Sli
 import { BOARD_STATUSES, STATUS_LABEL } from "@/components/status";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { Avatar } from "@/components/ui/Avatar";
-import { BrandTag } from "@/components/ui/Chip";
+import { BrandTag } from "@/components/ui/BrandTag";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";

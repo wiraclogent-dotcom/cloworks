@@ -118,7 +118,7 @@ component is gone.
 | Hint on hover/focus | `Tooltip` | `title=""` on icon buttons | Planned |
 | Tabs / view switch | `Tabs` or `Toggle Group` | `ui/SegmentedControl`, Library category pills | Planned |
 | Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`details`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
-| Tag, count, label pill | `Badge` | `ui/Chip`, `BrandTag`, `CountPill` | Planned |
+| Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
 | Inline message | `Alert` | `ui/Alert` | Planned |
 | Empty list / no results / error page | `Empty` | `ui/EmptyState`, ad-hoc "No … yet" paragraphs | Planned |
 | Loading placeholder / spinner | `Skeleton`, `Spinner` | `ui/Skeleton`, `LoaderCircle` spinners | Planned |
@@ -140,6 +140,7 @@ shadcn part inside.
 |---|---|---|---|
 | `PageHeader` | PageHeader.tsx | `title`, `count`, `description`, `switcher`, `actions` | Top of every page (renders the `<h1>`). |
 | `StatusChip` | StatusChip.tsx | `status: RequestStatus \| ProjectStatus`, `kind?: "request" \| "project"` (pass `project` for project statuses: Canceled vs Cancelled) | Status anywhere (icon + label + tint). Old name `StatusBadge` still exported by `components/status`. |
+| `BrandTag` | BrandTag.tsx | `name`, `className` | Brand name as a badge (Clogent and Bubble Wash have their own tones, others neutral). |
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |
@@ -154,7 +155,7 @@ shadcn part inside.
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`Chip`, `Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
+`Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 
 ## Do

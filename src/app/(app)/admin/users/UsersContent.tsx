@@ -5,7 +5,7 @@ import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
@@ -18,8 +18,8 @@ import { MemberTabs, parseMemberTab } from "./MemberTabs";
 import { RequestsList, type RequestRow } from "./RequestsList";
 import { ActiveToggle, EditUserForm, LoginEmailForm, MergeForm, PasswordForm } from "./UserForms";
 
-function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
-  return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
+function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Badge>[0]["tone"] } } & Record<`data-${string}`, string>) {
+  return <Badge tone={chip.tone} {...rest}>{chip.label}</Badge>;
 }
 
 const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });

@@ -5,7 +5,7 @@ import { BellRing, CalendarDays, CirclePlay, FolderKanban, LayoutGrid, MessageSq
 import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { BrandArt } from "@/components/ui/BrandArt";
 import type { ArtName } from "@/lib/brand/art";
@@ -110,7 +110,7 @@ function DesignerQueue() {
           <li key={q.title} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3">
             <span className="min-w-0 basis-full text-sm font-medium text-foreground sm:basis-auto sm:flex-1">{q.title}</span>
             {q.motion ? <NeedsMotionChip /> : null}
-            <Chip tone={q.tone}>{q.due}</Chip>
+            <Badge tone={q.tone}>{q.due}</Badge>
           </li>
         ))}
       </ul>
@@ -276,7 +276,7 @@ export function Landing() {
                   <figcaption className="mt-3">
                     <span className="block text-sm font-medium text-foreground">{post.title}</span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Chip tone="done">Done</Chip>
+                      <Badge tone="done">Done</Badge>
                       {post.motion ? <NeedsMotionChip /> : null}
                     </span>
                   </figcaption>
