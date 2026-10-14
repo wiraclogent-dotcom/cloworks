@@ -18,11 +18,11 @@ export default function ChangePasswordPage() {
   return (
     <main id="main" className="flex flex-1 flex-col">
       <Suspense fallback={null}><SessionGate /></Suspense>
-      <div data-brand-band="" className="border-b-4 border-brand-aqua bg-sidebar px-4 pt-12 pb-24 text-center text-sidebar-foreground sm:pt-16">
+      <div data-brand-band="" className="border-b border-border bg-card px-4 pt-12 pb-24 text-center text-foreground sm:pt-16">
         <div className="mx-auto flex max-w-md flex-col items-center">
           <LogoMark size={44} />
           <p className="mt-4 text-2xl font-semibold tracking-tight">Cloworks</p>
-          <p className="mt-1 text-sm text-sidebar-foreground-secondary">Request, track and measure creative work.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Request, track and measure creative work.</p>
         </div>
       </div>
       <div className="-mt-16 flex justify-center px-4 pb-8">

@@ -9,7 +9,7 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
 vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
-vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }), Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
+vi.mock("next/font/google", () => ({ Archivo: () => ({ variable: "font-archivo" }) }));
 vi.mock("@/lib/session", () => ({ requireUserOrRedirect: vi.fn(), requireUser: vi.fn() }));
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -113,11 +113,11 @@ describe("D11 per-page titles", () => {
 });
 
 describe("D10 sign-in brand panel", () => {
-  it("Deep Blue panel with an Aqua edge and the clay studio art, next to the form and a link home", async () => {
+  it("flat blue V3 panel with product cards and no illustration, next to the form and a link home", async () => {
     await act(async () => { render(<SignInPage searchParams={Promise.resolve({})} />); });
     const panel = document.querySelector("[data-brand-panel]")!;
-    expect(panel.className).toContain("bg-brand-deep-blue");
-    expect(panel.className).toContain("border-brand-aqua");
+    expect(panel.innerHTML).toContain("var(--brand-deep-blue)");
+    expect(panel.querySelector("img")).toBeNull();
     expect(panel.textContent).toContain("Every creative request, from brief to done.");
     expect(screen.getByRole("link", { name: "Back to home" }).getAttribute("href")).toBe("/");
     expect(screen.getByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();

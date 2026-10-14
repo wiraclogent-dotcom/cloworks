@@ -52,10 +52,10 @@ export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = 
   hiddenByRoster?: boolean;
 }) {
   if (rows.length === 0 && hiddenByRoster) {
-    return <EmptyState art="empty-kpi" icon={<Users />} title={`No one is shown for ${year}.`} description={canOpen ? "Use Manage people to add someone." : undefined} />;
+    return <EmptyState icon={<Users />} title={`No one is shown for ${year}.`} description={canOpen ? "Use Manage people to add someone." : undefined} />;
   }
   if (rows.length === 0) {
-    return <EmptyState art="empty-kpi" icon={<Target />} title={`No project targets for ${year} yet.`} description="Add targets from a person's Project KPI page." />;
+    return <EmptyState icon={<Target />} title={`No project targets for ${year} yet.`} description="Add targets from a person's Project KPI page." />;
   }
   const num = (v: number | null, suffix = "") => (v === null ? "—" : `${v}${suffix}`);
   const hrefOf = (userId: string) => `/dashboard/projects/${userId}?year=${year}`;

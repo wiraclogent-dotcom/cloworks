@@ -1,12 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Check, CheckCheck, Clapperboard, FilePlus2, MessageSquareText, Palette, UserCheck } from "lucide-react";
 import { Card } from "@/components/shadcn/card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { BrandTag } from "@/components/ui/BrandTag";
 import { cn } from "@/components/ui/cn";
-import { BrandArt } from "@/components/ui/BrandArt";
-import type { ArtName } from "@/lib/brand/art";
 
 const display = "font-display tracking-[-0.02em]";
 
@@ -92,18 +90,17 @@ function DoneCount() {
 }
 
 /** The request lifecycle in the order it happens; each tone matches that stage's board colour. */
-const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: ReactNode; clay?: ArtName }[] = [
-  { title: "Send the brief", body: "Title, brief link, brand, deadline and motion, in one form. No chat thread to dig through later.", icon: <FilePlus2 />, tone: "tag-clogent", art: <BriefForm />, clay: "step-brief" },
+const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: ReactNode }[] = [
+  { title: "Send the brief", body: "Title, brief link, brand, deadline and motion, in one form. No chat thread to dig through later.", icon: <FilePlus2 />, tone: "tag-clogent", art: <BriefForm /> },
   { title: "The lead assigns it", body: "New requests land in Requested. The lead picks a designer and it shows up in their queue.", icon: <UserCheck />, tone: "requested", art: <AssignPicker /> },
-  { title: "Designers make it", body: "Drag the card to On progress. Everyone can see who is on what without asking.", icon: <Palette />, tone: "in-progress", art: <WorkCard />, clay: "step-make" },
+  { title: "Designers make it", body: "Drag the card to On progress. Everyone can see who is on what without asking.", icon: <Palette />, tone: "in-progress", art: <WorkCard /> },
   { title: "First look", body: "The requester reviews, comments and @mentions. Revisions stay next to the brief.", icon: <MessageSquareText />, tone: "first-look", art: <ReviewComment /> },
-  { title: "Done, and counted", body: "Approved work moves to Done and counts toward the designer's monthly target.", icon: <CheckCheck />, tone: "done", art: <DoneCount />, clay: "celebrate" },
+  { title: "Done, and counted", body: "Approved work moves to Done and counts toward the designer's monthly target.", icon: <CheckCheck />, tone: "done", art: <DoneCount /> },
 ];
 
 export function HowItWorks() {
   return (
     <section id="how" aria-labelledby="how-title" className="relative isolate scroll-mt-16 overflow-hidden border-y border-border bg-card">
-      <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(50%_40%_at_50%_0%,color-mix(in_srgb,var(--brand-aqua)_10%,transparent),transparent_70%)]" />
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="how-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>How a request moves</h2>
@@ -136,10 +133,6 @@ export function HowItWorks() {
                 <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground lg:min-h-[5.75rem]">{step.body}</p>
               </div>
               <div className="relative mt-5 max-w-xs text-left md:mt-0 md:max-w-none lg:mt-5">
-                {step.clay ? (
-                  <BrandArt name={step.clay} width={72} style={{ "--float-delay": `${i * -1.5}s` } as CSSProperties}
-                    className="animate-float absolute -top-9 -right-3 z-10 size-16 object-contain drop-shadow-lg" />
-                ) : null}
                 {step.art}
               </div>
             </li>

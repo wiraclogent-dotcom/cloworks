@@ -29,8 +29,8 @@ describe("palette ↔ globals.css (single source)", () => {
     for (const tone of TONES) expect(css).toContain(`[data-tone="${tone}"] { --tone-accent: var(--status-${tone}-accent);`);
   });
   it("light values are the spec's", () => {
-    expect(PALETTE.requested.light).toEqual({ accent: "#7A8CA5", tint: "#EAEFF5", text: "#2B3A4D" });
-    expect(PALETTE.done.light).toEqual({ accent: "#11AA9F", tint: "#DDF4F1", text: "#085041" });
+    expect(PALETTE.requested.light).toEqual({ accent: "#9AA3B5", tint: "#F1F3F7", text: "#3B4458" });
+    expect(PALETTE.done.light).toEqual({ accent: "#0B2A8F", tint: "#DDE3F5", text: "#0B2A8F" });
     expect(PALETTE["due-soon"].light).toEqual({ accent: "#BA7517", tint: "#FAEEDA", text: "#633806" });
   });
 });

@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
 import { addAttachment, addComment, setAssignees, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
-import { celebrate } from "@/lib/celebrate";
 import { moveRequest, rescheduleRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
@@ -216,7 +215,6 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
     start(async () => {
       try {
         const r = await moveRequest(requestId, to, opts);
-        if (r.ok && to === "DONE") celebrate();
         if (r.ok) router.refresh(); else setError(r.message);
       } catch {
         setError("Could not move the request. Check your connection and try again.");

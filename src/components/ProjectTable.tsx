@@ -104,7 +104,7 @@ export function ProjectTable({ rows, canManage, now, emptyTitle = "No projects y
 }) {
   if (rows.length === 0)
     return (
-      <EmptyState art="empty-projects" icon={<FolderKanban />} title={emptyTitle}
+      <EmptyState icon={<FolderKanban />} title={emptyTitle}
         description={emptyDescription ?? (canManage ? "Use “New project” to add the first one." : undefined)} />
     );
   return (

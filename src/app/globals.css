@@ -15,79 +15,79 @@
   color-scheme: light;
 
   /* Brand palette (SKC Brand Guidelines 2026), unchanged in both themes */
-  --brand-deep-blue: #09426d;
-  --brand-aqua: #11aa9f;
+  --brand-deep-blue: #1f5eff;
+  --brand-aqua: #5b8cff;
   --brand-grey: #cccccc;
   --brand-white: #ffffff;
   /* Darker Aqua: aqua text and links on white (AA). */
-  --brand-aqua-strong: #0b756d;
-  --brand-deep-blue-night: #062b47;
+  --brand-aqua-strong: #1650e6;
+  --brand-deep-blue-night: #0a1a4f;
   /* Landing and sign-in only: Deep Blue button hover, white button hover, CTA glow, headline gradient (dark override below) */
-  --brand-deep-blue-hover: #0b5185;
-  --brand-aqua-tint: #e6f6f4;
+  --brand-deep-blue-hover: #0b4af0;
+  --brand-aqua-tint: #eef3ff;
   --elevation-brand: 0 6px 16px -4px color-mix(in srgb, var(--brand-deep-blue) 45%, transparent);
   --brand-gradient-from: var(--brand-deep-blue);
-  --brand-gradient-via: #1f7fa8;
+  --brand-gradient-via: #3d76ff;
   --brand-gradient-to: var(--brand-aqua);
 
   /* Surfaces and text */
-  --background: #f5f3ee;
+  --background: #f4f6fa;
   --surface: #ffffff;
-  --surface-muted: #f0eee9;
+  --surface-muted: #eef1f6;
   /* Unread notifications: the Requested tint, with its accent for the dot (both follow the theme) */
   --unread: var(--status-requested-tint);
   --unread-dot: var(--status-requested-accent);
-  /* Board canvas: a warm tint with a faint dot grid behind the columns */
-  --board-canvas: #efece6;
-  --board-dot: rgba(23, 24, 28, 0.1);
-  --border: #e6e3dc;
-  --border-strong: #d3cfc5;
+  /* Board canvas (the landing product shot) */
+  --board-canvas: #f4f6fa;
+  --border: #e5e9f2;
+  --border-strong: #d3dae6;
   /* Scrollbars: thin, token-coloured thumb on a transparent track (the canvas, card or board shows through). */
   --scrollbar-thumb: color-mix(in srgb, var(--foreground-muted) 55%, transparent);
   --scrollbar-thumb-hover: var(--foreground-muted);
-  --foreground: #17181c;
-  --foreground-secondary: #62656d;
+  --foreground: #0a0f1f;
+  --foreground-secondary: #5b6478;
   /* Non-text only (decorative icons, dividers): 3.26:1 on white is below AA for text. */
-  --foreground-muted: #7d8088;
+  --foreground-muted: #7c8599;
   /* Field placeholders are text: AA (4.5:1) on the field and on a disabled (muted) field. */
   --placeholder: var(--foreground-secondary);
-  --heading: #17181c;
-  --link: var(--brand-aqua-strong);
+  --heading: #0a0f1f;
+  --link: #1650e6;
   /* Field outline: 3:1 against white (WCAG 1.4.11), slightly darker than --border-strong. */
-  --input: #8a8c93;
+  --input: #8a93a6;
   /* Focus ring: brand Aqua darkened one step so it reaches 3:1 on the canvas (spec #11AA9F is 2.7:1). */
-  --ring: #0c8a81;
+  --ring: #1f5eff;
 
-  /* Sidebar: a quiet rail in the canvas colour; the active link is a white pill */
-  --sidebar: #f5f3ee;
-  --sidebar-foreground: #17181c;
-  --sidebar-foreground-secondary: #62656d;
-  --sidebar-hover: rgba(23, 24, 28, 0.06);
-  --sidebar-active: #ffffff;
-  --sidebar-border: #e6e3dc;
-  --sidebar-accent: #0b756d;
-  --sidebar-ring: #0b756d;
+  /* Sidebar: white rail (V3); the active link is a solid blue pill with white text */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0f1f;
+  --sidebar-foreground-secondary: #5b6478;
+  --sidebar-hover: rgba(10, 15, 31, 0.05);
+  --sidebar-active: #1f5eff;
+  --sidebar-active-foreground: #ffffff;
+  --sidebar-border: #e5e9f2;
+  --sidebar-accent: #1f5eff;
+  --sidebar-ring: #1f5eff;
 
   /* Semantic tokens (shadcn-style), mapped onto the tokens above */
   --card: var(--surface);
   --card-foreground: var(--foreground);
-  --primary: #17181c;
+  --primary: #1f5eff;
   --primary-foreground: #ffffff;
-  --primary-hover: #2b2d35;
+  --primary-hover: #0b4af0;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--foreground-secondary);
-  --accent: #ddf4f1;
-  --accent-foreground: #085041;
+  --accent: #eef3ff;
+  --accent-foreground: #0b3fd1;
   --destructive: #c2342f;
   --destructive-foreground: #ffffff;
   --destructive-hover: #a82b27;
   --danger-text: #c2342f;
 
   /* Charts (graphics need 3:1 against the card) */
-  --chart-done: var(--brand-aqua-strong);
-  --chart-target: var(--brand-deep-blue);
+  --chart-done: #1f5eff;
+  --chart-target: #0a0f1f;
   --chart-grid: var(--border);
   /* Categories (e.g. request types), never statuses: one fixed slot per category, never cycled; past 5 -> "other".
      Validated with the dataviz palette checks (CVD + normal vision) against the card in each theme. */
@@ -100,47 +100,47 @@
   /* KPI progress fills by threshold (graphics: ≥ 3:1 against the card and the muted track; the % is always printed). */
   --progress-low: #ba7517;
   --progress-mid: var(--chart-done);
-  --progress-complete: #3b7a1e;
+  --progress-complete: #0b3fd1;
 
   /* Depth */
-  --elevation-card: 0 1px 2px rgba(23, 24, 28, 0.05), 0 1px 3px rgba(23, 24, 28, 0.04);
-  --elevation-raised: 0 8px 24px rgba(16, 24, 40, 0.14);
-  --backdrop: rgba(16, 24, 40, 0.45);
+  --elevation-card: 0 1px 2px rgba(10, 15, 31, 0.04);
+  --elevation-raised: 0 12px 32px -8px rgba(10, 30, 90, 0.2);
+  --backdrop: rgba(10, 15, 31, 0.45);
 
   /* Status and tag chips: accent (borders, dots, column bar) | tint (chip background) | text */
-  --status-requested-accent: #7a8ca5;
-  --status-requested-tint: #eaeff5;
-  --status-requested-text: #2b3a4d;
-  --status-in-progress-accent: #2f7fc1;
-  --status-in-progress-tint: #e3eef9;
-  --status-in-progress-text: #0c447c;
-  --status-first-look-accent: #7f77dd;
-  --status-first-look-tint: #eeedfe;
-  --status-first-look-text: #3c3489;
-  --status-done-accent: #11aa9f;
-  --status-done-tint: #ddf4f1;
-  --status-done-text: #085041;
+  --status-requested-accent: #9aa3b5;
+  --status-requested-tint: #f1f3f7;
+  --status-requested-text: #3b4458;
+  --status-in-progress-accent: #1f5eff;
+  --status-in-progress-tint: #e8eeff;
+  --status-in-progress-text: #0b3fd1;
+  --status-first-look-accent: #38a3f5;
+  --status-first-look-tint: #e6f4ff;
+  --status-first-look-text: #0b5a99;
+  --status-done-accent: #0b2a8f;
+  --status-done-tint: #dde3f5;
+  --status-done-text: #0b2a8f;
   --status-cancelled-accent: #e24b4a;
   --status-cancelled-tint: #fcebeb;
   --status-cancelled-text: #791f1f;
-  --status-needs-motion-accent: #d85a30;
-  --status-needs-motion-tint: #faece7;
-  --status-needs-motion-text: #712b13;
+  --status-needs-motion-accent: #6d5bff;
+  --status-needs-motion-tint: #f0eeff;
+  --status-needs-motion-text: #4130b8;
   --status-due-soon-accent: #ba7517;
   --status-due-soon-tint: #faeeda;
   --status-due-soon-text: #633806;
   --status-overdue-accent: #e24b4a;
   --status-overdue-tint: #fcebeb;
   --status-overdue-text: #791f1f;
-  --status-tag-clogent-accent: #378add;
-  --status-tag-clogent-tint: #e6f1fb;
-  --status-tag-clogent-text: #0c447c;
-  --status-tag-bubble-wash-accent: #1d9e75;
-  --status-tag-bubble-wash-tint: #e1f5ee;
-  --status-tag-bubble-wash-text: #085041;
-  --status-tag-neutral-accent: #8190a3;
-  --status-tag-neutral-tint: #f1f4f8;
-  --status-tag-neutral-text: #3a4a5e;
+  --status-tag-clogent-accent: #1f5eff;
+  --status-tag-clogent-tint: #eef3ff;
+  --status-tag-clogent-text: #0b3fd1;
+  --status-tag-bubble-wash-accent: #0e9bb8;
+  --status-tag-bubble-wash-tint: #e3f6fa;
+  --status-tag-bubble-wash-text: #075a6e;
+  --status-tag-neutral-accent: #8a93a6;
+  --status-tag-neutral-tint: #f1f3f7;
+  --status-tag-neutral-text: #3b4458;
 
   /* Avatars: 8 deterministic pairs (src/lib/palette.ts avatarIndex) */
   --avatar-1-tint: #e6f1fb;
@@ -165,91 +165,91 @@
   color-scheme: dark;
 
   /* Headline gradient: lighter blues so it reads on the dark canvas */
-  --brand-gradient-from: #7cc4f0;
-  --brand-gradient-via: #4fd1c5;
+  --brand-gradient-from: #8fb0ff;
+  --brand-gradient-via: #6f98ff;
 
-  --background: #111113;
-  --surface: #1a1a1d;
-  --surface-muted: #232327;
-  --border: #2c2c31;
-  --border-strong: #3b3b42;
-  --foreground: #f2f1ee;
-  --foreground-secondary: #b3b4ba;
-  --foreground-muted: #7f8087;
-  --heading: #f2f1ee;
-  --link: #4fd1c5;
-  --input: #7a7d86;
-  --ring: #11aa9f;
+  --background: #0b1020;
+  --surface: #121a2e;
+  --surface-muted: #1a2338;
+  --border: #243049;
+  --border-strong: #33415e;
+  --foreground: #eef2fa;
+  --foreground-secondary: #a3adc2;
+  --foreground-muted: #7c879e;
+  --heading: #eef2fa;
+  --link: #8fb0ff;
+  --input: #6e7a94;
+  --ring: #5b8cff;
 
-  --sidebar: #111113;
-  --sidebar-foreground: #f2f1ee;
-  --sidebar-foreground-secondary: #a6a7ad;
+  --sidebar: #121a2e;
+  --sidebar-foreground: #eef2fa;
+  --sidebar-foreground-secondary: #a3adc2;
   --sidebar-hover: rgba(255, 255, 255, 0.06);
-  --sidebar-active: #26262b;
-  --sidebar-accent: #4fd1c5;
-  --sidebar-border: #2c2c31;
-  --sidebar-ring: #4fd1c5;
+  --sidebar-active: #2f66ff;
+  --sidebar-active-foreground: #ffffff;
+  --sidebar-accent: #8fb0ff;
+  --sidebar-border: #243049;
+  --sidebar-ring: #8fb0ff;
 
-  --primary: #f2f1ee;
-  --primary-foreground: #111113;
-  --primary-hover: #dcdbd6;
-  --secondary-foreground: #f2f1ee;
-  --accent: #134350;
-  --accent-foreground: #9fe1cb;
+  --primary: #2f66ff;
+  --primary-foreground: #ffffff;
+  --primary-hover: #2457e6;
+  --secondary-foreground: #eef2fa;
+  --accent: #1c2a4d;
+  --accent-foreground: #bfd0ff;
   --destructive: #c2342f;
   --destructive-foreground: #ffffff;
   --danger-text: #f27a79;
 
-  --chart-done: var(--brand-aqua);
-  --chart-target: #a9bbcd;
+  --chart-done: #5b8cff;
+  --chart-target: #a9b6cf;
   --chart-cat-1: #3987e5;
   --chart-cat-2: #d95926;
   --chart-cat-3: #199e70;
   --chart-cat-4: #c98500;
   --chart-cat-5: #d55181;
   --progress-low: #ef9f27;
-  --progress-complete: #97c459;
+  --progress-complete: #bfd0ff;
 
-  --board-canvas: #17171a;
-  --board-dot: rgba(255, 255, 255, 0.08);
+  --board-canvas: #0b1020;
 
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --elevation-raised: 0 8px 24px rgba(0, 0, 0, 0.45);
-  --backdrop: rgba(4, 10, 18, 0.6);
+  --backdrop: rgba(3, 6, 15, 0.6);
 
-  --status-requested-accent: #7a8ca5;
-  --status-requested-tint: #2a3c52;
-  --status-requested-text: #d3dce8;
-  --status-in-progress-accent: #2f7fc1;
-  --status-in-progress-tint: #1a3a58;
-  --status-in-progress-text: #b5d4f4;
-  --status-first-look-accent: #7f77dd;
-  --status-first-look-tint: #2c385e;
-  --status-first-look-text: #cecbf6;
-  --status-done-accent: #11aa9f;
-  --status-done-tint: #134350;
-  --status-done-text: #9fe1cb;
+  --status-requested-accent: #8a93a6;
+  --status-requested-tint: #222b3d;
+  --status-requested-text: #d3dae6;
+  --status-in-progress-accent: #2f66ff;
+  --status-in-progress-tint: #172a5c;
+  --status-in-progress-text: #bfd0ff;
+  --status-first-look-accent: #38a3f5;
+  --status-first-look-tint: #12324f;
+  --status-first-look-text: #b8e0ff;
+  --status-done-accent: #8fb0ff;
+  --status-done-tint: #1e2a4f;
+  --status-done-text: #dce6ff;
   --status-cancelled-accent: #e24b4a;
   --status-cancelled-tint: #412e3e;
   --status-cancelled-text: #f7c1c1;
-  --status-needs-motion-accent: #d85a30;
-  --status-needs-motion-tint: #3f3138;
-  --status-needs-motion-text: #f5c4b3;
+  --status-needs-motion-accent: #8b7bff;
+  --status-needs-motion-tint: #2a2559;
+  --status-needs-motion-text: #d6d0ff;
   --status-due-soon-accent: #ba7517;
   --status-due-soon-tint: #393732;
   --status-due-soon-text: #fac775;
   --status-overdue-accent: #e24b4a;
   --status-overdue-tint: #412e3e;
   --status-overdue-text: #f7c1c1;
-  --status-tag-clogent-accent: #378add;
-  --status-tag-clogent-tint: #1c3c5e;
-  --status-tag-clogent-text: #b5d4f4;
-  --status-tag-bubble-wash-accent: #1d9e75;
-  --status-tag-bubble-wash-tint: #164047;
-  --status-tag-bubble-wash-text: #9fe1cb;
-  --status-tag-neutral-accent: #7d93a9;
-  --status-tag-neutral-tint: #2c3d51;
-  --status-tag-neutral-text: #d3dce8;
+  --status-tag-clogent-accent: #2f66ff;
+  --status-tag-clogent-tint: #172a5c;
+  --status-tag-clogent-text: #bfd0ff;
+  --status-tag-bubble-wash-accent: #22b5d3;
+  --status-tag-bubble-wash-tint: #10394a;
+  --status-tag-bubble-wash-text: #a8e8f5;
+  --status-tag-neutral-accent: #7d879e;
+  --status-tag-neutral-tint: #252e40;
+  --status-tag-neutral-text: #d3dae6;
 
   --avatar-1-tint: #1e4268;
   --avatar-1-text: #b5d4f4;
@@ -329,6 +329,7 @@
   --color-sidebar-foreground-secondary: var(--sidebar-foreground-secondary);
   --color-sidebar-hover: var(--sidebar-hover);
   --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -358,8 +359,8 @@
   --shadow-card: var(--elevation-card);
   --shadow-raised: var(--elevation-raised);
   --shadow-brand: var(--elevation-brand);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-bricolage), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
@@ -676,59 +677,6 @@
 .animate-bar { transform-origin: left; animation: bar-grow 0.9s var(--ease-out) 0.15s both; }
 
 /*
- * The welcome card illustration (WelcomeIllustration.tsx). SVG parts animate around their own box (transform-box).
- * The travelling card loops every 9s: Requested (0–22%) → On progress (34–56%) → Done (68–92%), lifting between
- * columns, its status bar recolouring on arrival; the sparkle pops when it lands in Done.
- */
-.wi-halo, .wi-rays, .wi-twinkle, .wi-spark { transform-box: fill-box; transform-origin: center; }
-.wi-halo { animation: wi-halo 4.5s ease-in-out infinite; }
-.wi-rays { animation: wi-spin 30s linear infinite; }
-.wi-twinkle { animation: wi-twinkle 3.2s ease-in-out infinite; }
-.wi-cloud { animation: wi-cloud 10s ease-in-out infinite alternate; }
-.wi-shoot { opacity: 0; animation: wi-shoot 8s ease-out 2s infinite; }
-.wi-travel { animation: wi-travel 9s cubic-bezier(0.65, 0, 0.35, 1) infinite; }
-.wi-travel-bar { fill: var(--status-requested-accent); animation: wi-travel-bar 9s steps(1, end) infinite; }
-.wi-spark { opacity: 0; animation: wi-spark 9s var(--ease-out) infinite; }
-
-@keyframes wi-halo { 50% { transform: scale(1.14); } }
-@keyframes wi-spin { to { transform: rotate(360deg); } }
-@keyframes wi-twinkle { 0%, 100% { opacity: 0.9; transform: scale(1); } 50% { opacity: 0.2; transform: scale(0.55); } }
-@keyframes wi-cloud { from { transform: translateX(-6px); } to { transform: translateX(16px); } }
-@keyframes wi-shoot {
-  0%, 86% { opacity: 0; transform: translate(0, 0); }
-  88% { opacity: 1; }
-  100% { opacity: 0; transform: translate(-70px, 34px); }
-}
-@keyframes wi-travel {
-  0%, 22% { transform: translate(0, 0); opacity: 1; }
-  28% { transform: translate(29px, -9px); }
-  34%, 56% { transform: translate(58px, 0); }
-  62% { transform: translate(87px, -9px); }
-  68%, 92% { transform: translate(116px, 0); opacity: 1; }
-  96% { transform: translate(116px, 0); opacity: 0; }
-  97% { transform: translate(0, 0); opacity: 0; }
-  100% { transform: translate(0, 0); opacity: 1; }
-}
-@keyframes wi-travel-bar {
-  0% { fill: var(--status-requested-accent); }
-  33% { fill: var(--status-in-progress-accent); }
-  67% { fill: var(--status-done-accent); }
-  97% { fill: var(--status-requested-accent); }
-}
-@keyframes wi-spark {
-  0%, 67% { opacity: 0; transform: scale(0.2); }
-  71% { opacity: 1; transform: scale(1.15); }
-  80%, 100% { opacity: 0; transform: scale(1.4); }
-}
-
-/* Confetti burst (<Celebrate>): each piece flies out along its --dx/--dy and spins, then fades. */
-@keyframes confetti {
-  0% { opacity: 1; transform: translate(0, 0) rotate(0deg) scale(1); }
-  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); }
-}
-.confetti-piece { animation: confetti 0.9s var(--ease-out) forwards; }
-
-/*
  * Route transitions (React <ViewTransition> in AppFrame): the page area crossfades and the new page rises a little.
  * The sidebar is outside the named area, so it never moves.
  */
@@ -751,8 +699,7 @@
   }
   .reveal,
   .animate-float,
-  .animate-mesh,
-  [class*="wi-"] {
+  .animate-mesh {
     animation: none !important;
   }
   .lift:hover {

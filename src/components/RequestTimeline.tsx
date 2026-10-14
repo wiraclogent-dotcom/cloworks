@@ -41,11 +41,11 @@ export function RequestTimeline({ rows, people, week, today, assigneeId, prevHre
       </div>
       {empty ? (
         filtered ? (
-          <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters in this week"
+          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters in this week"
             description="Try another search, other weeks, or clear the filters."
             action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
-          <EmptyState art="empty-requests" icon={<ChartNoAxesGantt />} title="No open requests in this week"
+          <EmptyState icon={<ChartNoAxesGantt />} title="No open requests in this week"
             description="Open requests show up here from the day they were requested to their deadline."
             action={<Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>} />
         )

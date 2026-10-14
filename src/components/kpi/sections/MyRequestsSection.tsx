@@ -3,6 +3,7 @@ import type { JobRole } from "@prisma/client";
 import type { ScopedDb } from "@/lib/db";
 import { myRequestsData } from "@/lib/kpi/pageData";
 import { jakartaMonth, monthLabel } from "@/lib/kpi/months";
+import { StatCard } from "@/components/ui/StatCard";
 import { myKpiTiles, type KpiTileData } from "@/lib/kpi/presentation";
 import type { Tone } from "@/lib/palette";
 import { KpiSection } from "@/components/kpi/KpiSection";
@@ -46,17 +47,11 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
         <div className="space-y-5">
           <section aria-labelledby="kpi-numbers">
             <h3 id="kpi-numbers" className="sr-only">Key numbers</h3>
-            {/* One scorecard: the hairlines come from the grid gap showing the card's border colour between cells. */}
-            <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card lg:grid-cols-4">
+            {/* One card per number (V3), the first solid blue. */}
+            <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               {tiles.map((tile, i) => (
-                <li key={tile.key} data-kpi={tile.key} className={cn("flex min-w-0 flex-col gap-2 bg-card p-4", i === tiles.length - 1 && tiles.length % 2 === 1 && "col-span-2")}>
-                  <span className="flex items-center gap-1.5 text-compact text-muted-foreground">
-                    <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{TILE_LOOK[tile.key].icon}</span>
-                    {tile.label}
-                  </span>
-                  <span className="text-2xl leading-8 font-semibold text-foreground tabular-nums">{tile.value}</span>
-                  {tile.hint ? <span className="text-xs leading-4 text-muted-foreground">{tile.hint}</span> : null}
-                </li>
+                <StatCard key={tile.key} data-kpi={tile.key} icon={TILE_LOOK[tile.key].icon} label={tile.label} value={tile.value} hint={tile.hint} solid={i === 0}
+                  className={cn(i === tiles.length - 1 && tiles.length % 2 === 1 && "col-span-2 lg:col-span-1")} />
               ))}
             </ul>
           </section>

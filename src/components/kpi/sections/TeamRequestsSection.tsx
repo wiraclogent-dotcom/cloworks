@@ -27,9 +27,9 @@ export async function TeamRequestsSection({ db, month, canManage, keep }: {
     </>}>
       {rows.length === 0 ? (
         automaticCount > 0 ? (
-          <EmptyState art="empty-kpi" icon={<Users />} title="No one is shown." description={canManage ? "Use Manage people to add someone." : undefined} />
+          <EmptyState icon={<Users />} title="No one is shown." description={canManage ? "Use Manage people to add someone." : undefined} />
         ) : (
-          <EmptyState art="empty-kpi" icon={<Users />} title="No team members to show" description="No creative team members yet." />
+          <EmptyState icon={<Users />} title="No team members to show" description="No creative team members yet." />
         )
       ) : (
         <TeamTable rows={rows} month={month} canEdit={canManage} canOpen={canManage} />

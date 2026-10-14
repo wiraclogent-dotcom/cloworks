@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
-import { BrandArt } from "@/components/ui/BrandArt";
 import type { InboxItem } from "@/lib/inbox";
 import { notificationHref } from "@/lib/notificationLinks";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
@@ -96,8 +95,8 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
               {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
             </div>
           ) : items.length === 0 ? (
-            <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-muted-foreground">
-              <BrandArt name="empty-notifications" width={88} className="animate-float mb-1 size-22 object-contain" />
+            <div className="flex flex-col items-center gap-2 px-2.5 py-6 text-center text-sm text-muted-foreground">
+              <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-full bg-muted text-foreground [&_svg]:size-5"><Bell /></span>
               You&apos;re all caught up.
             </div>
           ) : (

@@ -1,4 +1,5 @@
 "use client";
+import { SearchX } from "lucide-react";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -30,7 +31,7 @@ export function HelpSearch({ sections }: { sections: { section: Section; article
 
       {searching ? (
         matches.length === 0 ? (
-          <EmptyState art="empty-search" title={`No guides match ‘${query.trim()}’`} />
+          <EmptyState icon={<SearchX />} title={`No guides match ‘${query.trim()}’`} />
         ) : (
           <Card>
             <ul className="divide-y divide-border">
