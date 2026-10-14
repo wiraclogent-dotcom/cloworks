@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ASSIGNEE_ORDER, addedAndRemoved, assigneeLabel } from "@/lib/assignees";
+import { ASSIGNEE_ORDER, assigneeLabel } from "@/lib/assignees";
 
 describe("assigneeLabel", () => {
   it("is empty for nobody", () => expect(assigneeLabel([])).toBe(""));
@@ -8,15 +8,6 @@ describe("assigneeLabel", () => {
   it("counts three or more", () => {
     expect(assigneeLabel(["a", "b", "c"])).toBe("3 people");
     expect(assigneeLabel(["a", "b", "c", "d"])).toBe("4 people");
-  });
-});
-
-describe("addedAndRemoved", () => {
-  it("diffs current against next and dedupes next", () => {
-    expect(addedAndRemoved(["a", "b"], ["b", "c", "c"])).toEqual({ added: ["c"], removed: ["a"] });
-  });
-  it("is empty when nothing changes", () => {
-    expect(addedAndRemoved(["a"], ["a"])).toEqual({ added: [], removed: [] });
   });
 });
 

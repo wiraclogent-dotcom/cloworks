@@ -3,7 +3,6 @@ import { can } from "./permissions";
 import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 import { mentionTokens } from "./mentions";
-import { addedAndRemoved } from "./assignees";
 
 export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "UNAUTHENTICATED";
 export type CollabFail = { ok: false; code: CollabCode; message: string };
@@ -73,48 +72,84 @@ export async function addCommentWith(
 }
 
 class CancelledDuringAssign extends Error {}
+class AssignRejected extends Error {
+  constructor(readonly result: CollabFail) { super(result.message); }
+}
 
-/**
- * Makes `userIds` the request's assignees. Leads and admins change any request; whoever filed it may too. Only the
- * people being added are checked (active, on the creative team): someone already assigned who has since left stays
- * until they are removed. Added people get ASSIGNED, removed people UNASSIGNED, both in-app only after the commit.
- */
-export async function setAssigneesWith(
-  db: PrismaClient,
-  user: Actor,
-  requestId: string,
-  userIds: string[],
-  notifier: Notifier = notifierFor(db),
-): Promise<{ ok: true; added: string[]; removed: string[] } | CollabFail> {
-  const req = await db.request.findUnique({
-    where: { id: requestId },
-    select: { status: true, requesterId: true, title: true, assignees: { select: { userId: true } } },
-  });
-  // Leads and admins assign any request; whoever filed a request may pick its designers too.
-  if (!can(user.appRole, "request.assign") && req?.requesterId !== user.id)
-    return fail("FORBIDDEN", "Only the requester, leads and admins can assign this request.");
-  if (!req) return fail("NOT_FOUND", "Request not found.");
-  if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
-  if (!Array.isArray(userIds)) return fail("INVALID", "Pick who should work on this request.");
-  const { added, removed } = addedAndRemoved(req.assignees.map((a) => a.userId), userIds);
-  for (const id of added) {
-    const a = await db.user.findUnique({ where: { id }, select: { active: true, appRole: true, jobRole: true } });
+/** One change to a request's assignees: people to add and/or people to remove. */
+export type AssigneeChange = { add?: string[]; remove?: string[] };
+/** Most ids `add` or `remove` may name in one change (the picker sends one). */
+export const MAX_ASSIGNEE_CHANGE = 20;
+
+/** `add` / `remove` as a deduped id list, or why it is not one. Absent is an empty list. */
+function changeIds(v: unknown): string[] | CollabFail {
+  if (v === undefined) return [];
+  if (!Array.isArray(v) || !v.every((id) => typeof id === "string")) return fail("INVALID", "Pick who should work on this request.");
+  const ids = [...new Set(v as string[])];
+  return ids.length > MAX_ASSIGNEE_CHANGE ? fail("INVALID", `Change at most ${MAX_ASSIGNEE_CHANGE} people at a time.`) : ids;
+}
+
+/** Why one of `ids` cannot be added (first offender, in order), or null. One query. */
+async function cannotAssign(db: Pick<PrismaClient, "user">, ids: string[]): Promise<CollabFail | null> {
+  if (ids.length === 0) return null;
+  const found = await db.user.findMany({ where: { id: { in: ids } }, select: { id: true, active: true, appRole: true, jobRole: true } });
+  const byId = new Map(found.map((u) => [u.id, u]));
+  for (const id of ids) {
+    const a = byId.get(id);
     if (!a) return fail("NOT_FOUND", "Assignee not found.");
     if (!a.active) return fail("INVALID", "That person is no longer active.");
     if (a.appRole === "REQUESTER") return fail("INVALID", "Requesters cannot be assignees. Pick a creative, lead or admin.");
     // Same rule as listCreativeTeam (src/lib/team.ts): the creative team is the designers.
     if (a.jobRole !== "DESIGNER") return fail("INVALID", "Only creative team members can be assignees.");
   }
+  return null;
+}
+
+/**
+ * Applies one change to the request's assignees: adds the people in `add` and removes those in `remove`, against the
+ * rows as they are when the change lands (not against what the caller last saw), so a stale tab never undoes someone
+ * else's edit; for each person the last write wins. Leads and admins change any request; whoever filed it may too.
+ * Only the people actually being added are checked (active, on the creative team): someone already assigned who has
+ * since left stays until they are removed. Returns the effective change; added people get ASSIGNED, removed people
+ * UNASSIGNED, both in-app only after the commit.
+ */
+export async function setAssigneesWith(
+  db: PrismaClient,
+  user: Actor,
+  requestId: string,
+  change: AssigneeChange,
+  notifier: Notifier = notifierFor(db),
+): Promise<{ ok: true; added: string[]; removed: string[] } | CollabFail> {
+  if (typeof change !== "object" || change === null || Array.isArray(change)) return fail("INVALID", "Pick who should work on this request.");
+  const add = changeIds(change.add);
+  if (!Array.isArray(add)) return add;
+  const remove = changeIds(change.remove);
+  if (!Array.isArray(remove)) return remove;
+  if (add.some((id) => remove.includes(id))) return fail("INVALID", "Add or remove a person, not both at once.");
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { status: true, requesterId: true, title: true } });
+  // Leads and admins assign any request; whoever filed a request may pick its designers too.
+  if (!can(user.appRole, "request.assign") && req?.requesterId !== user.id)
+    return fail("FORBIDDEN", "Only the requester, leads and admins can assign this request.");
+  if (!req) return fail("NOT_FOUND", "Request not found.");
+  if (req.status === "CANCELLED") return fail("INVALID", "A cancelled request cannot be reassigned.");
+  let added: string[], removed: string[];
   try {
-    await db.$transaction(async (tx) => {
-      // Lock the request row first so concurrent edits queue up: the rows below are then written from a state no
-      // one else can change until we commit. A request cancelled since the reads above rolls back.
+    ({ added, removed } = await db.$transaction(async (tx) => {
+      // Lock the request row first so concurrent changes queue up, then diff against the rows no one else can change
+      // until we commit. A request cancelled since the read above rolls back.
       const locked = await tx.$queryRaw<{ status: string }[]>`SELECT "status"::text AS status FROM "Request" WHERE "id" = ${requestId} FOR UPDATE`;
       if (locked.length === 0 || locked[0].status === "CANCELLED") throw new CancelledDuringAssign();
+      const current = new Set((await tx.requestAssignee.findMany({ where: { requestId }, select: { userId: true } })).map((r) => r.userId));
+      const added = add.filter((id) => !current.has(id));
+      const removed = remove.filter((id) => current.has(id));
+      const rejected = await cannotAssign(tx, added);
+      if (rejected) throw new AssignRejected(rejected);
       if (removed.length) await tx.requestAssignee.deleteMany({ where: { requestId, userId: { in: removed } } });
       if (added.length) await tx.requestAssignee.createMany({ data: added.map((userId) => ({ requestId, userId })), skipDuplicates: true });
-    });
+      return { added, removed };
+    }));
   } catch (e) {
+    if (e instanceof AssignRejected) return e.result;
     if (!(e instanceof CancelledDuringAssign)) throw e;
     const now = await db.request.findUnique({ where: { id: requestId }, select: { status: true } });
     return now ? fail("INVALID", "A cancelled request cannot be reassigned.") : fail("NOT_FOUND", "Request not found.");

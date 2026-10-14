@@ -46,8 +46,8 @@ describe("assigneeOptions", () => {
     expect(assigneeOptions(team, [{ id: "b", name: "Bea", active: true }])).toEqual(team);
   });
   it("keeps a current assignee who is off the team at the top, saying why", () => {
-    expect(assigneeOptions(team, [{ id: "x", name: "Idzni", active: true }])[0]).toEqual({ id: "x", name: "Idzni (not on creative team)" });
-    expect(assigneeOptions(team, [{ id: "d", name: "Daus", active: false }])[0]).toEqual({ id: "d", name: "Daus (inactive)" });
+    expect(assigneeOptions(team, [{ id: "x", name: "Idzni", active: true }])[0]).toEqual({ id: "x", name: "Idzni (not on creative team)", offTeam: true });
+    expect(assigneeOptions(team, [{ id: "d", name: "Daus", active: false }])[0]).toEqual({ id: "d", name: "Daus (inactive)", offTeam: true });
     expect(assigneeOptions(team, [{ id: "d", name: "Daus", active: false }])).toHaveLength(3);
   });
   it("keeps every off-team current person, in order, and not the team members", () => {

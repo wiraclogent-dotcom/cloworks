@@ -1,4 +1,5 @@
 import type { JobRole, PrismaClient } from "@prisma/client";
+import type { AssigneeOption } from "./assignees";
 
 /**
  * The creative team: active designers (job role DESIGNER) who use the tracker as creative, lead or admin. Other
@@ -16,17 +17,17 @@ export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: 
 }
 
 /**
- * Assign-picker options: the team, plus every current assignee who is not on it at the top (so the picker does not
- * silently drop them), each labelled with why.
+ * Assign-picker options: the team, plus every current assignee who is not on it at the top, labelled with why and
+ * flagged `offTeam` (the picker never offers those to add: the server would refuse them).
  */
 export function assigneeOptions(
   team: { id: string; name: string }[],
   current: { id: string; name: string; active: boolean }[],
-): { id: string; name: string }[] {
+): AssigneeOption[] {
   const onTeam = new Set(team.map((t) => t.id));
   const offTeam = current
     .filter((c) => !onTeam.has(c.id))
-    .map((c) => ({ id: c.id, name: `${c.name} (${c.active ? "not on creative team" : "inactive"})` }));
+    .map((c) => ({ id: c.id, name: `${c.name} (${c.active ? "not on creative team" : "inactive"})`, offTeam: true as const }));
   return offTeam.length ? [...offTeam, ...team] : team;
 }
 

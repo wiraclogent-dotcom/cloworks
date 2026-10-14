@@ -66,7 +66,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   it("denies actions outside the role, and unassigned DONE", async () => {
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(move("Fafa", "ON_PROGRESS")).rejects.toBeInstanceOf(TransitionError);
-    expect(await setAssigneesWith(db.prisma, u.Fadli, reqId, [u.Fadli.id], notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
+    expect(await setAssigneesWith(db.prisma, u.Fadli, reqId, { add: [u.Fadli.id] }, notifier)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     const t = { userId: u.Fadli.id, month: MONTH, role: "DESIGNER" as const, targetTasks: 10 };
     expect(await setTargetWith(db.prisma, u.Fadli, t)).toMatchObject({ ok: false, code: "FORBIDDEN" });
     expect(await setTargetWith(db.prisma, u.Fafa, t)).toMatchObject({ ok: false, code: "FORBIDDEN" });
@@ -90,7 +90,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
   });
 
   it("lead assigns Fadli; Fadli finishes with 2 outputs and a folder", async () => {
-    expect(await setAssigneesWith(db.prisma, u.Idzni, reqId, [u.Fadli.id], notifier)).toMatchObject({ ok: true });
+    expect(await setAssigneesWith(db.prisma, u.Idzni, reqId, { add: [u.Fadli.id] }, notifier)).toMatchObject({ ok: true });
     expect((await db.prisma.requestAssignee.findMany({ where: { requestId: reqId } })).map((a) => a.userId)).toEqual([u.Fadli.id]);
 
     // REQUESTED -> ON_PROGRESS -> FIRST_LOOK, one revision loop (FIRST_LOOK -> ON_PROGRESS -> FIRST_LOOK), then DONE
@@ -178,7 +178,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
 
     it("with two assignees it can go to DONE, and the requester and both assignees hear about each change except the actor", async () => {
       const id = await fresh("Two owners");
-      expect(await setAssigneesWith(db.prisma, u.Idzni, id, [u.Fadli.id, u.Irsyad.id], notifier)).toMatchObject({ ok: true });
+      expect(await setAssigneesWith(db.prisma, u.Idzni, id, { add: [u.Fadli.id, u.Irsyad.id] }, notifier)).toMatchObject({ ok: true });
       await go(id, "Fadli", "ON_PROGRESS");
       await go(id, "Fadli", "FIRST_LOOK");
       await go(id, "Fadli", "DONE", { outputCount: 1 });

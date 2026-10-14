@@ -40,7 +40,7 @@ describe("server actions return a result object when the session ended", () => {
     expect(await createProject({ title: "x", ownerId: "o", status: "NOT_STARTED" })).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
     expect(await addComment("r", "hi")).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
     expect(await setIncludeKpi("r", false)).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
-    expect(await setAssignees("r", ["u"])).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
+    expect(await setAssignees("r", { add: ["u"] })).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
   it("library actions", async () => {
     const item = { title: "t", url: "https://x.test", categoryId: "c" };

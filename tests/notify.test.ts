@@ -268,19 +268,19 @@ describe("notifications", () => {
     });
 
     it("assign notifies only the new assignee; not on same assignee; unassign notifies the removed person", async () => {
-      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
+      await setAssigneesWith(db.prisma, lead(), reqId, { add: [ids.dimas] }, notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatchObject({ userIds: [ids.dimas], type: "ASSIGNED", actorId: ids.lia, requestId: reqId });
       expect(calls[0].message).toBe("Lia assigned you to “Poster”");
-      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
+      await setAssigneesWith(db.prisma, lead(), reqId, { add: [ids.dimas] }, notifier);
       expect(calls).toHaveLength(1);
-      await setAssigneesWith(db.prisma, lead(), reqId, [], notifier);
+      await setAssigneesWith(db.prisma, lead(), reqId, { remove: [ids.dimas] }, notifier);
       expect(calls).toHaveLength(2);
       expect(calls[1]).toMatchObject({ userIds: [ids.dimas], type: "UNASSIGNED", actorId: ids.lia, requestId: reqId });
       expect(calls[1].message).toBe("Lia removed you from “Poster”");
     });
     it("failed assignment does not notify", async () => {
-      await setAssigneesWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, [ids.dimas], notifier);
+      await setAssigneesWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, { add: [ids.dimas] }, notifier);
       expect(calls).toHaveLength(0);
     });
     it("comment: mention beats comment, requester/assignee get COMMENT, author excluded", async () => {

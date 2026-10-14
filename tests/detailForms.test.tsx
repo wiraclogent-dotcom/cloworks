@@ -58,19 +58,19 @@ describe("AssigneesPicker", () => {
     render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
     expect(Array.from(addSelect().options).map((o) => o.text)).toEqual(["+ Add person", "Ana", "Bima"]);
   });
-  it("choosing someone calls setAssignees with the previous ids plus the new one, then refreshes", async () => {
+  it("choosing someone sends just that addition, then refreshes", async () => {
     setAssignees.mockResolvedValue({ ok: true });
     render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
     fireEvent.change(addSelect(), { target: { value: "u1" } });
     await waitFor(() => expect(refresh).toHaveBeenCalled());
-    expect(setAssignees).toHaveBeenCalledWith("r1", ["u2", "u1"]);
+    expect(setAssignees).toHaveBeenCalledWith("r1", { add: ["u1"] });
     expect(screen.getByRole("button", { name: "Remove Ana" })).toBeTruthy();
   });
-  it("removing someone calls setAssignees without them", async () => {
+  it("removing someone sends just that removal", async () => {
     setAssignees.mockResolvedValue({ ok: true });
     render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }, { id: "u3", name: "Bima" }]} options={OPTIONS} />);
     fireEvent.click(screen.getByRole("button", { name: "Remove Fafa" }));
-    await waitFor(() => expect(setAssignees).toHaveBeenCalledWith("r1", ["u3"]));
+    await waitFor(() => expect(setAssignees).toHaveBeenCalledWith("r1", { remove: ["u2"] }));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(screen.queryByRole("button", { name: "Remove Fafa" })).toBeNull();
   });
@@ -136,6 +136,20 @@ describe("AssigneesPicker", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
     fireEvent.change(addSelect(), { target: { value: "u3" } });
     expect(setAssignees).toHaveBeenCalledTimes(2);
+  });
+  it("never offers an off-team person once they are removed (adding them back would be refused)", async () => {
+    setAssignees.mockResolvedValue({ ok: true });
+    const opts = [{ id: "u9", name: "Daus (inactive)", offTeam: true as const }, ...OPTIONS];
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u9", name: "Daus" }, { id: "u2", name: "Fafa" }]} options={opts} />);
+    expect(Array.from(addSelect().options).map((o) => o.text)).toEqual(["+ Add person", "Ana", "Bima"]);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Daus" }));
+    await waitFor(() => expect(setAssignees).toHaveBeenCalledWith("r1", { remove: ["u9"] }));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(Array.from(addSelect().options).map((o) => o.text)).toEqual(["+ Add person", "Ana", "Bima"]);
+    // A team member who is removed is offered again at once.
+    fireEvent.click(screen.getByRole("button", { name: "Remove Fafa" }));
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    expect(Array.from(addSelect().options).map((o) => o.text)).toEqual(["+ Add person", "Ana", "Fafa", "Bima"]);
   });
   it("with nobody assigned it still offers the add control", () => {
     render(<AssigneesPicker requestId="r1" current={[]} options={OPTIONS} />);

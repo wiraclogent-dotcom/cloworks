@@ -14,7 +14,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { cn, focusRing } from "@/components/ui/cn";
-import type { AssigneeRef } from "@/lib/assignees";
+import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { Switch } from "@/components/ui/Switch";
 
@@ -121,12 +121,14 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
 }
 
 /**
- * Chips for the people on a request, each removable, plus a native select to add someone. Optimistic: the list changes
- * at once and reverts with the server message if the change is refused. Stays mounted (local list re-syncs when the
+ * Chips for the people on a request, each removable, plus a native select to add someone. Each click sends one change
+ * (add or remove one person), which the server applies to the current rows, so a stale page never undoes someone
+ * else's edit. Optimistic: the list changes at once and reverts with the server message if the change is refused.
+ * Off-team options (a current assignee who has left the team) are never offered to add: the server would refuse them. Stays mounted (local list re-syncs when the
  * server's list changes) and moves focus to the add select after each change, so keyboard users keep their place.
  * While a change is in flight the controls are aria-disabled, not disabled, so they keep focus; extra changes are ignored.
  */
-export function AssigneesPicker({ requestId, current, options }: { requestId: string; current: AssigneeRef[]; options: AssigneeRef[] }) {
+export function AssigneesPicker({ requestId, current, options }: { requestId: string; current: AssigneeRef[]; options: AssigneeOption[] }) {
   const uid = useId();
   const router = useRouter();
   const [list, setList] = useState<AssigneeRef[]>(current);
@@ -145,16 +147,16 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
     const sel = selectRef.current;
     if (sel && !sel.disabled) sel.focus(); else groupRef.current?.focus();
   });
-  function apply(next: AssigneeRef[]) {
+  function apply(change: { add: AssigneeRef } | { remove: AssigneeRef }) {
     if (busy.current) return;
     busy.current = true;
     wantFocus.current = true;
     const prev = list;
-    setList(next);
+    setList("add" in change ? [...list, change.add] : list.filter((p) => p.id !== change.remove.id));
     setError(null);
     start(async () => {
       try {
-        const r = await setAssignees(requestId, next.map((p) => p.id));
+        const r = await setAssignees(requestId, "add" in change ? { add: [change.add.id] } : { remove: [change.remove.id] });
         if (r.ok) router.refresh(); else { setList(prev); setError(r.message); }
       } catch {
         setList(prev);
@@ -165,7 +167,7 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
     });
   }
   const chosen = new Set(list.map((p) => p.id));
-  const addable = options.filter((o) => !chosen.has(o.id));
+  const addable = options.filter((o) => !chosen.has(o.id) && !o.offTeam);
   return (
     <div ref={groupRef} tabIndex={-1} role="group" aria-labelledby={`${uid}-l`} className="outline-none">
       <span id={`${uid}-l`} className={labelClass}>Assignees</span>
@@ -175,7 +177,7 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
             <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
               <Avatar name={p.name} size="sm" decorative />
               <span className="min-w-0 truncate">{p.name}</span>
-              <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply(list.filter((x) => x.id !== p.id))}
+              <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply({ remove: p })}
                 className={cn("inline-flex size-5 items-center justify-center rounded-full text-foreground-secondary hover:bg-surface hover:text-foreground aria-disabled:opacity-50", focusRing)}>
                 <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
               </button>
@@ -185,8 +187,8 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
       )}
       <select ref={selectRef} aria-label="Add assignee" value="" disabled={addable.length === 0} aria-disabled={pending || undefined} aria-describedby={error ? `${uid}-e` : undefined}
         onChange={(e) => {
-          const pick = options.find((o) => o.id === e.target.value);
-          if (pick) apply([...list, pick]);
+          const pick = addable.find((o) => o.id === e.target.value);
+          if (pick) apply({ add: { id: pick.id, name: pick.name } });
         }}
         className={fieldClass({ kind: "select" })}>
         <option value="">+ Add person</option>
