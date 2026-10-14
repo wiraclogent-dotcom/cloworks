@@ -35,10 +35,10 @@ describe("Switch in a plain form", () => {
     expect(post(form).get("s")).toBeNull();
   });
 
-  it("uses the focus ring, the primary track and 55% disabled opacity", () => {
+  it("uses the focus ring, the primary track, padding, colour transition and 55% disabled opacity", () => {
     render(<ShadSwitch aria-label="S" />);
     const t = tokens(screen.getByRole("switch", { name: "S" }));
-    for (const c of ["focus-visible:outline-2", "focus-visible:outline-ring", "data-[state=checked]:bg-primary", "data-[state=unchecked]:bg-input", "disabled:opacity-55"]) {
+    for (const c of ["focus-visible:outline-2", "focus-visible:outline-ring", "data-[state=checked]:bg-primary", "data-[state=unchecked]:bg-input", "disabled:opacity-55", "p-0.5", "transition-colors", "duration-150"]) {
       expect(t, c).toContain(c);
     }
   });
