@@ -51,7 +51,7 @@ A lead or admin opens a submitted post and chooses one of two actions.
 
 ## Follow the request
 
-After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. While the post is **In production** or **Done**, leads, admins, people who can draft posts, and the request's assignee can add the finished design under **Final files** in the post. If the request is cancelled, the post goes back to **Draft**, so you can edit it and submit it again. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
+After approval, the post follows its request. When the request moves to **On progress**, the post shows **In production**. When the request is **Done**, the post shows **Done**. You do not update the post yourself. While the post is **In production** or **Done**, leads, admins, people who can draft posts, and any of the request's assignees can add the finished design under **Final files** in the post. If the request is cancelled, the post goes back to **Draft**, so you can edit it and submit it again. Open the linked request from the post to see details. See [Request details and statuses](/help/request-details-and-statuses).
 
 ## Already posted tiles
 

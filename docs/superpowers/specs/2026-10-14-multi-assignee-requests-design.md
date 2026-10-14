@@ -27,7 +27,7 @@ when it's done.
 | **Shared request** | A request with 2 or more assignees. |
 | **Assigned to X** | X is one of the request's assignees. Used by every filter, permission check and KPI rule that used `assigneeId === X`. |
 
-## Data model (one migration)
+## Data model (two migrations, one deploy)
 
 ```prisma
 /// One person working on a request. A request with several rows is shared; each assignee gets full KPI credit.
@@ -51,11 +51,20 @@ model RequestAssignee {
 - `Request.assignees RequestAssignee[]` replaces `assigneeId` and `assignee`. `User.assigned` becomes
   `RequestAssignee[]`.
 - Add `"RequestAssignee"` to `SCOPED_MODELS` in `src/lib/db.ts`.
-- Migration SQL: create the table, then
-  `INSERT INTO "RequestAssignee" ("requestId","userId","addedAt","workspaceId") SELECT "id","assigneeId","requestedAt","workspaceId" FROM "Request" WHERE "assigneeId" IS NOT NULL;`
-  then drop the `Request_assigneeId_idx` index, the foreign key and the `assigneeId` column. It all runs in one migration, so
-  production never sees a half-done state.
+- Two migrations ship together in **one deploy**:
+  1. `20261014120000_request_assignees`: create the table, its indexes and foreign keys, then backfill
+     `INSERT INTO "RequestAssignee" ("requestId","userId","addedAt","workspaceId") SELECT "id","assigneeId","requestedAt","workspaceId" FROM "Request" WHERE "assigneeId" IS NOT NULL;`
+  2. `20261014130000_drop_request_assignee_id`: copy again any assignee that is still missing from the join
+     table (the same `INSERT … SELECT` with `ON CONFLICT DO NOTHING`, a no-op when nothing changed in between),
+     then drop the `Request_assigneeId_fkey` foreign key, the `Request_assigneeId_idx` index and the
+     `assigneeId` column.
+- As written they must **not** be split across deploys: the code in this release no longer reads or writes
+  `assigneeId`, so running only the first one would leave the column to drift, and code from before this
+  release fails once the second one has run. `prisma migrate deploy` applies both in order.
 - The migration doesn't backfill `addedAt` beyond `requestedAt`. That's enough for ordering.
+- Rolling back to the code from before this release needs the column back:
+  `docs/superpowers/specs/2026-10-14-multi-assignee-rollback.sql` (manual use only) re-adds it from the first
+  assignee of each request and leaves `RequestAssignee` in place.
 
 ## Assignment rules
 
@@ -63,9 +72,15 @@ model RequestAssignee {
 - Who may be an assignee: the same checks as today's `assignRequestWith` in `src/lib/collab.ts`: an
   active user who isn't a `REQUESTER` and has job role `DESIGNER`. Only the people being added are
   checked. An existing assignee who has since left the team or been deactivated may stay on the request.
-- New server action `setAssignees(requestId, userIds: string[])` replaces `assignRequest`. It works
-  out who was added and who was removed, and applies both in one transaction. It fails if the request
-  is `CANCELLED` (as today). Duplicate ids are dropped. Order isn't kept; the UI orders by `addedAt`.
+- New server action `setAssignees(requestId, change: { add?: string[]; remove?: string[] })` replaces
+  `assignRequest`. It applies **one change against the current rows**, not a whole list: inside one
+  transaction it locks the request row, reads who is assigned now, adds only the people in `add` who are
+  not there yet and removes only the people in `remove` who are. A page that is out of date therefore never
+  removes someone another person added, or brings back someone another person removed. It returns the
+  effective `added` / `removed`, and notifications follow those. It fails if the request is `CANCELLED`
+  (as today). `add` and `remove` must be lists of ids (at most 20 each, not the same person in both);
+  duplicate ids are dropped. Order isn't kept; the UI orders by `addedAt`. The request page sends one add
+  or one remove per click.
 - Moving to **Done** needs at least one assignee. The `transition.ts` guard becomes "has at least one
   `RequestAssignee`", checked again inside the transaction, as the current concurrent-unassign pin does.
 - `mergeUsers.ts`: moving the merged person's `RequestAssignee` rows onto the person they're merged into
@@ -84,8 +99,10 @@ model RequestAssignee {
   also stops the existing double count where both the requester and the designer are on the roster.
   The per-person rows don't change. A hint under the tile says: "Each request counted once, even when
   several people worked on it."
-- `teamSummary` (`src/lib/kpi/presentation.ts`) gets the distinct count from the caller.
-  `KpiResult` gains `doneRequestIds: string[]`, and the section passes the union of those ids.
+- `teamSummary` (`src/lib/kpi/presentation.ts`) counts the union of each row's `doneRequestIds`.
+  `KpiResult` gains `doneRequestIds: string[]`. The tile now lives in the page-level summary
+  (`teamSummaryCells` in `src/lib/kpi/summary.ts`, rendered by `TeamSummary.tsx`) as "Request tasks done",
+  with the hint above under it.
 
 ## UI
 
@@ -102,7 +119,9 @@ model RequestAssignee {
 **Request page (`RequestDetailView.tsx`).** The single `AssigneePicker` becomes a multi-select. Each
 current assignee is a chip with a remove ×. "+ Add person" opens the same list of people, without the
 ones already added. `assigneeOptions` (`src/lib/team.ts`) keeps every current assignee in the
-list even when they're no longer on the team, as it does today for the single assignee. Every change saves on its own (add or remove) through `setAssignees`. People who
+list even when they're no longer on the team, as it does today for the single assignee, flagged `offTeam`;
+the picker never offers such a person to add (once removed they would be refused). Every change saves on
+its own (add or remove) through `setAssignees`. People who
 can't assign see the list read-only. The page header shows the stacked avatars.
 
 **New request form (`NewRequestForm.tsx`).**
@@ -140,10 +159,11 @@ carry a small `Users` icon and say "shared with …" in their tooltip or accessi
 
 ## Error handling
 
-- `setAssignees` with an unknown, inactive, requester or non-designer id: the whole call fails with the
-  same messages as today. Nothing is applied.
-- Two people editing assignees at the same time: last write wins for each person. The insert skips
-  existing rows and the delete is by primary key, so neither one can corrupt the set.
+- `setAssignees` adding an unknown, inactive, requester or non-designer id: the whole call fails with the
+  same messages as today. Nothing is applied. Only people actually being added are checked.
+- Two people editing assignees at the same time: last write wins for each person. Each call is one add or
+  remove applied to the current rows under the request row lock; the insert skips existing rows and the
+  delete is by primary key, so neither one can corrupt the set or undo the other's change to someone else.
 - If the last assignee is removed from a request that's `DONE`, the request stays done. This matches
   today, where unassigning a done request is blocked only by the UI, not the data. The KPI just drops
   that request.
@@ -154,8 +174,10 @@ carry a small `Users` icon and say "shared with …" in their tooltip or accessi
   `assigneeId`, and the column is gone.
 - **KPI (`tests/kpi`):** a shared, done request gives +1 to each assignee's `tasksDone`, and both get
   the on-time result. `teamSummary` counts it once. The requester and designer case also counts once.
-- **`setAssignees`:** adds and removes in one call; rejects an invalid person without changing
-  anything; skips duplicate ids; notifications go only to the people added or removed.
+- **`setAssignees`:** adds and removes; rejects an invalid person without changing anything; skips
+  duplicate ids; rejects input that is not id lists or names more than 20 ids; notifications go only to
+  the people actually added or removed. A stale page adding someone keeps the person another page added
+  (and does not notify them); removing someone already removed is a no-op with no notice.
 - **Transition:** Done is blocked with no assignees and allowed with one or more.
 - **`mergeUsers`:** merging A into B where both are on the same request leaves one row for B.
 - **UI:** the shared card shows the avatars, chip and accent bar, and gets
@@ -166,6 +188,18 @@ carry a small `Users` icon and say "shared with …" in their tooltip or accessi
 
 ## Rollout
 
-The migration and code ship together in one deploy (Vercel + Neon). Existing single-assignee requests
-look and score exactly as before. Only the Team summary "Tasks done" can drop, because it now counts
-each request once. Mention that in the release note.
+The migrations and code ship together in one deploy (Vercel + Neon). Code from before this release reads
+`Request.assigneeId`, so it fails from the moment the second migration drops the column until the new code
+is live. Keep that window short:
+
+1. Build first, without deploying: `vercel build --prod`.
+2. Take a Neon branch (or snapshot) of production, so the data can be restored.
+3. Run `prisma migrate deploy` against production (both migrations, in order).
+4. Ship the build at once: `vercel deploy --prebuilt --prod`.
+
+If the release must be rolled back to the old code, restore from the Neon branch, or run
+`docs/superpowers/specs/2026-10-14-multi-assignee-rollback.sql` by hand before deploying the old build
+(it re-creates `assigneeId` from each request's first assignee; shared requests keep only that person).
+
+Existing single-assignee requests look and score exactly as before. Only the Team summary "Request tasks
+done" can drop, because it now counts each request once. Mention that in the release note.
