@@ -1,7 +1,6 @@
 import type { AppRole, JobRole, Prisma, PrismaClient, User } from "@prisma/client";
 import { AdminError, assertAdmin, countSignInCapableAdmins, lockRoster, MAX_ALIAS_LEN, MAX_ALIASES, type Actor } from "./admin";
 import { normalizeName } from "./import/aliases";
-import { ASSIGNEE_ORDER } from "./assignees";
 
 type Tx = Prisma.TransactionClient;
 
@@ -26,8 +25,6 @@ export type MergePreview = {
  */
 const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<unknown>> = {
   "Request.requesterId": (tx, from, into) => tx.request.updateMany({ where: { requesterId: from }, data: { requesterId: into } }),
-  // Legacy mirror of the first assignee; dropped with the column.
-  "Request.assigneeId": (tx, from, into) => tx.request.updateMany({ where: { assigneeId: from }, data: { assigneeId: into } }),
   "RequestAssignee.userId": (tx, from, into) => tx.requestAssignee.updateMany({ where: { userId: from }, data: { userId: into } }),
   "StatusEvent.actorId": (tx, from, into) => tx.statusEvent.updateMany({ where: { actorId: from }, data: { actorId: into } }),
   "DeadlineEvent.actorId": (tx, from, into) => tx.deadlineEvent.updateMany({ where: { actorId: from }, data: { actorId: into } }),
@@ -171,25 +168,6 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
     }
 
     for (const repoint of Object.values(REPOINT)) await repoint(tx, from.id, into.id);
-
-    // Until Request.assigneeId is dropped it must stay on the first assignee. The repoint above moved it from the
-    // duplicate to the survivor, which is only right when the survivor is also first by ASSIGNEE_ORDER.
-    // Set-based (a constant number of queries per distinct first assignee), as the merge transaction has a time limit.
-    if (requestIds.length > 0) {
-      const rows = await tx.requestAssignee.findMany({
-        where: { requestId: { in: requestIds } },
-        orderBy: [{ requestId: "asc" }, ...ASSIGNEE_ORDER],
-        select: { requestId: true, userId: true },
-      });
-      const firstOf = new Map<string, string>();
-      for (const r of rows) if (!firstOf.has(r.requestId)) firstOf.set(r.requestId, r.userId);
-      const byFirst = new Map<string | null, string[]>();
-      for (const requestId of requestIds) {
-        const first = firstOf.get(requestId) ?? null;
-        byFirst.set(first, [...(byFirst.get(first) ?? []), requestId]);
-      }
-      for (const [assigneeId, ids] of byFirst) await tx.request.updateMany({ where: { id: { in: ids } }, data: { assigneeId } });
-    }
 
     // Comment.mentions holds user ids without a foreign key: swap the duplicate for the survivor, keeping the first
     // occurrence's position so a comment that mentioned both lists the survivor once.

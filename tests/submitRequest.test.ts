@@ -47,7 +47,7 @@ describe("submitRequestWith", () => {
       async (n) => { calls.push(n); });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect((await db.prisma.request.findUniqueOrThrow({ where: { id: r.id } })).assigneeId).toBe(designer.id);
+    expect((await db.prisma.requestAssignee.findMany({ where: { requestId: r.id } })).map((a) => a.userId)).toEqual([designer.id]);
     expect(calls).toMatchObject([{ userIds: [designer.id], type: "ASSIGNED" }]);
   });
   it("a repeated or blank assignee id gives one row and one notification", async () => {

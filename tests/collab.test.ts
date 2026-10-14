@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { addCommentWith, setAssigneesWith, addAttachmentWith, removeAttachmentWith, splitMentions } from "@/lib/collab";
 import type { NotifyInput } from "@/lib/notify";
-import { ASSIGNEE_ORDER } from "@/lib/assignees";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("collaboration cores", () => {
@@ -93,7 +92,6 @@ describe("collaboration cores", () => {
     beforeEach(async () => {
       calls.length = 0;
       await db.prisma.requestAssignee.deleteMany({ where: { requestId: reqId } });
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: null } });
     });
 
     it("stores several assignees and sends one ASSIGNED notification to all of them", async () => {
@@ -116,30 +114,13 @@ describe("collaboration cores", () => {
       await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier);
       expect(await setAssigneesWith(db.prisma, lead(), reqId, [], notifier)).toMatchObject({ ok: true, added: [], removed: expect.arrayContaining([ids.dimas, ids.irsyad]) });
       expect(await rows()).toEqual([]);
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBeNull();
     });
-    it("keeps Request.assigneeId on the first assignee while the legacy column exists", async () => {
-      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier);
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.dimas);
-      await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier);
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.irsyad);
-    });
-    it("assigneeId follows the first assignee by ASSIGNEE_ORDER, and promotes the next when they are removed", async () => {
-      const legacy = async () => (await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId;
-      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier);
-      const first = (await db.prisma.requestAssignee.findMany({ where: { requestId: reqId }, orderBy: [...ASSIGNEE_ORDER] })).map((r) => r.userId);
-      expect(first).toHaveLength(2);
-      expect(await legacy()).toBe(first[0]);
-      await setAssigneesWith(db.prisma, lead(), reqId, [first[1]], notifier);
-      expect(await legacy()).toBe(first[1]);
-    });
-    it("concurrent additions leave assigneeId on the first of the stored rows", async () => {
+    it("concurrent additions of different people both land", async () => {
       await Promise.all([
         setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier),
         setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier),
       ]);
-      const rowsNow = await db.prisma.requestAssignee.findMany({ where: { requestId: reqId }, orderBy: [...ASSIGNEE_ORDER] });
-      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(rowsNow[0]?.userId ?? null);
+      expect(await rows()).toEqual(sorted("dimas", "irsyad"));
     });
     it("duplicates in the list store one row", async () => {
       expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad, ids.irsyad], notifier)).toMatchObject({ ok: true, added: [ids.irsyad] });
@@ -224,7 +205,6 @@ describe("collaboration cores", () => {
       });
       const r = await setAssigneesWith(racy, actor("lead", "LEAD"), racing.id, [ids.dimas]);
       expect(r).toMatchObject({ ok: false, code: "INVALID" });
-      expect((await p.request.findUniqueOrThrow({ where: { id: racing.id } })).assigneeId).toBeNull();
       expect(await p.requestAssignee.count({ where: { requestId: racing.id } })).toBe(0);
     });
   });
@@ -305,11 +285,6 @@ describe("collaboration cores", () => {
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatchObject({ type: "ATTACHMENT" });
       expect(sortedIds(calls[0])).toEqual([ids.author, ids.irsyad].sort());
-    });
-    it("ignores the legacy assigneeId column", async () => {
-      await db.prisma.request.update({ where: { id: shared }, data: { assigneeId: ids.lead } });
-      await addCommentWith(db.prisma, actor("author", "REQUESTER"), shared, "hi", new Date(), notifier);
-      expect(sortedIds(calls[0])).toEqual([ids.dimas, ids.irsyad].sort());
     });
   });
 });

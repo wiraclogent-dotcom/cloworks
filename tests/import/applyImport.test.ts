@@ -47,7 +47,6 @@ describe("applyImport", () => {
     const irsyad = await db.prisma.user.findFirstOrThrow({ where: { name: "Irsyad" } });
     const withD = await db.prisma.request.findFirstOrThrow({ where: { title: "WithDesigner" }, include: { assignees: true } });
     expect(withD.assignees.map((a) => [a.userId, a.workspaceId])).toEqual([[irsyad.id, db.workspaceId]]);
-    expect(withD.assigneeId).toBe(irsyad.id);
     expect(await db.prisma.requestAssignee.count({ where: { request: { title: "NoDesigner" } } })).toBe(0);
   });
 

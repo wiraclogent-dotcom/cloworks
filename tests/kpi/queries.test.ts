@@ -34,7 +34,7 @@ describe("kpi queries + targets", () => {
   const mkReq = async (o: { requestedAt: string; status?: S; assignee?: string; assignees?: string[]; requester?: string; includeKpi?: boolean; outputCount?: number; doneAt?: string; deadline?: string; originalDeadline?: string }) => {
     const r = await db.prisma.request.create({
       data: {
-        title: "t", ...base, requesterId: ids[o.requester ?? "req"], assigneeId: o.assignee ? ids[o.assignee] : null,
+        title: "t", ...base, requesterId: ids[o.requester ?? "req"],
         requestedAt: new Date(o.requestedAt), status: o.status ?? S.DONE, includeKpi: o.includeKpi ?? true,
         outputCount: o.outputCount ?? 1, deadline: o.deadline ? new Date(o.deadline) : null,
         originalDeadline: o.originalDeadline ? new Date(o.originalDeadline) : null,

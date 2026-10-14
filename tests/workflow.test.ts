@@ -67,7 +67,6 @@ describe("transitionRequestWith", () => {
         divisionId,
         typeId,
         requesterId: requester.id,
-        assigneeId: assigned ? creative.id : null,
         status,
       },
     });

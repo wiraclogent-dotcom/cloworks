@@ -86,7 +86,7 @@ export type ValidRequest = {
   brandId: string;
   divisionId: string;
   typeId: string;
-  /** Deduped, in the order given; the first is also written to the legacy `Request.assigneeId`. */
+  /** Deduped, in the order given. */
   assigneeIds: string[];
   deadline: Date | null;
   needsMotion: boolean;
@@ -160,7 +160,6 @@ export async function insertRequestTx(
       divisionId: v.divisionId,
       typeId: v.typeId,
       requesterId: opts.requesterId,
-      assigneeId: v.assigneeIds[0] ?? null,
       requestedAt: opts.now,
       deadline: v.deadline,
       status: "REQUESTED",

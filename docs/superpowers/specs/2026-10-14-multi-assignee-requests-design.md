@@ -61,7 +61,8 @@ model RequestAssignee {
 
 - Who may add or remove assignees: exactly who may assign today (`canAssign` / `canPickAssignee`).
 - Who may be an assignee: the same checks as today's `assignRequestWith` in `src/lib/collab.ts`: an
-  active user who isn't a `REQUESTER` and has job role `DESIGNER`. Each person is checked.
+  active user who isn't a `REQUESTER` and has job role `DESIGNER`. Only the people being added are
+  checked. An existing assignee who has since left the team or been deactivated may stay on the request.
 - New server action `setAssignees(requestId, userIds: string[])` replaces `assignRequest`. It works
   out who was added and who was removed, and applies both in one transaction. It fails if the request
   is `CANCELLED` (as today). Duplicate ids are dropped. Order isn't kept; the UI orders by `addedAt`.

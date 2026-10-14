@@ -114,7 +114,6 @@ describe("approve content post", () => {
     const { requestId } = await approveContentPostWith(db.prisma, lead, id, input({ assigneeIds: [designer.id] }), NOW);
     const req = await db.prisma.request.findUniqueOrThrow({ where: { id: requestId }, include: { assignees: true } });
     expect(req.assignees.map((a) => a.userId)).toEqual([designer.id]);
-    expect(req.assigneeId).toBe(designer.id);
     const none = await approveContentPostWith(db.prisma, lead, await submitted(), input({ assigneeIds: [] }), NOW);
     expect(await db.prisma.requestAssignee.count({ where: { requestId: none.requestId } })).toBe(0);
   });

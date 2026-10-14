@@ -18,7 +18,7 @@ describe("listBoardColumns / listRequestsPage", () => {
       data: {
         title, notes: o.notes,
         brandId: b[o.brand ?? "a"], divisionId: d[o.division ?? "x"], typeId,
-        requesterId: u[o.requester ?? "req"], assigneeId: o.assignee ? u[o.assignee] : null,
+        requesterId: u[o.requester ?? "req"],
         status: o.status ?? "REQUESTED",
         deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
         requestedAt: new Date(o.requestedAt ?? "2026-10-01T00:00:00Z"),

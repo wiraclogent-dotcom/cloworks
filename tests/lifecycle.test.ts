@@ -59,7 +59,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
     );
     reqId = r.id;
     const row = await state();
-    expect(row).toMatchObject({ status: "REQUESTED", requesterId: u.Fafa.id, assigneeId: null, outputCount: 1, includeKpi: true });
+    expect(row).toMatchObject({ status: "REQUESTED", requesterId: u.Fafa.id, outputCount: 1, includeKpi: true });
     expect(row.fields).toEqual({ platform: "TikTok", contentType: "Campaign" });
   });
 
@@ -91,7 +91,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
 
   it("lead assigns Fadli; Fadli finishes with 2 outputs and a folder", async () => {
     expect(await setAssigneesWith(db.prisma, u.Idzni, reqId, [u.Fadli.id], notifier)).toMatchObject({ ok: true });
-    expect((await state()).assigneeId).toBe(u.Fadli.id);
+    expect((await db.prisma.requestAssignee.findMany({ where: { requestId: reqId } })).map((a) => a.userId)).toEqual([u.Fadli.id]);
 
     // REQUESTED -> ON_PROGRESS -> FIRST_LOOK, one revision loop (FIRST_LOOK -> ON_PROGRESS -> FIRST_LOOK), then DONE
     await move("Fadli", "ON_PROGRESS");
@@ -99,7 +99,7 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
     await move("Fadli", "ON_PROGRESS");
     await move("Fadli", "FIRST_LOOK");
     await move("Fadli", "DONE", { outputCount: 2, designFolderUrl: FOLDER });
-    expect(await state()).toMatchObject({ status: "DONE", outputCount: 2, designFolderUrl: FOLDER, assigneeId: u.Fadli.id });
+    expect(await state()).toMatchObject({ status: "DONE", outputCount: 2, designFolderUrl: FOLDER });
   });
 
   it("records the full StatusEvent chain with actors", async () => {
@@ -174,14 +174,6 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
       await expect(go(id, "Fadli", "DONE")).rejects.toMatchObject({ code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
       expect((await db.prisma.request.findUniqueOrThrow({ where: { id } })).status).toBe("FIRST_LOOK");
       expect(await db.prisma.statusEvent.count({ where: { requestId: id, to: "DONE" } })).toBe(0);
-    });
-
-    it("a request whose legacy assigneeId is set but has no assignee rows still cannot go to DONE", async () => {
-      const id = await fresh("Legacy only");
-      await go(id, "Fadli", "ON_PROGRESS");
-      await go(id, "Fadli", "FIRST_LOOK");
-      await db.prisma.request.update({ where: { id }, data: { assigneeId: u.Fadli.id } });
-      await expect(go(id, "Fadli", "DONE")).rejects.toMatchObject({ code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
     });
 
     it("with two assignees it can go to DONE, and the requester and both assignees hear about each change except the actor", async () => {

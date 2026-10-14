@@ -23,7 +23,7 @@ describe("listRequests", () => {
         title: o.title ?? key,
         notes: o.notes,
         brandId: b[o.brand ?? "a"], divisionId: d[o.division ?? "x"], typeId,
-        requesterId: u[o.requester ?? "req"], assigneeId: who[0] ? u[who[0]] : null,
+        requesterId: u[o.requester ?? "req"],
         status: o.status ?? "REQUESTED",
         deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
         requestedAt: new Date(o.requestedAt ?? "2026-10-01T00:00:00Z"),
@@ -137,16 +137,16 @@ describe("listCalendarRequests", () => {
   let cre2: string;
   const range = { from: "2026-09-28", to: "2026-11-01", today: "2026-10-08" };
 
-  async function mk(title: string, o: { status?: RequestStatus; deadline?: string | null; assigneeId?: string | null; requestedAt?: string } = {}) {
+  async function mk(title: string, o: { status?: RequestStatus; deadline?: string | null; assignee?: string | null; requestedAt?: string } = {}) {
     const r = await db.prisma.request.create({
       data: {
-        title, brandId: brandId, divisionId: divisionId, typeId, requesterId: cre, assigneeId: o.assigneeId ?? null,
+        title, brandId: brandId, divisionId: divisionId, typeId, requesterId: cre,
         status: o.status ?? "REQUESTED",
         deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
         requestedAt: new Date(o.requestedAt ?? "2026-10-01T00:00:00Z"),
       },
     });
-    if (o.assigneeId) await db.prisma.requestAssignee.createMany({ data: [{ requestId: r.id, userId: o.assigneeId }] });
+    if (o.assignee) await db.prisma.requestAssignee.createMany({ data: [{ requestId: r.id, userId: o.assignee }] });
   }
   let brandId: string; let divisionId: string; let typeId: string;
 
@@ -158,7 +158,7 @@ describe("listCalendarRequests", () => {
     brandId = (await p.brand.create({ data: { name: "B" } })).id;
     divisionId = (await p.division.create({ data: { name: "D" } })).id;
     typeId = (await p.requestType.create({ data: { name: "T" } })).id;
-    await mk("in", { deadline: "2026-10-14", assigneeId: cre2 });
+    await mk("in", { deadline: "2026-10-14", assignee: cre2 });
     await mk("later", { deadline: "2026-11-20" });
     await mk("done", { deadline: "2026-10-14", status: "DONE" });
     await mk("nodl");
@@ -194,16 +194,16 @@ describe("listTimelineRequests", () => {
   let brandId: string; let divisionId: string; let typeId: string;
   const range = { from: "2026-09-28", to: "2026-10-11", today: "2026-10-08" };
 
-  async function mk(title: string, requested: string, o: { status?: RequestStatus; deadline?: string | null; assigneeId?: string | null } = {}) {
+  async function mk(title: string, requested: string, o: { status?: RequestStatus; deadline?: string | null; assignee?: string | null } = {}) {
     const r = await db.prisma.request.create({
       data: {
-        title, brandId, divisionId, typeId, requesterId: cre, assigneeId: o.assigneeId ?? null,
+        title, brandId, divisionId, typeId, requesterId: cre,
         status: o.status ?? "REQUESTED",
         deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
         requestedAt: new Date(`${requested}T00:00:00+07:00`),
       },
     });
-    if (o.assigneeId) await db.prisma.requestAssignee.createMany({ data: [{ requestId: r.id, userId: o.assigneeId }] });
+    if (o.assignee) await db.prisma.requestAssignee.createMany({ data: [{ requestId: r.id, userId: o.assignee }] });
   }
 
   beforeAll(async () => {
@@ -214,7 +214,7 @@ describe("listTimelineRequests", () => {
     brandId = (await p.brand.create({ data: { name: "B" } })).id;
     divisionId = (await p.division.create({ data: { name: "D" } })).id;
     typeId = (await p.requestType.create({ data: { name: "T" } })).id;
-    await mk("run", "2026-10-01", { deadline: "2026-10-14", assigneeId: cre2 });
+    await mk("run", "2026-10-01", { deadline: "2026-10-14", assignee: cre2 });
     await mk("overdue-old", "2026-09-10", { deadline: "2026-09-20" });
     await mk("nodl", "2026-10-02");
     await mk("future", "2026-10-20", { deadline: "2026-10-25" });
@@ -256,7 +256,7 @@ describe("requests with several assignees", () => {
     const typeId = (await p.requestType.create({ data: { name: "T" } })).id;
     const mk = async (title: string, who: { id: string; at: number }[]) => {
       const r = await p.request.create({
-        data: { title, brandId, divisionId, typeId, requesterId: ana, assigneeId: who[0]?.id ?? null, deadline: new Date("2026-10-20T00:00:00+07:00") },
+        data: { title, brandId, divisionId, typeId, requesterId: ana, deadline: new Date("2026-10-20T00:00:00+07:00") },
       });
       if (who.length) await p.requestAssignee.createMany({ data: who.map((w) => ({ requestId: r.id, userId: w.id, addedAt: new Date(Date.UTC(2026, 9, 1, 0, w.at)) })) });
     };

@@ -50,7 +50,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   const [divisionId, setDivisionId] = useState(form.divisionId ?? "");
   // No suggested or default type: the first active one, so the select never shows a value it does not send.
   const [typeId, setTypeId] = useState(d.typeId ?? form.types[0]?.id ?? "");
-  const [assigneeId, setAssigneeId] = useState("");
+  const [designerId, setDesignerId] = useState("");
   const [deadline, setDeadline] = useState(d.deadline ?? "");
   const [outputCount, setOutputCount] = useState(String(d.outputCount));
   const [needsMotion, setNeedsMotion] = useState(d.needsMotion);
@@ -65,7 +65,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
     setPending(true);
     setMessage(null);
     const input: ApproveInput = {
-      title, divisionId, typeId, deadline: deadline || null, assigneeIds: assigneeId ? [assigneeId] : [], needsMotion,
+      title, divisionId, typeId, deadline: deadline || null, assigneeIds: designerId ? [designerId] : [], needsMotion,
       outputCount: Number(outputCount), fields: fieldsOf(defs, values),
     };
     try {
@@ -148,7 +148,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       })}
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("assigneeIds")} label="Assignee" error={errors.assigneeIds}>
-          <select {...props("assigneeIds", "select")} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+          <select {...props("assigneeIds", "select")} value={designerId} onChange={(e) => setDesignerId(e.target.value)}>
             <option value="">Unassigned</option>
             {form.team.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>

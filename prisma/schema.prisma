@@ -112,7 +112,6 @@ model User {
   avatarUpdatedAt     DateTime?
 
   requested                Request[]          @relation("RequestRequester")
-  assigned                 Request[]          @relation("RequestAssignee")
   assignments              RequestAssignee[]  @relation("RequestAssigneeUser")
   statusEvents             StatusEvent[]
   deadlineEvents           DeadlineEvent[]
@@ -197,7 +196,6 @@ model Request {
   divisionId       String
   typeId           String
   requesterId      String
-  assigneeId       String?
   requestedAt      DateTime      @default(now())
   deadline         DateTime?
   originalDeadline DateTime?
@@ -212,7 +210,6 @@ model Request {
   division  Division    @relation(fields: [divisionId], references: [id])
   type      RequestType @relation(fields: [typeId], references: [id])
   requester User        @relation("RequestRequester", fields: [requesterId], references: [id])
-  assignee  User?       @relation("RequestAssignee", fields: [assigneeId], references: [id])
 
   assignees RequestAssignee[]
 
@@ -229,7 +226,6 @@ model Request {
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([status])
-  @@index([assigneeId])
   @@index([requestedAt])
   @@index([workspaceId])
   @@index([requesterId])

@@ -46,7 +46,7 @@ export async function applyImport(db: PrismaClient, workspaceId: string, records
             const created = await tx.request.create({
               data: {
                 title: r.title, briefUrl: r.briefUrl, notes: r.notes, brandId: r.brandId, divisionId: r.divisionId,
-                typeId: typeId.get(r.typeName)!, requesterId: r.requesterId, assigneeId: r.assigneeId,
+                typeId: typeId.get(r.typeName)!, requesterId: r.requesterId,
                 requestedAt: r.requestedAt, deadline: r.deadline, status: r.status, outputCount: r.outputCount,
                 includeKpi: r.includeKpi, designFolderUrl: r.designFolderUrl, fields: r.fields as object,
               },

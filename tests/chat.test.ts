@@ -53,8 +53,8 @@ describe("request chat", () => {
     expect(await latestUnreadChatWith(db.prisma, { id: D2, workspaceId: db.workspaceId })).toMatchObject({ requestId: reqId });
   });
 
-  it("the legacy assigneeId column alone no longer makes someone a participant", async () => {
-    const stray = await db.prisma.request.create({ data: { title: "legacy", brandId, divisionId: divId, typeId, requesterId: R, assigneeId: X } });
+  it("someone with no assignee row is not a participant", async () => {
+    const stray = await db.prisma.request.create({ data: { title: "stray", brandId, divisionId: divId, typeId, requesterId: R } });
     await db.prisma.comment.create({ data: { requestId: stray.id, authorId: C, body: "hi", createdAt: new Date(Date.UTC(2026, 9, 4)) } });
     try {
       expect(await isParticipantWith(db.prisma, X, stray.id)).toBe("no");

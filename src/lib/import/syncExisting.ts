@@ -29,7 +29,7 @@ export type RequestUpdate = {
   changes: string[];
   data: {
     status?: RequestStatus;
-    /** Fills an empty assignee list: written to the legacy column and, by applySync, as a RequestAssignee row. */
+    /** Fills an empty assignee list: applySync writes it as a RequestAssignee row. */
     assigneeId?: string;
     deadline?: Date | null; originalDeadline?: Date | null; outputCount?: number;
     includeKpi?: boolean; briefUrl?: string; designFolderUrl?: string; fields?: Record<string, unknown>;
@@ -132,8 +132,9 @@ export async function applySync(db: PrismaClient, plan: SyncPlan): Promise<numbe
   await db.$transaction(
     async (tx) => {
       for (const u of plan.updates) {
-        await tx.request.update({ where: { id: u.id }, data: { ...u.data, fields: u.data.fields as Prisma.InputJsonObject | undefined } });
-        if (u.data.assigneeId) await tx.requestAssignee.createMany({ data: [{ requestId: u.id, userId: u.data.assigneeId, addedAt: now }], skipDuplicates: true });
+        const { assigneeId, ...requestData } = u.data;
+        await tx.request.update({ where: { id: u.id }, data: { ...requestData, fields: u.data.fields as Prisma.InputJsonObject | undefined } });
+        if (assigneeId) await tx.requestAssignee.createMany({ data: [{ requestId: u.id, userId: assigneeId, addedAt: now }], skipDuplicates: true });
         if (u.steps.length) await tx.statusEvent.createMany({ data: u.steps.map((s) => ({ requestId: u.id, ...s, actorId: u.actorId, at: now })) });
         if (u.deadlineMove) await tx.deadlineEvent.create({ data: { requestId: u.id, ...u.deadlineMove, actorId: u.actorId, at: now } });
       }

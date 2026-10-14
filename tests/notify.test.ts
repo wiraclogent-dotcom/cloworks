@@ -256,11 +256,10 @@ describe("notifications", () => {
     const calls: NotifyInput[] = [];
     const notifier = async (i: NotifyInput) => { calls.push(i); };
     const lead = () => ({ id: ids.lia, appRole: "LEAD" as const });
-    /** Makes `userIds` the request's assignees (rows, plus the legacy mirror of the first). */
+    /** Makes `userIds` the request's assignees. */
     const assign = async (...userIds: string[]) => {
       await db.prisma.requestAssignee.deleteMany({ where: { requestId: reqId } });
       if (userIds.length) await db.prisma.requestAssignee.createMany({ data: userIds.map((userId) => ({ requestId: reqId, userId })) });
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: userIds[0] ?? null } });
     };
     beforeEach(async () => {
       calls.length = 0;

@@ -35,9 +35,8 @@ describe("sync of already imported rows", () => {
     const newer = reqs([reqRow({ Progress: "Done", Designer: "Irshyad", "Jumlah Output": "3", "Design Folder": "https://t.ly/abc" })]);
     const plan = await sync(newer);
     expect(plan.updates).toHaveLength(1);
-    const r = await db.prisma.request.findFirstOrThrow({ include: { statusEvents: { orderBy: { at: "asc" } }, assignee: true } });
+    const r = await db.prisma.request.findFirstOrThrow({ include: { statusEvents: { orderBy: { at: "asc" } } } });
     expect(r.status).toBe("DONE");
-    expect(r.assignee?.name).toBe("Irsyad");
     expect((await db.prisma.requestAssignee.findMany({ where: { requestId: r.id }, include: { user: true } })).map((a) => a.user.name)).toEqual(["Irsyad"]);
     expect(plan.updates[0].changes).toContain("designer: nobody -> Irsyad");
     expect(r.outputCount).toBe(3);
@@ -53,9 +52,8 @@ describe("sync of already imported rows", () => {
     const plan = await sync(reqs([reqRow({ Progress: "On Progress", Designer: "Irshyad", "Jumlah Output": "" })]));
     expect(plan.updates).toHaveLength(0);
     expect(plan.statusKept).toHaveLength(1);
-    const r = await db.prisma.request.findFirstOrThrow({ include: { assignee: true } });
+    const r = await db.prisma.request.findFirstOrThrow();
     expect(r.status).toBe("FIRST_LOOK");
-    expect(r.assignee?.name).toBe("Fadli");
     expect((await db.prisma.requestAssignee.findMany({ where: { requestId: r.id }, include: { user: true } })).map((a) => a.user.name)).toEqual(["Fadli"]);
     expect(r.outputCount).toBe(5);
   });

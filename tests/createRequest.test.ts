@@ -53,7 +53,6 @@ describe("createRequestWith", () => {
     expect(r.title).toBe("Poster");
     expect(r.status).toBe("REQUESTED");
     expect(r.requesterId).toBe(user.id);
-    expect(r.assigneeId).toBeNull();
     expect(await db.prisma.requestAssignee.count({ where: { requestId: id } })).toBe(0);
     expect(r.outputCount).toBe(1);
     expect(r.includeKpi).toBe(true);
@@ -64,13 +63,12 @@ describe("createRequestWith", () => {
     expect(r.statusEvents[0].at).toEqual(now);
   });
 
-  it("writes one RequestAssignee row per assignee and keeps assigneeId as the first", async () => {
+  it("writes one RequestAssignee row per distinct assignee", async () => {
     const [a, b] = await db.prisma.user.findMany({ where: CREATIVE_TEAM, orderBy: { name: "asc" }, take: 2 });
     const { id } = await createRequestWith(db.prisma, user, { ...base, title: "Two people", assigneeIds: [a.id, b.id, a.id] }, now);
     const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { assignees: true } });
     expect(r.assignees.map((x) => x.userId).sort()).toEqual([a.id, b.id].sort());
     expect(r.assignees.every((x) => x.workspaceId === db.workspaceId)).toBe(true);
-    expect(r.assigneeId).toBe(a.id);
   });
   it("keeps the pick order: [b, a] lists b then a even when a's id sorts first", async () => {
     const team = await db.prisma.user.findMany({ where: CREATIVE_TEAM, take: 2 });
@@ -78,7 +76,6 @@ describe("createRequestWith", () => {
     const { id } = await createRequestWith(db.prisma, user, { ...base, title: "Pick order", assigneeIds: [b.id, a.id] }, now);
     const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { assignees: { orderBy: [...ASSIGNEE_ORDER] } } });
     expect(r.assignees.map((x) => x.userId)).toEqual([b.id, a.id]);
-    expect(r.assigneeId).toBe(b.id);
   });
   it("rejects an assignee who is not on the creative team under assigneeIds", async () => {
     const [a] = await db.prisma.user.findMany({ where: CREATIVE_TEAM, take: 1 });

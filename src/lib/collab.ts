@@ -3,7 +3,7 @@ import { can } from "./permissions";
 import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { bestEffort, buildMessage, notifierFor, type Notifier } from "./notify";
 import { mentionTokens } from "./mentions";
-import { ASSIGNEE_ORDER, addedAndRemoved } from "./assignees";
+import { addedAndRemoved } from "./assignees";
 
 export type CollabCode = "FORBIDDEN" | "NOT_FOUND" | "INVALID" | "UNAUTHENTICATED";
 export type CollabFail = { ok: false; code: CollabCode; message: string };
@@ -107,15 +107,12 @@ export async function setAssigneesWith(
   }
   try {
     await db.$transaction(async (tx) => {
-      // Lock the request row first so concurrent edits queue up: the rows and assigneeId below are then computed
-      // from a state no one else can change until we commit. A request cancelled since the reads above rolls back.
+      // Lock the request row first so concurrent edits queue up: the rows below are then written from a state no
+      // one else can change until we commit. A request cancelled since the reads above rolls back.
       const locked = await tx.$queryRaw<{ status: string }[]>`SELECT "status"::text AS status FROM "Request" WHERE "id" = ${requestId} FOR UPDATE`;
       if (locked.length === 0 || locked[0].status === "CANCELLED") throw new CancelledDuringAssign();
       if (removed.length) await tx.requestAssignee.deleteMany({ where: { requestId, userId: { in: removed } } });
       if (added.length) await tx.requestAssignee.createMany({ data: added.map((userId) => ({ requestId, userId })), skipDuplicates: true });
-      // Until Request.assigneeId is dropped, keep it on the first assignee so unconverted readers stay right.
-      const first = await tx.requestAssignee.findFirst({ where: { requestId }, orderBy: [...ASSIGNEE_ORDER], select: { userId: true } });
-      await tx.request.updateMany({ where: { id: requestId }, data: { assigneeId: first?.userId ?? null } });
     });
   } catch (e) {
     if (!(e instanceof CancelledDuringAssign)) throw e;
