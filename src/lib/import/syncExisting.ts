@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
+import { ASSIGNEE_ORDER } from "../assignees";
 import type { ImportRecord } from "./parseRequests";
 
 /*
@@ -14,7 +15,7 @@ const CHAIN: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE"
 const SYNCED_FIELDS = ["platform", "contentType", "shooting", "upload", "editing", "publishedUrl"] as const;
 
 type Existing = {
-  id: string; title: string; status: RequestStatus; assigneeId: string | null; requesterId: string; deadline: Date | null;
+  id: string; title: string; status: RequestStatus; assigneeIds: string[]; requesterId: string; deadline: Date | null;
   originalDeadline: Date | null; outputCount: number; includeKpi: boolean; briefUrl: string | null; designFolderUrl: string | null;
   fields: unknown;
 };
@@ -27,7 +28,10 @@ export type RequestUpdate = {
   /** Human-readable "field: old -> new" lines for the report. */
   changes: string[];
   data: {
-    status?: RequestStatus; assigneeId?: string; deadline?: Date | null; originalDeadline?: Date | null; outputCount?: number;
+    status?: RequestStatus;
+    /** Fills an empty assignee list: written to the legacy column and, by applySync, as a RequestAssignee row. */
+    assigneeId?: string;
+    deadline?: Date | null; originalDeadline?: Date | null; outputCount?: number;
     includeKpi?: boolean; briefUrl?: string; designFolderUrl?: string; fields?: Record<string, unknown>;
   };
   /** Status steps to record, in order (e.g. REQUESTED > ON_PROGRESS > FIRST_LOOK). */
@@ -51,10 +55,10 @@ export async function planSync(db: PrismaClient, workspaceId: string, records: I
     : [];
   const idByKey = new Map(found.map((f) => [f.k, f.id]));
   const rows: Existing[] = found.length
-    ? await db.request.findMany({
+    ? (await db.request.findMany({
         where: { id: { in: found.map((f) => f.id) } },
-        select: { id: true, title: true, status: true, assigneeId: true, requesterId: true, deadline: true, originalDeadline: true, outputCount: true, includeKpi: true, briefUrl: true, designFolderUrl: true, fields: true },
-      })
+        select: { id: true, title: true, status: true, assignees: { orderBy: [...ASSIGNEE_ORDER], select: { userId: true } }, requesterId: true, deadline: true, originalDeadline: true, outputCount: true, includeKpi: true, briefUrl: true, designFolderUrl: true, fields: true },
+      })).map(({ assignees, ...rest }) => ({ ...rest, assigneeIds: assignees.map((a) => a.userId) }))
     : [];
   const byId = new Map(rows.map((r) => [r.id, r]));
   const who = (id: string | null) => (id ? names.get(id) ?? id : "nobody");
@@ -68,8 +72,8 @@ export async function planSync(db: PrismaClient, workspaceId: string, records: I
     let steps: RequestUpdate["steps"] = [];
     let deadlineMove: RequestUpdate["deadlineMove"];
 
-    const assignee = cur.assigneeId ?? r.assigneeId;
-    if (!cur.assigneeId && r.assigneeId) {
+    const assignee = cur.assigneeIds[0] ?? r.assigneeId;
+    if (!cur.assigneeIds.length && r.assigneeId) {
       data.assigneeId = r.assigneeId;
       changes.push(`designer: nobody -> ${who(r.assigneeId)}`);
     }
@@ -129,6 +133,7 @@ export async function applySync(db: PrismaClient, plan: SyncPlan): Promise<numbe
     async (tx) => {
       for (const u of plan.updates) {
         await tx.request.update({ where: { id: u.id }, data: { ...u.data, fields: u.data.fields as Prisma.InputJsonObject | undefined } });
+        if (u.data.assigneeId) await tx.requestAssignee.createMany({ data: [{ requestId: u.id, userId: u.data.assigneeId, addedAt: now }], skipDuplicates: true });
         if (u.steps.length) await tx.statusEvent.createMany({ data: u.steps.map((s) => ({ requestId: u.id, ...s, actorId: u.actorId, at: now })) });
         if (u.deadlineMove) await tx.deadlineEvent.create({ data: { requestId: u.id, ...u.deadlineMove, actorId: u.actorId, at: now } });
       }

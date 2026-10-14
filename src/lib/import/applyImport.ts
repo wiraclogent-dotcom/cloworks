@@ -53,6 +53,8 @@ export async function applyImport(db: PrismaClient, workspaceId: string, records
               select: { id: true },
             });
             await tx.statusEvent.createMany({ data: statusChain(r).map((e) => ({ ...e, requestId: created.id })) });
+            // `db` is workspace-scoped, so this stamps workspaceId (a nested create would not).
+            if (r.assigneeId) await tx.requestAssignee.createMany({ data: [{ requestId: created.id, userId: r.assigneeId, addedAt: r.requestedAt }], skipDuplicates: true });
           }
         },
         { timeout: 120_000, maxWait: 30_000 },

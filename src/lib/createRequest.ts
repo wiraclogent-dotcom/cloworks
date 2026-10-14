@@ -17,8 +17,8 @@ export type CreateRequestInput = {
   fields?: Record<string, unknown>;
   /** The task also needs motion/video work. Default false. */
   needsMotion?: boolean;
-  /** Optional designer to assign straight away (must be on the creative team). Omitted/empty = unassigned. */
-  assigneeId?: string | null;
+  /** Optional designers to assign straight away (each must be on the creative team). Omitted/empty = unassigned. */
+  assigneeIds?: string[];
 };
 
 export const DEFAULT_TYPE_NAME = "General Design";
@@ -86,7 +86,8 @@ export type ValidRequest = {
   brandId: string;
   divisionId: string;
   typeId: string;
-  assigneeId: string | null;
+  /** Deduped, in the order given; the first is also written to the legacy `Request.assigneeId`. */
+  assigneeIds: string[];
   deadline: Date | null;
   needsMotion: boolean;
   fields: Record<string, unknown>;
@@ -109,14 +110,14 @@ export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput
   const idOf = (k: "brandId" | "divisionId" | "typeId") => (typeof input[k] === "string" && input[k] ? input[k] : null);
   const [brandId, divisionId, typeId] = [idOf("brandId"), idOf("divisionId"), idOf("typeId")];
   const useDefault = input.typeId === undefined;
-  const assigneeId = typeof input.assigneeId === "string" && input.assigneeId ? input.assigneeId : null;
-  const [brand, division, type, assignee] = await Promise.all([
+  const assigneeIds = [...new Set((Array.isArray(input.assigneeIds) ? input.assigneeIds : []).filter((x): x is string => typeof x === "string" && x !== ""))];
+  const [brand, division, type, team] = await Promise.all([
     brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
     divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
     useDefault ? db.requestType.findFirst({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
-    assigneeId ? db.user.findFirst({ where: { id: assigneeId, ...CREATIVE_TEAM }, select: { id: true } }) : null,
+    assigneeIds.length ? db.user.findMany({ where: { id: { in: assigneeIds }, ...CREATIVE_TEAM }, select: { id: true } }) : null,
   ]);
-  if (assigneeId && !assignee) errs.assigneeId ??= "Pick someone from the creative team";
+  if (assigneeIds.length && team?.length !== assigneeIds.length) errs.assigneeIds ??= "Pick someone from the creative team";
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
   if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;
@@ -137,14 +138,14 @@ export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput
     brandId: raw.brandId,
     divisionId: raw.divisionId,
     typeId: type.id,
-    assigneeId,
+    assigneeIds,
     deadline: raw.deadline ? new Date(`${raw.deadline}T00:00:00+07:00`) : null,
     needsMotion: raw.needsMotion,
     fields,
   };
 }
 
-/** Inserts the request and its first StatusEvent. `actorId` is who filed it; `requesterId` who it is for. */
+/** Inserts the request, its first StatusEvent and its assignees. `actorId` is who filed it; `requesterId` who it is for. */
 export async function insertRequestTx(
   tx: Prisma.TransactionClient,
   v: ValidRequest,
@@ -159,7 +160,7 @@ export async function insertRequestTx(
       divisionId: v.divisionId,
       typeId: v.typeId,
       requesterId: opts.requesterId,
-      assigneeId: v.assigneeId,
+      assigneeId: v.assigneeIds[0] ?? null,
       requestedAt: opts.now,
       deadline: v.deadline,
       status: "REQUESTED",
@@ -171,6 +172,8 @@ export async function insertRequestTx(
     select: { id: true },
   });
   await tx.statusEvent.create({ data: { requestId: req.id, from: null, to: "REQUESTED", actorId: opts.actorId, at: opts.now } });
+  // Not a nested create: nested writes skip workspace scoping.
+  if (v.assigneeIds.length) await tx.requestAssignee.createMany({ data: v.assigneeIds.map((userId) => ({ requestId: req.id, userId, addedAt: opts.now })), skipDuplicates: true });
   return { id: req.id };
 }
 

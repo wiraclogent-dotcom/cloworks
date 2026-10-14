@@ -43,6 +43,7 @@ describe("workbook import into a real database", () => {
     const dimas = await db.prisma.user.findFirstOrThrow({ where: { name: "Dimas Pandu" } });
     const one = await db.prisma.request.findFirstOrThrow({ where: { title: "RIO 12 SEPT 1" }, include: { statusEvents: { orderBy: { at: "asc" } }, requester: true, brand: true } });
     expect(one.assigneeId).toBe(dimas.id);
+    expect((await db.prisma.requestAssignee.findMany({ where: { requestId: one.id } })).map((a) => a.userId)).toEqual([dimas.id]);
     expect(one.requester.name).toBe("Robertino");
     expect(one.statusEvents.map((e) => e.to)).toEqual(["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE"]);
     expect(new Set(one.statusEvents.map((e) => e.at.toISOString())).size).toBe(1);

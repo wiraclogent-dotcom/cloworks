@@ -65,7 +65,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
     setPending(true);
     setMessage(null);
     const input: ApproveInput = {
-      title, divisionId, typeId, deadline: deadline || null, assigneeId: assigneeId || null, needsMotion,
+      title, divisionId, typeId, deadline: deadline || null, assigneeIds: assigneeId ? [assigneeId] : [], needsMotion,
       outputCount: Number(outputCount), fields: fieldsOf(defs, values),
     };
     try {
@@ -77,7 +77,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       const fe = r.fieldErrors ?? {};
       setErrors(fe);
       // Errors with no field here (e.g. "form") go in the banner.
-      const shown = new Set(["title", "divisionId", "typeId", "assigneeId", "deadline", "outputCount", ...defs.map((f) => `fields.${f.key}`)]);
+      const shown = new Set(["title", "divisionId", "typeId", "assigneeIds", "deadline", "outputCount", ...defs.map((f) => `fields.${f.key}`)]);
       const orphan = Object.entries(fe).filter(([k]) => !shown.has(k)).map(([, m]) => m);
       setMessage(Object.keys(fe).length ? (orphan.join(" ") || null) : r.message);
       // Approved or sent back elsewhere meanwhile: reload so the panel shows where the post is now.
@@ -147,8 +147,8 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         );
       })}
       <div className="grid gap-3 sm:grid-cols-2">
-        <Row id={id("assigneeId")} label="Assignee" error={errors.assigneeId}>
-          <select {...props("assigneeId", "select")} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
+        <Row id={id("assigneeIds")} label="Assignee" error={errors.assigneeIds}>
+          <select {...props("assigneeIds", "select")} value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)}>
             <option value="">Unassigned</option>
             {form.team.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>

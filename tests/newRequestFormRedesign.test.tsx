@@ -11,7 +11,7 @@ import { RadioCards } from "@/components/ui/RadioCards";
 
 const brands = [{ id: "b1", name: "Clogent" }];
 const divisions = [{ id: "d1", name: "Creative" }];
-const values = { title: "Poster", briefUrl: "", notes: "", brandId: "b1", divisionId: "", deadline: "", workKind: "motion" as const };
+const values = { title: "Poster", briefUrl: "", notes: "", brandId: "b1", divisionId: "", deadline: "", assigneeIds: [], workKind: "motion" as const };
 
 beforeEach(() => submit.mockReset());
 afterEach(cleanup);

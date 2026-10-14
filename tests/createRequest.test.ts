@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { createRequestWith, validateRequestInput, insertRequestTx, CreateRequestError, type CreateRequestInput } from "@/lib/createRequest";
+import { CREATIVE_TEAM } from "@/lib/team";
 import { seed } from "../prisma/seedCore";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
@@ -52,6 +53,7 @@ describe("createRequestWith", () => {
     expect(r.status).toBe("REQUESTED");
     expect(r.requesterId).toBe(user.id);
     expect(r.assigneeId).toBeNull();
+    expect(await db.prisma.requestAssignee.count({ where: { requestId: id } })).toBe(0);
     expect(r.outputCount).toBe(1);
     expect(r.includeKpi).toBe(true);
     expect(r.requestedAt).toEqual(now);
@@ -59,6 +61,20 @@ describe("createRequestWith", () => {
     expect(r.statusEvents).toHaveLength(1);
     expect(r.statusEvents[0]).toMatchObject({ from: null, to: "REQUESTED", actorId: user.id });
     expect(r.statusEvents[0].at).toEqual(now);
+  });
+
+  it("writes one RequestAssignee row per assignee and keeps assigneeId as the first", async () => {
+    const [a, b] = await db.prisma.user.findMany({ where: CREATIVE_TEAM, orderBy: { name: "asc" }, take: 2 });
+    const { id } = await createRequestWith(db.prisma, user, { ...base, title: "Two people", assigneeIds: [a.id, b.id, a.id] }, now);
+    const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { assignees: true } });
+    expect(r.assignees.map((x) => x.userId).sort()).toEqual([a.id, b.id].sort());
+    expect(r.assignees.every((x) => x.workspaceId === db.workspaceId)).toBe(true);
+    expect(r.assigneeId).toBe(a.id);
+  });
+  it("rejects an assignee who is not on the creative team under assigneeIds", async () => {
+    const [a] = await db.prisma.user.findMany({ where: CREATIVE_TEAM, take: 1 });
+    const e = await rejects({ ...base, assigneeIds: [a.id, user.id] });
+    expect(e.fieldErrors?.assigneeIds).toBe("Pick someone from the creative team");
   });
 
   it.each(["", "   "])("rejects blank title %j", async (title) => {

@@ -38,6 +38,8 @@ describe("sync of already imported rows", () => {
     const r = await db.prisma.request.findFirstOrThrow({ include: { statusEvents: { orderBy: { at: "asc" } }, assignee: true } });
     expect(r.status).toBe("DONE");
     expect(r.assignee?.name).toBe("Irsyad");
+    expect((await db.prisma.requestAssignee.findMany({ where: { requestId: r.id }, include: { user: true } })).map((a) => a.user.name)).toEqual(["Irsyad"]);
+    expect(plan.updates[0].changes).toContain("designer: nobody -> Irsyad");
     expect(r.outputCount).toBe(3);
     expect(r.designFolderUrl).toBe("https://t.ly/abc");
     expect(r.statusEvents.map((e) => e.to)).toEqual(["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE"]);
@@ -54,6 +56,7 @@ describe("sync of already imported rows", () => {
     const r = await db.prisma.request.findFirstOrThrow({ include: { assignee: true } });
     expect(r.status).toBe("FIRST_LOOK");
     expect(r.assignee?.name).toBe("Fadli");
+    expect((await db.prisma.requestAssignee.findMany({ where: { requestId: r.id }, include: { user: true } })).map((a) => a.user.name)).toEqual(["Fadli"]);
     expect(r.outputCount).toBe(5);
   });
 

@@ -11,7 +11,7 @@ import { NewRequestForm } from "@/app/(app)/requests/new/NewRequestForm";
 
 const brands = [{ id: "b1", name: "Clogent" }];
 const divisions = [{ id: "d1", name: "Creative" }];
-const emptyValues = { title: "", briefUrl: "", notes: "", brandId: "", divisionId: "", deadline: "", workKind: "" };
+const emptyValues = { title: "", briefUrl: "", notes: "", brandId: "", divisionId: "", deadline: "", assigneeIds: [], workKind: "" };
 
 beforeEach(() => { submit.mockReset(); });
 afterEach(cleanup);
@@ -72,7 +72,7 @@ describe("NewRequestForm", () => {
       values: {
         title: String(fd.get("title")), briefUrl: String(fd.get("briefUrl")), notes: String(fd.get("notes")),
         brandId: String(fd.get("brandId")), divisionId: String(fd.get("divisionId")),
-        deadline: String(fd.get("deadline")), workKind: String(fd.get("workKind") ?? ""),
+        deadline: String(fd.get("deadline")), assigneeIds: fd.getAll("assigneeIds").map(String), workKind: String(fd.get("workKind") ?? ""),
       },
     }));
     render(<NewRequestForm brands={brands} divisions={divisions} />);
