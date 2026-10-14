@@ -14,8 +14,8 @@ import { AccessDenied } from "@/components/AccessDenied";
 
 afterEach(cleanup);
 
-const kpi = { tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 1234, activeWorkload: 2 };
-const empty = { tasksDone: 0, target: null, progress: null, onTimeRate: null, avgTurnaroundDays: null, revisionRounds: 0, totalOutputs: 0, activeWorkload: 4 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 1234, activeWorkload: 2 };
+const empty = { doneRequestIds: [], tasksDone: 0, target: null, progress: null, onTimeRate: null, avgTurnaroundDays: null, revisionRounds: 0, totalOutputs: 0, activeWorkload: 4 };
 
 describe("My KPI tiles", () => {
   it("formats every value like before (percent, days, counts with separators)", () => {
@@ -69,13 +69,20 @@ describe("progress thresholds", () => {
 describe("Team summary", () => {
   it("counts people, sums tasks and averages the whole percent over people with a target", () => {
     expect(teamSummary([
-      { kpi: { tasksDone: 3, progress: 0.06 } },
-      { kpi: { tasksDone: 10, progress: 0.5 } },
-      { kpi: { tasksDone: 7, progress: null } },
+      { kpi: { progress: 0.06, doneRequestIds: ["a", "b", "c"] } },
+      { kpi: { progress: 0.5, doneRequestIds: ["d", "e", "f", "g", "h", "i", "j", "k", "l", "m"] } },
+      { kpi: { progress: null, doneRequestIds: ["n", "o", "p", "q", "r", "s", "t"] } },
     ])).toEqual({ people: 3, tasksDone: 20, avgProgress: 28, withTarget: 2 });
   });
+  it("a request shared by several people is counted once", () => {
+    expect(teamSummary([
+      { kpi: { progress: null, doneRequestIds: ["r1"] } },
+      { kpi: { progress: null, doneRequestIds: ["r1"] } },
+      { kpi: { progress: null, doneRequestIds: ["r1", "r2"] } },
+    ]).tasksDone).toBe(2);
+  });
   it("no targets → null average; no rows → zeros", () => {
-    expect(teamSummary([{ kpi: { tasksDone: 2, progress: null } }]).avgProgress).toBeNull();
+    expect(teamSummary([{ kpi: { progress: null, doneRequestIds: ["a", "b"] } }]).avgProgress).toBeNull();
     expect(teamSummary([])).toEqual({ people: 0, tasksDone: 0, avgProgress: null, withTarget: 0 });
   });
 });

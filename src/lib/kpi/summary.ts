@@ -25,10 +25,13 @@ const onTimeValue = (t: { onTime: number; late: number }) => (t.onTime + t.late 
 const projDone = (t: { done: number; items: number }, year: number): SummaryCell => ({ key: "projDone", label: `Project items done · ${year}`, value: t.items === 0 ? "—" : `${t.done}/${t.items}` });
 const projOnTime = (t: { onTime: number; late: number }, year: number): SummaryCell => ({ key: "projOnTime", label: `Project on time · ${year}`, value: onTimeValue(t) });
 
-/** Team KPI summary across both rosters: people (union), request totals for the month, project totals for the year. */
+/**
+ * Team KPI summary across both rosters: people (union), request totals for the month (a request several people
+ * share counts once: the union of each row's `doneRequestIds`), project totals for the year.
+ */
 export function teamSummaryCells({ month, year, requestRows, projectKpis }: {
   month: string; year: number;
-  requestRows: { userId: string; kpi: { tasksDone: number; progress: number | null } }[];
+  requestRows: { userId: string; kpi: { doneRequestIds: string[]; progress: number | null } }[];
   projectKpis: (Quarters & { userId: string })[];
 }): SummaryCell[] {
   const sum = teamSummary(requestRows);
@@ -37,7 +40,8 @@ export function teamSummaryCells({ month, year, requestRows, projectKpis }: {
   const totals = projectTotals(projectKpis);
   return [
     { key: "people", label: "People", value: formatCount(people.size), hint: `${requestRows.length} ${requestRows.length === 1 ? "request" : "requests"} · ${projectKpis.length} ${projectKpis.length === 1 ? "project" : "projects"}` },
-    { key: "reqDone", label: `Request tasks done · ${period}`, value: formatCount(sum.tasksDone) },
+    { key: "reqDone", label: `Request tasks done · ${period}`, value: formatCount(sum.tasksDone),
+      hint: "Each request counted once, even when several people worked on it." },
     { key: "reqProgress", label: `Request target progress · ${period}`, value: sum.avgProgress === null ? "—" : `${sum.avgProgress}%`,
       hint: sum.avgProgress === null ? "Nobody has a target this month." : `Across ${sum.withTarget} ${sum.withTarget === 1 ? "person" : "people"} with a target.` },
     projDone(totals, year),

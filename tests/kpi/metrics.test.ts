@@ -11,7 +11,7 @@ function req(p: Partial<KpiRequest> & { doneAt?: string }): KpiRequest {
   const base: KpiRequest = {
     id: `r${++n}`,
     requesterId: "s1",
-    assigneeId: "d1",
+    assigneeIds: ["d1"],
     requestedAt: d("2026-10-05T00:00:00Z"),
     deadline: null,
     originalDeadline: null,
@@ -45,7 +45,7 @@ describe("computeKpi", () => {
 
   it("social media counts requester, not assignee", () => {
     const sm = { id: "s1", jobRole: JobRole.SOCIAL_MEDIA };
-    const rs = [req({ doneAt: "2026-10-06T00:00:00Z" }), req({ requesterId: "other", assigneeId: "s1", doneAt: "2026-10-06T00:00:00Z" })];
+    const rs = [req({ doneAt: "2026-10-06T00:00:00Z" }), req({ requesterId: "other", assigneeIds: ["s1"], doneAt: "2026-10-06T00:00:00Z" })];
     expect(computeKpi(rs, sm, "2026-10", null).tasksDone).toBe(1);
   });
 
@@ -78,10 +78,10 @@ describe("computeKpi", () => {
 
   it("target role SOCIAL_MEDIA in 2026-09 -> requester; no target + DESIGNER jobRole in 2026-10 -> assignee", () => {
     const u = { id: "u1", jobRole: JobRole.DESIGNER };
-    const sep = req({ requesterId: "u1", assigneeId: "x", requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
-    const sepAsAssignee = req({ requesterId: "y", assigneeId: "u1", requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
-    const oct = req({ requesterId: "y", assigneeId: "u1", doneAt: "2026-10-07T00:00:00Z" });
-    const octAsRequester = req({ requesterId: "u1", assigneeId: "x", doneAt: "2026-10-07T00:00:00Z" });
+    const sep = req({ requesterId: "u1", assigneeIds: ["x"], requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
+    const sepAsAssignee = req({ requesterId: "y", assigneeIds: ["u1"], requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
+    const oct = req({ requesterId: "y", assigneeIds: ["u1"], doneAt: "2026-10-07T00:00:00Z" });
+    const octAsRequester = req({ requesterId: "u1", assigneeIds: ["x"], doneAt: "2026-10-07T00:00:00Z" });
     const all = [sep, sepAsAssignee, oct, octAsRequester];
     const sepRes = computeKpi(all, u, "2026-09", { role: JobRole.SOCIAL_MEDIA, targetTasks: 10 });
     expect(sepRes.tasksDone).toBe(1);
@@ -144,15 +144,49 @@ describe("computeKpi", () => {
   });
 
   it("unassigned excluded for designers", () => {
-    const r = computeKpi([req({ assigneeId: null, doneAt: "2026-10-06T00:00:00Z" })], designer, "2026-10", null);
+    const r = computeKpi([req({ assigneeIds: [], doneAt: "2026-10-06T00:00:00Z" })], designer, "2026-10", null);
     expect(r.tasksDone).toBe(0);
+  });
+
+  describe("several assignees", () => {
+    const d2 = { id: "d2", jobRole: JobRole.DESIGNER };
+    it("each assignee of a done request gets the full point, outputs and the same on-time result", () => {
+      const r = req({ assigneeIds: ["d1", "d2"], outputCount: 3, deadline: d("2026-10-07T00:00:00Z"), doneAt: "2026-10-06T00:00:00Z" });
+      const a = computeKpi([r], designer, "2026-10", null);
+      const b = computeKpi([r], d2, "2026-10", null);
+      expect(a.tasksDone).toBe(1);
+      expect(b.tasksDone).toBe(1);
+      expect(a.totalOutputs).toBe(3);
+      expect(b.totalOutputs).toBe(3);
+      expect(a.onTimeRate).toBe(1);
+      expect(b.onTimeRate).toBe(1);
+      expect(a.doneRequestIds).toEqual([r.id]);
+      expect(b.doneRequestIds).toEqual([r.id]);
+    });
+    it("an open request counts in the active workload of every assignee", () => {
+      const r = req({ assigneeIds: ["d1", "d2"], status: S.ON_PROGRESS });
+      expect(computeKpi([r], designer, "2026-10", null).activeWorkload).toBe(1);
+      expect(computeKpi([r], d2, "2026-10", null).activeWorkload).toBe(1);
+    });
+    it("a person who is not an assignee gets nothing", () => {
+      const r = req({ assigneeIds: ["d1", "d2"], doneAt: "2026-10-06T00:00:00Z" });
+      const k = computeKpi([r], { id: "d3", jobRole: JobRole.DESIGNER }, "2026-10", null);
+      expect(k.tasksDone).toBe(0);
+      expect(k.doneRequestIds).toEqual([]);
+    });
+    it("a social media requester counts the request once, however many designers it has", () => {
+      const r = req({ requesterId: "s1", assigneeIds: ["d1", "d2"], doneAt: "2026-10-06T00:00:00Z" });
+      const k = computeKpi([r], { id: "s1", jobRole: JobRole.SOCIAL_MEDIA }, "2026-10", null);
+      expect(k.tasksDone).toBe(1);
+      expect(k.doneRequestIds).toEqual([r.id]);
+    });
   });
 
   it("avgTurnaroundDays null when none done; activeWorkload counts open assigned (any month)", () => {
     const open1 = req({ status: S.REQUESTED });
     const open2 = req({ status: S.FIRST_LOOK, requestedAt: d("2026-08-01T00:00:00Z") });
     const cancelled = req({ status: S.CANCELLED });
-    const other = req({ status: S.REQUESTED, assigneeId: "zz" });
+    const other = req({ status: S.REQUESTED, assigneeIds: ["zz"] });
     const r = computeKpi([open1, open2, cancelled, other], designer, "2026-10", null);
     expect(r.avgTurnaroundDays).toBeNull();
     expect(r.activeWorkload).toBe(2);

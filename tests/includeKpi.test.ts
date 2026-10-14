@@ -24,6 +24,7 @@ beforeAll(async () => {
     data: { title: "x", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: ids.req, assigneeId: ids.des, status: "DONE", requestedAt: new Date("2026-10-05T03:00:00Z"), deadline: new Date("2026-10-20T00:00:00+07:00") },
   });
   reqId = r.id;
+  await p.requestAssignee.create({ data: { requestId: reqId, userId: ids.des } });
   await p.statusEvent.create({ data: { requestId: reqId, from: "FIRST_LOOK", to: "DONE", actorId: ids.des, at: new Date("2026-10-10T03:00:00Z") } });
 });
 afterAll(async () => { await db?.stop(); });

@@ -22,6 +22,8 @@ describe("kpi queries + targets", () => {
     await mk("admin", "ADMIN", "OTHER");
     await mk("creative", "CREATIVE", "DESIGNER");
     await mk("req", "REQUESTER", "OTHER");
+    await mk("pairA", "CREATIVE", "DESIGNER");
+    await mk("pairB", "CREATIVE", "DESIGNER");
     const brand = await p.brand.create({ data: { name: "B" } });
     const div = await p.division.create({ data: { name: "D" } });
     const type = await p.requestType.create({ data: { name: "T" } });
@@ -29,7 +31,7 @@ describe("kpi queries + targets", () => {
   });
   afterAll(async () => { await db?.stop(); });
 
-  const mkReq = async (o: { requestedAt: string; status?: S; assignee?: string; requester?: string; includeKpi?: boolean; outputCount?: number; doneAt?: string; deadline?: string; originalDeadline?: string }) => {
+  const mkReq = async (o: { requestedAt: string; status?: S; assignee?: string; assignees?: string[]; requester?: string; includeKpi?: boolean; outputCount?: number; doneAt?: string; deadline?: string; originalDeadline?: string }) => {
     const r = await db.prisma.request.create({
       data: {
         title: "t", ...base, requesterId: ids[o.requester ?? "req"], assigneeId: o.assignee ? ids[o.assignee] : null,
@@ -38,6 +40,8 @@ describe("kpi queries + targets", () => {
         originalDeadline: o.originalDeadline ? new Date(o.originalDeadline) : null,
       },
     });
+    const who = o.assignees ?? (o.assignee ? [o.assignee] : []);
+    for (const w of who) await db.prisma.requestAssignee.create({ data: { requestId: r.id, userId: ids[w] } });
     if (o.doneAt) await db.prisma.statusEvent.create({ data: { requestId: r.id, from: S.FIRST_LOOK, to: S.DONE, actorId: ids.fadli, at: new Date(o.doneAt) } });
     return r.id;
   };
@@ -72,6 +76,29 @@ describe("kpi queries + targets", () => {
       const again = (await loadKpiRequests(db.prisma, ["2026-10"])).map((r) => r.id);
       expect(again.filter((i) => i === openInMonth)).toHaveLength(1);
       expect(await loadKpiRequests(db.prisma, [])).toEqual(expect.any(Array));
+    });
+  });
+
+  describe("assigneeIds", () => {
+    it("returns every assignee in ASSIGNEE_ORDER, and an empty list when unassigned", async () => {
+      const id = await mkReq({ requestedAt: "2026-10-04T03:00:00Z", status: S.REQUESTED });
+      const first = new Date("2026-10-04T04:00:00Z");
+      await db.prisma.requestAssignee.create({ data: { requestId: id, userId: ids.pairB, addedAt: new Date("2026-10-04T05:00:00Z") } });
+      await db.prisma.requestAssignee.create({ data: { requestId: id, userId: ids.pairA, addedAt: first } });
+      const none = await mkReq({ requestedAt: "2026-10-04T03:00:00Z", status: S.REQUESTED });
+      const rows = await loadKpiRequests(db.prisma, ["2026-10"]);
+      expect(rows.find((r) => r.id === id)!.assigneeIds).toEqual([ids.pairA, ids.pairB]);
+      expect(rows.find((r) => r.id === none)!.assigneeIds).toEqual([]);
+    });
+    it("end to end: both assignees get the point and a requester sees it once", async () => {
+      const id = await mkReq({ requestedAt: "2026-11-04T03:00:00Z", assignees: ["pairA", "pairB"], requester: "sm", doneAt: "2026-11-05T03:00:00Z" });
+      const reqs = await loadKpiRequests(db.prisma, ["2026-11"]);
+      for (const u of ["pairA", "pairB"]) {
+        const k = computeKpi(reqs, { id: ids[u], jobRole: "DESIGNER" }, "2026-11", null);
+        expect(k.tasksDone).toBe(1);
+        expect(k.doneRequestIds).toEqual([id]);
+      }
+      expect(computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-11", null).tasksDone).toBe(1);
     });
   });
 

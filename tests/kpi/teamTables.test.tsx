@@ -10,7 +10,7 @@ import { ProjectTeamTable, type ProjectTeamRow } from "@/components/kpi/project/
 
 afterEach(cleanup);
 
-const kpi = { tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
 const reqRows: TeamRow[] = [{ userId: "u1", name: "Fadli", role: "DESIGNER", kpi }];
 const projRows: ProjectTeamRow[] = [
   { userId: "u1", name: "Fadli", role: "DESIGNER", quarters: [null, null, null, 80], year: 80, done: 1, items: 2, onTimePct: 50, hasTargets: true },

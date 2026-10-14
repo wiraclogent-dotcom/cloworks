@@ -46,7 +46,7 @@ describe("D2/D7 PageHeader wraps on narrow screens", () => {
   });
 });
 
-const kpi = { tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1.2, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1.2, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 };
 const rows: TeamRow[] = [{ userId: "u1", name: "Fadli", role: "DESIGNER", kpi }, { userId: "u2", name: "Sari", role: "SOCIAL_MEDIA", kpi }];
 
 describe("D4 Team KPI table fits at ≥ 1024px", () => {

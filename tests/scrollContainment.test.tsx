@@ -69,7 +69,7 @@ describe("absolutely positioned content stays inside its scroll container", () =
   it("request table, team table, project table + timeline, chart table, sidebar nav", () => {
     const { container } = render(<>
       <RequestTable rows={[row(1, "REQUESTED"), row(2, "DONE")]} sort="deadline" dir="asc" hrefFor={() => "/requests"} />
-      <TeamTable month="2026-10" canEdit rows={[{ userId: "u", name: "Fadli", role: "DESIGNER", kpi: { tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 } }]} />
+      <TeamTable month="2026-10" canEdit rows={[{ userId: "u", name: "Fadli", role: "DESIGNER", kpi: { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 } }]} />
       <ProjectTable canManage now={new Date("2026-10-08T00:00:00+07:00")} rows={[{ id: "p", title: "P", subTitle: null, brandName: "Zed", ownerName: "Rina", status: "IN_PROGRESS", startDate: new Date("2026-10-01T00:00:00+07:00"), dueDate: new Date("2026-10-20T00:00:00+07:00"), fileUrl: "https://x.test" }]} />
       <ProjectTimeline today={new Date("2026-10-08T00:00:00+07:00")} projects={[{ id: "p", title: "P", status: "IN_PROGRESS", startDate: new Date("2026-10-01T00:00:00+07:00"), dueDate: new Date("2026-10-20T00:00:00+07:00") }]} />
       <TrendChart points={[{ month: "2026-10", label: "October 2026", tasksDone: 1, target: 2 }]} />

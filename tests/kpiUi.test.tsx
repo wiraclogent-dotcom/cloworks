@@ -42,7 +42,7 @@ describe("ProgressBar", () => {
   });
 });
 
-const kpi = { tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
 const rows: TeamRow[] = [{ userId: "u1", name: "Fadli", role: "DESIGNER", kpi }];
 
 describe("TeamTable editor", () => {
