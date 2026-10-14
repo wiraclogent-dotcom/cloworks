@@ -41,6 +41,15 @@ describe("applyImport", () => {
     expect(await db.prisma.request.count()).toBe(3);
   });
 
+  it("writes the record's assignee to the RequestAssignee table", async () => {
+    const records = reqs([reqRow({ Task: "WithDesigner", Designer: "Irshyad" }), reqRow({ Task: "NoDesigner", Designer: "", Progress: "Requested" })]);
+    await applyImport(db.prisma, db.workspaceId, records);
+    const irsyad = await db.prisma.user.findFirstOrThrow({ where: { name: "Irsyad" } });
+    const withD = await db.prisma.request.findFirstOrThrow({ where: { title: "WithDesigner" }, include: { assignees: true } });
+    expect(withD.assignees.map((a) => [a.userId, a.workspaceId])).toEqual([[irsyad.id, db.workspaceId]]);
+    expect(await db.prisma.requestAssignee.count({ where: { request: { title: "NoDesigner" } } })).toBe(0);
+  });
+
   it("duplicate identical rows in one file insert both once", async () => {
     const records = reqs([reqRow({}), reqRow({})]);
     expect((await applyImport(db.prisma, db.workspaceId, records)).inserted).toBe(2);

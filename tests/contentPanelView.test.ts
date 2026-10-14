@@ -13,6 +13,7 @@ describe("loadPostPanel", () => {
   let creative: ContentActor;
   let requester: ContentActor;
   let assignee: ContentActor;
+  let secondAssignee: ContentActor;
   let channelId: string;
   const ids: Record<string, string> = {};
 
@@ -32,6 +33,7 @@ describe("loadPostPanel", () => {
     creative = await mk("pcreative@clogent.co.id", "CREATIVE");
     requester = await mk("preq@clogent.co.id", "REQUESTER");
     assignee = await mk("passignee@clogent.co.id", "REQUESTER");
+    secondAssignee = await mk("passignee2@clogent.co.id", "REQUESTER");
     const brand = await db.prisma.brand.create({ data: { name: "Panel Brand" } });
     channelId = (await createChannelWith(db.prisma, lead, { brandId: brand.id, handle: "panel", displayName: "Panel" })).id;
 
@@ -46,8 +48,9 @@ describe("loadPostPanel", () => {
     const division = await db.prisma.division.create({ data: { name: "Panel Div" } });
     const type = await db.prisma.requestType.create({ data: { name: "Panel Type", fieldSchema: [] } });
     const req = await db.prisma.request.create({
-      data: { title: "R", brandId: brand.id, divisionId: division.id, typeId: type.id, requesterId: creative.id, assigneeId: assignee.id, status: "ON_PROGRESS" },
+      data: { title: "R", brandId: brand.id, divisionId: division.id, typeId: type.id, requesterId: creative.id, status: "ON_PROGRESS" },
     });
+    await db.prisma.requestAssignee.createMany({ data: [assignee, secondAssignee].map((a) => ({ requestId: req.id, userId: a.id })) });
     await set(ids.approved, { requestId: req.id });
     ids.request = req.id;
 
@@ -105,12 +108,13 @@ describe("loadPostPanel", () => {
     const prodAs = async (u: ContentActor) => (await loadPostPanel(db.prisma, u, ids.approved, CLOUD))!.can;
     expect(await prodAs(lead)).toMatchObject({ edit: false, approve: false, delete: false, addFinal: true });
     expect(await prodAs(assignee)).toMatchObject({ addFinal: true, edit: false });
+    expect(await prodAs(secondAssignee)).toMatchObject({ addFinal: true, edit: false });
     expect(await prodAs(requester)).toMatchObject({ addFinal: false });
   });
 
   it("links the request and lists finals once approved", async () => {
     const v = (await loadPostPanel(db.prisma, lead, ids.approved, CLOUD))!;
-    expect(v.post.request).toEqual({ id: ids.request, status: "ON_PROGRESS", assigneeId: assignee.id });
+    expect(v.post.request).toEqual({ id: ids.request, status: "ON_PROGRESS" });
     expect(v.finals).toHaveLength(1);
   });
 

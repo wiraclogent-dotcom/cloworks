@@ -20,12 +20,12 @@ export type MergePreview = {
 
 /**
  * One `updateMany` per foreign key to User, moving rows from the duplicate to the survivor. KpiTarget, ProjectKpiTarget,
- * KpiRosterEntry and ChatRead clashes (their `@@unique([userId, …])`) are resolved before these run. A new User relation must be added here:
+ * KpiRosterEntry, RequestAssignee and ChatRead clashes (their unique keys) are resolved before these run. A new User relation must be added here:
  * a test compares this list with the Prisma DMMF.
  */
 const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<unknown>> = {
   "Request.requesterId": (tx, from, into) => tx.request.updateMany({ where: { requesterId: from }, data: { requesterId: into } }),
-  "Request.assigneeId": (tx, from, into) => tx.request.updateMany({ where: { assigneeId: from }, data: { assigneeId: into } }),
+  "RequestAssignee.userId": (tx, from, into) => tx.requestAssignee.updateMany({ where: { userId: from }, data: { userId: into } }),
   "StatusEvent.actorId": (tx, from, into) => tx.statusEvent.updateMany({ where: { actorId: from }, data: { actorId: into } }),
   "DeadlineEvent.actorId": (tx, from, into) => tx.deadlineEvent.updateMany({ where: { actorId: from }, data: { actorId: into } }),
   "Comment.authorId": (tx, from, into) => tx.comment.updateMany({ where: { authorId: from }, data: { authorId: into } }),
@@ -76,7 +76,7 @@ async function loadAndGuard(tx: Tx, actor: Actor, fromId: string, intoId: string
 async function countsFor(tx: Tx, id: string): Promise<MergeCounts> {
   return {
     requested: await tx.request.count({ where: { requesterId: id } }),
-    assigned: await tx.request.count({ where: { assigneeId: id } }),
+    assigned: await tx.requestAssignee.count({ where: { userId: id } }),
     statusEvents: await tx.statusEvent.count({ where: { actorId: id } }),
     deadlineEvents: await tx.deadlineEvent.count({ where: { actorId: id } }),
     comments: await tx.comment.count({ where: { authorId: id } }),
@@ -157,6 +157,14 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
       const theirs = fromReads.find((r) => r.requestId === mine.requestId)!;
       if (theirs.lastReadAt > mine.lastReadAt) await tx.chatRead.update({ where: { id: mine.id }, data: { lastReadAt: theirs.lastReadAt } });
       await tx.chatRead.delete({ where: { id: theirs.id } });
+    }
+
+    // Assignee clash: where the survivor is already assigned, the duplicate's row is dropped (primary key is the pair).
+    const fromAssigned = await tx.requestAssignee.findMany({ where: { userId: from.id }, select: { requestId: true } });
+    const requestIds = fromAssigned.map((a) => a.requestId);
+    if (requestIds.length > 0) {
+      const alreadyInto = await tx.requestAssignee.findMany({ where: { userId: into.id, requestId: { in: requestIds } }, select: { requestId: true } });
+      if (alreadyInto.length > 0) await tx.requestAssignee.deleteMany({ where: { userId: from.id, requestId: { in: alreadyInto.map((a) => a.requestId) } } });
     }
 
     for (const repoint of Object.values(REPOINT)) await repoint(tx, from.id, into.id);

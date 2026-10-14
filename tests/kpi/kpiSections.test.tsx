@@ -348,6 +348,15 @@ describe("TeamSummary", () => {
     expect(strip.querySelector('[data-kpi="projOnTime"]')!.textContent).toContain("50%");
     expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*md:grid-cols-6/);
   });
+  it("counts a request shared by two people once and says so under Request tasks done", async () => {
+    const shared = { id: "r1", requesterId: "x", assigneeIds: ["a", "b"], requestedAt: new Date("2026-10-05T00:00:00Z"), deadline: null, originalDeadline: null, status: "DONE", includeKpi: true, outputCount: 1, events: [{ from: "FIRST_LOOK", to: "DONE", at: new Date("2026-10-06T00:00:00Z") }] };
+    team.listTeamKpiPeople.mockResolvedValue([person("a", "Ann"), person("b", "Bea")]);
+    queries.loadKpiRequests.mockResolvedValue([shared]);
+    await run();
+    const tile = screen.getByRole("region", { name: "Summary" }).querySelector<HTMLElement>('[data-kpi="reqDone"]')!;
+    expect(tile.querySelector(".text-2xl")!.textContent).toBe("1"); // not 2: both assignees share r1
+    expect(within(tile).getByText("Each request counted once, even when several people worked on it.")).toBeTruthy();
+  });
 });
 
 describe("MySummary", () => {

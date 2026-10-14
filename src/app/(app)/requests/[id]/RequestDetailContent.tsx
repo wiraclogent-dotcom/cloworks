@@ -5,6 +5,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { daysLeft } from "@/lib/daysLeft";
 import { parseFieldSchema } from "@/lib/fieldSchema";
+import { ASSIGNEE_ORDER } from "@/lib/assignees";
 import { assigneeOptions, listCreativeTeam } from "@/lib/team";
 import { RequestDetailView } from "./RequestDetailView";
 
@@ -19,7 +20,7 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
     include: {
       brand: { select: { name: true } }, division: { select: { name: true } },
       type: { select: { name: true, fieldSchema: true } },
-      requester: { select: { name: true } }, assignee: { select: { name: true, active: true } },
+      requester: { select: { name: true } }, assignees: { orderBy: [...ASSIGNEE_ORDER], select: { user: { select: { id: true, name: true, active: true } } } },
       statusEvents: { orderBy: { at: "asc" }, include: { actor: { select: { name: true } } } },
       deadlineEvents: { orderBy: { at: "asc" }, include: { actor: { select: { name: true } } } },
       comments: { orderBy: { createdAt: "asc" }, include: { author: { select: { name: true } } } },
@@ -34,7 +35,7 @@ export async function DetailContent({ params, fullPage = false }: { params: Page
   after(() => markChatReadWith(db, user.id, id).catch(() => {}));
 
   const assignees = pickerTeam
-    ? assigneeOptions(pickerTeam, req.assigneeId && req.assignee ? { id: req.assigneeId, ...req.assignee } : null)
+    ? assigneeOptions(pickerTeam, req.assignees.map((a) => a.user))
     : [];
   const canMove = can(user.appRole, "request.transition");
   const left = daysLeft(req.deadline);

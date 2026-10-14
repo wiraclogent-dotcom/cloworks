@@ -52,7 +52,9 @@ describe("barSpan", () => {
 describe("layoutRows", () => {
   const W = { from: "2026-09-28", to: "2026-10-11" };
   const item = (id: string, assigneeId: string | null, requestDay: string, deadlineDay: string | null, assigneeName = assigneeId ? assigneeId.toUpperCase() : null): TimelineItem =>
-    ({ id, assigneeId, assigneeName, requestDay, deadlineDay });
+    ({ id, assignees: assigneeId ? [{ id: assigneeId, name: assigneeName ?? assigneeId }] : [], requestDay, deadlineDay });
+  const shared = (id: string, ids: string[], requestDay: string, deadlineDay: string | null): TimelineItem =>
+    ({ id, assignees: ids.map((i) => ({ id: i, name: i.toUpperCase() })), requestDay, deadlineDay });
   const people = [{ id: "b", name: "Bea" }, { id: "a", name: "Adi" }, { id: "c", name: "Cami" }];
 
   it("lists every person by name, empty ones included", () => {
@@ -72,6 +74,29 @@ describe("layoutRows", () => {
   });
   it("with an assignee filter shows only that person", () =>
     expect(layoutRows([], people, W, TODAY, { assigneeId: "c" }).map((r) => r.key)).toEqual(["c"]));
+  it("puts a shared request in every assignee's lane, flagged shared, counting it once per lane", () => {
+    const rows = layoutRows([shared("1", ["a", "b"], "2026-10-01", "2026-10-03")], people, W, TODAY);
+    expect(rows.map((r) => r.count)).toEqual([1, 1, 0]);
+    expect(rows[0].lanes[0][0]).toMatchObject({ id: "1", shared: true });
+    expect(rows[1].lanes[0][0]).toMatchObject({ id: "1", shared: true });
+    expect(rows[0].lanes[0][0]).toEqual(rows[1].lanes[0][0]);
+  });
+  it("does not flag a single-assignee or unassigned bar as shared", () => {
+    const rows = layoutRows([item("1", "a", "2026-10-01", "2026-10-03"), item("2", null, "2026-10-01", null)], people, W, TODAY);
+    expect(rows[0].lanes[0][0].shared).toBe(false);
+    expect(rows.at(-1)!.lanes[0][0].shared).toBe(false);
+  });
+  it("with an assignee filter only that lane shows, with the bar still flagged shared", () => {
+    const rows = layoutRows([shared("1", ["a", "b"], "2026-10-01", "2026-10-03")], people, W, TODAY, { assigneeId: "a" });
+    expect(rows.map((r) => r.key)).toEqual(["a"]);
+    expect(rows[0].count).toBe(1);
+    expect(rows[0].lanes[0][0]).toMatchObject({ id: "1", shared: true });
+  });
+  it("adds a shared request's unknown assignee to the lanes", () => {
+    const rows = layoutRows([shared("1", ["a", "x"], "2026-10-01", "2026-10-03")], people, W, TODAY);
+    expect(rows.map((r) => r.key)).toEqual(["a", "b", "c", "x"]);
+    expect(rows.find((r) => r.key === "x")).toMatchObject({ name: "X", count: 1 });
+  });
   it("packs overlapping bars into lanes", () => {
     const rows = layoutRows([
       item("1", "a", "2026-10-08", "2026-10-09"), item("2", "a", "2026-10-09", "2026-10-11"), item("3", "a", "2026-10-10", "2026-10-11"),

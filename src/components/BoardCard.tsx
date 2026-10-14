@@ -7,7 +7,9 @@ import { GripVertical, Link2 } from "lucide-react";
 import { BrandTag } from "./ui/Chip";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { NeedsMotionChip } from "./ui/NeedsMotionChip";
-import { Avatar, UnassignedAvatar } from "./ui/Avatar";
+import { assigneeLabel } from "@/lib/assignees";
+import { Avatar, AvatarStack, UnassignedAvatar } from "./ui/Avatar";
+import { SharedChip } from "./ui/SharedChip";
 import { cn, focusRing } from "./ui/cn";
 
 const CARD_SHAPE = "rounded-xl border bg-card p-4 text-sm text-card-foreground";
@@ -15,6 +17,9 @@ const CARD_SHAPE = "rounded-xl border bg-card p-4 text-sm text-card-foreground";
 export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card transition-[box-shadow,border-color] duration-200 hover:border-border-strong hover:shadow-raised`;
 /** The drag overlay copy: same card, Aqua outline and the raised shadow. */
 export const CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
+
+/** Edge mark for a shared request (the card root has `data-shared`): a 3px Aqua bar inside the left edge. `--accent` is too pale for this; `--ring` exists in light and dark. */
+export const SHARED_ACCENT = "before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-full before:bg-ring";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
 
@@ -26,7 +31,10 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta",
  */
 export function CardFace({ card, interactive = true, handle }: { card: RequestRow; interactive?: boolean; handle?: React.ReactNode }) {
   const open = card.status !== "DONE" && card.status !== "CANCELLED";
-  const assignee = card.assigneeName ? `Assignee: ${card.assigneeName}` : "Assignee: Unassigned";
+  const names = card.assignees.map((a) => a.name);
+  const shared = names.length >= 2;
+  const assigneeName = names[0] ?? null;
+  const assignee = assigneeName ? `Assignee: ${assigneeName}` : "Assignee: Unassigned";
   const code = `REQ-${card.id.slice(-4).toUpperCase()}`;
   return (
     <>
@@ -51,18 +59,27 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
           <BrandTag name={card.brandName} />
           {open && <DeadlineChip daysLeft={card.daysLeft} />}
           {(card.needsMotion || card.isVideo) && <NeedsMotionChip video={card.isVideo} />}
+          {shared && <SharedChip />}
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3 text-xs">
-        <p className="inline-flex min-w-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
+        {/* The requester keeps its natural width (up to half); the assignee side is the one that truncates. */}
+        <p className="inline-flex max-w-1/2 shrink-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
           <Avatar name={card.requesterName} size="sm" decorative />
-          <span className="truncate text-foreground-secondary">{card.requesterName}</span>
+          <span className="min-w-0 truncate text-foreground-secondary">{card.requesterName}</span>
           <span className="sr-only">Requester: {card.requesterName}</span>
         </p>
-        <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
-          <span className="truncate text-foreground-secondary">{card.assigneeName ?? "Unassigned"}</span>
-          {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
-        </span>
+        {shared ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5" title={`Assignees: ${names.join(", ")}`} data-card-assignee="shared">
+            <span aria-hidden="true" className="min-w-0 truncate text-foreground-secondary">{assigneeLabel(names)}</span>
+            <AvatarStack names={names} max={3} size="sm" label="Assignees" />
+          </span>
+        ) : (
+          <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={assigneeName ? "assigned" : "unassigned"}>
+            <span className="truncate text-foreground-secondary">{assigneeName ?? "Unassigned"}</span>
+            {assigneeName ? <Avatar name={assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
+          </span>
+        )}
       </div>
     </>
   );
@@ -77,10 +94,11 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
  */
 export function BoardCard({ card, canMove, busy, dragging }: { card: RequestRow; canMove: boolean; busy: boolean; dragging: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: !canMove || busy });
+  const shared = card.assignees.length >= 2;
   return (
-    <li ref={setNodeRef} data-card={card.id} data-draggable={canMove ? "true" : undefined} {...(canMove ? listeners : undefined)}
+    <li ref={setNodeRef} data-card={card.id} data-shared={shared ? "" : undefined} data-draggable={canMove ? "true" : undefined} {...(canMove ? listeners : undefined)}
       className={cn(
-        "group/card relative", CARD_SURFACE,
+        "group/card relative", CARD_SURFACE, shared && SHARED_ACCENT,
         "transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-px hover:border-border-strong motion-reduce:hover:translate-y-0",
         canMove && "cursor-grab touch-manipulation active:cursor-grabbing",
         dragging ? "opacity-40" : busy ? "opacity-60" : "",

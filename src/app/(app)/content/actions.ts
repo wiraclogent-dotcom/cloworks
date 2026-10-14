@@ -122,12 +122,12 @@ export async function approvePost(id: string, input: ApproveInput): Promise<Cont
     const { requestId } = await approveContentPostWith(db, u, id, input);
     notifyAfter(db, { kind: "approved", postId: id, actorId: u.id });
     // An assignee picked on the approve form is told just like when a lead assigns a request.
-    if (input.assigneeId) {
-      const assigneeId = input.assigneeId;
+    const toTell = [...new Set(input.assigneeIds ?? [])].filter((a) => a && a !== u.id);
+    if (toTell.length) {
       await bestEffort(async () => {
         const actor = await db.user.findUnique({ where: { id: u.id }, select: { name: true } });
         await notifierFor(db)({
-          actorId: u.id, userIds: [assigneeId], requestId, type: "ASSIGNED",
+          actorId: u.id, userIds: toTell, requestId, type: "ASSIGNED",
           message: buildMessage("ASSIGNED", actor?.name ?? "Someone", input.title),
         });
       });

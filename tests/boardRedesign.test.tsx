@@ -22,7 +22,7 @@ import type { RequestRow } from "@/lib/requests";
 afterEach(cleanup);
 
 const row = (extra: Partial<RequestRow> = {}): RequestRow => ({
-  id: "c1", title: "Banner", status: "REQUESTED", brandName: "Clogent", divisionName: "Marketing", requesterName: "Rina Sari", assigneeName: "Cami",
+  id: "c1", title: "Banner", status: "REQUESTED", brandName: "Clogent", divisionName: "Marketing", requesterName: "Rina Sari", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: 5, needsMotion: false, ...extra,
 });
 const card = (extra: Partial<RequestRow> = {}, canMove = false) =>
@@ -66,13 +66,13 @@ describe("board card chips", () => {
   });
 
   it("shows the assignee avatar with an accessible name, or the unassigned avatar", () => {
-    card({ assigneeName: "Cami Putri" });
+    card({ assignees: [{ id: "cami", name: "Cami Putri" }] });
     const a = screen.getByRole("img", { name: "Assignee: Cami Putri" });
     expect(a.getAttribute("title")).toBe("Assignee: Cami Putri");
     expect(a.getAttribute("data-card-assignee")).toBe("assigned");
     expect(a.textContent).toContain("CP"); // name shown, then the initials avatar
     cleanup();
-    card({ assigneeName: null });
+    card({ assignees: [] });
     const u = screen.getByRole("img", { name: "Assignee: Unassigned" });
     expect(u.getAttribute("data-card-assignee")).toBe("unassigned");
     expect(u.querySelector("svg")).toBeTruthy();

@@ -9,7 +9,7 @@ import { parseParams } from "@/app/(app)/requests/params";
 import type { RequestRow } from "@/lib/requests";
 
 const row = (id: string, needsMotion: boolean): RequestRow => ({
-  id, title: `Task ${id}`, status: "REQUESTED", brandName: "B", divisionName: "D", requesterName: "R", assigneeName: null,
+  id, title: `Task ${id}`, status: "REQUESTED", brandName: "B", divisionName: "D", requesterName: "R", assignees: [],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: null, needsMotion,
 });
 afterEach(cleanup);

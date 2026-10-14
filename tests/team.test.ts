@@ -41,13 +41,19 @@ describe("listCreativeTeam", () => {
 
 describe("assigneeOptions", () => {
   const team = [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }];
-  it("is the team when nobody or a team member is assigned", () => {
-    expect(assigneeOptions(team, null)).toEqual(team);
-    expect(assigneeOptions(team, { id: "b", name: "Bea", active: true })).toEqual(team);
+  it("is the team when nobody or only team members are assigned", () => {
+    expect(assigneeOptions(team, [])).toEqual(team);
+    expect(assigneeOptions(team, [{ id: "b", name: "Bea", active: true }])).toEqual(team);
   });
   it("keeps a current assignee who is off the team at the top, saying why", () => {
-    expect(assigneeOptions(team, { id: "x", name: "Idzni", active: true })[0]).toEqual({ id: "x", name: "Idzni (not on creative team)" });
-    expect(assigneeOptions(team, { id: "d", name: "Daus", active: false })[0]).toEqual({ id: "d", name: "Daus (inactive)" });
-    expect(assigneeOptions(team, { id: "d", name: "Daus", active: false })).toHaveLength(3);
+    expect(assigneeOptions(team, [{ id: "x", name: "Idzni", active: true }])[0]).toEqual({ id: "x", name: "Idzni (not on creative team)", offTeam: true });
+    expect(assigneeOptions(team, [{ id: "d", name: "Daus", active: false }])[0]).toEqual({ id: "d", name: "Daus (inactive)", offTeam: true });
+    expect(assigneeOptions(team, [{ id: "d", name: "Daus", active: false }])).toHaveLength(3);
+  });
+  it("keeps every off-team current person, in order, and not the team members", () => {
+    const out = assigneeOptions(team, [
+      { id: "x", name: "Idzni", active: true }, { id: "a", name: "Adi", active: true }, { id: "d", name: "Daus", active: false },
+    ]);
+    expect(out.map((o) => o.name)).toEqual(["Idzni (not on creative team)", "Daus (inactive)", "Adi", "Bea"]);
   });
 });

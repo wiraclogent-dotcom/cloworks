@@ -20,8 +20,8 @@ export type SubmittedValues = {
   brandId: string;
   divisionId: string;
   deadline: string;
-  /** Optional assignee picked on the form ("" = leave unassigned). */
-  assigneeId: string;
+  /** Assignees picked on the form (none = leave unassigned). Blanks dropped, deduped. */
+  assigneeIds: string[];
   /** The "What do you need?" cards; "" when nothing (or something unknown) was picked. */
   workKind: WorkKind | "";
 };
@@ -42,7 +42,8 @@ export function extractValues(fd: FormData): SubmittedValues {
   };
   return {
     title: str("title"), briefUrl: str("briefUrl"), notes: str("notes"), brandId: str("brandId"),
-    divisionId: str("divisionId"), deadline: str("deadline"), assigneeId: str("assigneeId"),
+    divisionId: str("divisionId"), deadline: str("deadline"),
+    assigneeIds: [...new Set(fd.getAll("assigneeIds").filter((x): x is string => typeof x === "string" && x !== ""))],
     workKind: WORK_KINDS.find((k) => k === str("workKind")) ?? "",
   };
 }
@@ -69,18 +70,18 @@ export async function submitRequestWith(
     divisionId: values.divisionId,
     deadline: values.deadline || null,
     needsMotion: plan?.needsMotion ?? false,
-    assigneeId: values.assigneeId || null,
+    assigneeIds: values.assigneeIds,
     // No kind picked: an empty typeId can never resolve, so nothing is created but the other fields are still checked.
     ...(plan ? (type ? { typeId: type.id } : {}) : { typeId: "" }),
   };
   try {
     const { id } = await createRequestWith(db, user, input);
-    // Assigned on the form: tell the designer, as a later assignment would.
-    const assigneeId = input.assigneeId;
-    if (assigneeId && assigneeId !== user.id)
+    // Assigned on the form: tell each designer (not the person filing it), as a later assignment would.
+    const toTell = values.assigneeIds.filter((a) => a !== user.id);
+    if (toTell.length)
       await bestEffort(async () => {
         const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
-        await notifier({ actorId: user.id, userIds: [assigneeId], requestId: id, type: "ASSIGNED", message: buildMessage("ASSIGNED", actor?.name ?? "Someone", input.title.trim()) });
+        await notifier({ actorId: user.id, userIds: toTell, requestId: id, type: "ASSIGNED", message: buildMessage("ASSIGNED", actor?.name ?? "Someone", input.title.trim()) });
       });
     return { ok: true, id };
   } catch (e) {

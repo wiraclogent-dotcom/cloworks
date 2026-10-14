@@ -1,5 +1,6 @@
 import type { JobRole, PrismaClient, RequestStatus } from "@prisma/client";
 import type { KpiRequest } from "./metrics";
+import { ASSIGNEE_ORDER } from "../assignees";
 import { monthBounds } from "./months";
 
 const OPEN: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK"];
@@ -16,12 +17,13 @@ export async function loadKpiRequests(db: PrismaClient, months: string[]): Promi
   const rows = await db.request.findMany({
     where: { OR: [...ranges, { status: { in: OPEN } }] },
     select: {
-      id: true, requesterId: true, assigneeId: true, requestedAt: true, deadline: true, originalDeadline: true, status: true,
+      id: true, requesterId: true, requestedAt: true, deadline: true, originalDeadline: true, status: true,
       includeKpi: true, outputCount: true,
+      assignees: { select: { userId: true }, orderBy: [...ASSIGNEE_ORDER] },
       statusEvents: { select: { from: true, to: true, at: true }, orderBy: { at: "asc" } },
     },
   });
-  return rows.map(({ statusEvents, ...r }) => ({ ...r, events: statusEvents }));
+  return rows.map(({ statusEvents, assignees, ...r }) => ({ ...r, assigneeIds: assignees.map((a) => a.userId), events: statusEvents }));
 }
 
 export type TargetRow = { userId: string; month: string; role: JobRole; targetTasks: number; note: string | null };

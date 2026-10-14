@@ -45,7 +45,7 @@ export async function rescheduleRequestWith(
     const change = await db.$transaction(async (tx) => {
       const req = await tx.request.findUnique({
         where: { id: requestId },
-        select: { status: true, deadline: true, originalDeadline: true, requestedAt: true, assigneeId: true, requesterId: true, title: true },
+        select: { status: true, deadline: true, originalDeadline: true, requestedAt: true, requesterId: true, title: true, assignees: { select: { userId: true } } },
       });
       if (!req) throw new Fail("NOT_FOUND", "Request not found");
       if (!isOpenStatus(req.status)) throw new Fail("CLOSED", closedMessage(req.status));
@@ -64,14 +64,14 @@ export async function rescheduleRequestWith(
         throw new Fail("CLOSED", closedMessage(now.status));
       }
       await tx.deadlineEvent.create({ data: { requestId, from: req.deadline, to, actorId: user.id, at: new Date() } });
-      return { from: req.deadline, to, assigneeId: req.assigneeId, requesterId: req.requesterId, title: req.title };
+      return { from: req.deadline, to, assigneeIds: req.assignees.map((a) => a.userId), requesterId: req.requesterId, title: req.title };
     });
 
     if (change) {
       await bestEffort(async () => {
         const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });
         const message = buildMessage("DEADLINE", actor?.name ?? "Someone", change.title, { from: shortLabel(change.from), to: shortLabel(change.to) });
-        const userIds = [...new Set([change.requesterId, change.assigneeId])].filter((id): id is string => !!id && id !== user.id);
+        const userIds = [...new Set([change.requesterId, ...change.assigneeIds])].filter((id) => id !== user.id);
         await notifier({ actorId: user.id, userIds, requestId, type: "DEADLINE", message });
       });
     }
