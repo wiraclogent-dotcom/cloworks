@@ -35,6 +35,8 @@ import { ScrollIntoViewOnMount } from "@/components/kpi/ScrollIntoViewOnMount";
 import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { KpiSectionSkeleton } from "@/components/PageSkeletons";
+import { TeamSummary } from "@/components/kpi/sections/TeamSummary";
+import { MySummary } from "@/components/kpi/sections/MySummary";
 import { TeamRequestsSection } from "@/components/kpi/sections/TeamRequestsSection";
 import { TeamProjectsSection } from "@/components/kpi/sections/TeamProjectsSection";
 import { MyRequestsSection } from "@/components/kpi/sections/MyRequestsSection";
@@ -125,12 +127,26 @@ describe("ScrollIntoViewOnMount re-scroll", () => {
     vi.advanceTimersByTime(1100);
     expect(disconnect).toHaveBeenCalled();
   });
-  it("stops on user input", () => {
+  it.each(["wheel", "keydown", "pointerdown", "touchstart"])("stops on %s", (type) => {
     const el = target();
     render(<ScrollIntoViewOnMount targetId="projects" />);
-    window.dispatchEvent(new Event("wheel"));
+    window.dispatchEvent(new Event(type));
     expect(disconnect).toHaveBeenCalled();
     cb?.();
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+  it.each(["mousemove", "pointermove", "pointerover", "mouseover", "scroll"])("keeps going on %s (mere pointer movement is not intent)", (type) => {
+    const el = target();
+    render(<ScrollIntoViewOnMount targetId="projects" />);
+    window.dispatchEvent(new Event(type));
+    document.body.dispatchEvent(new Event(type, { bubbles: true }));
+    expect(disconnect).not.toHaveBeenCalled();
+    cb!();
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(2);
+  });
+  it("scrolls immediately on mount even before any resize", () => {
+    const el = target();
+    render(<ScrollIntoViewOnMount targetId="projects" />);
     expect(el.scrollIntoView).toHaveBeenCalledTimes(1);
   });
 });
@@ -183,7 +199,8 @@ describe("TeamRequestsSection", () => {
     const section = screen.getByRole("region", { name: "Requests" });
     expect(section.id).toBe("requests");
     expect(within(section).getByRole("heading", { level: 2, name: "Requests" })).toBeTruthy();
-    expect(within(section).getByText("Average progress")).toBeTruthy();
+    expect(within(section).queryByText("Average progress")).toBeNull();
+    expect(section.querySelector("[data-kpi]")).toBeNull();
     expect(within(section).getByRole("table")).toBeTruthy();
     fireEvent.click(within(section).getByText("October 2026").closest("summary")!);
     expect(within(section).getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025");
@@ -257,7 +274,8 @@ describe("MyRequestsSection", () => {
     queries.loadTargets.mockResolvedValue([{ userId: "u1", month: "2026-10", role: "DESIGNER", targetTasks: 10, note: null }]);
     await run({ own: false, subject: { ...subject, id: "u9" } });
     const section = screen.getByRole("region", { name: "Requests" });
-    expect(section.querySelector('[data-kpi="tasksDone"]')).not.toBeNull();
+    expect(section.querySelector('[data-kpi="target"]')).not.toBeNull();
+    expect(section.querySelector('[data-kpi="tasksDone"]')).toBeNull(); // the page summary has it now
     expect(within(section).queryByText(/No request work/)).toBeNull();
     fireEvent.click(within(section).getByText("October 2026", { selector: "summary span" }).closest("summary")!);
     expect(within(section).getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&q=2&user=u9");
@@ -302,5 +320,56 @@ describe("MyProjectsSection", () => {
     expect(q3.getAttribute("href")).toBe("/dashboard?month=2026-09&user=u1&year=2026&q=3#projects");
     fireEvent.change(within(section).getByLabelText("Year"), { target: { value: "2025" } });
     expect(push).toHaveBeenCalledWith("/dashboard?month=2026-09&user=u1&year=2025&q=4#projects");
+  });
+});
+
+describe("TeamSummary", () => {
+  const person = (id: string, name: string) => ({ id, name, jobRole: "DESIGNER" });
+  const qs = (done: number, items: number, onTimeCount: number, lateCount: number) =>
+    ({ score: { score: 80, parts: {}, usedParts: [], items, done, onTimeCount, lateCount }, items: [] });
+  const empty = qs(0, 0, 0, 0);
+  const pk = (userId: string) => ({ userId, name: userId, jobRole: "DESIGNER", year: 2026, quarters: { 1: qs(1, 2, 1, 1), 2: empty, 3: empty, 4: empty }, unscheduled: [], excluded: [], otherWork: [], yearScore: 80 });
+  const run = async () => render(await TeamSummary({ db: db(), month: "2026-10", year: 2026 }));
+
+  it("summarises both rosters in five cards under period labels", async () => {
+    team.listTeamKpiPeople.mockResolvedValue([person("a", "Ann"), person("b", "Bo")]);
+    queries.loadTargets.mockResolvedValue([{ userId: "a", month: "2026-10", role: "DESIGNER", targetTasks: 10, note: null }]);
+    pq.loadTeamProjectKpi.mockResolvedValue([pk("b"), pk("c")]);
+    await run();
+    const strip = screen.getByRole("region", { name: "Summary" });
+    const cards = [...strip.querySelectorAll("[data-kpi]")];
+    expect(cards.map((c) => c.getAttribute("data-kpi"))).toEqual(["people", "reqDone", "reqProgress", "projDone", "projOnTime"]);
+    expect(within(strip).getByText("Request tasks done · Oct 2026")).toBeTruthy();
+    expect(within(strip).getByText("Project on time · 2026")).toBeTruthy();
+    expect(within(strip).getByText("3 requests".replace("3", "2") + " · 2 projects")).toBeTruthy();
+    expect(strip.querySelector('[data-kpi="people"]')!.textContent).toContain("3"); // a, b, c
+    expect(strip.querySelector('[data-kpi="projDone"]')!.textContent).toContain("2/4");
+    expect(strip.querySelector('[data-kpi="projOnTime"]')!.textContent).toContain("50%");
+    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*sm:grid-cols-3.*lg:grid-cols-5/);
+  });
+});
+
+describe("MySummary", () => {
+  const subject = { id: "u1", name: "Ann", jobRole: "DESIGNER" as const };
+  const qs = (done: number, items: number, onTimeCount: number, lateCount: number) =>
+    ({ score: { score: 80, parts: {}, usedParts: [], items, done, onTimeCount, lateCount }, items: [] });
+  const empty = qs(0, 0, 0, 0);
+  const pk = (quarters: unknown) => ({ userId: "u1", year: 2026, quarters, unscheduled: [], excluded: [], otherWork: [], yearScore: null });
+  const run = async () => render(await MySummary({ db: db(), subject, month: "2026-10", year: 2026 }));
+
+  it("has four cards with no People", async () => {
+    queries.loadTargets.mockResolvedValue([{ userId: "u1", month: "2026-10", role: "DESIGNER", targetTasks: 10, note: null }]);
+    pq.loadPersonProjectKpi.mockResolvedValue(pk({ 1: qs(1, 2, 1, 1), 2: empty, 3: empty, 4: empty }));
+    await run();
+    const strip = screen.getByRole("region", { name: "Summary" });
+    expect([...strip.querySelectorAll("[data-kpi]")].map((c) => c.getAttribute("data-kpi"))).toEqual(["reqDone", "reqProgress", "projDone", "projOnTime"]);
+    expect(strip.querySelector('[data-kpi="projDone"]')!.textContent).toContain("1/2");
+    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*lg:grid-cols-4/);
+  });
+  it("shows — when both sections are empty", async () => {
+    pq.loadPersonProjectKpi.mockResolvedValue(pk({ 1: empty, 2: empty, 3: empty, 4: empty }));
+    await run();
+    const strip = screen.getByRole("region", { name: "Summary" });
+    for (const k of ["reqDone", "reqProgress", "projDone", "projOnTime"]) expect(strip.querySelector(`[data-kpi="${k}"]`)!.textContent).toContain("—");
   });
 });

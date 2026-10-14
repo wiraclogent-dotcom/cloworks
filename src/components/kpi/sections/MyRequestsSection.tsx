@@ -1,15 +1,15 @@
 import { ChartColumn, CalendarCheck, CircleCheckBig, Clock, Gauge, Layers, Repeat, Target } from "lucide-react";
 import type { JobRole } from "@prisma/client";
 import type { ScopedDb } from "@/lib/db";
-import { computeKpi } from "@/lib/kpi/metrics";
-import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
-import { jakartaMonth, monthLabel, trailingMonths } from "@/lib/kpi/months";
+import { myRequestsData } from "@/lib/kpi/pageData";
+import { jakartaMonth, monthLabel } from "@/lib/kpi/months";
 import { myKpiTiles, type KpiTileData } from "@/lib/kpi/presentation";
 import type { Tone } from "@/lib/palette";
 import { KpiSection } from "@/components/kpi/KpiSection";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { ProgressBar } from "@/components/kpi/ProgressBar";
-import { TrendChart, type TrendPoint } from "@/components/kpi/TrendChart";
+import { TrendChart } from "@/components/kpi/TrendChart";
+import { cn } from "@/components/ui/cn";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 
 const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone }> = {
@@ -32,22 +32,10 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
   db: ScopedDb; subject: { id: string; name: string; jobRole: JobRole }; own: boolean; month: string;
   keep?: Record<string, string | undefined>;
 }) {
-  const months = trailingMonths(month, 6);
-  const [requests, targets] = await Promise.all([loadKpiRequests(db, months), loadTargets(db, months, subject.id)]);
-  const targetOf = (m: string) => targets.find((t) => t.month === m) ?? null;
-  const resultOf = (m: string) => {
-    const t = targetOf(m);
-    return computeKpi(requests, subject, m, t ? { role: t.role, targetTasks: t.targetTasks } : null);
-  };
-  const kpi = resultOf(month);
-  const target = targetOf(month);
-  const basisRole = target?.role ?? subject.jobRole;
-  const points: TrendPoint[] = months.map((m) => {
-    const r = resultOf(m);
-    return { month: m, label: monthLabel(m), tasksDone: r.tasksDone, target: r.target };
-  });
-  const isEmpty = !target && kpi.tasksDone === 0 && kpi.totalOutputs === 0 && kpi.activeWorkload === 0;
+  const { kpi, target, basisRole, points, isEmpty } = await myRequestsData(db, subject.id, subject.jobRole, month);
 
+  // Tasks done is on the page summary now; the rest stay as this person's detail. An odd count widens the last tile.
+  const tiles = myKpiTiles(kpi, basisRole).filter((t) => t.key !== "tasksDone");
   return (
     <KpiSection id="requests" title="Requests"
       controls={<MonthPicker month={month} current={jakartaMonth(new Date())} userId={own ? undefined : subject.id} action="/dashboard" keep={keep} />}>
@@ -59,8 +47,8 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <h3 id="kpi-numbers" className="sr-only">Key numbers</h3>
             {/* One scorecard: the hairlines come from the grid gap showing the card's border colour between cells. */}
             <ul className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card lg:grid-cols-4">
-              {myKpiTiles(kpi, basisRole).map((tile) => (
-                <li key={tile.key} data-kpi={tile.key} className="flex min-w-0 flex-col gap-2 bg-card p-4">
+              {tiles.map((tile, i) => (
+                <li key={tile.key} data-kpi={tile.key} className={cn("flex min-w-0 flex-col gap-2 bg-card p-4", i === tiles.length - 1 && tiles.length % 2 === 1 && "col-span-2")}>
                   <span className="flex items-center gap-1.5 text-[13px] text-foreground-secondary">
                     <span aria-hidden="true" className="text-foreground-muted [&_svg]:size-3.5">{TILE_LOOK[tile.key].icon}</span>
                     {tile.label}

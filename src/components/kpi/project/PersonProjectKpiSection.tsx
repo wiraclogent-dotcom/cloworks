@@ -1,6 +1,7 @@
 import type { ScopedDb } from "@/lib/db";
 import type { Quarter } from "@/lib/kpi/projectItems";
-import { loadPersonProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
+import { targetYears } from "@/lib/kpi/projectQueries";
+import { personProjectKpi } from "@/lib/kpi/pageData";
 import { ProjectKpiPanel } from "./ProjectKpiPanel";
 import { ManageTargetsModal } from "./ManageTargetsModal";
 
@@ -17,7 +18,7 @@ export async function PersonProjectKpiSection({ db, userId, name, year, quarter,
   headingLevel?: 2 | 3;
 }) {
   const [kpi, years, projects] = await Promise.all([
-    loadPersonProjectKpi(db, userId, year, new Date()),
+    personProjectKpi(db, userId, year),
     targetYears(db),
     canManage ? db.project.findMany({ select: { id: true, title: true }, orderBy: { title: "asc" } }) : Promise.resolve([]),
   ]);

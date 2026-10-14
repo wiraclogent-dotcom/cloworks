@@ -84,7 +84,7 @@ describe("ManagePeopleDialog", () => {
 
 describe("ProjectTeamTable with a person who has no targets", () => {
   const row = (over: Partial<ProjectTeamRow> = {}): ProjectTeamRow =>
-    ({ userId: "n", name: "Nia", quarters: [null, null, null, null], year: null, done: 0, items: 0, onTimePct: null, hasTargets: false, ...over });
+    ({ userId: "n", name: "Nia", role: "DESIGNER", quarters: [null, null, null, null], year: null, done: 0, items: 0, onTimePct: null, hasTargets: false, ...over });
 
   it("shows dashes, Done 0/0 and a Set targets link to their page", () => {
     render(<ProjectTeamTable rows={[row()]} year={2026} canOpen />);
@@ -127,13 +127,13 @@ describe("projectTeamRows", () => {
   const emptyScore = { score: null, parts: { onTime: null, completion: null, speed: null, revisions: null, slips: null }, usedParts: [], items: 0, done: 0, onTimeCount: 0, lateCount: 0 } as const;
   const emptyQ = () => ({ score: { ...emptyScore, usedParts: [] as never[] }, items: [] });
   const kpi = (over: Partial<PersonProjectKpi> = {}) => ({
-    userId: "n", year: 2026, name: "Nia", quarters: { 1: emptyQ(), 2: emptyQ(), 3: emptyQ(), 4: emptyQ() },
+    userId: "n", year: 2026, name: "Nia", jobRole: "DESIGNER", quarters: { 1: emptyQ(), 2: emptyQ(), 3: emptyQ(), 4: emptyQ() },
     unscheduled: [], excluded: [], otherWork: [], yearScore: null, ...over,
-  }) as PersonProjectKpi & { name: string };
+  }) as PersonProjectKpi & { name: string; jobRole: "DESIGNER" };
 
   it("keeps a person with no targets, flagged hasTargets false", () => {
     expect(projectTeamRows([kpi()])).toEqual([
-      { userId: "n", name: "Nia", quarters: [null, null, null, null], year: null, done: 0, items: 0, onTimePct: null, hasTargets: false },
+      { userId: "n", name: "Nia", role: "DESIGNER", quarters: [null, null, null, null], year: null, done: 0, items: 0, onTimePct: null, hasTargets: false },
     ]);
   });
 });

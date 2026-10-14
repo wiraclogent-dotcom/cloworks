@@ -5,10 +5,11 @@ import { ArrowLeft, UserX } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
+import { MySummary } from "@/components/kpi/sections/MySummary";
 import { MyRequestsSection } from "@/components/kpi/sections/MyRequestsSection";
 import { MyProjectsSection } from "@/components/kpi/sections/MyProjectsSection";
 import { AccessDenied } from "@/components/AccessDenied";
-import { KpiSectionSkeleton, KpiSkeleton } from "@/components/PageSkeletons";
+import { KpiSectionSkeleton, KpiSkeleton, SummarySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
@@ -50,6 +51,9 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
         title={own ? "My KPI" : `KPI: ${subject.name}`} description="Request and project KPIs"
         actions={!own && canTeam ? <Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year"]) })} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null} />
       <div className="space-y-8">
+        <Suspense fallback={<SummarySkeleton count={4} />}>
+          <MySummary db={db} subject={subject} month={month} year={year} />
+        </Suspense>
         <Suspense fallback={<KpiSectionSkeleton title="Requests" tiles={4} />}>
           <MyRequestsSection db={db} subject={subject} own={own} month={month} keep={keepParams(sp, ["year", "q"])} />
         </Suspense>

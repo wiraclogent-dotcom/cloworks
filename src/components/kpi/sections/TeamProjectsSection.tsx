@@ -1,7 +1,8 @@
 import type { ScopedDb } from "@/lib/db";
 import { kpiHref } from "@/lib/kpi/href";
-import { loadRosterEntries, rosterCandidates } from "@/lib/kpi/roster";
-import { loadTeamProjectKpi, targetYears } from "@/lib/kpi/projectQueries";
+import { rosterCandidates } from "@/lib/kpi/roster";
+import { targetYears } from "@/lib/kpi/projectQueries";
+import { teamProjectsData } from "@/lib/kpi/pageData";
 import { KpiSection } from "@/components/kpi/KpiSection";
 import { ManagePeopleDialog } from "@/components/kpi/ManagePeopleDialog";
 import { ProjectTeamTable, projectTeamRows } from "@/components/kpi/project/ProjectTeamTable";
@@ -15,21 +16,11 @@ import { YearSelect } from "@/components/kpi/project/YearSelect";
 export async function TeamProjectsSection({ db, year, canManage, keep, autoScroll }: {
   db: ScopedDb; year: number; canManage: boolean; keep?: Record<string, string | undefined>; autoScroll?: boolean;
 }) {
-  const now = new Date();
-  const [{ entries, kpis }, years, candidates] = await Promise.all([
-    loadRosterEntries(db, "PROJECTS").then(async (entries) => ({
-      entries,
-      kpis: await loadTeamProjectKpi(db, year, now, {
-        extraUserIds: entries.filter((e) => e.included).map((e) => e.userId),
-        excludeUserIds: entries.filter((e) => !e.included).map((e) => e.userId),
-      }),
-    })),
+  const [{ kpis, hiddenByRoster }, years, candidates] = await Promise.all([
+    teamProjectsData(db, year),
     targetYears(db),
     canManage ? rosterCandidates(db) : Promise.resolve([]),
   ]);
-  // An empty table is "hidden" when removals took out people who do have targets this year.
-  const removed = entries.filter((e) => !e.included).map((e) => e.userId);
-  const hiddenByRoster = kpis.length === 0 && removed.length > 0 && (await db.projectKpiTarget.count({ where: { year, userId: { in: removed } } })) > 0;
   const yearOptions = [...(years.includes(year) ? years : [year, ...years])].sort((a, b) => b - a);
   return (
     <KpiSection id="projects" title="Projects" autoScroll={autoScroll} controls={<>

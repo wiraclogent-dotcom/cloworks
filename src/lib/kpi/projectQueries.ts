@@ -1,3 +1,4 @@
+import type { JobRole } from "@prisma/client";
 import type { ScopedDb } from "@/lib/db";
 import {
   itemFacts, jakartaQuarter,
@@ -154,14 +155,14 @@ export async function loadPersonProjectKpi(db: ScopedDb, userId: string, year: n
  */
 export async function loadTeamProjectKpi(
   db: ScopedDb, year: number, now: Date, roster?: { extraUserIds?: string[]; excludeUserIds?: string[] },
-): Promise<(PersonProjectKpi & { name: string })[]> {
+): Promise<(PersonProjectKpi & { name: string; jobRole: JobRole })[]> {
   const kpis = await buildKpis(db, year, now, undefined, roster);
   if (kpis.length === 0) return [];
-  const users = await db.user.findMany({ where: { id: { in: kpis.map((k) => k.userId) } }, select: { id: true, name: true, active: true, appRole: true } });
+  const users = await db.user.findMany({ where: { id: { in: kpis.map((k) => k.userId) } }, select: { id: true, name: true, jobRole: true, active: true, appRole: true } });
   const byId = new Map(users.map((u) => [u.id, u]));
   return kpis
     .filter((k) => hasProjectTargets(k) || (byId.get(k.userId)?.active === true && byId.get(k.userId)?.appRole !== "REQUESTER"))
-    .map((k) => ({ ...k, name: byId.get(k.userId)?.name ?? "" }))
+    .map((k) => ({ ...k, name: byId.get(k.userId)?.name ?? "", jobRole: byId.get(k.userId)?.jobRole ?? ("OTHER" as const) }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
