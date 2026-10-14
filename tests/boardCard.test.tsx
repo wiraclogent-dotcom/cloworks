@@ -49,6 +49,15 @@ describe("BoardCard shared requests", () => {
     expect(who.className).toContain("min-w-0");
   });
 
+  it("the requester keeps its name next to a long shared label (only the assignee side gives way)", () => {
+    renderCard(two);
+    const requester = document.querySelector("[title='Requester: Rina']") as HTMLElement;
+    // Natural width up to half the footer; the shared label truncates instead of squeezing "Rina" to "R.".
+    expect(requester.className).toContain("shrink-0");
+    expect(requester.className).toContain("max-w-1/2");
+    expect(within(requester).getByText("Rina").className).toContain("min-w-0");
+  });
+
   it("a single-assignee card is unchanged: assigned, no chip, no accent hook", () => {
     renderCard([{ id: "cami", name: "Cami" }]);
     const li = document.querySelector("[data-card]") as HTMLElement;

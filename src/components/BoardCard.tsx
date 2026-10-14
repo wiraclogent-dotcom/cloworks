@@ -63,9 +63,10 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/70 pt-3 text-xs">
-        <p className="inline-flex min-w-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
+        {/* The requester keeps its natural width (up to half); the assignee side is the one that truncates. */}
+        <p className="inline-flex max-w-1/2 shrink-0 items-center gap-1.5" title={`Requester: ${card.requesterName}`}>
           <Avatar name={card.requesterName} size="sm" decorative />
-          <span className="truncate text-foreground-secondary">{card.requesterName}</span>
+          <span className="min-w-0 truncate text-foreground-secondary">{card.requesterName}</span>
           <span className="sr-only">Requester: {card.requesterName}</span>
         </p>
         {shared ? (
