@@ -26,7 +26,7 @@ export function DayCell({ day, cards, today, canMove, activeMin, activeId, busyI
         day.inMonth ? "bg-card" : "bg-muted",
         day.isToday ? "border-ring" : "border-border",
         dragging && !disabled && isOver ? "bg-accent outline-ring outline-solid" : "outline-transparent",
-        disabled && "opacity-50",
+        disabled && "opacity-55",
       )}>
       <p className="mb-1 flex items-center gap-1 px-0.5 text-xs">
         <span aria-hidden="true" className={cn(

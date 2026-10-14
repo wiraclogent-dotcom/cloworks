@@ -181,7 +181,7 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
               <Avatar name={p.name} size="sm" decorative />
               <span className="min-w-0 truncate">{p.name}</span>
               <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply({ remove: p })}
-                className={cn("inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground aria-disabled:opacity-50", focusRing)}>
+                className={cn("inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground aria-disabled:opacity-55", focusRing)}>
                 <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
               </button>
             </li>

@@ -62,7 +62,7 @@ export function MonthPicker({ month, current, userId, action, keep }: {
             {SHORT.map((short, i) => {
               const m = `${year}-${String(i + 1).padStart(2, "0")}`;
               if (m > current)
-                return <li key={m}><span aria-disabled="true" className={cn(cell, "w-full text-muted-foreground opacity-40")}>{short}</span></li>;
+                return <li key={m}><span aria-disabled="true" className={cn(cell, "w-full text-muted-foreground opacity-55")}>{short}</span></li>;
               const selected = m === month;
               return (
                 <li key={m}>
