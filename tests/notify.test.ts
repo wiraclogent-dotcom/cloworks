@@ -256,9 +256,16 @@ describe("notifications", () => {
     const calls: NotifyInput[] = [];
     const notifier = async (i: NotifyInput) => { calls.push(i); };
     const lead = () => ({ id: ids.lia, appRole: "LEAD" as const });
+    /** Makes `userIds` the request's assignees (rows, plus the legacy mirror of the first). */
+    const assign = async (...userIds: string[]) => {
+      await db.prisma.requestAssignee.deleteMany({ where: { requestId: reqId } });
+      if (userIds.length) await db.prisma.requestAssignee.createMany({ data: userIds.map((userId) => ({ requestId: reqId, userId })) });
+      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: userIds[0] ?? null } });
+    };
     beforeEach(async () => {
       calls.length = 0;
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: null, status: "REQUESTED" } });
+      await assign();
+      await db.prisma.request.update({ where: { id: reqId }, data: { status: "REQUESTED" } });
     });
 
     it("assign notifies only the new assignee; not on same assignee; unassign notifies the removed person", async () => {
@@ -278,7 +285,7 @@ describe("notifications", () => {
       expect(calls).toHaveLength(0);
     });
     it("comment: mention beats comment, requester/assignee get COMMENT, author excluded", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.irsyad } });
+      await assign(ids.irsyad);
       await addCommentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "ping @Irsyad please", new Date(), notifier);
       const m = calls.find((c) => c.type === "MENTION")!;
       const c = calls.find((c) => c.type === "COMMENT")!;
@@ -288,13 +295,13 @@ describe("notifications", () => {
       expect(m.message).toBe("Dimas mentioned you in “Poster”");
     });
     it("comment by the requester notifies the assignee only", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.irsyad } });
+      await assign(ids.irsyad);
       await addCommentWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, "hello", new Date(), notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0].userIds).toEqual([ids.irsyad]);
     });
     it("comment: mention and comment notifications run concurrently", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.lia } });
+      await assign(ids.lia);
       const started: string[] = [];
       let release!: () => void;
       const gate = new Promise<void>((r) => (release = r));
@@ -311,7 +318,7 @@ describe("notifications", () => {
       expect(calls[0]).toMatchObject({ type: "MENTION", userIds: [ids.rina] });
     });
     it("comment: requester == assignee gets exactly one COMMENT", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.rina } });
+      await assign(ids.rina);
       await addCommentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "hello", new Date(), notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0].userIds).toEqual([ids.rina]);
@@ -321,7 +328,7 @@ describe("notifications", () => {
       expect(calls.flatMap((c) => c.userIds)).not.toContain(ids.rina);
     });
     it("transition notifies requester and distinct assignee; failing notifier does not fail it", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.irsyad } });
+      await assign(ids.irsyad);
       await transitionRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "ON_PROGRESS", {}, notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatchObject({ type: "STATUS", actorId: ids.dimas });
@@ -335,14 +342,15 @@ describe("notifications", () => {
       vi.restoreAllMocks();
     });
     it("moving to First Look sends DESIGN_SENT to the requester, not the actor", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas, status: "ON_PROGRESS" } });
+      await db.prisma.request.update({ where: { id: reqId }, data: { status: "ON_PROGRESS" } });
+      await assign(ids.dimas);
       await transitionRequestWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, "FIRST_LOOK", {}, notifier);
       expect(calls).toHaveLength(1);
       expect(calls[0]).toMatchObject({ type: "DESIGN_SENT", userIds: [ids.rina], actorId: ids.dimas });
       expect(calls[0].message).toBe("Dimas sent the design for “Poster” for review");
     });
     it("adding a link sends ATTACHMENT in-app only to requester, not the actor", async () => {
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas } });
+      await assign(ids.dimas);
       const r = await addAttachmentWith(db.prisma, { id: ids.dimas, appRole: "CREATIVE" }, reqId, { name: "Final v2", url: "https://drive.google.com/x" }, notifier);
       expect(r.ok).toBe(true);
       expect(calls).toHaveLength(1);
@@ -351,7 +359,7 @@ describe("notifications", () => {
     });
     it("adding a link: a throwing notifier does not fail it", async () => {
       vi.spyOn(console, "error").mockImplementation(() => {});
-      await db.prisma.request.update({ where: { id: reqId }, data: { assigneeId: ids.dimas } });
+      await assign(ids.dimas);
       const r = await addAttachmentWith(db.prisma, { id: ids.rina, appRole: "REQUESTER" }, reqId, { name: "Ref", url: "https://x.example.com" }, async () => { throw new Error("x"); });
       expect(r.ok).toBe(true);
       vi.restoreAllMocks();

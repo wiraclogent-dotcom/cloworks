@@ -15,6 +15,7 @@ describe("content posts", () => {
   let requester: ContentActor;
   let social: ContentActor;
   let assigneeUser: ContentActor;
+  let secondAssignee: ContentActor;
   let channelId: string;
   const code = async (p: Promise<unknown>) => { try { await p; return null; } catch (e) { return e as ContentError; } };
   const feed = (u: ContentActor) => createPostWith(db.prisma, u, { channelId, surface: "FEED", kind: "PLANNED" });
@@ -34,6 +35,7 @@ describe("content posts", () => {
     requester = await mk("preq@clogent.co.id", "REQUESTER", "OTHER");
     social = await mk("psocial@clogent.co.id", "REQUESTER", "SOCIAL_MEDIA");
     assigneeUser = await mk("passignee@clogent.co.id", "REQUESTER", "OTHER");
+    secondAssignee = await mk("passignee2@clogent.co.id", "REQUESTER", "OTHER");
     const brand = await db.prisma.brand.create({ data: { name: "Post Brand" } });
     channelId = (await createChannelWith(db.prisma, lead, { brandId: brand.id, handle: "postbrand", displayName: "PB" })).id;
   });
@@ -181,12 +183,14 @@ describe("content posts", () => {
     const div = await db.prisma.division.create({ data: { name: "PD" } });
     const type = await db.prisma.requestType.create({ data: { name: "PT" } });
     const req = await db.prisma.request.create({
-      data: { title: "r", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: creative.id, assigneeId: assigneeUser.id },
+      data: { title: "r", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: creative.id },
     });
+    await db.prisma.requestAssignee.createMany({ data: [{ requestId: req.id, userId: assigneeUser.id }, { requestId: req.id, userId: secondAssignee.id }] });
     await db.raw.contentPost.update({ where: { id }, data: { status: "IN_PRODUCTION", requestId: req.id } });
     expect((await code(setPostMediaWith(db.prisma, requester, id, [{ mediaId: m, role: "FINAL" }])))?.code).toBe("FORBIDDEN");
     expect((await code(setPostMediaWith(db.prisma, assigneeUser, id, [{ mediaId: m, role: "MOCKUP" }])))?.code).toBe("LOCKED");
-    await setPostMediaWith(db.prisma, assigneeUser, id, [{ mediaId: m, role: "FINAL" }]);
+    // Any assignee may add finals, not just the first one.
+    await setPostMediaWith(db.prisma, secondAssignee, id, [{ mediaId: m, role: "FINAL" }]);
     expect((await db.prisma.contentPostMedia.findMany({ where: { postId: id } })).map((l) => l.role)).toEqual(["FINAL"]);
     expect((await post(id)).status).toBe("IN_PRODUCTION");
   });

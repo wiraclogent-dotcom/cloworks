@@ -153,4 +153,49 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
     fadli = await kpi("Fadli", "DESIGNER");
     expect(fadli).toMatchObject({ tasksDone: 1, progress: 0.25, totalOutputs: 2, revisionRounds: 1, activeWorkload: 0 }); // reopen is DONE -> ON_PROGRESS, not a FIRST_LOOK revision
   });
+  describe("several assignees", () => {
+    const fresh = async (title: string) => {
+      const main = await state();
+      const r = await createRequestWith(
+        db.prisma,
+        u.Fafa,
+        { title, brandId: main.brandId, divisionId: main.divisionId, typeId: main.typeId, deadline: null, fields: { platform: "Instagram", contentType: "Daily" } },
+        NOW,
+      );
+      return r.id;
+    };
+    const go = (id: string, who: string, to: Parameters<typeof transitionRequestWith>[3], opts = {}) =>
+      transitionRequestWith(db.prisma, u[who], id, to, opts, notifier);
+
+    it("a request with no assignee cannot go to DONE, with the assignee message and no state change", async () => {
+      const id = await fresh("No owner");
+      await go(id, "Fadli", "ON_PROGRESS");
+      await go(id, "Fadli", "FIRST_LOOK");
+      await expect(go(id, "Fadli", "DONE")).rejects.toMatchObject({ code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
+      expect((await db.prisma.request.findUniqueOrThrow({ where: { id } })).status).toBe("FIRST_LOOK");
+      expect(await db.prisma.statusEvent.count({ where: { requestId: id, to: "DONE" } })).toBe(0);
+    });
+
+    it("a request whose legacy assigneeId is set but has no assignee rows still cannot go to DONE", async () => {
+      const id = await fresh("Legacy only");
+      await go(id, "Fadli", "ON_PROGRESS");
+      await go(id, "Fadli", "FIRST_LOOK");
+      await db.prisma.request.update({ where: { id }, data: { assigneeId: u.Fadli.id } });
+      await expect(go(id, "Fadli", "DONE")).rejects.toMatchObject({ code: "INVALID", message: "Request needs an assignee before it can be marked Done" });
+    });
+
+    it("with two assignees it can go to DONE, and the requester and both assignees hear about each change except the actor", async () => {
+      const id = await fresh("Two owners");
+      expect(await setAssigneesWith(db.prisma, u.Idzni, id, [u.Fadli.id, u.Irsyad.id], notifier)).toMatchObject({ ok: true });
+      await go(id, "Fadli", "ON_PROGRESS");
+      await go(id, "Fadli", "FIRST_LOOK");
+      await go(id, "Fadli", "DONE", { outputCount: 1 });
+      expect((await db.prisma.request.findUniqueOrThrow({ where: { id } })).status).toBe("DONE");
+      const status = await db.prisma.notification.findMany({ where: { requestId: id, type: { in: ["STATUS", "DESIGN_SENT"] } } });
+      const by = (uid: string) => status.filter((n) => n.userId === uid).length;
+      expect(by(u.Fafa.id)).toBe(3);
+      expect(by(u.Irsyad.id)).toBe(3);
+      expect(by(u.Fadli.id)).toBe(0);
+    });
+  });
 });

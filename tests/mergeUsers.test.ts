@@ -30,8 +30,11 @@ async function person(extra: Partial<Prisma.UserUncheckedCreateInput> = {}) {
   return db.prisma.user.create({ data: { name, fullName: `${name} Full`, ...extra } });
 }
 
+/** `assigneeId` is written the way the app does: a RequestAssignee row, with the legacy column mirroring it. */
 async function newRequest(requesterId: string, assigneeId: string | null = null) {
-  return db.prisma.request.create({ data: { title: "x", ...base, requesterId, assigneeId } });
+  const req = await db.prisma.request.create({ data: { title: "x", ...base, requesterId, assigneeId } });
+  if (assigneeId) await db.prisma.requestAssignee.create({ data: { requestId: req.id, userId: assigneeId } });
+  return req;
 }
 
 /** One row of every relation to User, all pointing at `userId`. */
@@ -70,7 +73,7 @@ async function countsFor(id: string): Promise<MergeCounts> {
   const p = db.raw;
   return {
     requested: await p.request.count({ where: { requesterId: id } }),
-    assigned: await p.request.count({ where: { assigneeId: id } }),
+    assigned: await p.requestAssignee.count({ where: { userId: id } }),
     statusEvents: await p.statusEvent.count({ where: { actorId: id } }),
     deadlineEvents: await p.deadlineEvent.count({ where: { actorId: id } }),
     comments: await p.comment.count({ where: { authorId: id } }),
@@ -118,6 +121,32 @@ describe("mergeUsers", () => {
     // The survivor keeps its own identity.
     const after = await db.raw.user.findUniqueOrThrow({ where: { id: into.id } });
     expect(after).toMatchObject({ name: into.name, fullName: into.fullName, appRole: into.appRole, jobRole: into.jobRole });
+  });
+
+  it("keeps one assignee row when both people are assigned to the same request, and moves the others", async () => {
+    const from = await person();
+    const into = await person();
+    const third = await person();
+    const both = await newRequest(admin.id);
+    const onlyFrom = await newRequest(admin.id);
+    const three = await newRequest(admin.id);
+    const rows = (requestId: string, userIds: string[]) => db.prisma.requestAssignee.createMany({ data: userIds.map((userId, i) => ({ requestId, userId, addedAt: new Date(Date.UTC(2026, 9, 1, 0, i)) })) });
+    await rows(both.id, [from.id, into.id]);
+    await rows(onlyFrom.id, [from.id]);
+    await rows(three.id, [from.id, third.id, into.id]);
+    await db.prisma.request.updateMany({ where: { id: { in: [both.id, onlyFrom.id, three.id] } }, data: { assigneeId: from.id } });
+    expect((await mergePreview(db.prisma, admin, from.id, into.id)).counts.assigned).toBe(3);
+    await mergeUsers(db.prisma, admin, from.id, into.id);
+    const of = async (id: string) => (await db.raw.requestAssignee.findMany({ where: { requestId: id }, orderBy: { addedAt: "asc" } })).map((r) => r.userId);
+    expect(await of(both.id)).toEqual([into.id]);
+    expect(await of(onlyFrom.id)).toEqual([into.id]);
+    expect(await of(three.id)).toEqual([third.id, into.id]);
+    expect(await db.raw.requestAssignee.count({ where: { userId: from.id } })).toBe(0);
+    // The legacy column follows the first remaining assignee.
+    const legacy = async (id: string) => (await db.raw.request.findUniqueOrThrow({ where: { id } })).assigneeId;
+    expect(await legacy(both.id)).toBe(into.id);
+    expect(await legacy(onlyFrom.id)).toBe(into.id);
+    expect(await legacy(three.id)).toBe(third.id);
   });
 
   it("keeps the survivor's KPI target for a clashing month", async () => {

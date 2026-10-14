@@ -270,4 +270,46 @@ describe("collaboration cores", () => {
       expect(await add("ok", url(2048))).toMatchObject({ ok: true });
     });
   });
+
+  describe("recipients with several assignees", () => {
+    const calls: NotifyInput[] = [];
+    const notifier = async (i: NotifyInput) => { calls.push(i); };
+    let shared: string;
+    beforeEach(async () => {
+      calls.length = 0;
+      const base = await db.prisma.request.findUniqueOrThrow({ where: { id: reqId } });
+      shared = (await db.prisma.request.create({ data: { title: "two owners", brandId: base.brandId, divisionId: base.divisionId, typeId: base.typeId, requesterId: ids.author } })).id;
+      await db.prisma.requestAssignee.createMany({ data: [ids.dimas, ids.irsyad].map((userId) => ({ requestId: shared, userId })) });
+    });
+    const sortedIds = (c: NotifyInput) => [...c.userIds].sort();
+
+    it("a comment notifies the requester and both assignees, not the author", async () => {
+      await addCommentWith(db.prisma, actor("lead", "LEAD"), shared, "looks good", new Date(), notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "COMMENT" });
+      expect(sortedIds(calls[0])).toEqual([ids.author, ids.dimas, ids.irsyad].sort());
+    });
+    it("a comment by an assignee reaches the other assignee and the requester only", async () => {
+      await addCommentWith(db.prisma, actor("dimas", "CREATIVE"), shared, "on it", new Date(), notifier);
+      expect(sortedIds(calls[0])).toEqual([ids.author, ids.irsyad].sort());
+    });
+    it("an assignee who is mentioned gets the mention, not a second comment notice", async () => {
+      await addCommentWith(db.prisma, actor("lead", "LEAD"), shared, "@irsyad please check", new Date(), notifier);
+      const mention = calls.find((c) => c.type === "MENTION");
+      const plain = calls.find((c) => c.type === "COMMENT");
+      expect(mention?.userIds).toEqual([ids.irsyad]);
+      expect(sortedIds(plain!)).toEqual([ids.author, ids.dimas].sort());
+    });
+    it("a link notifies the requester and both assignees, not the uploader", async () => {
+      await addAttachmentWith(db.prisma, actor("dimas", "CREATIVE"), shared, { name: "Final", url: "https://a.com/f" }, notifier);
+      expect(calls).toHaveLength(1);
+      expect(calls[0]).toMatchObject({ type: "ATTACHMENT" });
+      expect(sortedIds(calls[0])).toEqual([ids.author, ids.irsyad].sort());
+    });
+    it("ignores the legacy assigneeId column", async () => {
+      await db.prisma.request.update({ where: { id: shared }, data: { assigneeId: ids.lead } });
+      await addCommentWith(db.prisma, actor("author", "REQUESTER"), shared, "hi", new Date(), notifier);
+      expect(sortedIds(calls[0])).toEqual([ids.dimas, ids.irsyad].sort());
+    });
+  });
 });

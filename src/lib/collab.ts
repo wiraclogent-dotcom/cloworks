@@ -54,7 +54,7 @@ export async function addCommentWith(
   if (!text) return fail("INVALID", "Write a comment before posting.");
   if (text.length > MAX_COMMENT) return fail("INVALID", `Comments can be at most ${MAX_COMMENT} characters.`);
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true, title: true, requesterId: true, assigneeId: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { id: true, title: true, requesterId: true, assignees: { select: { userId: true } } } });
   if (!req) return fail("NOT_FOUND", "Request not found.");
   const mentionedUserIds = await resolveMentions(db, text, user.id);
   const c = await db.comment.create({ data: { requestId, authorId: user.id, body: text, mentions: mentionedUserIds, createdAt: now } });
@@ -64,7 +64,7 @@ export async function addCommentWith(
     const calls: Promise<void>[] = [];
     if (mentionedUserIds.length)
       calls.push(notifier({ actorId: user.id, userIds: mentionedUserIds, requestId, type: "MENTION", message: buildMessage("MENTION", name, req.title) }));
-    const others = [req.requesterId, req.assigneeId].filter((id): id is string => !!id && id !== user.id && !mentionedUserIds.includes(id));
+    const others = [req.requesterId, ...req.assignees.map((a) => a.userId)].filter((id) => id !== user.id && !mentionedUserIds.includes(id));
     if (others.length)
       calls.push(notifier({ actorId: user.id, userIds: [...new Set(others)], requestId, type: "COMMENT", message: buildMessage("COMMENT", name, req.title) }));
     await Promise.allSettled(calls);
@@ -149,11 +149,11 @@ export async function addAttachmentWith(
   if (url.length > MAX_ATTACHMENT_URL) return fail("INVALID", `Links can be at most ${MAX_ATTACHMENT_URL} characters.`);
   if (!isFileLocation(url)) return fail("INVALID", `${FILE_LOCATION_HINT}.`);
   if (!(await activeUser(db, user.id))) return fail("FORBIDDEN", "Your account is not active.");
-  const req = await db.request.findUnique({ where: { id: requestId }, select: { title: true, requesterId: true, assigneeId: true } });
+  const req = await db.request.findUnique({ where: { id: requestId }, select: { title: true, requesterId: true, assignees: { select: { userId: true } } } });
   if (!req) return fail("NOT_FOUND", "Request not found.");
   const a = await db.attachment.create({ data: { requestId, uploaderId: user.id, name, url } });
   // In-app only: a burst of links should not flood anyone's email.
-  const userIds = [...new Set([req.requesterId, req.assigneeId])].filter((id): id is string => !!id && id !== user.id);
+  const userIds = [...new Set([req.requesterId, ...req.assignees.map((a) => a.userId)])].filter((id) => id !== user.id);
   if (userIds.length)
     await bestEffort(async () => {
       const actor = await db.user.findUnique({ where: { id: user.id }, select: { name: true } });

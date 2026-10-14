@@ -4,7 +4,7 @@ import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("request chat", () => {
   let db: TestDb;
-  let R: string, D: string, C: string, M: string, X: string, reqId: string;
+  let R: string, D: string, D2: string, C: string, M: string, X: string, reqId: string;
   let times: Date[];
   let brandId: string, divId: string, typeId: string;
 
@@ -15,12 +15,13 @@ describe("request chat", () => {
     await db.raw.workspace.update({ where: { id: db.workspaceId }, data: { chatSince: new Date(0) } });
     const mk = async (k: string) =>
       (await p.user.create({ data: { email: `${k}@clogent.co.id`, name: k, fullName: k, appRole: "REQUESTER", jobRole: "OTHER" } })).id;
-    [R, D, C, M, X] = [await mk("r"), await mk("d"), await mk("c"), await mk("m"), await mk("x")];
+    [R, D, D2, C, M, X] = [await mk("r"), await mk("d"), await mk("d2"), await mk("c"), await mk("m"), await mk("x")];
     const brand = await p.brand.create({ data: { name: "B" } });
     const div = await p.division.create({ data: { name: "D" } });
     const type = await p.requestType.create({ data: { name: "T" } });
     [brandId, divId, typeId] = [brand.id, div.id, type.id];
-    reqId = (await p.request.create({ data: { title: "x", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: R, assigneeId: D } })).id;
+    reqId = (await p.request.create({ data: { title: "x", brandId: brand.id, divisionId: div.id, typeId: type.id, requesterId: R } })).id;
+    await p.requestAssignee.createMany({ data: [D, D2].map((userId) => ({ requestId: reqId, userId })) });
     times = [1, 2, 3].map((i) => new Date(Date.UTC(2026, 9, i)));
     for (const [i, at] of times.entries())
       await p.comment.create({ data: { requestId: reqId, authorId: C, body: `c${i}`, mentions: i === 0 ? [M] : [], createdAt: at } });
@@ -28,12 +29,12 @@ describe("request chat", () => {
   afterAll(async () => { await db?.stop(); });
 
   it("participantWhere finds the request for R, D, C and M but not X", async () => {
-    for (const u of [R, D, C, M]) expect(await db.prisma.request.count({ where: participantWhere(u) })).toBe(1);
+    for (const u of [R, D, D2, C, M]) expect(await db.prisma.request.count({ where: participantWhere(u) })).toBe(1);
     expect(await db.prisma.request.count({ where: participantWhere(X) })).toBe(0);
   });
 
   it("classifies participants", async () => {
-    for (const u of [R, D, C, M]) expect(await isParticipantWith(db.prisma, u, reqId)).toBe("yes");
+    for (const u of [R, D, D2, C, M]) expect(await isParticipantWith(db.prisma, u, reqId)).toBe("yes");
     expect(await isParticipantWith(db.prisma, X, reqId)).toBe("no");
     expect(await isParticipantWith(db.prisma, R, "nope")).toBe("missing");
   });
@@ -45,6 +46,23 @@ describe("request chat", () => {
     expect(await chatUnreadCountWith(db.prisma, me(X))).toBe(0);
     await markChatReadWith(db.prisma, R, reqId, times[1]);
     expect(await chatUnreadCountWith(db.prisma, me(R))).toBe(1);
+  });
+
+  it("the second assignee sees the request in their unread count", async () => {
+    expect(await chatUnreadCountWith(db.prisma, { id: D2, workspaceId: db.workspaceId })).toBe(3);
+    expect(await latestUnreadChatWith(db.prisma, { id: D2, workspaceId: db.workspaceId })).toMatchObject({ requestId: reqId });
+  });
+
+  it("the legacy assigneeId column alone no longer makes someone a participant", async () => {
+    const stray = await db.prisma.request.create({ data: { title: "legacy", brandId, divisionId: divId, typeId, requesterId: R, assigneeId: X } });
+    await db.prisma.comment.create({ data: { requestId: stray.id, authorId: C, body: "hi", createdAt: new Date(Date.UTC(2026, 9, 4)) } });
+    try {
+      expect(await isParticipantWith(db.prisma, X, stray.id)).toBe("no");
+      expect(await chatUnreadCountWith(db.prisma, { id: X, workspaceId: db.workspaceId })).toBe(0);
+    } finally {
+      await db.prisma.comment.deleteMany({ where: { requestId: stray.id } });
+      await db.prisma.request.delete({ where: { id: stray.id } });
+    }
   });
 
   it("never moves the read position back and keeps one row", async () => {

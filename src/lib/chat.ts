@@ -21,12 +21,12 @@ export type ChatSummary = {
   unread: number;
 };
 
-/** Requests whose chat `userId` belongs to: requester, assignee, any comment author, or anyone mentioned in a comment. */
+/** Requests whose chat `userId` belongs to: requester, any assignee, any comment author, or anyone mentioned in a comment. */
 export function participantWhere(userId: string): Prisma.RequestWhereInput {
   return {
     OR: [
       { requesterId: userId },
-      { assigneeId: userId },
+      { assignees: { some: { userId } } },
       { comments: { some: { authorId: userId } } },
       { comments: { some: { mentions: { has: userId } } } },
     ],
@@ -71,7 +71,8 @@ function unreadFrom(me: { id: string; workspaceId: string }): Prisma.Sql {
     WHERE c."workspaceId" = ${me.workspaceId} AND r."workspaceId" = ${me.workspaceId}
       AND c."authorId" <> ${me.id}
       AND c."createdAt" > COALESCE(cr."lastReadAt", w."chatSince")
-      AND (r."requesterId" = ${me.id} OR r."assigneeId" = ${me.id}
+      AND (r."requesterId" = ${me.id}
+           OR EXISTS (SELECT 1 FROM "RequestAssignee" ra WHERE ra."requestId" = r.id AND ra."userId" = ${me.id})
            OR EXISTS (SELECT 1 FROM "Comment" c2 WHERE c2."requestId" = r.id
                       AND (c2."authorId" = ${me.id} OR ${me.id} = ANY(c2.mentions))))`;
 }
