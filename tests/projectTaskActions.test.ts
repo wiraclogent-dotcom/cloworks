@@ -93,7 +93,6 @@ describe("project task and milestone actions", () => {
       // CANCELLED is a project-level status only: a tracker row can't be set to it.
       expect(await setTaskStatus(projectId, a.id, "CANCELLED")).toMatchObject({ ok: false, code: "VALIDATION" });
       expect((await db.prisma.projectTask.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DONE");
-      expect((await db.prisma.projectTask.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DONE");
     });
     it("createTaskDetail rejects CANCELLED as a tracker status", async () => {
       await seed(["A"], { status: "IN_PROGRESS" });

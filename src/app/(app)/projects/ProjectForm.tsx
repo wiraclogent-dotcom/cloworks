@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
 import { Button, buttonClass } from "@/components/ui/Button";
 import { Card, CardTitle } from "@/components/ui/Card";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
 
 type Opt = { id: string; name: string };
@@ -15,7 +16,7 @@ type Opt = { id: string; name: string };
 function Field({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
+      <label id={`${id}-label`} htmlFor={id} className={labelClass}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
       {children}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
@@ -30,6 +31,12 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
   const v = state?.values ?? initial;
   const props = (k: string, kind: "input" | "select" = "input") => ({
     id: k, name: k, className: fieldClass({ kind, invalid: !!errs[k] }),
+    "aria-invalid": errs[k] ? (true as const) : undefined,
+    "aria-describedby": errs[k] ? `${k}-error` : undefined,
+  });
+  // The picker keeps the field's id/name (a hidden input carries YYYY-MM-DD to the server action) and the label/error wiring.
+  const dateProps = (k: string) => ({
+    id: k, name: k, "aria-labelledby": `${k}-label`,
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -83,10 +90,10 @@ export function ProjectForm({ brands, owners, initial, projectId }: { brands: Op
       <CardTitle>Schedule and file</CardTitle>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="startDate" label="Start date" error={errs.startDate}>
-          <input {...props("startDate")} type="date" defaultValue={v?.startDate} />
+          <DatePicker {...dateProps("startDate")} value={v?.startDate || null} allowClear />
         </Field>
         <Field id="dueDate" label="Due date" error={errs.dueDate}>
-          <input {...props("dueDate")} type="date" defaultValue={v?.dueDate} />
+          <DatePicker {...dateProps("dueDate")} value={v?.dueDate || null} allowClear />
         </Field>
       </div>
       <Field id="fileUrl" label="File link" error={errs.fileUrl}>
