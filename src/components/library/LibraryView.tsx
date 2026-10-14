@@ -32,7 +32,7 @@ export type LibraryViewProps = {
 const chipClass = (on: boolean) =>
   cn(
     "inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
-    on ? "border-transparent bg-accent text-accent-foreground" : "border-border-strong bg-surface text-foreground hover:bg-surface-muted",
+    on ? "border-transparent bg-accent text-accent-foreground" : "border-border-strong bg-card text-foreground hover:bg-muted",
     focusRing,
   );
 
@@ -91,7 +91,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative block">
           <span className="sr-only">Search library</span>
-          <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-foreground-secondary" />
+          <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             value={q}
@@ -155,7 +155,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           {pinned.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />Pinned</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />Pinned</CardTitle>
               </CardHeader>
               <div className="space-y-0.5">
                 {pinned.map((r) => renderRow(r, true))}
@@ -168,7 +168,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
               <Card key={c.id}>
                 <CardHeader actions={<CountPill value={items.length} aria-label={`${items.length} links`} />}>
                   <CardTitle className="flex items-center gap-2">
-                    <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />
+                    <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />
                     {c.name}
                   </CardTitle>
                 </CardHeader>
@@ -178,7 +178,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-foreground-secondary">No links in this category yet.</p>
+                    <p className="text-sm text-muted-foreground">No links in this category yet.</p>
                     {canManage ? <Button size="sm" variant="secondary" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
                   </div>
                 )}

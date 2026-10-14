@@ -72,13 +72,8 @@ Run `npm run typecheck` and the tests that cover the screens you touched.
 | Status colours | `data-tone="<tone>"` + `bg-tone-tint text-tone-text border-tone-accent` |
 | Brand | `brand-*` (landing, auth and emails only) |
 
-**Aliases being retired (don't use in new code):**
-
-| Alias | Same value as |
-|---|---|
-| `bg-surface` | `bg-card` (or `bg-popover` in overlays) |
-| `bg-surface-muted` | `bg-muted` |
-| `text-foreground-secondary` | `text-muted-foreground` |
+The old aliases `bg-surface`, `bg-surface-muted` and `text-foreground-secondary` were removed; use `bg-card` (or
+`bg-popover` in overlays), `bg-muted` and `text-muted-foreground`. `tests/tokenNames.test.ts` fails if one comes back.
 
 Tones (`src/lib/palette.ts`): `requested`, `in-progress`, `first-look`, `done`, `cancelled`, `needs-motion`, `due-soon`,
 `overdue`, `tag-clogent`, `tag-bubble-wash`, `tag-neutral`. Example (board column top bar):

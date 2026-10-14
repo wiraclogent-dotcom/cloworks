@@ -49,7 +49,7 @@ function ExtLink({ href, children, className }: { href: string; children: React.
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3 py-2 text-sm">
-      <dt className="text-[13px] text-foreground-secondary">{label}</dt>
+      <dt className="text-[13px] text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-words text-foreground">{children}</dd>
     </div>
   );
@@ -80,7 +80,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
     <article className="@container">
       {fullPage ? null : (
         <nav aria-label="Breadcrumb" className="mb-2">
-          <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-foreground-secondary hover:text-foreground", focusRing)}>
+          <Link href="/requests" className={cn("inline-flex items-center gap-1 rounded-md text-[13px] font-medium text-muted-foreground hover:text-foreground", focusRing)}>
             <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />Requests
           </Link>
         </nav>
@@ -106,12 +106,12 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                 {req.briefUrl ? (
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <ExtLink href={req.briefUrl} className={buttonClass({ variant: "secondary", size: "sm" })}><FileText aria-hidden="true" strokeWidth={1.75} />Open brief<ExternalLink aria-hidden="true" strokeWidth={1.75} /></ExtLink>
-                    <span className="min-w-0 truncate text-xs text-foreground-secondary" title={req.briefUrl}>{req.briefUrl}</span>
+                    <span className="min-w-0 truncate text-xs text-muted-foreground" title={req.briefUrl}>{req.briefUrl}</span>
                   </div>
                 ) : null}
                 {req.notes ? (
                   <div>
-                    <h3 className="mb-1 text-[13px] font-medium text-foreground-secondary">Notes</h3>
+                    <h3 className="mb-1 text-[13px] font-medium text-muted-foreground">Notes</h3>
                     <p className="text-sm break-words whitespace-pre-wrap text-foreground">{req.notes}</p>
                   </div>
                 ) : null}
@@ -124,7 +124,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                     ))}
                   </dl>
                 )}
-                {!req.briefUrl && !req.notes && extra.length === 0 && <p className="text-sm text-foreground-secondary">No brief link or notes were added.</p>}
+                {!req.briefUrl && !req.notes && extra.length === 0 && <p className="text-sm text-muted-foreground">No brief link or notes were added.</p>}
               </div>
             </section>
           </Card>
@@ -133,15 +133,15 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="files-h">
               <CardHeader className="mb-2"><CardTitle id="files-h">Attachments</CardTitle></CardHeader>
               {req.attachments.length === 0 ? (
-                <p className="mb-4 text-sm text-foreground-secondary">No links yet.</p>
+                <p className="mb-4 text-sm text-muted-foreground">No links yet.</p>
               ) : (
                 <ul className="mb-4 divide-y divide-border">
                   {req.attachments.map((a) => (
                     <li key={a.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-sm">
-                      <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground-secondary"><Link2 strokeWidth={1.75} className="size-4" /></span>
+                      <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"><Link2 strokeWidth={1.75} className="size-4" /></span>
                       <span className="min-w-0 flex-1">
                         <span className="block font-medium"><FileLocationLink href={a.url} name={a.name} className={LINK}>{a.name}</FileLocationLink></span>
-                        <span className="block text-xs text-foreground-secondary">added by {a.uploader.name}, {day.format(a.createdAt)}</span>
+                        <span className="block text-xs text-muted-foreground">added by {a.uploader.name}, {day.format(a.createdAt)}</span>
                       </span>
                       {(a.uploaderId === userId || canAssign) && <RemoveAttachmentButton requestId={req.id} attachmentId={a.id} name={a.name} />}
                     </li>
@@ -156,15 +156,15 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="comments-h">
               <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <CountPill value={req.comments.length} /></CardTitle></CardHeader>
               {req.comments.length === 0 ? (
-                <p className="mb-4 text-sm text-foreground-secondary">No comments yet.</p>
+                <p className="mb-4 text-sm text-muted-foreground">No comments yet.</p>
               ) : (
                 <ol className="mb-4 space-y-4">
                   {req.comments.map((c) => (
                     <li key={c.id} className="animate-rise flex gap-3">
                       <Avatar name={c.author.name} decorative className="mt-0.5" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs text-foreground-secondary"><span className="text-sm font-medium text-foreground">{c.author.name}</span> · <time dateTime={c.createdAt.toISOString()} className="tabular-nums">{stamp.format(c.createdAt)} WIB</time></p>
-                        <p className="mt-1 rounded-lg bg-surface-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
+                        <p className="text-xs text-muted-foreground"><span className="text-sm font-medium text-foreground">{c.author.name}</span> · <time dateTime={c.createdAt.toISOString()} className="tabular-nums">{stamp.format(c.createdAt)} WIB</time></p>
+                        <p className="mt-1 rounded-lg bg-muted px-3 py-2 text-sm break-words whitespace-pre-wrap text-foreground">
                           {splitMentions(c.body).map((s, i) => s.mention ? <strong key={i} className="rounded bg-accent px-0.5 font-semibold text-accent-foreground underline decoration-dotted">{s.text}</strong> : <span key={i}>{s.text}</span>)}
                         </p>
                       </div>
@@ -180,23 +180,23 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="history-h">
               <CardTitle id="history-h">Activity</CardTitle>
               {activity.length === 0 ? (
-                <p className="mt-3 text-sm text-foreground-secondary">No activity yet.</p>
+                <p className="mt-3 text-sm text-muted-foreground">No activity yet.</p>
               ) : (
                 <ol className="relative mt-3 space-y-4 before:absolute before:top-1.5 before:bottom-1.5 before:left-[5px] before:w-px before:bg-border" data-timeline="">
                   {activity.map((a) => (
                     <li key={`${a.kind}-${a.e.id}`} className="relative pl-6 text-sm">
                       {a.kind === "status" ? (
                         <>
-                          <span aria-hidden="true" data-tone={REQUEST_STATUS_TONE[a.e.to]} className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-surface" />
+                          <span aria-hidden="true" data-tone={REQUEST_STATUS_TONE[a.e.to]} className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-card" />
                           <p className="text-foreground">{a.e.from ? <>{STATUS_LABEL[a.e.from]} → <strong className="font-semibold">{STATUS_LABEL[a.e.to]}</strong></> : <>Created as <strong className="font-semibold">{STATUS_LABEL[a.e.to]}</strong></>}</p>
                         </>
                       ) : (
                         <>
-                          <span aria-hidden="true" data-tone="due-soon" className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-surface" />
+                          <span aria-hidden="true" data-tone="due-soon" className="absolute top-1.5 left-0 size-[11px] rounded-full bg-tone-accent ring-[3px] ring-card" />
                           <p className="text-foreground">{a.e.from ? <>Deadline moved from {shortLabel(a.e.from)} to <strong className="font-semibold">{shortLabel(a.e.to)}</strong></> : <>Deadline set to <strong className="font-semibold">{shortLabel(a.e.to)}</strong></>}</p>
                         </>
                       )}
-                      <p className="text-xs text-foreground-secondary">{a.e.actor.name} · <time dateTime={a.e.at.toISOString()} className="tabular-nums">{stamp.format(a.e.at)} WIB</time></p>
+                      <p className="text-xs text-muted-foreground">{a.e.actor.name} · <time dateTime={a.e.at.toISOString()} className="tabular-nums">{stamp.format(a.e.at)} WIB</time></p>
                     </li>
                   ))}
                 </ol>
@@ -212,7 +212,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
               <dl className="mt-2 divide-y divide-border">
                 <Row label="Requester"><Person name={req.requester.name} /></Row>
                 <Row label={people.length > 1 ? "Assignees" : "Assignee"}>
-                  {people.length > 0 ? <span className="flex flex-col gap-1.5">{people.map((p) => <Person key={p.id} name={p.name} />)}</span> : <span className="flex items-center gap-2 text-foreground-secondary"><UnassignedAvatar size="sm" decorative />Unassigned</span>}
+                  {people.length > 0 ? <span className="flex flex-col gap-1.5">{people.map((p) => <Person key={p.id} name={p.name} />)}</span> : <span className="flex items-center gap-2 text-muted-foreground"><UnassignedAvatar size="sm" decorative />Unassigned</span>}
                 </Row>
                 <Row label="Brand"><BrandTag name={req.brand.name} /></Row>
                 <Row label="Division">{req.division.name}</Row>
@@ -221,7 +221,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
                 <Row label="Deadline">
                   {req.deadline
                     ? <span className="flex flex-wrap items-center gap-2"><span className="tabular-nums">{day.format(req.deadline)}</span>{open && daysLeft !== null && <DeadlineChip daysLeft={daysLeft} />}</span>
-                    : <span className="text-foreground-secondary">No deadline</span>}
+                    : <span className="text-muted-foreground">No deadline</span>}
                 </Row>
                 {req.status === "DONE" && <Row label="Outputs"><span className="tabular-nums">{req.outputCount}</span></Row>}
                 {req.designFolderUrl && (

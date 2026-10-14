@@ -8,7 +8,7 @@ export function PersonHeading({ person, headingId }: { person: TimelinePerson; h
       {person.assigneeId ? <Avatar name={person.name} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
       <div className="min-w-0">
         <h3 id={headingId} className="truncate text-sm font-medium text-foreground">{person.name}</h3>
-        <p className="text-xs text-foreground-secondary tabular-nums">{`${person.count} open`}</p>
+        <p className="text-xs text-muted-foreground tabular-nums">{`${person.count} open`}</p>
       </div>
     </div>
   );

@@ -44,7 +44,7 @@ export function TargetEditor({ userId, name, month, role, initial }: { userId: s
         icon={<Check aria-hidden="true" />} className="w-8 shrink-0 px-0">
         <span className="sr-only">{pending ? "Saving…" : "Save"}</span>
       </Button>
-      <span role="status" aria-live="polite" className={cn("w-full text-xs empty:hidden", status?.kind === "error" ? "text-danger" : "text-foreground-secondary")}>
+      <span role="status" aria-live="polite" className={cn("w-full text-xs empty:hidden", status?.kind === "error" ? "text-danger" : "text-muted-foreground")}>
         {status?.text}
       </span>
     </form>

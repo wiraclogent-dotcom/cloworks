@@ -51,7 +51,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
           <Button type="submit" size="sm" variant="primary" disabled={pending}>Save</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setDraft(url ?? ""); setError(null); setEditing(false); }}>Cancel</Button>
         </div>
-        <p className="text-xs text-foreground-secondary">Leave empty to remove the link.</p>
+        <p className="text-xs text-muted-foreground">Leave empty to remove the link.</p>
         {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       </form>
     );
@@ -65,7 +65,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
       {url ? (
         <FileLocationLink href={url} name={text} className="text-link underline-offset-2 hover:underline">{text}</FileLocationLink>
       ) : (
-        <span className="text-foreground-secondary">{text}</span>
+        <span className="text-muted-foreground">{text}</span>
       )}
       {error && <span role="alert" className="text-xs text-danger">{error}</span>}
     </div>

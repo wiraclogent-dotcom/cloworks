@@ -14,7 +14,7 @@ export function Switch({ id, label, description, checked, disabled, onChange, de
     <label htmlFor={id} className={cn("flex cursor-pointer items-center justify-between gap-3 text-sm", disabled && "cursor-not-allowed opacity-70", className)}>
       <span className="min-w-0">
         <span className="block font-medium text-foreground">{label}</span>
-        {description ? <span className="block text-xs text-foreground-secondary">{description}</span> : null}
+        {description ? <span className="block text-xs text-muted-foreground">{description}</span> : null}
       </span>
       <span className="relative inline-flex shrink-0">
         <input id={id} type="checkbox" role="switch" checked={checked} disabled={disabled} onChange={onChange} aria-describedby={describedBy}
@@ -25,7 +25,7 @@ export function Switch({ id, label, description, checked, disabled, onChange, de
             "peer-checked:bg-primary peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring",
             "peer-checked:[&>span]:translate-x-4",
           )}>
-          <span className="size-4 rounded-full bg-surface shadow-card transition-transform duration-150 ease-out" />
+          <span className="size-4 rounded-full bg-card shadow-card transition-transform duration-150 ease-out" />
         </span>
       </span>
     </label>

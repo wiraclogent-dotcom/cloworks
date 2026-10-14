@@ -88,8 +88,8 @@ function Picker({ userId, name, year, projects, onClose }: {
           </select>
         </div>
 
-        {loading ? <p role="status" className="text-sm text-foreground-secondary">Loading items…</p> : null}
-        {options && options.length === 0 ? <p className="text-sm text-foreground-secondary">This project has no items yet.</p> : null}
+        {loading ? <p role="status" className="text-sm text-muted-foreground">Loading items…</p> : null}
+        {options && options.length === 0 ? <p className="text-sm text-muted-foreground">This project has no items yet.</p> : null}
         {options && options.length > 0 ? (
           <fieldset className="space-y-1">
             <legend className={labelClass}>Items to add as targets for {name}</legend>
@@ -99,13 +99,13 @@ function Picker({ userId, name, year, projects, onClose }: {
                 const others = o.assignedTo.filter((a) => a.userId !== userId);
                 return (
                   <li key={o.itemTitle}>
-                    <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm text-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:text-foreground-secondary">
+                    <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm text-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:text-muted-foreground">
                       <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" disabled={mine} checked={mine || picked.has(o.itemTitle)}
                         onChange={() => toggle(o.itemTitle)} />
                       <span className="min-w-0 break-words">
                         {o.itemTitle}
-                        {mine ? <span className="ml-1.5 text-xs text-foreground-secondary">(already a target)</span> : null}
-                        {others.length > 0 ? <span className="ml-1.5 text-xs text-foreground-secondary">{`· also ${others.map((a) => a.name).join(", ")}`}</span> : null}
+                        {mine ? <span className="ml-1.5 text-xs text-muted-foreground">(already a target)</span> : null}
+                        {others.length > 0 ? <span className="ml-1.5 text-xs text-muted-foreground">{`· also ${others.map((a) => a.name).join(", ")}`}</span> : null}
                       </span>
                     </label>
                   </li>

@@ -56,7 +56,7 @@ function DeletePost({ postId, closeHref }: { postId: string; closeHref: string }
       {error ? <p role="alert" className="mr-auto text-xs text-danger">{error}</p> : null}
       {confirming ? (
         <>
-          <span className="text-[13px] text-foreground-secondary">Delete this post and its media?</span>
+          <span className="text-[13px] text-muted-foreground">Delete this post and its media?</span>
           <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>Keep</Button>
           <Button size="sm" variant="danger" loading={pending} onClick={remove}>Delete</Button>
         </>
@@ -102,7 +102,7 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
   const published = post.kind === "PUBLISHED";
   return (
     <aside aria-label="Post details"
-      className={cn("flex flex-col gap-4 bg-surface p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
+      className={cn("flex flex-col gap-4 bg-card p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
         "xl:rounded-xl xl:border xl:border-border xl:shadow-card")}>
       <header className="flex items-center gap-2">
         {approveForm ? <h2 className="text-sm font-semibold text-foreground">Approve &amp; create request</h2> : (
@@ -116,7 +116,7 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
           </>
         )}
         <Link href={closeHref} aria-label="Close" title="Close"
-          className={cn("ml-auto flex size-8 items-center justify-center rounded-lg text-foreground-secondary hover:bg-surface-muted hover:text-foreground [&_svg]:size-4", focusRing)}>
+          className={cn("ml-auto flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-4", focusRing)}>
           <X aria-hidden="true" />
         </Link>
       </header>
@@ -127,10 +127,10 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
           onApproved={(id) => { setApproveForm(null); setRequestId(id); router.refresh(); }} />
       ) : (
         <>
-          {lock ? <p className="text-xs text-foreground-secondary" suppressHydrationWarning>{lock}</p> : null}
+          {lock ? <p className="text-xs text-muted-foreground" suppressHydrationWarning>{lock}</p> : null}
           {request ? (
             <Link href={`/requests/${request.id}`}
-              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-surface-muted [&_svg]:size-4", focusRing)}>
+              className={cn("flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px] font-medium text-foreground hover:bg-muted [&_svg]:size-4", focusRing)}>
               <span className="flex-1">{request.status ? `View request · ${REQUEST_STATUS_LABEL[request.status]}` : "View request"}</span>
               <ExternalLink aria-hidden="true" />
             </Link>

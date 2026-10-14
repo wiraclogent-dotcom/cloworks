@@ -19,7 +19,7 @@ function DayUnderlay({ days }: { days: TimelineDay[] }) {
   return (
     <div aria-hidden="true" className={cn(DAY_GRID, "pointer-events-none absolute inset-0")}>
       {days.map((d) => (
-        <div key={d.day} className={cn("border-l border-border first:border-l-0", d.isDayOff && "bg-surface-muted", d.isToday && "border-x-2 border-ring")} />
+        <div key={d.day} className={cn("border-l border-border first:border-l-0", d.isDayOff && "bg-muted", d.isToday && "border-x-2 border-ring")} />
       ))}
     </div>
   );
@@ -43,13 +43,13 @@ function Bar({ bar, row, lane, ownerId }: { bar: TimelineBar; row: TimelineRow; 
         {/* Background layer first; the content layer below is positioned, so it paints on top of the tail. */}
         {tailPct > 0 && <span data-overdue-tail="" data-tone="overdue" aria-hidden="true" className="absolute inset-y-0 right-0 bg-tone-tint" style={{ width: `${tailPct}%` }} />}
         <span data-bar-content="" aria-hidden="true" className="relative flex min-w-0 flex-1 items-center gap-1">
-          {bar.clippedStart && <ChevronLeft data-clipped="start" strokeWidth={2} className="-ml-1 size-3.5 shrink-0 text-foreground-secondary" />}
-          <span className="inline-flex shrink-0 text-foreground-secondary"><StatusIcon status={row.status} /></span>
+          {bar.clippedStart && <ChevronLeft data-clipped="start" strokeWidth={2} className="-ml-1 size-3.5 shrink-0 text-muted-foreground" />}
+          <span className="inline-flex shrink-0 text-muted-foreground"><StatusIcon status={row.status} /></span>
           <span className="min-w-0 flex-1 truncate font-medium text-foreground">{row.title}</span>
-          {bar.shared && <Users data-shared-icon="" strokeWidth={1.75} className="size-3.5 shrink-0 text-foreground-secondary" />}
-          {bar.noDeadline && <span className="shrink-0 text-foreground-secondary">No deadline</span>}
+          {bar.shared && <Users data-shared-icon="" strokeWidth={1.75} className="size-3.5 shrink-0 text-muted-foreground" />}
+          {bar.noDeadline && <span className="shrink-0 text-muted-foreground">No deadline</span>}
           {bar.overdue && <span data-overdue-label="" data-tone="overdue" className="shrink-0 font-medium text-tone-text">Overdue</span>}
-          {bar.clippedEnd && <ChevronRight data-clipped="end" strokeWidth={2} className="-mr-1 size-3.5 shrink-0 text-foreground-secondary" />}
+          {bar.clippedEnd && <ChevronRight data-clipped="end" strokeWidth={2} className="-mr-1 size-3.5 shrink-0 text-muted-foreground" />}
         </span>
       </Link>
     </li>
@@ -81,7 +81,7 @@ export function TimelineChart({ days, persons, rows }: { days: TimelineDay[]; pe
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
       <div className="min-w-[61rem]">
-        <div className={cn(ROW_GRID, "bg-surface-muted text-xs font-medium text-foreground-secondary")}>
+        <div className={cn(ROW_GRID, "bg-muted text-xs font-medium text-muted-foreground")}>
           <div className="border-r border-border px-3 py-2">Person</div>
           <div className={DAY_GRID}>
             {days.map((d) => (

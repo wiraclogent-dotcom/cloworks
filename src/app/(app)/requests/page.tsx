@@ -66,7 +66,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         </>}
         actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
       {p.view === "board" ? (
-        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-surface-muted" />}><TodayLoader /></Suspense>
+        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-muted" />}><TodayLoader /></Suspense>
       ) : null}
       {/* One toolbar row: the view switcher, then the filters (they wrap under it on narrow screens). */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-3">

@@ -55,7 +55,7 @@ export function ProjectRowsTable({ rows, canManage, now }: { rows: ProjectRow[];
               <tr key={p.id} className={t.tr}>
                 <th scope="row" className={t.rowHeader}>
                   <Link href={`/projects/${p.id}`} className="line-clamp-2 underline-offset-2 hover:underline">{p.title}</Link>
-                  {p.subTitle && <span className="block truncate text-xs font-normal text-foreground-secondary">{p.subTitle}</span>}
+                  {p.subTitle && <span className="block truncate text-xs font-normal text-muted-foreground">{p.subTitle}</span>}
                 </th>
                 <td className={t.td}>
                   <span className="flex min-w-0 items-center gap-2">
@@ -79,7 +79,7 @@ export function ProjectRowsTable({ rows, canManage, now }: { rows: ProjectRow[];
                     </a>
                   ) : p.fileUrl && isServerPath(p.fileUrl) ? (
                     <FileLocationLink href={p.fileUrl}>{p.fileUrl}</FileLocationLink>
-                  ) : <span className="text-foreground-secondary">—</span>}
+                  ) : <span className="text-muted-foreground">—</span>}
                 </td>
                 {canManage && (
                   <td className={cn(t.td, "text-right")}>
@@ -117,9 +117,9 @@ export function ProjectTable({ rows, canManage, now, emptyTitle = "No projects y
         return (
           <section key={g.brand ?? "__none"} aria-labelledby={hid} className={cn(gi > 0 && "border-t border-border")}>
             <div data-tone={g.brand ? brandTone(g.brand) : "tag-neutral"} data-group-header=""
-              className="flex items-center gap-2 border-l-4 border-tone-accent bg-surface-muted px-4 py-2.5">
+              className="flex items-center gap-2 border-l-4 border-tone-accent bg-muted px-4 py-2.5">
               <h2 id={hid} className="text-[15px] font-semibold text-foreground">{g.brand ?? "No brand"}</h2>
-              <CountPill value={g.projects.length} aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-surface" />
+              <CountPill value={g.projects.length} aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-card" />
             </div>
             <ProjectRowsTable rows={g.projects} canManage={canManage} now={now} />
           </section>

@@ -37,12 +37,12 @@ export function BriefDayDialog({ day, items, onClose }: { day: string; items: Br
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 id={titleId} className="text-base font-semibold text-heading">{dayLabel(day)}</h2>
-            <p className="mt-0.5 text-sm text-foreground-secondary tabular-nums">{count}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{count}</p>
           </div>
           <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
         </div>
         {groups.size === 0 ? (
-          <p className="text-sm text-foreground-secondary">No briefs this day.</p>
+          <p className="text-sm text-muted-foreground">No briefs this day.</p>
         ) : (
           <div className="space-y-4">
             {[...groups].map(([id, g]) => (
@@ -50,9 +50,9 @@ export function BriefDayDialog({ day, items, onClose }: { day: string; items: Br
                 <h3 className="mb-1.5 text-sm font-semibold text-foreground">{g.name}</h3>
                 <ul className="space-y-1.5">
                   {g.items.map((it) => (
-                    <li key={it.id} className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-surface p-2">
+                    <li key={it.id} className="flex min-w-0 flex-col gap-1 rounded-lg border border-border bg-card p-2">
                       <Link href={`/requests/${it.id}`} className={cn("truncate text-sm font-medium text-link hover:underline", focusRing)}>{it.title}</Link>
-                      <span className="flex items-center gap-2 text-xs text-foreground-secondary">
+                      <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         {it.typeName}
                         <StatusBadge status={it.status} />
                       </span>

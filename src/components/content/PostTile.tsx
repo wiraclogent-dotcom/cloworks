@@ -51,7 +51,7 @@ export function PostTile({ tile, channelId, tab, published = false, selected = f
 }) {
   return (
     <Link href={planHref({ channel: channelId, tab, post: tile.id })} aria-label={tileLabel(tile, published)} aria-current={selected ? "true" : undefined}
-      className={cn("relative block overflow-hidden bg-surface-muted", TILE_ASPECT[tab], focusRing,
+      className={cn("relative block overflow-hidden bg-muted", TILE_ASPECT[tab], focusRing,
         !tile.coverUrl && STRIPES, published && "opacity-50 hover:opacity-80",
         selected && "outline-3 -outline-offset-3 outline-primary")}>
       {tile.coverUrl ? (

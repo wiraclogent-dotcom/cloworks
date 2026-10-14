@@ -68,8 +68,8 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       {kpi.excluded.length > 0 ? (
         <section aria-labelledby="not-scored" className="space-y-2">
           <div>
-            <Heading id="not-scored" className="text-sm font-semibold text-foreground-secondary">Not scored</Heading>
-            <p className="text-xs text-foreground-secondary">Cancelled items and items removed from their project do not count.</p>
+            <Heading id="not-scored" className="text-sm font-semibold text-muted-foreground">Not scored</Heading>
+            <p className="text-xs text-muted-foreground">Cancelled items and items removed from their project do not count.</p>
           </div>
           <TargetList items={kpi.excluded} canManage={canManage} muted />
         </section>
@@ -79,7 +79,7 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
         <details className="group rounded-xl border border-border bg-card shadow-card">
           <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-foreground select-none">Other work ({kpi.otherWork.length})</summary>
           <div className="border-t border-border">
-            <p className="px-4 pt-3 text-xs text-foreground-secondary">Items this person owns rows in that are not targets. Not scored.</p>
+            <p className="px-4 pt-3 text-xs text-muted-foreground">Items this person owns rows in that are not targets. Not scored.</p>
             <TargetList items={kpi.otherWork} canManage={false} muted bare />
           </div>
         </details>

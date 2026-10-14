@@ -146,7 +146,7 @@ export function ConfirmAction({
         </Button>
       )}
       {state && (
-        <p id={`${prefix}-msg`} role={failed ? "alert" : "status"} className={cn("text-[13px] font-medium", failed ? "text-danger" : "text-foreground-secondary")}>
+        <p id={`${prefix}-msg`} role={failed ? "alert" : "status"} className={cn("text-[13px] font-medium", failed ? "text-danger" : "text-muted-foreground")}>
           {failed ? `Error: ${state.message}` : state.message}
         </p>
       )}

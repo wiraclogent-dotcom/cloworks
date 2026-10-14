@@ -29,7 +29,7 @@ export type RowActions = {
   onMove: (dir: "up" | "down") => void;
 };
 
-const itemClass = "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-55 " + focusRing;
+const itemClass = "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55 " + focusRing;
 
 /** Editor-only "…" menu: button with aria-haspopup/aria-expanded and a list of menu items. */
 function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
@@ -52,7 +52,7 @@ function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
     <div ref={ref} className="relative shrink-0" onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}>
       <IconButton size="sm" aria-label={`Actions for ${row.title}`} aria-haspopup="menu" aria-expanded={open} icon={<Ellipsis />} onClick={() => setOpen((o) => !o)} />
       {open ? (
-        <div role="menu" aria-label={`Actions for ${row.title}`} className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-surface p-1 shadow-raised [&_svg]:size-4 [&_svg]:text-foreground-secondary">
+        <div role="menu" aria-label={`Actions for ${row.title}`} className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-popover p-1 shadow-raised [&_svg]:size-4 [&_svg]:text-muted-foreground">
           {item("Edit", <Pencil />, actions.onEdit)}
           {item(row.pinned ? "Unpin" : "Pin", row.pinned ? <PinOff /> : <Pin />, actions.onPin)}
           {actions.canMove === false ? null : item("Move up", <ArrowUp />, () => actions.onMove("up"), !actions.canUp)}
@@ -73,14 +73,14 @@ export function LibraryRowItem({ row, now, actions }: { row: Row; now: Date; act
       href={row.url}
       target="_blank"
       rel="noopener noreferrer"
-      className={"flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 text-foreground transition-colors duration-150 hover:bg-surface-muted " + focusRing}
+      className={"flex min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-2 text-foreground transition-colors duration-150 hover:bg-muted " + focusRing}
     >
-      <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-muted text-foreground-secondary [&_svg]:size-4">
+      <span aria-hidden="true" className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-4">
         <Icon strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium">{row.title}</span>
-        {row.description ? <span className="block truncate text-[13px] text-foreground-secondary">{row.description}</span> : null}
+        {row.description ? <span className="block truncate text-[13px] text-muted-foreground">{row.description}</span> : null}
       </span>
       <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
         {row.brandName ? <BrandTag name={row.brandName} /> : null}
@@ -98,7 +98,7 @@ export function LibraryRowItem({ row, now, actions }: { row: Row; now: Date; act
         <span className="order-last flex w-full flex-wrap gap-1.5 pb-2 pl-12">
           {files.map((f) => (
             <a key={`${f.label}-${f.url}`} href={f.url} target="_blank" rel="noopener noreferrer" aria-label={`${f.label} – ${row.title}`}
-              className={"inline-flex items-center gap-1 rounded-md border border-border-strong px-2 py-0.5 text-xs font-medium text-foreground-secondary transition-colors hover:bg-surface-muted hover:text-foreground [&_svg]:size-3 " + focusRing}>
+              className={"inline-flex items-center gap-1 rounded-md border border-border-strong px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-3 " + focusRing}>
               <FileDown aria-hidden="true" strokeWidth={1.75} />{f.label}
             </a>
           ))}

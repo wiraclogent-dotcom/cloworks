@@ -37,7 +37,7 @@ export function HelpSearch({ sections }: { sections: { section: Section; article
               {matches.map((a) => (
                 <li key={a.slug} className="py-2">
                   <Link href={`/help/${a.slug}`} className="font-medium text-foreground hover:underline">{a.title}</Link>
-                  <span className="ml-2 text-sm text-foreground-secondary">{a.section}</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{a.section}</span>
                 </li>
               ))}
             </ul>

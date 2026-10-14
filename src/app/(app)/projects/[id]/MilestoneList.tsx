@@ -21,7 +21,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
   return (
     <div className="grid gap-3">
       {milestones.length === 0 && !adding && (
-        <p className="text-sm text-foreground-secondary">No meetings or milestones recorded yet.</p>
+        <p className="text-sm text-muted-foreground">No meetings or milestones recorded yet.</p>
       )}
       {milestones.length > 0 && (
         <ul className="grid gap-2">
@@ -82,7 +82,7 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
     <div className="grid gap-1">
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <span>{m.title}</span>
-        <span className="flex items-center gap-2 tabular-nums text-foreground-secondary">
+        <span className="flex items-center gap-2 tabular-nums text-muted-foreground">
           {formatJakartaDay(m.dateIso)}
           <Chip tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Chip>
           {canManage && !confirming && (

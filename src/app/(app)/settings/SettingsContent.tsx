@@ -36,7 +36,7 @@ export async function SettingsContent() {
           <Avatar name={fullName} size="lg" src={photoSrc} className="size-24 text-2xl" />
           <div className="mt-3"><PhotoEditor hasPhoto={!!photoSrc} /></div>
           <p className="mt-4 text-lg font-semibold text-foreground">{fullName}</p>
-          {title !== "—" ? <p className="text-sm text-foreground-secondary">{title}</p> : null}
+          {title !== "—" ? <p className="text-sm text-muted-foreground">{title}</p> : null}
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
             <Chip>{value("Role")}</Chip>
             <Chip>{value("Job role")}</Chip>
@@ -53,7 +53,7 @@ export async function SettingsContent() {
           <CardHeader>
             <div>
               <CardTitle as="h2">Password</CardTitle>
-              <p className="mt-1 text-sm text-foreground-secondary">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Use at least 10 characters. Changing it signs you out, so sign in again with the new one.
               </p>
             </div>
@@ -61,7 +61,7 @@ export async function SettingsContent() {
           {hasPassword ? (
             <ChangePasswordForm />
           ) : (
-            <p className="text-sm text-foreground-secondary">You sign in without a password. Ask an admin if you want one.</p>
+            <p className="text-sm text-muted-foreground">You sign in without a password. Ask an admin if you want one.</p>
           )}
         </Card>
       </div>

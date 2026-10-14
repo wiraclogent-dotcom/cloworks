@@ -111,7 +111,7 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
             Sign in
           </SubmitButton>
         </form>
-        <p className="text-sm text-foreground-secondary">
+        <p className="text-sm text-muted-foreground">
           New here? <Suspense fallback={<Link href="/signup" className={signUpLink}>Create an account</Link>}><SignUpLink searchParams={searchParams} /></Suspense>
         </p>
       </div>

@@ -91,7 +91,7 @@ describe("DatePicker", () => {
   it("looks like a field: same classes as fieldClass()", () => {
     render(<DatePicker aria-label="Due" value={null} />);
     const cls = screen.getByRole("button", { name: /Due/ }).className;
-    for (const token of ["rounded-lg", "border-input", "bg-surface", "h-9", "px-3", "text-sm", "focus-visible:outline-ring"]) {
+    for (const token of ["rounded-lg", "border-input", "bg-card", "h-9", "px-3", "text-sm", "focus-visible:outline-ring"]) {
       expect(cls).toContain(token);
     }
     expect(fieldClass()).toContain("h-9");

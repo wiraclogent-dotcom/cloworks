@@ -41,7 +41,7 @@ function ResendForm() {
     <form action={run} className="space-y-3">
       {state?.error && <Alert tone="danger">{state.error}</Alert>}
       {state?.info && <Alert tone="success">{state.info}</Alert>}
-      <p className="flex flex-wrap items-center gap-2 text-sm text-foreground-secondary">
+      <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         Didn&apos;t get it? Check spam, or
         <Button type="submit" variant="ghost" size="sm" loading={pending} disabled={left > 0}>
           {pending ? "Sending…" : left > 0 ? `Resend code in ${left}s` : "Resend code"}

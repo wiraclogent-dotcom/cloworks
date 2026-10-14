@@ -10,7 +10,7 @@ import { brandSubmit } from "@/components/auth/styles";
 import { buttonClass } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
-const lead = "mt-3 text-base leading-relaxed text-foreground-secondary";
+const lead = "mt-3 text-base leading-relaxed text-muted-foreground";
 
 /** Unknown or switched-off code: dead-link copy. Otherwise by visitor: sign up / sign in, Request to join, or already in. */
 export async function JoinCodeView({ params }: { params: Promise<{ code: string }> }) {

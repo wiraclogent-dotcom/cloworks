@@ -12,8 +12,8 @@ const BASE =
 
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bg-primary text-primary-foreground shadow-card hover:bg-primary-hover",
-  secondary: "border border-border-strong bg-surface text-foreground shadow-card hover:bg-surface-muted",
-  ghost: "text-foreground-secondary hover:bg-surface-muted hover:text-foreground",
+  secondary: "border border-border-strong bg-card text-foreground shadow-card hover:bg-muted",
+  ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
   danger: "bg-destructive text-destructive-foreground shadow-card hover:bg-destructive-hover",
 };
 

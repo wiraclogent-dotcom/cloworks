@@ -136,7 +136,7 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
           <DateEdit projectId={projectId} taskId={task.id} field="due" iso={task.dueIso} text={dueText} label={label} />
         ) : dueText}
       </td>
-      <td className={cell("text-foreground-secondary")}>
+      <td className={cell("text-muted-foreground")}>
         {editing ? (
           <FileLinkEdit projectId={projectId} taskId={task.id} fileUrl={task.fileUrl} text={fileText} label={label} />
         ) : task.fileUrl ? (

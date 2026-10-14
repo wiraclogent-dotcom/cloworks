@@ -36,9 +36,9 @@ export function ProjectProgressSummary({ rows, items }: { rows: ItemRowInput[]; 
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="text-2xl font-semibold text-foreground tabular-nums">{`${percent}% done`}</p>
-        <p className="text-sm text-foreground-secondary tabular-nums">{`${doneItems} of ${counted.length} ${counted.length === 1 ? "item" : "items"} done`}</p>
+        <p className="text-sm text-muted-foreground tabular-nums">{`${doneItems} of ${counted.length} ${counted.length === 1 ? "item" : "items"} done`}</p>
       </div>
-      <div aria-hidden="true" className="mt-3 flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-surface-muted">
+      <div aria-hidden="true" className="mt-3 flex h-2.5 w-full gap-px overflow-hidden rounded-full bg-muted">
         {segments.map((s) => (
           <div key={s.key} data-segment={s.key} data-tone={s.tone} className="h-full bg-tone-accent" style={{ width: `${(s.n / total) * 100}%` }} />
         ))}

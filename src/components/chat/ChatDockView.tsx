@@ -354,13 +354,13 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
       <button ref={launcherRef} type="button" aria-label={label} title={pillTitle ?? "Messages"} aria-expanded={open} aria-controls={open ? "chat-dock" : undefined}
         onClick={launch}
         className={cn(
-          "fixed right-4 bottom-4 z-40 inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-surface px-3 shadow-raised transition-colors hover:bg-surface-muted",
+          "fixed right-4 bottom-4 z-40 inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-3 shadow-raised transition-colors hover:bg-muted",
           focusRing,
         )}>
         <span className="relative inline-flex shrink-0 text-link">
           <MessagesSquare aria-hidden="true" strokeWidth={1.75} className="size-5.5" />
           {count > 0 && (
-            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-surface">
+            <span data-badge="" aria-hidden="true" className="absolute -top-2 -right-2 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-card">
               {count > 9 ? "9+" : count}
             </span>
           )}
@@ -370,7 +370,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
 
       {open && (
         <div id="chat-dock" role="dialog" aria-label="Messages"
-          className={cn("fixed inset-0 z-50 flex flex-col overflow-hidden bg-surface text-foreground md:inset-auto md:right-4 md:bottom-20 md:h-[520px] md:max-h-[calc(100vh-6rem)] md:max-w-[calc(100vw-2rem)] md:rounded-xl md:border md:border-border md:shadow-raised md:transition-[width] md:duration-200 motion-reduce:transition-none",
+          className={cn("fixed inset-0 z-50 flex flex-col overflow-hidden bg-card text-foreground md:inset-auto md:right-4 md:bottom-20 md:h-[520px] md:max-h-[calc(100vh-6rem)] md:max-w-[calc(100vw-2rem)] md:rounded-xl md:border md:border-border md:shadow-raised md:transition-[width] md:duration-200 motion-reduce:transition-none",
             collapsed ? "md:w-[300px]" : "md:w-[720px]")}>
           <div className="flex items-center justify-between gap-2 border-b border-border py-2 pr-2 pl-4">
             <p className="text-sm font-semibold">Messages</p>
@@ -393,7 +393,7 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
                     userId={userId} now={now} onBack={() => select(null)} onOpenRequest={openRequest} onLoadOlder={() => void loadOlder()} onSend={send} />
                 </div>
               ) : (
-                <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-foreground-secondary">
+                <div className="flex flex-1 items-center justify-center px-6 text-center text-sm text-muted-foreground">
                   Pick a chat to start messaging.
                 </div>
               )}

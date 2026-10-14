@@ -68,10 +68,10 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
       <form onSubmit={save} className="space-y-4">
         <fieldset className="space-y-1">
           <legend className={labelClass}>People shown on the team table</legend>
-          <p className="mb-1.5 text-xs leading-4 text-foreground-secondary">
+          <p className="mb-1.5 text-xs leading-4 text-muted-foreground">
             This only changes this table. It stays the same for every {kind === "REQUESTS" ? "month" : "year"}; requests, targets and scores are not affected.
           </p>
-          {candidates.length === 0 ? <p className="text-sm text-foreground-secondary">There is nobody to choose from.</p> : (
+          {candidates.length === 0 ? <p className="text-sm text-muted-foreground">There is nobody to choose from.</p> : (
             <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
               {candidates.map((c) => (
                 <li key={c.id}>

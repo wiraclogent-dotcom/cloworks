@@ -13,8 +13,8 @@ export function tableClass({ compact = false, minWidth }: { compact?: boolean; m
     wrapper: "relative overflow-auto rounded-xl border border-border bg-card shadow-card",
     table: cn("w-full border-collapse text-left text-[13px] text-foreground", minWidth),
     thead: "",
-    th: cn("sticky top-0 z-10 border-b border-border bg-surface-muted font-semibold whitespace-nowrap text-foreground-secondary text-xs", pad),
-    tr: "border-t border-border first:border-t-0 transition-colors duration-150 hover:bg-surface-muted/60",
+    th: cn("sticky top-0 z-10 border-b border-border bg-muted font-semibold whitespace-nowrap text-muted-foreground text-xs", pad),
+    tr: "border-t border-border first:border-t-0 transition-colors duration-150 hover:bg-muted/60",
     td: cn("align-middle", pad),
     /** Row header cell (the row's title). */
     rowHeader: cn("align-middle font-medium", pad),

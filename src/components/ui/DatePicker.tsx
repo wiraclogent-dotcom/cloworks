@@ -106,7 +106,7 @@ export function DatePicker({
             )}
           >
             <span className={cn("truncate tabular-nums", !display && "text-placeholder")}>{display ?? placeholder}</span>
-            <CalendarDays aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-foreground-secondary" />
+            <CalendarDays aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-muted-foreground" />
           </button>
         </PopoverTrigger>
         <PopoverContent
@@ -141,7 +141,7 @@ export function DatePicker({
           title="Clear"
           onClick={() => { pick(null); triggerRef.current?.focus(); }}
           className={cn(
-            "absolute top-1/2 right-8 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-foreground-secondary transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground",
+            "absolute top-1/2 right-8 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground",
             focusRing,
           )}
         >

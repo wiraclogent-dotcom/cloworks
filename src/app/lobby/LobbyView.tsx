@@ -39,7 +39,7 @@ function Panel({ title, children }: { title: string; children?: ReactNode }) {
   );
 }
 
-const lead = "text-base leading-relaxed text-foreground-secondary";
+const lead = "text-base leading-relaxed text-muted-foreground";
 
 export async function LobbyView({ searchParams }: { searchParams: LobbySearch }) {
   const me = await requireApplicantOrRedirect();
@@ -52,7 +52,7 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
     return (
       <Panel title="Request sent">
         <p className={lead}>Request sent to {state.workspaceName}. We&apos;ll email you when you&apos;re approved.</p>
-        <p className="text-sm text-foreground-secondary">You can keep this page open: it moves you in as soon as you&apos;re approved.</p>
+        <p className="text-sm text-muted-foreground">You can keep this page open: it moves you in as soon as you&apos;re approved.</p>
         <LobbyPoll />
       </Panel>
     );
@@ -61,7 +61,7 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
     return (
       <Panel title="Not approved">
         <p className={lead}>Your request to {state.workspaceName} wasn&apos;t approved.</p>
-        <p className="text-sm text-foreground-secondary">If you think this is a mistake, contact your admin.</p>
+        <p className="text-sm text-muted-foreground">If you think this is a mistake, contact your admin.</p>
       </Panel>
     );
   }

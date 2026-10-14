@@ -28,7 +28,7 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
   return (
     <>
       <div className="flex items-start gap-1">
-        <span className="mt-0.5 inline-flex shrink-0 text-foreground-secondary" title={STATUS_LABEL[card.status]}>
+        <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground" title={STATUS_LABEL[card.status]}>
           <StatusIcon status={card.status} />
           <span className="sr-only">{`Status: ${STATUS_LABEL[card.status]}. `}</span>
         </span>
@@ -42,7 +42,7 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
         {isOverdue(card, today) ? (
           <span className="rounded px-1 text-[11px] leading-4 font-medium bg-tone-tint text-tone-text">Overdue</span>
         ) : card.deadlineDay === null ? (
-          <span className="text-[11px] leading-4 text-foreground-secondary">No deadline</span>
+          <span className="text-[11px] leading-4 text-muted-foreground">No deadline</span>
         ) : <span />}
         <span className="inline-flex shrink-0 items-center gap-1">
           {handle}
@@ -90,8 +90,8 @@ export function DraggableCalendarCard({ card, today, busy, locked, dragging }: {
         handle={
           <button type="button" ref={setActivatorNodeRef} {...attributes} aria-label={`Drag “${card.title}”`} disabled={busy}
             className={cn(
-              "inline-flex size-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-foreground-secondary transition-opacity duration-150",
-              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-surface-muted",
+              "inline-flex size-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-opacity duration-150",
+              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-muted",
               focusRing,
             )}>
             <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-3" />

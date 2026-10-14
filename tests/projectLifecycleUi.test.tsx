@@ -141,7 +141,7 @@ describe("ProjectTimeline links", () => {
     expect(link.getAttribute("href")).toBe("/projects/a");
     expect(link.textContent).toContain("Alpha");
     expect(link.querySelector("[data-tone='done']")).not.toBeNull();
-    expect(link.className).toMatch(/hover:bg-surface-muted/);
+    expect(link.className).toMatch(/hover:bg-muted/);
     expect(link.className).toMatch(/focus-visible:outline-ring/);
   });
   it("the legend lists the statuses present, including Canceled", () => {

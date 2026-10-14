@@ -24,7 +24,7 @@ export function PasswordInput({ className, ...props }: Props) {
         aria-pressed={shown}
         aria-controls={props.id}
         className={cn(
-          "absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-foreground-secondary",
+          "absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-lg text-muted-foreground",
           "transition-colors duration-150 ease-out hover:text-foreground disabled:cursor-not-allowed",
           focusRing,
         )}

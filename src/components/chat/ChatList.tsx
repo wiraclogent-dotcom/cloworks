@@ -23,7 +23,7 @@ export function ChatList({ chats, error = null, onRetry, selectedId, userId, now
   if (chats === null && error) {
     return (
       <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <p className="text-sm text-foreground-secondary">{error}</p>
+        <p className="text-sm text-muted-foreground">{error}</p>
         {onRetry && (
           <button type="button" onClick={onRetry} className={buttonClass({ size: "sm" })}>Retry</button>
         )}
@@ -41,10 +41,10 @@ export function ChatList({ chats, error = null, onRetry, selectedId, userId, now
   if (chats.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-        <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary">
+        <span aria-hidden="true" className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
           <MessagesSquare className="size-5" strokeWidth={1.75} />
         </span>
-        <p className="text-sm text-foreground-secondary">No chats yet. Comment on a request to start one.</p>
+        <p className="text-sm text-muted-foreground">No chats yet. Comment on a request to start one.</p>
       </div>
     );
   }
@@ -56,16 +56,16 @@ export function ChatList({ chats, error = null, onRetry, selectedId, userId, now
           <li key={c.requestId}>
             <button type="button" onClick={() => onSelect(c.requestId)} aria-current={selected ? "true" : undefined}
               className={cn(
-                "flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-surface-muted",
-                selected && "bg-surface-muted", focusRing,
+                "flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors hover:bg-muted",
+                selected && "bg-muted", focusRing,
               )}>
               <span className="min-w-0 flex-1">
                 <span className="flex items-baseline gap-2">
                   <span className={cn("min-w-0 flex-1 truncate text-sm", c.unread > 0 ? "font-semibold text-foreground" : "font-medium text-foreground")}>{c.title}</span>
-                  <span className="shrink-0 text-[11px] text-foreground-secondary">{relativeTime(c.lastMessage.createdAt, now)}</span>
+                  <span className="shrink-0 text-[11px] text-muted-foreground">{relativeTime(c.lastMessage.createdAt, now)}</span>
                 </span>
                 <span className="mt-0.5 flex items-center gap-2">
-                  <span className={cn("min-w-0 flex-1 truncate text-[13px]", c.unread > 0 ? "text-foreground" : "text-foreground-secondary")}>{preview(c, userId)}</span>
+                  <span className={cn("min-w-0 flex-1 truncate text-[13px]", c.unread > 0 ? "text-foreground" : "text-muted-foreground")}>{preview(c, userId)}</span>
                   {c.unread > 0 && (
                     <span className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground">
                       <span className="sr-only">, </span>{c.unread > 9 ? "9+" : c.unread}<span className="sr-only"> unread</span>

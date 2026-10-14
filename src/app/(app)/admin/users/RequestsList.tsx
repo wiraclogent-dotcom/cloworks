@@ -14,8 +14,8 @@ function Who({ r }: { r: RequestRow }) {
   return (
     <div className="min-w-0">
       <p className="font-medium text-foreground">{r.name}</p>
-      <p className="text-sm break-all text-foreground-secondary">{r.email}</p>
-      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-foreground-secondary">
+      <p className="text-sm break-all text-muted-foreground">{r.email}</p>
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <Chip>{SOURCE[r.source]}</Chip>
         <span>{r.requestedAt}</span>
       </p>
@@ -27,7 +27,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
-        <p className="rounded-xl border border-border bg-card p-4 text-sm text-foreground-secondary">No join requests waiting.</p>
+        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">No join requests waiting.</p>
       ) : (
         <ul className="space-y-3">
           {pending.map((r) => (

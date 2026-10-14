@@ -21,7 +21,7 @@ describe.each(files.map((f) => [path.basename(f), readFileSync(f, "utf8")] as co
 
   it("uses tokens, not literal colours", () => {
     expect(source).not.toMatch(
-      /#[0-9a-fA-F]{3,8}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:red|green|blue|amber|yellow|gray|slate|zinc|neutral|stone|white|black)(?:-\d+)?\b/,
+      /#[0-9a-fA-F]{3,8}\b|\b(?:bg|text|border|ring|fill|stroke)-(?:red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone|white|black)(?:-\d+)?\b/,
     );
   });
 

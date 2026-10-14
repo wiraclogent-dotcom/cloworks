@@ -47,8 +47,8 @@ describe("Select trigger matches fieldClass()", () => {
     const trigger = screen.getByRole("combobox", { name: "Pick" });
     expect(trigger.className).toContain("data-[placeholder]:text-placeholder");
     expect(trigger.className).toContain("aria-invalid:border-danger");
-    expect(trigger.className).not.toMatch(/border-destructive|text-muted-foreground|rounded-md/);
-    expect(container.querySelector("svg")!.getAttribute("class")).toContain("text-foreground-secondary");
+    expect(trigger.className).not.toMatch(/border-destructive|rounded-md/);
+    expect(container.querySelector("svg")!.getAttribute("class")).toContain("text-muted-foreground");
   });
 
   it("content and items use the popover surface and muted hover; the selected item is medium weight", () => {
@@ -62,9 +62,9 @@ describe("Select trigger matches fieldClass()", () => {
     const list = screen.getByRole("listbox").closest("[data-slot=select-content]")!;
     for (const t of ["bg-popover", "border-border", "shadow-raised", "rounded-lg"]) expect(list.className).toContain(t);
     const opt = screen.getAllByRole("option")[0];
-    expect(opt.className).toContain("focus:bg-surface-muted");
+    expect(opt.className).toContain("focus:bg-muted");
     expect(opt.className).toContain("data-[state=checked]:font-medium");
-    expect(opt.className).toMatch(/data-\[highlighted\]:bg-surface-muted|focus:bg-surface-muted/);
+    expect(opt.className).toMatch(/data-\[highlighted\]:bg-muted|focus:bg-muted/);
   });
 });
 

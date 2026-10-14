@@ -29,8 +29,8 @@ export function CollapsibleSection({ id, storageKey, title, count, children, cla
         try { localStorage.setItem(storageKey, next ? "1" : "0"); } catch { /* storage unavailable */ }
       }}
       className={cn("group overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-card", className)}>
-      <summary className={cn("flex cursor-pointer list-none items-center gap-2 bg-surface-muted px-4 py-2.5 select-none hover:bg-surface-muted/70 [&::-webkit-details-marker]:hidden", focusRing, "focus-visible:-outline-offset-2")}>
-        <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-foreground-secondary transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" />
+      <summary className={cn("flex cursor-pointer list-none items-center gap-2 bg-muted px-4 py-2.5 select-none hover:bg-muted/70 [&::-webkit-details-marker]:hidden", focusRing, "focus-visible:-outline-offset-2")}>
+        <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-open:rotate-90 motion-reduce:transition-none" />
         <h2 className="text-[15px] font-semibold text-foreground">{`${title} (${count})`}</h2>
       </summary>
       <div className="border-t border-border">{children}</div>

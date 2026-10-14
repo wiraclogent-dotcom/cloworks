@@ -162,7 +162,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       </div>
       {message ? <Alert tone="danger">{message}</Alert> : null}
       <div className="flex flex-wrap items-center gap-3">
-        <p role="status" className="text-xs text-foreground-secondary">{save === "saving" ? "Saving…" : save === "saved" ? "Saved" : ""}</p>
+        <p role="status" className="text-xs text-muted-foreground">{save === "saving" ? "Saving…" : save === "saved" ? "Saved" : ""}</p>
         {can.submit ? (
           <Button variant="primary" className="ml-auto" icon={<Send />} loading={submitting} onClick={submit}>Submit for approval</Button>
         ) : null}

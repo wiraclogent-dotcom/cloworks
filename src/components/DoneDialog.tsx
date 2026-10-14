@@ -66,7 +66,7 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
           </span>
           <div className="min-w-0">
             <h2 id={`${uid}-t`} className="text-base font-semibold text-foreground">Mark as done</h2>
-            <p id={`${uid}-d`} className="mt-0.5 text-sm break-words text-foreground-secondary">“{title}” is finished. Tell us what was delivered.</p>
+            <p id={`${uid}-d`} className="mt-0.5 text-sm break-words text-muted-foreground">“{title}” is finished. Tell us what was delivered.</p>
           </div>
         </div>
         <form onSubmit={submit} noValidate className="mt-5 space-y-4">

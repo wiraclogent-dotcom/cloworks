@@ -24,7 +24,7 @@ export function ConfirmDelete({ id, title, onClose }: { id: string; title: strin
   }
   return (
     <LibraryDialog title={`Delete "${title}"?`} onClose={onClose}>
-      <p className="mb-4 text-sm text-foreground-secondary">This removes the link for everyone in the workspace.</p>
+      <p className="mb-4 text-sm text-muted-foreground">This removes the link for everyone in the workspace.</p>
       {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>Cancel</Button>

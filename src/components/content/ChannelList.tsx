@@ -74,11 +74,11 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
       </div>
       {canManage && selected && managingSelected ? <div className="lg:hidden">{actions(selected)}</div> : null}
       <nav aria-label="Channels" className="hidden lg:block">
-        <p className="mb-2 px-2 text-xs font-medium tracking-wide text-foreground-secondary uppercase">Channels</p>
+        <p className="mb-2 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Channels</p>
         <div className="space-y-4">
           {byBrand(channels).map((list) => (
             <section key={list[0].brandId}>
-              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-foreground-secondary">{list[0].brandName}</h3>
+              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-muted-foreground">{list[0].brandName}</h3>
               <ul className="space-y-0.5">
                 {list.map((c) => {
                   const on = c.id === currentId;
@@ -88,7 +88,7 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
                       <div className="flex items-center gap-0.5">
                         <Link href={planHref({ channel: c.id, tab })} aria-current={on ? "page" : undefined}
                           className={cn("flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm transition-colors duration-150 ease-out", focusRing,
-                            on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-surface-muted")}>
+                            on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-muted")}>
                           <Avatar name={c.displayName} src={c.avatarUrl} size="sm" decorative />
                           <span className="min-w-0 flex-1 truncate">@{c.handle}</span>
                           {c.awaiting ? <CountPill value={c.awaiting} aria-label={`${c.awaiting} awaiting approval`} /> : null}

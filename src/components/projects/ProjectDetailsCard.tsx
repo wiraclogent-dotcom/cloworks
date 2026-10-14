@@ -25,7 +25,7 @@ const MISSING = <span className="text-foreground-muted">—</span>;
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-medium text-foreground-secondary">{label}</dt>
+      <dt className="text-xs font-medium text-muted-foreground">{label}</dt>
       <dd className="mt-0.5 min-w-0 text-sm text-foreground">{children}</dd>
     </div>
   );

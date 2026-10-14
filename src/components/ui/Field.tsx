@@ -11,8 +11,8 @@ export function fieldClass({ kind = "input", invalid = false, size = "md", class
   kind?: "input" | "select" | "textarea"; invalid?: boolean; size?: "sm" | "md"; className?: string;
 } = {}): string {
   return cn(
-    "block w-full rounded-lg border bg-surface text-sm text-foreground placeholder:text-placeholder",
-    "transition-colors duration-150 ease-out hover:border-foreground-secondary disabled:cursor-not-allowed disabled:bg-surface-muted disabled:opacity-70",
+    "block w-full rounded-lg border bg-card text-sm text-foreground placeholder:text-placeholder",
+    "transition-colors duration-150 ease-out hover:border-muted-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70",
     invalid ? "border-danger" : "border-input",
     kind === "textarea" ? "min-h-24 px-3 py-2" : size === "sm" ? "h-8 px-2.5" : "h-9 px-3",
     kind === "select" && "pr-8",
@@ -23,7 +23,7 @@ export function fieldClass({ kind = "input", invalid = false, size = "md", class
 /** Field label: 13px/500. */
 export const labelClass = "mb-1.5 block text-[13px] font-medium text-foreground";
 /** Helper text under a field. */
-export const hintClass = "mt-1.5 text-xs text-foreground-secondary";
+export const hintClass = "mt-1.5 text-xs text-muted-foreground";
 
 /** Inline error under a field: icon + message, linked with aria-describedby={id}. Renders nothing without children. */
 export function FieldError({ id, children, className }: { id: string; children?: ReactNode; className?: string }) {

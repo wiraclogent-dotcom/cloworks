@@ -28,7 +28,7 @@ export default function ChangePasswordPage() {
         <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 text-card-foreground shadow-raised">
           <div className="mb-5 text-center">
             <h1 className="text-[22px] leading-7 font-semibold">Choose a new password</h1>
-            <p className="mt-1 text-sm text-foreground-secondary">Choose your own password before you continue. The one you were given is temporary.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Choose your own password before you continue. The one you were given is temporary.</p>
           </div>
           <ChangePasswordPageForm />
           <form action={signOutFromPasswordChange} className="mt-4 text-center">

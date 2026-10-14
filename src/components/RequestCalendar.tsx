@@ -145,13 +145,13 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
       ) : (
         <>
           {canMove
-            ? <p className="mb-3 text-sm text-foreground-secondary">Drag a card to another day to change its deadline.</p>
-            : <p className="mb-3 text-sm text-foreground-secondary">You can view the calendar. Only creative team members can change deadlines.</p>}
+            ? <p className="mb-3 text-sm text-muted-foreground">Drag a card to another day to change its deadline.</p>
+            : <p className="mb-3 text-sm text-muted-foreground">You can view the calendar. Only creative team members can change deadlines.</p>}
           <DndContext id={CALENDAR_DND_ID} sensors={sensors} collisionDetection={drag.collisionDetection}
             onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}
             accessibility={{ announcements, screenReaderInstructions: { draggable: CALENDAR_SR_INSTRUCTIONS } }}>
             <div aria-hidden="true" className="mb-1 grid grid-cols-7 gap-1">
-              {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-foreground-secondary">{w}</div>)}
+              {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-muted-foreground">{w}</div>)}
             </div>
             <div className="space-y-1">
               {grid.weeks.map((week) => (

@@ -28,7 +28,7 @@ export function GoogleButton({ next }: { next?: string }) {
 /** "──── or use your password ────" */
 export function OrDivider({ children = "or use your password" }: { children?: string }) {
   return (
-    <div className="flex items-center gap-3 pt-2 text-[13px] text-foreground-secondary">
+    <div className="flex items-center gap-3 pt-2 text-[13px] text-muted-foreground">
       <span aria-hidden="true" className="h-px flex-1 bg-border" />
       {children}
       <span aria-hidden="true" className="h-px flex-1 bg-border" />

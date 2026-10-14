@@ -16,8 +16,8 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
   it.each([
     [["h-9 px-4", "h-10"], "px-4 h-10"],
     [["size-8", "size-9"], "size-9"],
-    [["bg-surface", "bg-sidebar-hover"], "bg-sidebar-hover"],
-    [["text-foreground-secondary", "text-sidebar-foreground"], "text-sidebar-foreground"],
+    [["bg-card", "bg-sidebar-hover"], "bg-sidebar-hover"],
+    [["text-muted-foreground", "text-sidebar-foreground"], "text-sidebar-foreground"],
     [["border-input", "border-danger"], "border-danger"],
     [["shadow-card", "shadow-raised"], "shadow-raised"],
     [["rounded-md", "rounded-full"], "rounded-full"],

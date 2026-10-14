@@ -34,7 +34,7 @@ export function BoardSkeleton() {
       <HeaderSkeleton />
       <div className="grid gap-3 overflow-hidden pb-4" style={{ gridTemplateColumns: "repeat(4, minmax(15rem, 1fr))" }} data-skeleton-board="">
         {[0, 1, 2, 3].map((c) => (
-          <div key={c} data-skeleton-column="" className="flex flex-col gap-2 rounded-xl border border-border bg-surface-muted p-2">
+          <div key={c} data-skeleton-column="" className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-2">
             <Skeleton className="h-9 w-full" rounded="xl" />
             {[0, 1, 2].map((k) => (
               <div key={k} data-skeleton-card="" className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-card">
@@ -57,7 +57,7 @@ export function TableSkeleton() {
     <Busy label="Loading requests…" wide className="w-full">
       <HeaderSkeleton />
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
-        <div className="flex h-10 items-center gap-6 border-b border-border bg-surface-muted px-3">
+        <div className="flex h-10 items-center gap-6 border-b border-border bg-muted px-3">
           {[24, 16, 16, 14, 16].map((w, i) => <Skeleton key={i} className={cn("h-3", WIDTH[w])} />)}
         </div>
         {Array.from({ length: 8 }, (_, r) => (
@@ -85,7 +85,7 @@ export function CalendarSkeleton() {
       </div>
       <div className="grid grid-cols-7 gap-1" data-skeleton-calendar="">
         {Array.from({ length: 35 }, (_, i) => (
-          <div key={i} data-skeleton-day="" className="min-h-28 space-y-1.5 rounded-lg border border-border bg-surface p-1.5">
+          <div key={i} data-skeleton-day="" className="min-h-28 space-y-1.5 rounded-lg border border-border bg-card p-1.5">
             <Skeleton className="size-5" rounded="full" />
             {i % 3 === 1 && <Skeleton className="h-9 w-full" />}
             {i % 5 === 2 && <Skeleton className="h-9 w-full" />}
@@ -106,7 +106,7 @@ export function TimelineSkeleton() {
         <Skeleton className="ml-auto h-8 w-32" rounded="xl" />
       </div>
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card" data-skeleton-timeline="">
-        <div className="h-9 border-b border-border bg-surface-muted" />
+        <div className="h-9 border-b border-border bg-muted" />
         {[0, 1, 2, 3, 4].map((r) => (
           <div key={r} data-skeleton-person="" className="grid grid-cols-[12rem_minmax(0,1fr)] border-t border-border first:border-t-0">
             <div className="flex items-center gap-2 border-r border-border px-3 py-3">

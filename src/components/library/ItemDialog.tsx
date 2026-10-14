@@ -118,7 +118,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
         </div>
         <fieldset aria-describedby={errors.files ? `${uid}-files-err` : `${uid}-files-hint`}>
           <legend className={labelClass}>Extra files</legend>
-          <p id={`${uid}-files-hint`} className="mb-2 text-xs text-foreground-secondary">Other versions of this link, e.g. the AI file or a mockup. Each shows as a small link on the row.</p>
+          <p id={`${uid}-files-hint`} className="mb-2 text-xs text-muted-foreground">Other versions of this link, e.g. the AI file or a mockup. Each shows as a small link on the row.</p>
           <div className="space-y-2">
             {files.map((file) => (
               <div key={file.key} className="flex items-center gap-2">

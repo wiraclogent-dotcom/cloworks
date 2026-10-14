@@ -33,7 +33,7 @@ function DeleteChannelDialog({ channel, current, tab, onClose }: { channel: Chan
   }
   return (
     <LibraryDialog title={`Delete @${channel.handle}?`} onClose={onClose}>
-      <p className="mb-4 text-sm text-foreground-secondary">This removes the channel with every post planned or posted on it. It cannot be undone.</p>
+      <p className="mb-4 text-sm text-muted-foreground">This removes the channel with every post planned or posted on it. It cannot be undone.</p>
       {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onClose}>Cancel</Button>

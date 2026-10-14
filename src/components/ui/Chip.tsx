@@ -28,7 +28,7 @@ export function BrandTag({ name, className }: { name: string; className?: string
 /** Pill for counts (column totals, page counts): tabular numbers, full radius. */
 export function CountPill({ value, className, "aria-label": label }: { value: number; className?: string; "aria-label"?: string }) {
   return (
-    <span aria-label={label} className={cn("inline-flex min-w-6 items-center justify-center rounded-full bg-surface-muted px-2 py-0.5 text-xs leading-4 font-medium text-foreground-secondary tabular-nums", className)}>
+    <span aria-label={label} className={cn("inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs leading-4 font-medium text-muted-foreground tabular-nums", className)}>
       {value}
     </span>
   );

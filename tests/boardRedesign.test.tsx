@@ -159,7 +159,7 @@ describe("Done dialog (restyled)", () => {
     expect(dialog.className).toMatch(/rounded-xl/);
     expect(dialog.className).toMatch(/shadow-raised/);
     expect(dialog.parentElement!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
-    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-surface-muted/);
+    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-muted/);
     expect(screen.getByRole("button", { name: "Mark as done" }).className).toMatch(/bg-primary/);
     const count = screen.getByLabelText(/Number of outputs/);
     expect(document.activeElement).toBe(count);
@@ -179,9 +179,9 @@ describe("filter pills", () => {
     const motion = screen.getByLabelText("Motion");
     expect(motion.className).toMatch(/rounded-full/);
     expect(motion.className).toMatch(/bg-accent/);
-    expect(motion.className).not.toMatch(/bg-surface\b/);
+    expect(motion.className).not.toMatch(/bg-card\b/);
     const brand = screen.getByLabelText("Brand");
-    expect(brand.className).toMatch(/bg-surface/);
+    expect(brand.className).toMatch(/bg-card/);
     expect(brand.className).not.toMatch(/bg-accent/);
     expect(screen.getByLabelText("Status").className).toMatch(/bg-accent/);
     expect(screen.getByRole("button", { name: "Apply" }).className).toMatch(/bg-primary/);
@@ -191,7 +191,7 @@ describe("filter pills", () => {
     // The toolbar row matches the view switcher: My requests is a segment in a muted tray, search and Filters share that surface.
     const mine = screen.getByRole("link", { name: "My requests" });
     expect(mine.className).toMatch(/rounded-lg/);
-    expect(mine.parentElement!.className).toMatch(/bg-surface-muted/);
-    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-surface-muted|bg-surface-muted.*rounded-xl/);
+    expect(mine.parentElement!.className).toMatch(/bg-muted/);
+    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-muted|bg-muted.*rounded-xl/);
   });
 });

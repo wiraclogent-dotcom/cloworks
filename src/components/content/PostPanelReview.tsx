@@ -14,7 +14,7 @@ const DATE_FMT = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "shor
 const longDay = (ymd: string) => DATE_FMT.format(new Date(`${ymd}T00:00:00Z`));
 
 function ReadOnly({ id, label, value, multiline = false }: { id: string; label: string; value: string; multiline?: boolean }) {
-  const cls = fieldClass({ kind: multiline ? "textarea" : "input", className: "bg-surface-muted" });
+  const cls = fieldClass({ kind: multiline ? "textarea" : "input", className: "bg-muted" });
   return (
     <div>
       <label htmlFor={id} className={labelClass}>{label}</label>

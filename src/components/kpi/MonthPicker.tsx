@@ -42,24 +42,24 @@ export function MonthPicker({ month, current, userId, action, keep }: {
     return () => { document.removeEventListener("keydown", onKey); document.removeEventListener("pointerdown", onDown); };
   }, []);
 
-  const yearBtn = cn("inline-flex size-8 items-center justify-center rounded-lg text-foreground-secondary transition-colors duration-150 hover:bg-surface-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40", focusRing);
+  const yearBtn = cn("inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-40", focusRing);
   const cell = "inline-flex h-9 items-center justify-center rounded-lg text-sm tabular-nums";
   return (
     <div className="flex items-center gap-2">
-      <span aria-hidden="true" className="text-[13px] font-medium text-foreground-secondary">Month</span>
+      <span aria-hidden="true" className="text-[13px] font-medium text-muted-foreground">Month</span>
       <details ref={ref} className="group relative" onToggle={(e) => { if (e.currentTarget.open) setYear(Number(month.slice(0, 4))); }}>
         <summary aria-label={`Month: ${label(month)}`}
           className={cn(
-            "flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-input bg-surface px-3 text-sm text-foreground tabular-nums shadow-card",
-            "transition-colors duration-150 ease-out hover:border-foreground-secondary [&::-webkit-details-marker]:hidden",
+            "flex h-9 cursor-pointer list-none items-center gap-2 rounded-lg border border-input bg-card px-3 text-sm text-foreground tabular-nums shadow-card",
+            "transition-colors duration-150 ease-out hover:border-muted-foreground [&::-webkit-details-marker]:hidden",
             focusRing,
           )}>
-          <CalendarDays aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />
+          <CalendarDays aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />
           <span>{label(month)}</span>
-          <ChevronDown aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary transition-transform duration-150 group-open:rotate-180" />
+          <ChevronDown aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-180" />
         </summary>
         <div role="group" aria-label="Choose a month"
-          className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-border bg-card p-3 text-card-foreground shadow-raised">
+          className="absolute right-0 z-20 mt-2 w-64 rounded-xl border border-border bg-popover p-3 text-card-foreground shadow-raised">
           <div className="mb-2 flex items-center justify-between">
             <button type="button" aria-label="Previous year" className={yearBtn} onClick={() => setYear((y) => y - 1)} disabled={year <= 2000}>
               <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />
@@ -73,14 +73,14 @@ export function MonthPicker({ month, current, userId, action, keep }: {
             {SHORT.map((short, i) => {
               const m = `${year}-${String(i + 1).padStart(2, "0")}`;
               if (m > current)
-                return <li key={m}><span aria-disabled="true" className={cn(cell, "w-full text-foreground-secondary opacity-40")}>{short}</span></li>;
+                return <li key={m}><span aria-disabled="true" className={cn(cell, "w-full text-muted-foreground opacity-40")}>{short}</span></li>;
               const selected = m === month;
               return (
                 <li key={m}>
                   <Link href={href(m)} onClick={close} aria-label={label(m)} aria-current={selected ? "true" : undefined} data-this-month={m === current ? "" : undefined}
                     className={cn(
                       cell, "w-full font-medium transition-colors duration-150", focusRing,
-                      selected ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-surface-muted",
+                      selected ? "bg-accent text-accent-foreground" : "text-foreground hover:bg-muted",
                       m === current && !selected && "ring-1 ring-ring ring-inset",
                     )}>
                     {short}

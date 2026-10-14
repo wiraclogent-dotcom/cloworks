@@ -22,8 +22,8 @@ export type BellActions = {
 };
 const serverActions: BellActions = { list: listNotifications, markRead: markNotificationRead, markAll: markAllNotificationsRead };
 
-const rowClass = "block w-full cursor-default rounded-md outline-none select-none data-[highlighted]:bg-surface-muted";
-const linkClass = "flex h-9 w-full cursor-default items-center justify-center rounded-md px-2.5 text-sm font-medium text-link outline-none select-none data-[highlighted]:bg-surface-muted";
+const rowClass = "block w-full cursor-default rounded-md outline-none select-none data-[highlighted]:bg-muted";
+const linkClass = "flex h-9 w-full cursor-default items-center justify-center rounded-md px-2.5 text-sm font-medium text-link outline-none select-none data-[highlighted]:bg-muted";
 
 /**
  * Top-bar bell: unread badge, and a dropdown of the newest notifications. Opening it fetches the list; selecting one
@@ -70,7 +70,7 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
   return (
     <DropdownMenu.Root modal={false} onOpenChange={(o) => { if (o) void load(); }}>
       <DropdownMenu.Trigger aria-label={label} title="Notifications"
-        className={cn("relative inline-flex size-9 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-muted hover:text-foreground", focusRing)}>
+        className={cn("relative inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", focusRing)}>
         <Bell aria-hidden="true" strokeWidth={1.75} className="size-5" />
         {count > 0 && (
           <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
@@ -84,21 +84,21 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
           <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
             <p className="text-sm font-semibold">Notifications</p>
             <DropdownMenu.Item disabled={count === 0} onSelect={(e) => { e.preventDefault(); void markAll(); }}
-              className="cursor-default rounded-md px-2 py-1 text-xs font-medium text-link outline-none select-none data-[disabled]:text-foreground-muted data-[highlighted]:bg-surface-muted">
+              className="cursor-default rounded-md px-2 py-1 text-xs font-medium text-link outline-none select-none data-[disabled]:text-foreground-muted data-[highlighted]:bg-muted">
               Mark all as read
             </DropdownMenu.Item>
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-border" />
           <div className="max-h-96 overflow-y-auto">
             {items === null && loadFailed ? (
-              <p role="alert" className="px-2.5 py-6 text-center text-sm text-foreground-secondary">Couldn&apos;t load notifications. Close and open again to retry.</p>
+              <p role="alert" className="px-2.5 py-6 text-center text-sm text-muted-foreground">Couldn&apos;t load notifications. Close and open again to retry.</p>
             ) : items === null ? (
               <div role="status" aria-busy="true" className="grid gap-2 p-2.5">
                 <span className="sr-only">Loading…</span>
                 {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
               </div>
             ) : items.length === 0 ? (
-              <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-foreground-secondary">
+              <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-muted-foreground">
                 <BrandArt name="empty-notifications" width={88} className="animate-float mb-1 size-22 object-contain" />
                 You&apos;re all caught up.
               </div>

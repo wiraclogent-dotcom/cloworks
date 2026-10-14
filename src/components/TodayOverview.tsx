@@ -18,7 +18,7 @@ function Tile({ href, icon, label, value, emphasis, tone, i }: { href: string; i
       <span className="min-w-0 flex-1">
         <span className={cn("block font-display text-2xl leading-7 font-bold tabular-nums text-foreground", value > 0 && emphasis)}><CountUp value={value} /></span>
         {/* Wraps rather than truncates: two-column tiles on a phone cut "Open requests" to "Open requ…". */}
-        <span className="block text-[13px] leading-5 text-pretty text-foreground-secondary">{label}</span>
+        <span className="block text-[13px] leading-5 text-pretty text-muted-foreground">{label}</span>
       </span>
       <ArrowUpRight aria-hidden="true" className="absolute top-3 right-3 size-3.5 text-foreground-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100" />
     </Link>
@@ -39,12 +39,12 @@ export function TodayOverview({ name, now, overview }: { name: string; now: Date
         {/* Soft Aqua wash from the illustration side */}
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_100%_50%,var(--accent),transparent_70%)] opacity-60" />
         <div className="relative min-w-0 flex-1">
-          <p className="inline-flex items-center gap-1.5 text-[13px] text-foreground-secondary">
+          <p className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground">
             <span aria-hidden="true" className="text-[var(--status-due-soon-accent)] [&_svg]:size-4">{PERIOD_ICON[period]}</span>
             {DATE_FORMAT.format(now)}
           </p>
           <h2 className="mt-1 font-display text-2xl leading-8 font-bold tracking-[-0.01em] text-heading">{greetingFor(now)}{firstName ? `, ${firstName}` : ""}</h2>
-          <p className="mt-1 text-sm text-foreground-secondary">{summarySentence(overview)}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{summarySentence(overview)}</p>
         </div>
         <div className="relative hidden h-[7.5rem] w-[234px] shrink-0 sm:block">
           <WelcomeIllustration period={period} />

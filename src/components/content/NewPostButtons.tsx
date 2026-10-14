@@ -32,8 +32,8 @@ export function NewPostTile({ channelId, tab }: { channelId: string; tab: Conten
   return (
     <div className="relative">
       <button type="button" onClick={add} disabled={pending} aria-label="New post" title="New post" aria-busy={pending || undefined}
-        className={cn("flex w-full items-center justify-center border border-dashed border-border-strong bg-surface text-foreground-secondary",
-          "transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
+        className={cn("flex w-full items-center justify-center border border-dashed border-border-strong bg-card text-muted-foreground",
+          "transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
           TILE_ASPECT[tab], focusRing)}>
         <Plus aria-hidden="true" />
       </button>
@@ -78,7 +78,7 @@ export function AlreadyPostedButton({ channelId, tab }: { channelId: string; tab
   }
   return (
     <form onSubmit={submit} noValidate className="flex flex-wrap items-center justify-center gap-2">
-      <label htmlFor={`${uid}-date`} className="text-xs text-foreground-secondary">Posted on</label>
+      <label htmlFor={`${uid}-date`} className="text-xs text-muted-foreground">Posted on</label>
       <input id={`${uid}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} required autoFocus
         aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined}
         className={fieldClass({ size: "sm", invalid: !!error, className: "w-auto" })} />

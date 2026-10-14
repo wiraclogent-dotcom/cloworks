@@ -54,8 +54,8 @@ export async function ListsContent() {
               return (
                 <li key={t.id} className="rounded-lg border border-border">
                   <details className="group">
-                    <summary className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 font-medium text-foreground hover:bg-surface-muted">
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary transition-transform duration-150 group-open:rotate-90" />
+                    <summary className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 font-medium text-foreground hover:bg-muted">
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-open:rotate-90" />
                       {t.name}
                       <span className="sr-only"> · </span>
                       <Chip tone={chip.tone}>{chip.label}</Chip>

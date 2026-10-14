@@ -12,8 +12,8 @@ type Opt = { id: string; name: string };
 
 /** Pill-style field: 32px, full radius, 3:1 outline, Aqua focus ring; an active filter gets the Aqua tint. */
 const pill = (active = false) => cn(
-  "h-8 rounded-full border text-[13px] transition-colors duration-150 ease-out hover:border-foreground-secondary",
-  active ? "border-ring bg-accent text-accent-foreground" : "border-input bg-surface text-foreground",
+  "h-8 rounded-full border text-[13px] transition-colors duration-150 ease-out hover:border-muted-foreground",
+  active ? "border-ring bg-accent text-accent-foreground" : "border-input bg-card text-foreground",
   focusRing,
 );
 /**
@@ -22,7 +22,7 @@ const pill = (active = false) => cn(
  */
 const toolbarField = (active = false) => cn(
   "h-10 rounded-xl text-[13px] font-medium transition-colors duration-150 ease-out",
-  active ? "bg-surface text-foreground shadow-card ring-1 ring-ring" : "bg-surface-muted text-foreground-secondary hover:text-foreground",
+  active ? "bg-card text-foreground shadow-card ring-1 ring-ring" : "bg-muted text-muted-foreground hover:text-foreground",
   focusRing,
 );
 
@@ -37,7 +37,7 @@ function Toggle({ href, on, icon, children }: { href: string; on: boolean; icon:
 }
 
 /** Label stacked above a control inside the Filters panel. */
-const LABEL = "flex flex-col gap-1 text-xs font-medium text-foreground-secondary";
+const LABEL = "flex flex-col gap-1 text-xs font-medium text-muted-foreground";
 
 /**
  * Plain GET form: works without JS and keeps the URL shareable. One toolbar row: the search box and a Filters
@@ -92,7 +92,7 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
       </div>
       <label className="relative block">
         <span className="sr-only">Search</span>
-        <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-foreground-secondary" />
+        <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <input type="search" name="q" maxLength={200} defaultValue={p.q ?? ""} placeholder="Title or notes" className={cn(toolbarField(!!p.q), "w-56 pr-3 pl-9 font-normal text-foreground placeholder:text-placeholder")} />
       </label>
       <details className="group relative">
@@ -100,7 +100,7 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
           <SlidersHorizontal aria-hidden="true" strokeWidth={1.75} className="size-4" />
           Filters{activeCount > 0 ? <span className="tabular-nums">· {activeCount}</span> : null}
         </summary>
-        <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded-xl border border-border bg-card p-4 text-card-foreground shadow-raised">
+        <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-3 rounded-xl border border-border bg-popover p-4 text-card-foreground shadow-raised">
           {select("status", "Status", p.status, statuses.map((s) => ({ id: s, name: STATUS_LABEL[s] })))}
           {select("brand", "Brand", p.brandId, brands)}
           {select("division", "Division", p.divisionId, divisions)}

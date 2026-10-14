@@ -7,7 +7,7 @@ import { cn, focusRing } from "@/components/ui/cn"
 
 /** Same look as the kit's ghost IconButton: square, rounded-lg, muted hover, app focus ring. */
 const navButton = cn(
-  "inline-flex size-8 items-center justify-center rounded-lg text-foreground-secondary transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4",
+  "inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4",
   focusRing,
 )
 
@@ -43,12 +43,12 @@ function Calendar({
         chevron: "size-4",
         month_grid: "border-collapse",
         weekdays: "",
-        weekday: "size-9 text-center text-xs font-medium text-foreground-secondary",
+        weekday: "size-9 text-center text-xs font-medium text-muted-foreground",
         week: "",
         day: "group size-9 p-0 text-center",
         day_button: cn(
           "inline-flex size-9 items-center justify-center rounded-md tabular-nums transition-colors duration-150 ease-out",
-          "hover:bg-surface-muted disabled:pointer-events-none",
+          "hover:bg-muted disabled:pointer-events-none",
           "group-data-[today=true]:outline group-data-[today=true]:outline-1 group-data-[today=true]:-outline-offset-1 group-data-[today=true]:outline-ring group-data-[today=true]:font-semibold",
           "group-data-[selected=true]:bg-primary group-data-[selected=true]:text-primary-foreground group-data-[selected=true]:hover:bg-primary-hover group-data-[selected=true]:font-medium",
           focusRing,

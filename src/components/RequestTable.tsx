@@ -76,7 +76,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                 return (
                   <th key={c.key} scope="col" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"} className={t.th}>
                     <Link href={hrefFor(c.key, next)}
-                      className={cn("group/sort -mx-1 -my-1.5 inline-flex min-h-8 items-center gap-1 rounded-md px-1 py-1 hover:bg-surface hover:text-foreground", active && "text-foreground", focusRing)}>
+                      className={cn("group/sort -mx-1 -my-1.5 inline-flex min-h-8 items-center gap-1 rounded-md px-1 py-1 hover:bg-card hover:text-foreground", active && "text-foreground", focusRing)}>
                       {c.label}
                       <Icon aria-hidden="true" strokeWidth={1.75} data-sort-icon={active ? dir : "none"}
                         className={cn("size-3.5", active ? "opacity-100" : "opacity-50 group-hover/sort:opacity-100")} />
@@ -97,10 +97,10 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                     {(r.needsMotion || r.isVideo) && <div className="mt-1"><NeedsMotionBadge video={r.isVideo} /></div>}
                   </th>
                   <td className={t.td}><BrandTag name={r.brandName} /></td>
-                  <td className={cn(t.td, "text-foreground-secondary")}>{r.divisionName}</td>
+                  <td className={cn(t.td, "text-muted-foreground")}>{r.divisionName}</td>
                   <td className={cn(t.td, "max-w-48")}><Person name={r.requesterName} /></td>
                   <td className={cn(t.td, "max-w-48")} data-cell="assignee">
-                    {r.assignees.length >= 2 ? <Assignees names={r.assignees.map((a) => a.name)} /> : r.assignees[0] ? <Person name={r.assignees[0].name} /> : <span className="text-foreground-secondary italic">Unassigned</span>}
+                    {r.assignees.length >= 2 ? <Assignees names={r.assignees.map((a) => a.name)} /> : r.assignees[0] ? <Person name={r.assignees[0].name} /> : <span className="text-muted-foreground italic">Unassigned</span>}
                   </td>
                   <td className={t.td}><StatusBadge status={r.status} /></td>
                   <td className={cn(t.td, "whitespace-nowrap tabular-nums")}>{fmt.format(r.requestedAt)}</td>

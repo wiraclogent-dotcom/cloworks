@@ -34,7 +34,7 @@ export function Avatar({ name, size = "md", ring, decorative, className, src }: 
   return (
     <span {...(hidden ? { "aria-hidden": true } : { role: "img", "aria-label": name })} title={hidden ? undefined : name}
       style={{ background: c.tint, color: c.text }}
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide uppercase select-none", SIZE[size], ring && "ring-2 ring-surface", className)}>
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide uppercase select-none", SIZE[size], ring && "ring-2 ring-card", className)}>
       {photo ? (
         // eslint-disable-next-line @next/next/no-img-element -- a local API route, not an optimisable asset
         <img src={photo} alt="" className="size-full rounded-full object-cover" />
@@ -49,7 +49,7 @@ export function Avatar({ name, size = "md", ring, decorative, className, src }: 
 export function UnassignedAvatar({ size = "md", ring, decorative, className }: Common) {
   return (
     <span {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": "Unassigned" })} title={decorative ? undefined : "Unassigned"}
-      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-input bg-surface text-foreground-secondary", SIZE[size], ring && "ring-2 ring-surface", className)}>
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border border-dashed border-input bg-card text-muted-foreground", SIZE[size], ring && "ring-2 ring-card", className)}>
       <UserPlus aria-hidden="true" strokeWidth={1.75} className={size === "sm" ? "size-3.5" : size === "md" ? "size-3.5" : "size-4"} />
     </span>
   );
@@ -65,7 +65,7 @@ export function AvatarStack({ names, max = 3, size = "md", label = "People", cla
     <span role="img" aria-label={names.length ? `${label}: ${names.join(", ")}` : `${label}: none`} className={cn("inline-flex items-center -space-x-1.5", className)}>
       {shown.map((n, i) => <Avatar key={`${n}-${i}`} name={n} size={size} ring decorative />)}
       {extra > 0 ? (
-        <span aria-hidden="true" className={cn("inline-flex shrink-0 items-center justify-center rounded-full bg-surface-muted font-semibold text-foreground-secondary ring-2 ring-surface tabular-nums", SIZE[size])}>+{extra}</span>
+        <span aria-hidden="true" className={cn("inline-flex shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-muted-foreground ring-2 ring-card tabular-nums", SIZE[size])}>+{extra}</span>
       ) : null}
     </span>
   );

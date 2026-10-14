@@ -166,7 +166,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
           </label>
         </div>
       </div>
-      <p className="text-xs text-foreground-secondary">
+      <p className="text-xs text-muted-foreground">
         {`Brief → request notes · ${mockupCount} mock-up${mockupCount === 1 ? "" : "s"} → attachments · requester = ${authorName}`}
       </p>
       <div className="flex justify-end gap-2">

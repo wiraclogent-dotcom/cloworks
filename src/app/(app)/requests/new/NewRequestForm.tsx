@@ -22,7 +22,7 @@ function Field({ id, label, error, required, hint, children }: { id: string; lab
         {required && <span aria-hidden="true" className="text-danger"> *</span>}
       </label>
       {children}
-      {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-foreground-secondary">{hint}</p>}
+      {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
   );
@@ -80,7 +80,7 @@ function WhatHappensNext({ assignee }: { assignee: string }) {
             <span aria-hidden="true" data-tone="done" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tone-tint text-tone-text [&_svg]:size-4">{s.icon}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground"><span className="sr-only">Step {i + 1}: </span>{s.title}</p>
-              <p className="mt-0.5 text-[13px] text-foreground-secondary">{s.text}</p>
+              <p className="mt-0.5 text-[13px] text-muted-foreground">{s.text}</p>
             </div>
           </li>
         ))}
@@ -190,7 +190,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
                   );
                 })}
               </div>
-              <p id="assigneeIds-hint" className="mt-1 text-xs text-foreground-secondary">Optional. Leave it unassigned and a lead will pick someone.</p>
+              <p id="assigneeIds-hint" className="mt-1 text-xs text-muted-foreground">Optional. Leave it unassigned and a lead will pick someone.</p>
               <FieldError id="assigneeIds-error">{errs.assigneeIds}</FieldError>
               <Button type="button" variant="ghost" size="sm" className="mt-1" onClick={addPerson}>+ Add person</Button>
             </div>

@@ -9,7 +9,7 @@ import { useDarkMode } from "../ui/darkMode";
 import { cn, focusRing } from "../ui/cn";
 
 const itemClass =
-  "flex h-9 w-full cursor-default items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground outline-none select-none data-[highlighted]:bg-surface-muted [&_svg]:size-4 [&_svg]:text-foreground-secondary";
+  "flex h-9 w-full cursor-default items-center gap-2.5 rounded-md px-2.5 text-left text-sm text-foreground outline-none select-none data-[highlighted]:bg-muted [&_svg]:size-4 [&_svg]:text-muted-foreground";
 
 /**
  * Top-right profile menu on every page: who is signed in, Account settings, Help center, Dark mode and Sign out (these
@@ -32,7 +32,7 @@ export function ProfileMenuView({ name, roleLabel, signOut }: { name: string; ro
             <Avatar name={name} size="md" decorative />
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{name}</p>
-              <p className="truncate text-xs text-foreground-secondary">{roleLabel}</p>
+              <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
             </div>
           </div>
           <DropdownMenu.Separator className="my-1 h-px bg-border" />

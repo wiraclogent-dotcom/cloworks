@@ -19,8 +19,8 @@ export function IconButton({ icon, size = "md", variant = "ghost", className, ty
         "inline-flex shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-55 [&_svg]:size-[18px] [&_svg]:shrink-0",
         size === "sm" ? "relative size-8 after:absolute after:-inset-0.5 after:content-['']" : "size-9",
         variant === "secondary"
-          ? "border border-border-strong bg-surface text-foreground hover:bg-surface-muted"
-          : "text-foreground-secondary hover:bg-surface-muted hover:text-foreground",
+          ? "border border-border-strong bg-card text-foreground hover:bg-muted"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
         focusRing, className,
       )}>
       {icon}

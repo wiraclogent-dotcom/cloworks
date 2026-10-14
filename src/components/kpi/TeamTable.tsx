@@ -16,7 +16,7 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   return (
     <div data-level={level} className="flex items-center gap-2">
       <div role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
-        className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
+        className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border">
         <div className={cn("h-full rounded-full", PROGRESS_FILL[level])} style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
       <span className="inline-flex items-center gap-0.5 tabular-nums">
@@ -55,7 +55,7 @@ export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: Team
               <TeamPersonCell name={r.name} role={r.role} href={canOpen ? `/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}` : undefined} />
               <td className={cn(t.td, t.numeric)}>{r.kpi.tasksDone}</td>
               <td className={cn(t.td, t.numeric)}>{formatCount(r.kpi.target)}</td>
-              <td className={t.td}>{pct === null ? <span className="text-foreground-secondary">—</span> : <TeamProgress name={r.name} pct={pct} />}</td>
+              <td className={t.td}>{pct === null ? <span className="text-muted-foreground">—</span> : <TeamProgress name={r.name} pct={pct} />}</td>
               <td className={cn(t.td, t.numeric)}>{formatPercent(r.kpi.onTimeRate)}</td>
               <td className={cn(t.td, t.numeric, xlOnly)}>{formatDays(r.kpi.avgTurnaroundDays)}</td>
               <td className={cn(t.td, t.numeric, xlOnly)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>

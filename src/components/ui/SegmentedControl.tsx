@@ -14,10 +14,10 @@ export type Segment = {
 
 const ITEM =
   "inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150 ease-out [&_svg]:size-4 " + focusRing;
-const ON = "bg-surface text-foreground shadow-card";
-const OFF = "text-foreground-secondary hover:text-foreground hover:bg-surface/60";
+const ON = "bg-card text-foreground shadow-card";
+const OFF = "text-muted-foreground hover:text-foreground hover:bg-card/60";
 /** The muted 40px tray segments sit in; toolbar controls next to a SegmentedControl reuse it to match. */
-export const SEGMENT_TRAY = "inline-flex items-center gap-1 rounded-xl bg-surface-muted p-1";
+export const SEGMENT_TRAY = "inline-flex items-center gap-1 rounded-xl bg-muted p-1";
 /** One segment inside SEGMENT_TRAY: raised white when on, quiet text when off. */
 export const segmentClass = (on: boolean) => cn(ITEM, on ? ON : OFF);
 

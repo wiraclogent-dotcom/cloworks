@@ -98,7 +98,7 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                     <Avatar name={u.name} size="md" decorative className={cn(!u.active && "opacity-60")} />
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{u.name}</p>
-                      <p className="text-xs font-normal text-foreground-secondary">
+                      <p className="text-xs font-normal text-muted-foreground">
                         <span className="sr-only">Full name: </span>{u.fullName}
                         <span aria-hidden="true"> · </span>
                         <span className="sr-only">Title: </span>{u.title ?? "—"}
@@ -109,9 +109,9 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                 <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
                 <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
                 <td className={cn(t.td, "align-top break-all")}>
-                  {u.email ?? <span className="text-foreground-secondary italic">No login</span>}
+                  {u.email ?? <span className="text-muted-foreground italic">No login</span>}
                   {u.email && (
-                    <p className="mt-0.5 text-xs text-foreground-secondary" data-has-password={String(u.hasPassword)}>
+                    <p className="mt-0.5 text-xs text-muted-foreground" data-has-password={String(u.hasPassword)}>
                       {u.hasPassword ? "Password set" : "No password yet"}
                     </p>
                   )}
@@ -122,7 +122,7 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                     <summary className="inline-flex cursor-pointer items-center gap-1 rounded-md font-medium text-link hover:underline">
                       <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />Edit {u.name}
                     </summary>
-                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-surface-muted p-3">
+                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />

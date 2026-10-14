@@ -34,18 +34,18 @@ export function InvitedList({ invites, linkable }: { invites: InviteRow[]; linka
           </thead>
           <tbody>
             {invites.length === 0 && (
-              <tr><td colSpan={5} className={cn(t.td, "text-foreground-secondary")}>No open invites.</td></tr>
+              <tr><td colSpan={5} className={cn(t.td, "text-muted-foreground")}>No open invites.</td></tr>
             )}
             {invites.map((i) => (
               <tr key={i.id} className={cn(t.tr, "align-top")}>
                 <th scope="row" className={cn(t.rowHeader, "align-top break-all")}>{i.email}
-                  {i.linkedName && <p className="mt-0.5 text-xs font-normal text-foreground-secondary">for {i.linkedName}</p>}
+                  {i.linkedName && <p className="mt-0.5 text-xs font-normal text-muted-foreground">for {i.linkedName}</p>}
                 </th>
                 <td className={cn(t.td, "align-top")}>{enumLabel(i.appRole)} · {enumLabel(i.jobRole)}</td>
                 <td className={cn(t.td, "align-top")}>{i.invitedBy}</td>
                 <td className={cn(t.td, "align-top")}>
                   {i.expired ? <Chip tone="cancelled">Expired</Chip> : <span>{i.expiresOn}</span>}
-                  {i.expired && <p className="mt-0.5 text-xs text-foreground-secondary">{i.expiresOn}</p>}
+                  {i.expired && <p className="mt-0.5 text-xs text-muted-foreground">{i.expiresOn}</p>}
                 </td>
                 <td className={cn(t.td, "align-top")}>
                   <div className="flex flex-wrap items-start gap-2">
@@ -81,7 +81,7 @@ function ResendForm({ id, email }: { id: string; email: string }) {
     <form action={run} className="space-y-1">
       <input type="hidden" name="inviteId" value={id} />
       <ResendButton email={email} />
-      {state && <p role={state.ok ? "status" : "alert"} className="text-[13px] font-medium text-foreground-secondary">{state.ok ? state.message : `Error: ${state.message}`}</p>}
+      {state && <p role={state.ok ? "status" : "alert"} className="text-[13px] font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
     </form>
   );
 }

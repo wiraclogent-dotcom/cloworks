@@ -69,14 +69,14 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
   const dnd = useGridDnd({ planned, cols: tab === "stories" ? 1 : 3, labelOf: useCallback((t: TileView) => tileLabel(t), []) });
   return (
     <div className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[2.25rem] border-[10px] border-foreground bg-background shadow-raised">
-      <div className="mx-auto mt-1.5 h-1.5 w-20 rounded-full bg-surface-muted" aria-hidden="true" />
+      <div className="mx-auto mt-1.5 h-1.5 w-20 rounded-full bg-muted" aria-hidden="true" />
       <header className="flex items-start gap-3 px-4 pt-4 pb-3">
         <Avatar name={channel.displayName} src={channel.avatarUrl} size="lg" decorative className="size-16 text-lg" />
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-base font-semibold text-foreground">@{channel.handle}</h2>
           <p className="truncate text-sm font-medium text-foreground">{channel.displayName}</p>
-          {channel.bio ? <p className="mt-0.5 text-[13px] whitespace-pre-line text-foreground-secondary">{channel.bio}</p> : null}
-          <p className="mt-1.5 text-xs text-foreground-secondary tabular-nums">
+          {channel.bio ? <p className="mt-0.5 text-[13px] whitespace-pre-line text-muted-foreground">{channel.bio}</p> : null}
+          <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
             {`${channel.plannedCount} planned · ${channel.awaiting} awaiting approval`}
           </p>
         </div>
@@ -85,7 +85,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
         {TABS.map((t) => (
           <Link key={t.value} href={planHref({ channel: channel.id, tab: t.value })} aria-current={t.value === tab ? "page" : undefined}
             className={cn("flex h-10 flex-1 items-center justify-center gap-1.5 border-b-2 text-xs font-medium transition-colors duration-150 ease-out [&_svg]:size-4", focusRing,
-              t.value === tab ? "border-foreground text-foreground" : "border-transparent text-foreground-secondary hover:text-foreground")}>
+              t.value === tab ? "border-foreground text-foreground" : "border-transparent text-muted-foreground hover:text-foreground")}>
             {t.icon}{t.label}
           </Link>
         ))}
@@ -114,7 +114,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
           </DragOverlay>
         </DndContext>
         <div className="my-2 flex flex-col items-center gap-1 px-3">
-          <div className="flex w-full items-center gap-2 text-xs text-foreground-secondary">
+          <div className="flex w-full items-center gap-2 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" aria-hidden="true" />
             <span>Already posted</span>
             <span className="h-px flex-1 bg-border" aria-hidden="true" />
@@ -127,7 +127,7 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
           </TileRow>
         ) : null}
         {!planned.length && !published.length && !canDraft ? (
-          <p className="px-4 py-8 text-center text-sm text-foreground-secondary">Nothing planned here yet.</p>
+          <p className="px-4 py-8 text-center text-sm text-muted-foreground">Nothing planned here yet.</p>
         ) : null}
       </div>
     </div>

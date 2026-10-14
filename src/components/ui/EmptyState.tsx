@@ -15,14 +15,14 @@ export function EmptyState({ icon, art, title, description, action, titleAs: Tit
 }) {
   const showArt = art && process.env.NEXT_PUBLIC_BRAND_CLOUD;
   return (
-    <div role={role} className={cn("animate-rise flex flex-col items-center rounded-xl border border-dashed border-border-strong bg-surface px-6 py-10 text-center", className)}>
+    <div role={role} className={cn("animate-rise flex flex-col items-center rounded-xl border border-dashed border-border-strong bg-card px-6 py-10 text-center", className)}>
       {showArt ? (
         <BrandArt name={art} width={144} className="animate-float mb-2 size-36 object-contain" />
       ) : icon ? (
-        <span aria-hidden="true" className="mb-3 flex size-10 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary [&_svg]:size-5">{icon}</span>
+        <span aria-hidden="true" className="mb-3 flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground [&_svg]:size-5">{icon}</span>
       ) : null}
       <Title className={cn("font-display text-lg font-semibold tracking-[-0.01em] text-foreground", Title === "h1" && "text-heading")}>{title}</Title>
-      {description ? <p className="mt-1 max-w-md text-sm text-foreground-secondary">{description}</p> : null}
+      {description ? <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p> : null}
       {children}
       {action ? <div className="mt-4 flex flex-wrap items-center justify-center gap-2">{action}</div> : null}
     </div>

@@ -33,10 +33,10 @@ const heatLevel = (v: number, max: number) => (v === 0 || max === 0 ? 0 : Math.m
 function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <li aria-label={label} className="flex items-baseline justify-between gap-3 border-b border-border py-2.5 last:border-b-0">
-      <span className="text-[13px] text-foreground-secondary">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
       <span className="text-right">
         <span className="text-base font-semibold text-foreground tabular-nums">{value}</span>
-        {note && <span className="ml-1.5 text-xs text-foreground-secondary tabular-nums">{note}</span>}
+        {note && <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{note}</span>}
       </span>
     </li>
   );
@@ -58,7 +58,7 @@ function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["su
           );
         })}
       </div>
-      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-foreground-secondary">
+      <div aria-hidden="true" className="mt-1 flex justify-between text-[11px] text-muted-foreground">
         <span>{shortDay(days[0].day).slice(4)}</span><span>{shortDay(days[days.length - 1].day).slice(4)}</span>
       </div>
     </div>
@@ -96,7 +96,7 @@ function Dots({ day, items, align }: { day: BriefDay; items: BriefItem[]; align:
         </span>
       ))}
       {more > 0 && (
-        <span aria-hidden="true" data-more="" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-border-strong px-1 text-[11px] leading-none font-semibold text-foreground-secondary tabular-nums">
+        <span aria-hidden="true" data-more="" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-border-strong px-1 text-[11px] leading-none font-semibold text-muted-foreground tabular-nums">
           +{more}
         </span>
       )}
@@ -125,7 +125,7 @@ export function BriefCalendar({ model, typeOrder }: {
       <section aria-label="Month summary" className="rounded-xl border border-border bg-card p-4 shadow-card sm:p-5">
         <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <li aria-label="Briefs this month" className="min-w-0">
-            <span className="text-[13px] text-foreground-secondary">Briefs this month</span>
+            <span className="text-[13px] text-muted-foreground">Briefs this month</span>
             <span className="mt-0.5 block text-4xl leading-none font-semibold tracking-tight text-foreground tabular-nums">{s.total}</span>
             <DayStrip days={days} busiest={s.busiest} />
           </li>
@@ -142,7 +142,7 @@ export function BriefCalendar({ model, typeOrder }: {
                     <span key={t.name} className={typeFill(order, t.name)} style={{ width: `${(t.count / s.total) * 100}%` }} />
                   ))}
                 </div>
-                <p aria-label="Briefs by type" className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-foreground-secondary tabular-nums">
+                <p aria-label="Briefs by type" className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
                   {s.byType.map((t) => (
                     <span key={t.name} className="inline-flex items-center gap-1.5">
                       <span aria-hidden="true" className={cn("size-2 rounded-full", typeFill(order, t.name))} />{`${t.name} ${t.count}`}
@@ -158,12 +158,12 @@ export function BriefCalendar({ model, typeOrder }: {
       <section aria-labelledby="brief-weeks-h" className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
         <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-sm font-semibold text-heading">Briefs per requester, per week</h2>
         {model.rows.length === 0 ? (
-          <p className="px-4 py-6 text-sm text-foreground-secondary">No briefs this month yet.</p>
+          <p className="px-4 py-6 text-sm text-muted-foreground">No briefs this month yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table aria-label="Briefs per requester per week" data-tone="first-look" className="w-full text-sm tabular-nums">
               <thead>
-                <tr className="text-left text-xs text-foreground-secondary">
+                <tr className="text-left text-xs text-muted-foreground">
                   <th scope="col" className="px-4 py-2 font-medium">Requester</th>
                   {model.weekCols.map((w) => <th key={w.label} scope="col" className="px-2 py-2 text-center font-medium whitespace-nowrap">{w.label}</th>)}
                   <th scope="col" className="px-4 py-2 text-right font-medium">Total</th>
@@ -181,8 +181,8 @@ export function BriefCalendar({ model, typeOrder }: {
                       return (
                         <td key={model.weekCols[i].label} data-level={started ? level : undefined} className="px-2 py-1.5 text-center">
                           {started ? (
-                            <span className={cn("inline-flex h-7 min-w-10 items-center justify-center rounded-md px-1.5", level === 0 ? "text-foreground-secondary" : "font-medium text-tone-text", HEAT[level])}>{c}</span>
-                          ) : <span className="text-foreground-secondary">–</span>}
+                            <span className={cn("inline-flex h-7 min-w-10 items-center justify-center rounded-md px-1.5", level === 0 ? "text-muted-foreground" : "font-medium text-tone-text", HEAT[level])}>{c}</span>
+                          ) : <span className="text-muted-foreground">–</span>}
                         </td>
                       );
                     })}
@@ -196,11 +196,11 @@ export function BriefCalendar({ model, typeOrder }: {
       </section>
 
       {narrow ? (
-        <ol aria-label="Days" className="divide-y divide-border rounded-xl border border-border bg-surface">
+        <ol aria-label="Days" className="divide-y divide-border rounded-xl border border-border bg-card">
           {days.map((d) => (
             <li key={d.day} aria-current={d.isToday ? "date" : undefined}>
               <button type="button" aria-haspopup="dialog" aria-label={dayAria(d)} onClick={() => setOpen(d.day)}
-                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isDayOff || d.isFuture) && "text-foreground-secondary", d.isDayOff && "bg-surface-muted", focusRing)}>
+                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isDayOff || d.isFuture) && "text-muted-foreground", d.isDayOff && "bg-muted", focusRing)}>
                 <span>{dayLabel(d.day)}{d.isToday && <span className="ml-1.5 font-medium text-link">Today</span>}</span>
                 <Dots day={d} items={model.itemsByDay[d.day] ?? []} align="end" />
               </button>
@@ -210,7 +210,7 @@ export function BriefCalendar({ model, typeOrder }: {
       ) : (
         <div>
           <div aria-hidden="true" className="mb-1 grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-foreground-secondary">{w}</div>)}
+            {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-muted-foreground">{w}</div>)}
           </div>
           <div className="space-y-1">
             {model.weeks.map((week) => (
@@ -219,8 +219,8 @@ export function BriefCalendar({ model, typeOrder }: {
                   <button key={d.day} type="button" aria-haspopup="dialog" aria-label={dayAria(d)} aria-current={d.isToday ? "date" : undefined}
                     onClick={() => setOpen(d.day)}
                     className={cn(
-                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-surface-muted",
-                      d.isDayOff ? "bg-surface-muted" : "bg-surface",
+                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-muted",
+                      d.isDayOff ? "bg-muted" : "bg-card",
                       d.isToday ? "border-ring" : "border-border hover:border-border-strong",
                       d.isFuture && "opacity-60",
                       focusRing,
@@ -228,14 +228,14 @@ export function BriefCalendar({ model, typeOrder }: {
                     <span aria-hidden="true" className="flex w-full items-center justify-between">
                       <span className={cn(
                         "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
-                        d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-foreground-secondary" : "text-foreground",
+                        d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-muted-foreground" : "text-foreground",
                       )}>{Number(d.day.slice(8))}</span>
-                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-[11px] text-foreground-secondary tabular-nums">{d.count}</span>}
+                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-[11px] text-muted-foreground tabular-nums">{d.count}</span>}
                     </span>
                     <Dots day={d} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>
                 ) : (
-                  <div key={d.day} aria-hidden="true" className="min-h-20 rounded-lg border border-border bg-surface-muted opacity-50" />
+                  <div key={d.day} aria-hidden="true" className="min-h-20 rounded-lg border border-border bg-muted opacity-50" />
                 ))}
               </div>
             ))}
@@ -244,7 +244,7 @@ export function BriefCalendar({ model, typeOrder }: {
       )}
 
       {model.rows.length > 0 && (
-        <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground-secondary">
+        <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
           {model.rows.map((r) => (
             <li key={r.person.id} className="flex items-center gap-1.5"><Dot person={r.person} size="size-3" />{r.person.name}</li>
           ))}

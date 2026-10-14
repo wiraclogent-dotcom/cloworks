@@ -19,7 +19,7 @@ export const teamT = tableClass();
 export function TeamTableFrame({ caption, minWidth, children }: { caption: string; minWidth: string; children: React.ReactNode }) {
   return (
     <>
-      <p data-scroll-hint="" className="mb-2 flex items-center gap-1.5 text-xs text-foreground-secondary lg:hidden">
+      <p data-scroll-hint="" className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground lg:hidden">
         <MoveHorizontal aria-hidden="true" strokeWidth={1.75} className="size-3.5" />Scroll sideways to see every column.
       </p>
       <div className={cn(teamT.wrapper, "max-h-[calc(100dvh-16rem)]")}>

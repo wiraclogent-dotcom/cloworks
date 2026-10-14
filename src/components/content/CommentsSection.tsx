@@ -37,13 +37,13 @@ export function CommentsSection({ postId, comments, canComment }: { postId: stri
   const now = new Date();
   return (
     <section aria-labelledby={`${uid}-h`} className="flex flex-col gap-2">
-      <h3 id={`${uid}-h`} className="text-xs font-medium text-foreground-secondary">{`Comments (${comments.length})`}</h3>
+      <h3 id={`${uid}-h`} className="text-xs font-medium text-muted-foreground">{`Comments (${comments.length})`}</h3>
       {comments.length ? (
         <ul className="flex flex-col gap-1.5">
           {comments.map((c) => (
             <li key={c.id} data-feedback={c.isFeedback ? "" : undefined} data-tone={c.isFeedback ? "due-soon" : undefined}
-              className={cn("rounded-lg px-3 py-2 text-[13px]", c.isFeedback ? "bg-tone-tint" : "bg-surface-muted")}>
-              <p className="text-xs text-foreground-secondary">
+              className={cn("rounded-lg px-3 py-2 text-[13px]", c.isFeedback ? "bg-tone-tint" : "bg-muted")}>
+              <p className="text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{c.authorName}</span>
                 {c.isFeedback ? " · feedback" : null}
                 {" · "}<time dateTime={c.createdAt} suppressHydrationWarning>{relativeTime(new Date(c.createdAt), now)}</time>

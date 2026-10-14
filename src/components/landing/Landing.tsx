@@ -63,13 +63,13 @@ const BRIEFERS: { name: string; days: boolean[] }[] = [
 
 function BriefWeek() {
   return (
-    <figure className="rounded-xl border border-border bg-surface p-5 shadow-card">
+    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
       <figcaption className="mb-4 text-[13px] font-semibold text-foreground">Brief calendar, this week</figcaption>
       <table className="w-full border-separate border-spacing-y-2 text-[13px]">
         <thead>
           <tr>
             <th scope="col" className="sr-only">Person</th>
-            {WEEK.map((d) => <th key={d} scope="col" className="w-10 text-center text-xs font-medium text-foreground-secondary">{d}</th>)}
+            {WEEK.map((d) => <th key={d} scope="col" className="w-10 text-center text-xs font-medium text-muted-foreground">{d}</th>)}
           </tr>
         </thead>
         <tbody>
@@ -102,7 +102,7 @@ const QUEUE: { title: string; due: string; tone: "due-soon" | "overdue" | "tag-n
 
 function DesignerQueue() {
   return (
-    <figure className="rounded-xl border border-border bg-surface p-5 shadow-card">
+    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
       <figcaption className="mb-3 text-[13px] font-semibold text-foreground">Assigned to you</figcaption>
       <ul className="divide-y divide-border">
         {QUEUE.map((q) => (
@@ -126,10 +126,10 @@ const TARGET = 20;
 
 function TeamKpi() {
   return (
-    <figure className="rounded-xl border border-border bg-surface p-5 shadow-card">
+    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
       <figcaption className="mb-4 flex items-baseline justify-between text-[13px]">
         <span className="font-semibold text-foreground">Team KPI, October</span>
-        <span className="text-foreground-secondary">Target {TARGET} each</span>
+        <span className="text-muted-foreground">Target {TARGET} each</span>
       </figcaption>
       <ul className="space-y-4">
         {TEAM.map((m) => {
@@ -139,9 +139,9 @@ function TeamKpi() {
             <li key={m.name}>
               <div className="mb-1.5 flex items-center justify-between text-[13px]">
                 <span className="inline-flex items-center gap-2 font-medium text-foreground"><Avatar name={m.name} size="sm" decorative />{m.name}</span>
-                <span className="text-foreground-secondary tabular-nums">{m.done} of {TARGET} done</span>
+                <span className="text-muted-foreground tabular-nums">{m.done} of {TARGET} done</span>
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
+              <div className="h-2 overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border">
                 <div className={cn("h-full rounded-full", fill)} style={{ width: `${Math.min(100, pct)}%` }} />
               </div>
             </li>
@@ -182,7 +182,7 @@ const ROLES: { who: string; title: string; body: string; points: string[]; visua
 export function Landing() {
   return (
     <div className="flex flex-1 flex-col">
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2">Skip to content</a>
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-card focus:px-3 focus:py-2">Skip to content</a>
 
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <nav aria-label="Main" className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
@@ -190,15 +190,15 @@ export function Landing() {
             <LogoMark size={30} />
             Cloworks
           </Link>
-          <ul className="mx-auto hidden items-center gap-1 text-sm font-medium whitespace-nowrap text-foreground-secondary lg:flex">
+          <ul className="mx-auto hidden items-center gap-1 text-sm font-medium whitespace-nowrap text-muted-foreground lg:flex">
             {NAV.map((n) => (
               <li key={n.href}>
-                <a href={n.href} className="rounded-md px-3 py-2 transition-colors hover:bg-surface-muted hover:text-foreground">{n.label}</a>
+                <a href={n.href} className="rounded-md px-3 py-2 transition-colors hover:bg-muted hover:text-foreground">{n.label}</a>
               </li>
             ))}
           </ul>
           <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
-            <Link href="/signin" className="hidden rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-surface-muted sm:inline-flex">Sign in</Link>
+            <Link href="/signin" className="hidden rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted sm:inline-flex">Sign in</Link>
             <Link href="/signin" className={cn(ctaPrimary, "h-9 px-4 text-sm")}>Open Cloworks</Link>
           </div>
         </nav>
@@ -213,7 +213,7 @@ export function Landing() {
         <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16">
           <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-6">
             <div className="text-center lg:text-left">
-              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-[13px] font-medium text-foreground-secondary shadow-card backdrop-blur">
+              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-[13px] font-medium text-muted-foreground shadow-card backdrop-blur">
                 <span aria-hidden="true" className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-brand-aqua opacity-60" /><span className="relative size-2 rounded-full bg-brand-aqua" /></span>
                 Clogent&apos;s creative studio, in one board
               </p>
@@ -221,17 +221,17 @@ export function Landing() {
                 Every creative request,{" "}
                 <span className="bg-gradient-to-r from-brand-gradient-from via-brand-gradient-via to-brand-gradient-to bg-clip-text text-transparent">from brief to done.</span>
               </h1>
-              <p style={{ "--i": 2 } as CSSProperties} className="animate-rise mx-auto mt-6 max-w-xl text-base leading-relaxed text-foreground-secondary sm:text-lg lg:mx-0">
+              <p style={{ "--i": 2 } as CSSProperties} className="animate-rise mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
                 Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
                 picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
               </p>
               <div style={{ "--i": 3 } as CSSProperties} className="animate-rise mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
                 <Link href="/signin" className={cn(ctaPrimary, "press h-11 px-5 text-[15px]")}>Sign in to Cloworks</Link>
-                <a href="#how" className="press inline-flex h-11 items-center gap-2 rounded-lg border border-border-strong bg-surface px-5 text-[15px] font-medium text-foreground shadow-card transition-colors hover:bg-surface-muted [&_svg]:size-4">
+                <a href="#how" className="press inline-flex h-11 items-center gap-2 rounded-lg border border-border-strong bg-card px-5 text-[15px] font-medium text-foreground shadow-card transition-colors hover:bg-muted [&_svg]:size-4">
                   <CirclePlay aria-hidden="true" />See how it works
                 </a>
               </div>
-              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-[13px] text-foreground-secondary lg:justify-start">
+              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-[13px] text-muted-foreground lg:justify-start">
                 <span aria-hidden="true" className="inline-flex -space-x-2.5">
                   {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-9 text-xs" />)}
                 </span>
@@ -260,7 +260,7 @@ export function Landing() {
         <div className="mx-auto max-w-6xl px-4 pt-16 pb-14 sm:px-6 sm:pt-20">
           <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
             <h2 id="feed-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>From brief to feed</h2>
-            <p className="max-w-md text-base text-foreground-secondary">
+            <p className="max-w-md text-base text-muted-foreground">
               Carousels, reels, stories and banners. Each one starts as a request on the board and ends on Done.
             </p>
           </div>
@@ -268,7 +268,7 @@ export function Landing() {
             {FEED.map((post, i) => (
               <li key={post.src} className={cn("reveal w-[62%] shrink-0 snap-start sm:w-[38%] lg:w-auto", i % 2 === 1 && "lg:translate-y-8")}>
                 <figure>
-                  <div className="lift group relative aspect-[4/5] overflow-hidden rounded-lg bg-surface-muted shadow-card">
+                  <div className="lift group relative aspect-[4/5] overflow-hidden rounded-lg bg-muted shadow-card">
                     <Image src={post.src} alt={post.alt} fill sizes="(min-width: 1024px) 180px, (min-width: 640px) 38vw, 62vw" className="object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-105" />
                     <span className="absolute top-2 left-2 rounded-md bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">{post.format}</span>
                   </div>
@@ -300,7 +300,7 @@ export function Landing() {
                 <div className={cn(i % 2 === 1 && "lg:order-2")}>
                   <p className="text-sm font-semibold text-link">{role.who}</p>
                   <h3 className={cn(display, "mt-2 text-2xl leading-tight font-bold text-heading sm:text-[2rem]")}>{role.title}</h3>
-                  <p className="mt-4 max-w-md text-base leading-relaxed text-foreground-secondary">{role.body}</p>
+                  <p className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground">{role.body}</p>
                   <ul className="mt-5 max-w-md space-y-2.5 text-sm text-foreground">
                     {role.points.map((p) => (
                       <li key={p} className="flex gap-3">
@@ -321,7 +321,7 @@ export function Landing() {
         </div>
       </section>
 
-      <section id="features" aria-labelledby="tools-title" className="scroll-mt-16 border-t border-border bg-surface">
+      <section id="features" aria-labelledby="tools-title" className="scroll-mt-16 border-t border-border bg-card">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <h2 id="tools-title" className={cn(display, "max-w-2xl text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>
             Look at the work the way you need it
@@ -333,7 +333,7 @@ export function Landing() {
                   <span aria-hidden="true" data-tone={t.tone} className="flex size-11 items-center justify-center rounded-xl bg-tone-tint text-tone-text [&_svg]:size-5">{t.icon}</span>
                   {t.title}
                 </dt>
-                <dd className="mt-1.5 text-sm leading-relaxed text-foreground-secondary">{t.body}</dd>
+                <dd className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{t.body}</dd>
               </div>
             ))}
           </dl>

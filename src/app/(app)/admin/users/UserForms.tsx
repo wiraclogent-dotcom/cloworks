@@ -66,7 +66,7 @@ export function LoginEmailForm({ u }: { u: UserRowData }) {
 
 /** Admin sets or resets the sign-in password; it is never echoed back after an error. */
 export function PasswordForm({ u }: { u: UserRowData }) {
-  if (!u.email) return <p className="text-xs text-foreground-secondary">Set a login email first, then a password.</p>;
+  if (!u.email) return <p className="text-xs text-muted-foreground">Set a login email first, then a password.</p>;
   return (
     <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="secondary" hidden={{ userId: u.id }}>
       {({ idFor, aria }) => (

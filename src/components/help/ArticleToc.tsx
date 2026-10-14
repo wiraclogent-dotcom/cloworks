@@ -10,7 +10,7 @@ export function ArticleToc({ entries }: { entries: TocEntry[] }) {
       <ul className="space-y-1">
         {entries.map((e) => (
           <li key={e.id} className={e.level === 3 ? "pl-3" : undefined}>
-            <a href={`#${e.id}`} className="text-foreground-secondary hover:text-foreground">{e.text}</a>
+            <a href={`#${e.id}`} className="text-muted-foreground hover:text-foreground">{e.text}</a>
           </li>
         ))}
       </ul>

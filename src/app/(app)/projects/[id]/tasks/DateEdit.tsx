@@ -46,7 +46,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
         <button
           type="button"
           aria-label={`Edit ${what.toLowerCase()} for ${label}: ${display}`}
-          className="rounded-md px-1 -mx-1 text-left tabular-nums underline decoration-dotted underline-offset-4 hover:bg-surface-muted"
+          className="rounded-md px-1 -mx-1 text-left tabular-nums underline decoration-dotted underline-offset-4 hover:bg-muted"
         >
           {display}
         </button>
@@ -63,7 +63,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
       >
         <div className="grid gap-3">
           <div role="group" aria-label={`${what} for ${label}`} className="grid gap-1.5">
-            <p className="text-xs font-medium text-foreground-secondary">{what}</p>
+            <p className="text-xs font-medium text-muted-foreground">{what}</p>
             <Calendar
               mode="single"
               required

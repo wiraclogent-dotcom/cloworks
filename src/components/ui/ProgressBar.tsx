@@ -16,14 +16,14 @@ export function ProgressBar({ value, max = 100, label, hideLabel = false, valueT
       {!hideLabel ? (
         <div className="mb-1.5 flex items-center justify-between gap-2 text-[13px]">
           <span className="font-medium text-foreground">{label}</span>
-          <span className="inline-flex items-center gap-1 text-foreground-secondary tabular-nums">
+          <span className="inline-flex items-center gap-1 text-muted-foreground tabular-nums">
             {complete ? <Check aria-hidden="true" strokeWidth={2} className="size-3.5 text-link" /> : null}
             {text}
           </span>
         </div>
       ) : null}
       <div role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={max} aria-valuenow={Math.min(safe, max)} aria-valuetext={text}
-        className="h-2 w-full overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
+        className="h-2 w-full overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border">
         <div className="animate-bar h-full rounded-full bg-chart-done transition-[width] duration-200 ease-out" style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>

@@ -64,10 +64,10 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
   if (!editable && !list.length) return null;
   return (
     <div role="group" aria-label={label} aria-busy={pending || undefined}>
-      <p className="mb-1 text-xs font-medium text-foreground-secondary">{label}</p>
+      <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
       <ul className="flex flex-wrap items-start gap-1.5">
         {list.map((m, i) => (
-          <li key={m.mediaId} className={cn("group relative aspect-[3/4] w-14 overflow-hidden rounded-md bg-surface-muted", !m.url && STRIPES)}>
+          <li key={m.mediaId} className={cn("group relative aspect-[3/4] w-14 overflow-hidden rounded-md bg-muted", !m.url && STRIPES)}>
             {m.url ? (
               // eslint-disable-next-line @next/next/no-img-element -- Cloudinary already sizes and formats the image
               <img src={m.url} alt={`${label} ${i + 1}`} className="size-full object-cover" />
@@ -97,7 +97,7 @@ export function MediaStrip({ postId, role, items, editable, mediaReady, label }:
           </li>
         ) : null}
       </ul>
-      {editable && !mediaReady ? <p className="mt-1 text-xs text-foreground-secondary">Media storage is not configured</p> : null}
+      {editable && !mediaReady ? <p className="mt-1 text-xs text-muted-foreground">Media storage is not configured</p> : null}
       {error ? <p role="alert" className="mt-1 text-xs text-danger">{error}</p> : null}
     </div>
   );

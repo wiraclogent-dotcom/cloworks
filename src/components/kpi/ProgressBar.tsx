@@ -17,7 +17,7 @@ export const PROGRESS_FILL: Record<ProgressLevel, string> = {
  */
 export function ProgressBar({ done, target, progress, label }: { done: number; target: number | null; progress: number | null; label: string }) {
   if (target === null) {
-    return <p className="text-sm text-foreground-secondary">{done} {done === 1 ? "task" : "tasks"} done. No target set for this month.</p>;
+    return <p className="text-sm text-muted-foreground">{done} {done === 1 ? "task" : "tasks"} done. No target set for this month.</p>;
   }
   const pct = progressPercent(progress);
   const text = pct === null ? `${done} of ${target} tasks` : `${done} of ${target} tasks (${pct}%)`;
@@ -28,7 +28,7 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-lg font-semibold text-foreground tabular-nums">{text}</p>
         {level ? (
-          <span className="inline-flex items-center gap-1 text-[13px] text-foreground-secondary">
+          <span className="inline-flex items-center gap-1 text-[13px] text-muted-foreground">
             {level === "complete" ? <Check aria-hidden="true" strokeWidth={2.25} className="size-4 text-progress-complete" /> : null}
             {PROGRESS_LEVEL_LABEL[level].replace(/^./, (c) => c.toUpperCase())}
           </span>
@@ -41,7 +41,7 @@ export function ProgressBar({ done, target, progress, label }: { done: number; t
         aria-valuemax={100}
         aria-valuenow={width}
         aria-valuetext={text}
-        className="h-3 w-full overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border"
+        className="h-3 w-full overflow-hidden rounded-full bg-muted outline outline-1 -outline-offset-1 outline-border"
       >
         <div className={cn("animate-bar h-full rounded-full transition-[width] duration-200 ease-out", level ? PROGRESS_FILL[level] : "bg-progress-mid")} style={{ width: `${width}%` }} />
       </div>

@@ -26,14 +26,14 @@ export function ProjectTimeline({ projects, today, href }: {
 }) {
   const layout = timelineLayout(projects, today);
   if (layout.bars.length === 0)
-    return <p className="rounded-lg border border-dashed border-border-strong p-4 text-sm text-foreground-secondary">The timeline shows projects that have both a start and a due date. None yet.</p>;
+    return <p className="rounded-lg border border-dashed border-border-strong p-4 text-sm text-muted-foreground">The timeline shows projects that have both a start and a due date. None yet.</p>;
   const byId = new Map(projects.map((p) => [p.id, p]));
   const cols = layout.weeks.length;
   const drawn = new Set(layout.bars.map((b) => byId.get(b.id)?.status).filter(Boolean));
   const legend = PROJECT_STATUSES.filter((st) => drawn.has(st));
   return (
     <div>
-      <p className="mb-3 text-[13px] text-foreground-secondary">
+      <p className="mb-3 text-[13px] text-muted-foreground">
         Weeks start on Monday. Each bar is labelled with its dates and status.
         {layout.truncated && " Showing the first 26 weeks only; later parts of longer projects are cut off."}
         {layout.omitted.length > 0 && ` Not drawn because they start after this range: ${layout.omitted.map((id) => byId.get(id)?.title ?? id).join(", ")}.`}
@@ -41,7 +41,7 @@ export function ProjectTimeline({ projects, today, href }: {
       </p>
       <div className="relative overflow-x-auto rounded-lg border border-border">
         <div style={{ minWidth: `${Math.max(40, cols * 4.5 + LABEL_REM)}rem`, "--label-w": `${LABEL_REM}rem` } as React.CSSProperties} className="relative">
-          <div className="flex border-b border-border bg-surface-muted text-xs font-semibold text-foreground-secondary">
+          <div className="flex border-b border-border bg-muted text-xs font-semibold text-muted-foreground">
             <div className="w-(--label-w) shrink-0 px-3 py-2">Project</div>
             <div className="grid flex-1" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
               {layout.weeks.map((w) => <div key={w.startDay} className="border-l border-border px-1.5 py-2 whitespace-nowrap tabular-nums">{w.label}</div>)}
@@ -78,7 +78,7 @@ export function ProjectTimeline({ projects, today, href }: {
                 <li key={b.id} className="border-t border-border text-[13px] first:border-t-0">
                   {url ? (
                     <Link href={url} aria-label={`${p.title}, ${range}${p.status ? `, ${PROJECT_STATUS_LABEL[p.status]}` : ""}`}
-                      className={cn(ROW, "hover:bg-surface-muted focus-visible:bg-surface-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring")}>
+                      className={cn(ROW, "hover:bg-muted focus-visible:bg-muted focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring")}>
                       {content}
                     </Link>
                   ) : <div className={ROW}>{content}</div>}
@@ -94,7 +94,7 @@ export function ProjectTimeline({ projects, today, href }: {
         </div>
       </div>
       {legend.length > 0 && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-foreground-secondary">
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <span>Bar colour = status:</span>
           <ul className="flex flex-wrap gap-1.5">{legend.map((st) => <li key={st}><StatusChip status={st} kind="project" /></li>)}</ul>
         </div>

@@ -33,7 +33,7 @@ export function DayDialog({ day, cards, today, onClose }: { day: string; cards: 
         <div className="mb-4 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <h2 id={titleId} className="text-base font-semibold text-heading">{dayLabel(day)}</h2>
-            <p className="mt-0.5 text-sm text-foreground-secondary tabular-nums">{count}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground tabular-nums">{count}</p>
           </div>
           <IconButton aria-label="Close" icon={<X />} onClick={onClose} />
         </div>

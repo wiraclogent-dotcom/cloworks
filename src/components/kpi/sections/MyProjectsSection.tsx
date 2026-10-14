@@ -29,7 +29,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
       controls={<YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y }) }))} />}>
       {targetCount === 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
-          <p className="text-sm text-foreground-secondary">No project targets for {year}.</p>
+          <p className="text-sm text-muted-foreground">No project targets for {year}.</p>
           {canTeam ? <Link href={`/dashboard/projects/${subject.id}?year=${year}`} className={buttonClass({ variant: "secondary", size: "sm" })}>Set targets</Link> : null}
         </div>
       ) : (

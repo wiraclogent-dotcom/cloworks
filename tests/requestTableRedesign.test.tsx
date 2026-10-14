@@ -50,7 +50,7 @@ describe("RequestTable (redesign)", () => {
     table([row("a", { assignees: [], status: "DONE" }), row("b", { deadline: null, daysLeft: null })]);
     const [, a, b] = screen.getAllByRole("row");
     expect(a.querySelector("[data-cell='assignee']")!.textContent).toBe("Unassigned");
-    expect(a.querySelector("[data-cell='assignee'] span")!.className).toMatch(/text-foreground-secondary/);
+    expect(a.querySelector("[data-cell='assignee'] span")!.className).toMatch(/text-muted-foreground/);
     expect(a.querySelector("[data-deadline]")).toBeNull();
     expect(b.querySelector("[data-cell='deadline']")!.textContent).toBe("—");
   });

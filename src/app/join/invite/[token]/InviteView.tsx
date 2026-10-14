@@ -15,7 +15,7 @@ import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { acceptInviteAction } from "./actions";
 
-const lead = "mt-3 text-base leading-relaxed text-foreground-secondary";
+const lead = "mt-3 text-base leading-relaxed text-muted-foreground";
 
 /**
  * Shows only the workspace, inviter, role and the MASKED invited email (never the address itself). Members are told

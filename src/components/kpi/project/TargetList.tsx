@@ -32,13 +32,13 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
   const badge = targetBadge(item);
   const label = `${item.projectTitle} › ${item.itemTitle}`;
   return (
-    <li data-state={item.state} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", muted && "text-foreground-secondary")}>
+    <li data-state={item.state} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", muted && "text-muted-foreground")}>
       <div className="min-w-0 grow basis-60">
         {/* The link uses the base slug of the title alone. If two different titles slug to the same value (e.g. "A-B" and "A B"), the page gives the second one a "-2" suffix, so this link opens the first matching item. */}
         <Link href={`/projects/${item.projectId}#item-${itemSlug(item.itemTitle, new Set())}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
-          <span className="text-foreground-secondary">{item.projectTitle}</span> › {item.itemTitle}
+          <span className="text-muted-foreground">{item.projectTitle}</span> › {item.itemTitle}
         </Link>
-        <p className="mt-0.5 text-xs text-foreground-secondary tabular-nums">{item.slips} {item.slips === 1 ? "slip" : "slips"} · {item.revisions} {item.revisions === 1 ? "revision" : "revisions"}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{item.slips} {item.slips === 1 ? "slip" : "slips"} · {item.revisions} {item.revisions === 1 ? "revision" : "revisions"}</p>
       </div>
       <div className="w-32 shrink-0">
         <ProgressBar hideLabel label={`${label} progress`} value={Math.round(item.progress * 100)} />
@@ -47,7 +47,7 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
         {item.state === "open" ? (
           <DeadlineChip daysLeft={daysLeft(item.dueDate)} />
         ) : item.dueDate ? (
-          <span className="text-xs text-foreground-secondary tabular-nums">Due {dateText(item.dueDate)}</span>
+          <span className="text-xs text-muted-foreground tabular-nums">Due {dateText(item.dueDate)}</span>
         ) : null}
         <Chip tone={badge.tone} className={cn(badge.muted && "bg-transparent text-foreground-muted outline outline-1 -outline-offset-1 outline-border")}>{badge.text}</Chip>
         {canManage && item.targetId ? <RemoveTargetButton targetId={item.targetId} label={label} /> : null}

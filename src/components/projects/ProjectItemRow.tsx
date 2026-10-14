@@ -127,10 +127,10 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           onClick={() => setOpen((o) => !o)}
           className="flex min-w-0 flex-1 items-center gap-2 rounded-md text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <ChevronRight aria-hidden="true" className={cn("size-4 shrink-0 text-foreground-secondary transition-transform duration-150", open && "rotate-90")} />
+          <ChevronRight aria-hidden="true" className={cn("size-4 shrink-0 text-muted-foreground transition-transform duration-150", open && "rotate-90")} />
           <span className="min-w-0">
             <span className={cn("block truncate text-sm font-medium", item.allCancelled ? "text-foreground-muted line-through" : "text-foreground")}>{item.title}</span>
-            <span className="block text-xs text-foreground-secondary">{variants}</span>
+            <span className="block text-xs text-muted-foreground">{variants}</span>
           </span>
         </button>
         {canManage && !renaming && (
@@ -147,7 +147,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
         </div>
 
         <div className="flex basis-40 flex-col gap-1">
-          <div aria-hidden="true" className="flex h-2 w-full gap-px overflow-hidden rounded-full bg-surface-muted">
+          <div aria-hidden="true" className="flex h-2 w-full gap-px overflow-hidden rounded-full bg-muted">
             {item.counts.map((c) => (
               <div key={c.key} data-segment={c.key} data-tone={segmentOf(c.key, mode).tone} className="h-full bg-tone-accent" style={{ width: `${(c.n / total) * 100}%` }} />
             ))}
@@ -160,7 +160,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
         <AvatarStack names={item.owners} max={3} size="sm" label="Owners" />
 
         <div className="min-w-24 text-sm">
-          {item.dueDate ? <DeadlineChip daysLeft={daysLeft(item.dueDate)} /> : item.dueTbc ? <span className="text-foreground-secondary">TBC</span> : <span className="text-foreground-muted">—</span>}
+          {item.dueDate ? <DeadlineChip daysLeft={daysLeft(item.dueDate)} /> : item.dueTbc ? <span className="text-muted-foreground">TBC</span> : <span className="text-foreground-muted">—</span>}
         </div>
 
         {canManage && !item.allCancelled && (
@@ -202,7 +202,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
       )}
 
       {canManage && !item.allCancelled && (
-        <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-foreground-secondary" : "sr-only"}>{note}</p>
+        <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-muted-foreground" : "sr-only"}>{note}</p>
       )}
 
       {error && <div className="px-3 pb-2.5"><Alert tone="danger">{error}</Alert></div>}

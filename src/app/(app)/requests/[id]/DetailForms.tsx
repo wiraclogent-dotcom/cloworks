@@ -54,7 +54,7 @@ export function CommentForm({ requestId }: { requestId: string }) {
         aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-e` : `${uid}-h`} className={fieldClass({ kind: "textarea", invalid: !!error })} />
       <ErrorLine id={`${uid}-e`} message={error} />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p id={`${uid}-h`} className="text-xs text-foreground-secondary">Type @ and a name to mention a teammate.</p>
+        <p id={`${uid}-h`} className="text-xs text-muted-foreground">Type @ and a name to mention a teammate.</p>
         <Button type="submit" variant="primary" size="sm" loading={pending} icon={<MessageSquarePlus aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Posting…" : "Post comment"}</Button>
       </div>
     </form>
@@ -174,11 +174,11 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
       {list.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-1.5">
           {list.map((p) => (
-            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
+            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
               <Avatar name={p.name} size="sm" decorative />
               <span className="min-w-0 truncate">{p.name}</span>
               <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply({ remove: p })}
-                className={cn("inline-flex size-5 items-center justify-center rounded-full text-foreground-secondary hover:bg-surface hover:text-foreground aria-disabled:opacity-50", focusRing)}>
+                className={cn("inline-flex size-5 items-center justify-center rounded-full text-muted-foreground hover:bg-card hover:text-foreground aria-disabled:opacity-50", focusRing)}>
                 <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
               </button>
             </li>

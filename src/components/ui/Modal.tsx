@@ -45,7 +45,7 @@ export function Modal({ title, description, children, className, side = "center"
       {side === "right" ? (
         <>
           <div className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-border bg-background/95 px-4 py-2 backdrop-blur sm:px-6">
-            <h2 id="modal-title" className="text-sm font-semibold text-foreground-secondary">{title}</h2>
+            <h2 id="modal-title" className="text-sm font-semibold text-muted-foreground">{title}</h2>
             <div className="flex items-center gap-1">{actions}{close}</div>
           </div>
           <div className="p-4 sm:p-6">{children}</div>
@@ -55,7 +55,7 @@ export function Modal({ title, description, children, className, side = "center"
           <div className="mb-4 flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h2 id="modal-title" className="text-[22px] font-semibold text-heading">{title}</h2>
-              {description && <p id="modal-desc" className="mt-1 text-foreground-secondary">{description}</p>}
+              {description && <p id="modal-desc" className="mt-1 text-muted-foreground">{description}</p>}
             </div>
             <div className="flex items-center gap-1">{actions}{close}</div>
           </div>
