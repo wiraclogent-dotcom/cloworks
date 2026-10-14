@@ -22,7 +22,6 @@ export async function setTaskStage(projectId: string, taskId: string, stage: Pro
     const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, stage: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
     await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STAGE", from: task.stage, to: stage, data: { stage } }));
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, stage };
   }, unauthResult);
@@ -40,7 +39,7 @@ export async function setTaskFileUrl(projectId: string, taskId: string, url: str
     const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
     await db.projectTask.update({ where: { id: taskId }, data: { fileUrl } });
-    revalidatePath(`/projects/${projectId}/tasks`);
+    revalidatePath(`/projects/${projectId}`);
     return { ok: true, fileUrl };
   }, unauthResult);
 }
@@ -69,7 +68,6 @@ export async function setTaskDate(projectId: string, taskId: string, field: "sta
     } else {
       await db.projectTask.update({ where: { id: taskId }, data });
     }
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, startDate: startDate ? jakartaIso(startDate) : null, dueDate: dueDate ? jakartaIso(dueDate) : null };
   }, unauthResult);
@@ -116,7 +114,6 @@ export async function setTaskDetail(projectId: string, taskId: string, field: Ta
         await db.projectTask.update({ where: { id: taskId }, data: { subTitle } });
       }
     }
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);
@@ -145,7 +142,6 @@ export async function renameItem(projectId: string, oldTitle: string, newTitle: 
       await tx.projectTask.updateMany({ where: { projectId, title: oldTitle }, data: { title } });
       await carryTargetsOnRename(tx, projectId, oldTitle, title);
     });
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);
@@ -162,7 +158,6 @@ export async function setTaskStatus(projectId: string, taskId: string, status: P
     const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, status: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
     await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STATUS", from: task.status, to: status, data: { status } }));
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, status };
   }, unauthResult);
@@ -281,7 +276,6 @@ export async function createTaskDetail(projectId: string, input: NewDetailInput)
         select: { id: true },
       });
     });
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, id: created.id };
   }, unauthResult);
@@ -296,7 +290,6 @@ export async function deleteTask(projectId: string, taskId: string): Promise<Tas
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to delete details." };
     const { count } = await db.projectTask.deleteMany({ where: { id: taskId, projectId } });
     if (count === 0) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);
@@ -326,7 +319,6 @@ export async function moveTask(projectId: string, taskId: string, direction: "up
     await db.$transaction(
       order.flatMap((id, i) => (current.get(id) === i + 1 ? [] : [db.projectTask.update({ where: { id }, data: { position: i + 1 } })])),
     );
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);

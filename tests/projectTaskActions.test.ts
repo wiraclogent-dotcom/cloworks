@@ -3,11 +3,11 @@ import type { PrismaClient } from "@prisma/client";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 // The actions use the session's user and workspace-scoped client; point them at a throwaway database and a switchable user.
-const h = vi.hoisted(() => ({ prisma: null as unknown as PrismaClient, user: { id: "u", appRole: "CREATIVE" as string } }));
+const h = vi.hoisted(() => ({ prisma: null as unknown as PrismaClient, user: { id: "u", appRole: "CREATIVE" as string }, revalidated: [] as string[] }));
 vi.mock("@/lib/session", () => ({ requireUser: async () => h.user, dbFor: () => h.prisma }));
-vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
+vi.mock("next/cache", () => ({ revalidatePath: (p: string) => h.revalidated.push(p) }));
 
-import { createTaskDetail, deleteTask, moveTask, renameItem, setTaskStatus, setTaskStage } from "@/app/(app)/projects/[id]/tasks/actions";
+import { createTaskDetail, deleteTask, moveTask, renameItem, setTaskFileUrl, setTaskStatus, setTaskStage } from "@/app/(app)/projects/[id]/tasks/actions";
 import { createMilestone, deleteMilestone, updateMilestone } from "@/app/(app)/projects/[id]/actions";
 
 describe("project task and milestone actions", () => {
@@ -25,6 +25,7 @@ describe("project task and milestone actions", () => {
   afterAll(async () => { await db?.stop(); });
   beforeEach(async () => {
     h.user = { id: ownerId, appRole: "CREATIVE" };
+    h.revalidated.length = 0;
     await db.prisma.projectTask.deleteMany({});
     await db.prisma.projectMilestone.deleteMany({});
   });
@@ -32,6 +33,15 @@ describe("project task and milestone actions", () => {
   const seed = (titles: string[], extra: object = {}) =>
     Promise.all(titles.map((title, i) => db.prisma.projectTask.create({ data: { projectId, title, position: i + 1, ...extra } })));
   const order = async () => (await db.prisma.projectTask.findMany({ where: { projectId }, orderBy: { position: "asc" } })).map((t) => t.title);
+
+  describe("setTaskFileUrl", () => {
+    it("saves the link and refreshes the project page (the /tasks route only redirects)", async () => {
+      const [a] = await seed(["A"]);
+      expect(await setTaskFileUrl(projectId, a.id, "https://example.com/f")).toMatchObject({ ok: true });
+      expect(h.revalidated).toContain(`/projects/${projectId}`);
+      expect(h.revalidated).not.toContain(`/projects/${projectId}/tasks`);
+    });
+  });
 
   describe("deleteTask", () => {
     it("removes a row of this project", async () => {

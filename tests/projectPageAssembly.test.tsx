@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, cleanup } from "@testing-library/react";
+import { render, cleanup, within } from "@testing-library/react";
 
 const redirect = vi.fn((url: string) => { throw new Error(`NEXT_REDIRECT ${url}`); });
 vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u), notFound: vi.fn(), useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -81,9 +81,12 @@ describe("project page assembly", () => {
   });
 
   it("has the header status chip and a Back to projects link, with no Edit or All details", () => {
-    const { getByRole, queryByText } = render(view());
-    expect(getByRole("link", { name: "Back to projects" }).getAttribute("href")).toBe("/projects");
-    expect(queryByText("All details")).toBeNull();
-    expect(queryByText("Edit")).toBeNull();
+    const { container } = render(view());
+    // The header's actions area; the details card (mocked here) is outside it.
+    const header = container.querySelector("[data-page-actions]") as HTMLElement;
+    expect(header).toBeTruthy();
+    expect(within(header).getByRole("link", { name: "Back to projects" }).getAttribute("href")).toBe("/projects");
+    expect(within(header).queryByText("All details")).toBeNull();
+    expect(within(header).queryByText("Edit")).toBeNull();
   });
 });
