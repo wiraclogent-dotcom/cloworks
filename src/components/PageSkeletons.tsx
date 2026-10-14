@@ -96,7 +96,7 @@ export function KpiSectionSkeleton({ title, tiles = 3, id }: { title: string; ti
 export function SummarySkeleton({ count = 5 }: { count?: 4 | 5 }) {
   return (
     <Busy label="Loading summary…">
-      <div className={cn("grid grid-cols-2 gap-3", count === 5 ? "sm:grid-cols-3 lg:grid-cols-5" : "lg:grid-cols-4")}>
+      <div className={cn("grid grid-cols-2 gap-3", count === 5 ? "md:grid-cols-5" : "md:grid-cols-4")}>
         {Array.from({ length: count }, (_, i) => <TileSkeleton key={i} />)}
       </div>
     </Busy>

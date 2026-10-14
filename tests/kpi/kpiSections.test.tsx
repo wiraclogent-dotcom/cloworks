@@ -36,6 +36,7 @@ import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { KpiSectionSkeleton } from "@/components/PageSkeletons";
 import { TeamSummary } from "@/components/kpi/sections/TeamSummary";
+import { SummaryStrip } from "@/components/kpi/SummaryStrip";
 import { MySummary } from "@/components/kpi/sections/MySummary";
 import { TeamRequestsSection } from "@/components/kpi/sections/TeamRequestsSection";
 import { TeamProjectsSection } from "@/components/kpi/sections/TeamProjectsSection";
@@ -341,11 +342,11 @@ describe("TeamSummary", () => {
     expect(cards.map((c) => c.getAttribute("data-kpi"))).toEqual(["people", "reqDone", "reqProgress", "projDone", "projOnTime"]);
     expect(within(strip).getByText("Request tasks done · Oct 2026")).toBeTruthy();
     expect(within(strip).getByText("Project on time · 2026")).toBeTruthy();
-    expect(within(strip).getByText("3 requests".replace("3", "2") + " · 2 projects")).toBeTruthy();
+    expect(within(strip).getByText("2 requests · 2 projects")).toBeTruthy();
     expect(strip.querySelector('[data-kpi="people"]')!.textContent).toContain("3"); // a, b, c
     expect(strip.querySelector('[data-kpi="projDone"]')!.textContent).toContain("2/4");
     expect(strip.querySelector('[data-kpi="projOnTime"]')!.textContent).toContain("50%");
-    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*sm:grid-cols-3.*lg:grid-cols-5/);
+    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*md:grid-cols-6/);
   });
 });
 
@@ -364,12 +365,34 @@ describe("MySummary", () => {
     const strip = screen.getByRole("region", { name: "Summary" });
     expect([...strip.querySelectorAll("[data-kpi]")].map((c) => c.getAttribute("data-kpi"))).toEqual(["reqDone", "reqProgress", "projDone", "projOnTime"]);
     expect(strip.querySelector('[data-kpi="projDone"]')!.textContent).toContain("1/2");
-    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*lg:grid-cols-4/);
+    expect(strip.querySelector("ul")!.className).toMatch(/grid-cols-2.*md:grid-cols-4/);
   });
   it("shows — when both sections are empty", async () => {
     pq.loadPersonProjectKpi.mockResolvedValue(pk({ 1: empty, 2: empty, 3: empty, 4: empty }));
     await run();
     const strip = screen.getByRole("region", { name: "Summary" });
     for (const k of ["reqDone", "reqProgress", "projDone", "projOnTime"]) expect(strip.querySelector(`[data-kpi="${k}"]`)!.textContent).toContain("—");
+  });
+});
+
+describe("SummaryStrip layout", () => {
+  const c = (key: "people" | "reqDone" | "reqProgress" | "projDone" | "projOnTime") => ({ key, label: key, value: "1" });
+  const spans = (cells: ReturnType<typeof c>[]) => {
+    const { container } = render(<SummaryStrip cells={cells} />);
+    return { ul: container.querySelector("ul")!, items: [...container.querySelectorAll("li")].map((li) => li.className) };
+  };
+  it("five cards: 6 columns from md, People + request cards span 2, project cards span 3, last card spans the phone row", () => {
+    const { ul, items } = spans([c("people"), c("reqDone"), c("reqProgress"), c("projDone"), c("projOnTime")]);
+    expect(ul.className).toContain("grid-cols-2");
+    expect(ul.className).toContain("md:grid-cols-6");
+    for (const i of [0, 1, 2]) expect(items[i]).toContain("md:col-span-2");
+    for (const i of [3, 4]) expect(items[i]).toContain("md:col-span-3");
+    expect(items[4]).toContain("col-span-2 ");
+    expect(items[3]).not.toMatch(/(^| )col-span-2 /);
+  });
+  it("four cards: 2x2 on phones, one row from md, no spans", () => {
+    const { ul, items } = spans([c("reqDone"), c("reqProgress"), c("projDone"), c("projOnTime")]);
+    expect(ul.className).toContain("md:grid-cols-4");
+    for (const cls of items) expect(cls).not.toContain("col-span");
   });
 });

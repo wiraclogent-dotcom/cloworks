@@ -89,7 +89,7 @@ describe("Team table", () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit />);
     const table = screen.getByRole("table", { name: "KPI per person for the selected month" });
     expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
-      ["Name", "Tasks done", "Target", "Progress", "On-time", "Turnaround (days)", "Workload", "Set target"]);
+      ["Person", "Tasks done", "Target", "Progress", "On-time", "Turnaround (days)", "Workload", "Set target"]);
     const fadli = screen.getByRole("rowheader", { name: /Fadli/ });
     expect(fadli.querySelector('[aria-hidden="true"]')!.textContent).toBe("FA");
     expect(within(fadli).getByText("Designer").getAttribute("data-tone")).toBe("tag-neutral");

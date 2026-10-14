@@ -80,7 +80,7 @@ export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = 
             <td className={cn(t.td, t.numeric)}>{num(r.onTimePct, "%")}</td>
             {canOpen ? (
               <td className={t.td}>
-                <Link href={hrefOf(r.userId)} className={buttonClass({ variant: "secondary", size: "sm" })}>{r.hasTargets ? "Open" : "Set targets"}</Link>
+                <Link href={hrefOf(r.userId)} aria-label={`${r.hasTargets ? "Open" : "Set"} targets for ${r.name}`} className={buttonClass({ variant: "secondary", size: "sm" })}>{r.hasTargets ? "Open" : "Set targets"}</Link>
               </td>
             ) : null}
           </tr>

@@ -91,7 +91,7 @@ describe("ProjectTeamTable with a person who has no targets", () => {
     const tr = screen.getByText("Nia").closest("tr")!;
     expect(tr.textContent).toContain("0/0");
     expect(within(tr).getAllByText("—").length).toBe(6); // Q1..Q4, Year, On time
-    expect(within(tr).getByRole("link", { name: "Set targets" }).getAttribute("href")).toBe("/dashboard/projects/n?year=2026");
+    expect(within(tr).getByRole("link", { name: "Set targets for Nia" }).getAttribute("href")).toBe("/dashboard/projects/n?year=2026");
   });
 
   it("has no Set targets link without canOpen", () => {
@@ -102,7 +102,7 @@ describe("ProjectTeamTable with a person who has no targets", () => {
 
   it("does not show Set targets for someone who has targets", () => {
     render(<ProjectTeamTable rows={[row({ hasTargets: true, year: 70, quarters: [null, null, null, 70], items: 2, done: 1 })]} year={2026} canOpen />);
-    expect(screen.queryByRole("link", { name: "Set targets" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Set targets/ })).toBeNull();
   });
 });
 

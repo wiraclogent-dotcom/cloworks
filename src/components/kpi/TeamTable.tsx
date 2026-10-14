@@ -6,11 +6,9 @@ import { PROGRESS_LEVEL_LABEL, progressLevel } from "@/lib/kpi/presentation";
 import { cn } from "@/components/ui/cn";
 import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
-import { JOB_ROLE_LABEL, TeamPersonCell, TeamTableFrame, teamT as t } from "./TeamTableParts";
+import { TeamPersonCell, TeamTableFrame, teamT as t } from "./TeamTableParts";
 
 export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
-
-export { JOB_ROLE_LABEL };
 
 /** Compact per-person bar: colour by threshold (see PROGRESS_THRESHOLDS), always with the % as text (+ check at ≥ 100%). */
 export function TeamProgress({ name, pct }: { name: string; pct: number }) {
@@ -39,7 +37,7 @@ export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: Team
     <TeamTableFrame caption="KPI per person for the selected month" minWidth={canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0"}>
       <thead>
         <tr>
-          <th scope="col" className={cn(t.th, "w-full")}>Name</th>
+          <th scope="col" className={cn(t.th, "w-full")}>Person</th>
           <th scope="col" className={cn(t.th, t.numeric, "w-24")}>Tasks done</th>
           <th scope="col" className={cn(t.th, t.numeric, "w-20")}>Target</th>
           <th scope="col" className={cn(t.th, "w-40")}>Progress</th>

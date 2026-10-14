@@ -36,7 +36,7 @@ export function teamSummaryCells({ month, year, requestRows, projectKpis }: {
   const period = shortMonthLabel(month);
   const totals = projectTotals(projectKpis);
   return [
-    { key: "people", label: "People", value: formatCount(people.size), hint: `${requestRows.length} requests · ${projectKpis.length} projects` },
+    { key: "people", label: "People", value: formatCount(people.size), hint: `${requestRows.length} ${requestRows.length === 1 ? "request" : "requests"} · ${projectKpis.length} ${projectKpis.length === 1 ? "project" : "projects"}` },
     { key: "reqDone", label: `Request tasks done · ${period}`, value: formatCount(sum.tasksDone) },
     { key: "reqProgress", label: `Request target progress · ${period}`, value: sum.avgProgress === null ? "—" : `${sum.avgProgress}%`,
       hint: sum.avgProgress === null ? "Nobody has a target this month." : `Across ${sum.withTarget} ${sum.withTarget === 1 ? "person" : "people"} with a target.` },

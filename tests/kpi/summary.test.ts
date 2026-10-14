@@ -37,6 +37,12 @@ describe("teamSummaryCells", () => {
     expect(cell(cells, "people").value).toBe("4");
     expect(cell(cells, "people").hint).toBe("3 requests · 2 projects");
   });
+  it("pluralises the people sub-line", () => {
+    const one = teamSummaryCells({ month: "2026-10", year: 2026, requestRows: [req("a", 1, null)], projectKpis: [kpi("a", [none(), none(), none(), none()])] });
+    expect(cell(one, "people").hint).toBe("1 request · 1 project");
+    const mixed = teamSummaryCells({ month: "2026-10", year: 2026, requestRows: [], projectKpis: [] });
+    expect(cell(mixed, "people").hint).toBe("0 requests · 0 projects");
+  });
   it("sums request tasks and averages target progress as before", () => {
     expect(cell(cells, "reqDone").value).toBe("7");
     expect(cell(cells, "reqProgress").value).toBe("75%");

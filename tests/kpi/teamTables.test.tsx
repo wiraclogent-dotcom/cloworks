@@ -60,11 +60,13 @@ describe("both tables share the frame", () => {
     const a = render(<TeamTable rows={reqRows} month="2026-10" canEdit />);
     const headsA = [...a.container.querySelectorAll("thead th")];
     expect(headsA[headsA.length - 1].textContent).toBe("Set target");
+    expect(headsA[0].textContent).toBe("Person");
     expect(headsA[1].className).toMatch(/text-right.*tabular-nums/);
     a.unmount();
     const b = render(<ProjectTeamTable rows={projRows} year={2026} />);
     const headsB = [...b.container.querySelectorAll("thead th")];
     expect(headsB[headsB.length - 1].textContent).toBe("Targets");
+    expect(headsB[0].textContent).toBe("Person");
     expect(headsB[1].className).toMatch(/text-right.*tabular-nums/);
   });
 });
@@ -72,19 +74,19 @@ describe("both tables share the frame", () => {
 describe("ProjectTeamTable action column", () => {
   it("Set targets for people without targets, Open for the rest, both small buttons linking to the person's targets", () => {
     render(<ProjectTeamTable rows={projRows} year={2026} />);
-    const set = screen.getByRole("link", { name: "Set targets" });
-    const open = screen.getByRole("link", { name: "Open" });
+    const set = screen.getByRole("link", { name: "Set targets for Sari" });
+    const open = screen.getByRole("link", { name: "Open targets for Fadli" });
     expect(set.getAttribute("href")).toBe("/dashboard/projects/u2?year=2026");
     expect(open.getAttribute("href")).toBe("/dashboard/projects/u1?year=2026");
     expect(set.className).toBe(open.className);
     expect(set.closest("tr")!.textContent).toContain("Sari");
     // The inline green link next to the name is gone: Set targets lives only in the action column.
-    expect(within(personCell("Sari")).queryByRole("link", { name: "Set targets" })).toBeNull();
+    expect(within(personCell("Sari")).queryByRole("link", { name: /Set targets/ })).toBeNull();
   });
   it("is omitted without dashboard.team", () => {
     render(<ProjectTeamTable rows={projRows} year={2026} canOpen={false} />);
     expect(screen.queryByRole("columnheader", { name: "Targets" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Open" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Set targets" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Open targets/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Set targets/ })).toBeNull();
   });
 });
