@@ -54,6 +54,7 @@ export const TASK_STATUS_LABEL: Record<ProjectStatus, string> = {
   IN_REVIEW: "In Review",
   ON_HOLD: "On Hold",
   DONE: "Done",
+  CANCELLED: "Canceled", // project-level only (not in TASK_STATUS_ORDER); the entry keeps the record total
 };
 
 /** Returns a message when the due date is before the start date (both `YYYY-MM-DD`, or blank). */

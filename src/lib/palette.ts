@@ -90,6 +90,7 @@ export const PROJECT_STATUS_TONE: Record<ProjectStatus, Tone> = {
   IN_REVIEW: "first-look",
   DONE: "done",
   ON_HOLD: "due-soon",
+  CANCELLED: "cancelled",
 };
 
 /** Brand name to tag tone; unknown brands get the neutral tag. Case/whitespace-insensitive. */

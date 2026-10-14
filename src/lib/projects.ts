@@ -5,8 +5,13 @@ import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { jakartaDate } from "./createRequest";
 import { MONTHS } from "./timeline";
 
-export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD"] as const satisfies readonly ProjectStatus[];
+export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD", "CANCELLED"] as const satisfies readonly ProjectStatus[];
 export { PROJECT_STATUS_LABEL } from "./statusLabels";
+
+/** A closed project is finished or dropped: Done or Canceled. It has no deadline to watch and leaves the active list. */
+export function isClosedProject(status: ProjectStatus): boolean {
+  return status === "DONE" || status === "CANCELLED";
+}
 
 export type ProjectInput = {
   title: string;
@@ -167,6 +172,16 @@ export function groupProjects<T extends GroupableProject>(rows: T[]): { brand: s
   return [...map.entries()]
     .sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a.localeCompare(b)))
     .map(([brand, projects]) => ({ brand, projects: projects.sort(cmp) }));
+}
+
+/**
+ * Splits the list into the active projects (input order kept, grouped by brand later) and the two closed lists.
+ * Closed lists run by due date, latest first (no due date last), then title.
+ */
+export function splitProjects<T extends { status: ProjectStatus; title: string; dueDate: Date | null }>(rows: T[]): { active: T[]; completed: T[]; canceled: T[] } {
+  const cmp = (a: T, b: T) => (b.dueDate?.getTime() ?? -Infinity) - (a.dueDate?.getTime() ?? -Infinity) || a.title.localeCompare(b.title);
+  const sorted = (status: ProjectStatus) => rows.filter((r) => r.status === status).sort(cmp);
+  return { active: rows.filter((r) => !isClosedProject(r.status)), completed: sorted("DONE"), canceled: sorted("CANCELLED") };
 }
 
 // ---- Form submission (echoes typed values so the form can re-populate) ---------------------------------------

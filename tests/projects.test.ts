@@ -33,6 +33,14 @@ describe("projects cores", () => {
       expect(Object.keys(err.fieldErrors).sort()).toEqual(["brandId", "dueDate", "fileUrl"]);
     });
 
+    it("accepts CANCELLED as a project status (create and update) and still rejects unknown ones", async () => {
+      const { id } = await createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), status: "CANCELLED" });
+      expect((await get(id)).status).toBe("CANCELLED");
+      await updateProjectWith(db.prisma, actor("CREATIVE"), id, { status: "DONE" });
+      await updateProjectWith(db.prisma, actor("CREATIVE"), id, { status: "CANCELLED" });
+      expect((await get(id)).status).toBe("CANCELLED");
+      expect(await code(createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), status: "NOPE" as never }))).toBe("VALIDATION");
+    });
     it("stores dates as Jakarta midnight instants", async () => {
       const { id } = await createProjectWith(db.prisma, actor("CREATIVE"), {
         ...base(), subTitle: "  sub ", brandId, startDate: "2026-10-05", dueDate: "2026-10-30", fileUrl: "https://drive.google.com/x",

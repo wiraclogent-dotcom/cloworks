@@ -60,7 +60,8 @@ export type ItemFacts = {
   slips: number;
 };
 
-const STATUS_PROGRESS: Record<ProjectStatus, number> = { NOT_STARTED: 0, IN_PROGRESS: 0.5, IN_REVIEW: 0.8, ON_HOLD: 0.5, DONE: 1 };
+// CANCELLED is a project-level status; a task row can't be set to it, so this entry only keeps the record total.
+const STATUS_PROGRESS: Record<ProjectStatus, number> = { NOT_STARTED: 0, IN_PROGRESS: 0.5, IN_REVIEW: 0.8, ON_HOLD: 0.5, DONE: 1, CANCELLED: 0 };
 const stageIndex = (s: string | null) => (s ? PROJECT_STAGES.indexOf(s as ProjectStage) : -1);
 
 /** The end of the Jakarta calendar day the instant is on (23:59:59.999). */

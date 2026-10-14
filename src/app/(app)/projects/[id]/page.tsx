@@ -77,7 +77,7 @@ async function ProjectDetailContent({ params }: { params: Params }) {
         description={`${project.brand?.name ?? "No brand"} · ${project.code ?? "no code"} · Owner ${project.owner.name}`}
         actions={
           <span className="flex flex-wrap items-center gap-2">
-            <StatusChip status={project.status} />
+            <StatusChip status={project.status} kind="project" />
             <Link href={`/projects/${project.id}/tasks`} className={buttonClass({ variant: "secondary" })}>All details</Link>
             {/* Plain link: a client-side jump here is matched by the list page's @modal "(.)[id]/edit" intercept and 404s. */}
             {canManage && <a href={`/projects/${project.id}/edit`} className={buttonClass({ variant: "secondary" })}>Edit</a>}

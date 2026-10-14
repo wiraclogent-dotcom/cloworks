@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
-import { ProjectTable } from "@/components/ProjectTable";
-import { ProjectTimeline } from "@/components/ProjectTimeline";
+import { ProjectsView } from "@/components/ProjectsView";
 import { ProjectsSkeleton } from "@/components/PageSkeletons";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { buttonClass } from "@/components/ui/Button";
-import { Plus } from "lucide-react";
 
 /** Tab title: "Projects · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Projects" };
@@ -22,28 +16,7 @@ async function ProjectsContent() {
     id: p.id, title: p.title, subTitle: p.subTitle, brandName: p.brand?.name ?? null, ownerName: p.owner.name,
     status: p.status, startDate: p.startDate, dueDate: p.dueDate, fileUrl: p.fileUrl,
   }));
-  const now = new Date();
-  return (
-    <>
-      <PageHeader breadcrumb={[{ label: "Work" }, { label: "Projects" }]} title="Projects" count={rows.length} description="Brand projects grouped by brand, soonest due first."
-        actions={canManage && (
-          <Link href="/projects/new" className={buttonClass({ variant: "primary" })}>
-            <Plus aria-hidden="true" />New project
-          </Link>
-        )} />
-      {rows.length > 0 && (
-        <Card className="mb-5">
-          <section aria-labelledby="timeline-h">
-            <CardHeader>
-              <CardTitle id="timeline-h">Timeline</CardTitle>
-            </CardHeader>
-            <ProjectTimeline projects={rows} today={now} />
-          </section>
-        </Card>
-      )}
-      <ProjectTable rows={rows} canManage={canManage} now={now} />
-    </>
-  );
+  return <ProjectsView rows={rows} canManage={canManage} now={new Date()} />;
 }
 
 export default function ProjectsPage() {

@@ -90,7 +90,15 @@ describe("project task and milestone actions", () => {
       const [a] = await seed(["A"], { status: "NOT_STARTED" });
       expect(await setTaskStatus(projectId, a.id, "DONE")).toEqual({ ok: true, status: "DONE" });
       expect(await setTaskStatus(projectId, a.id, "WAT" as never)).toMatchObject({ ok: false, code: "VALIDATION" });
+      // CANCELLED is a project-level status only: a tracker row can't be set to it.
+      expect(await setTaskStatus(projectId, a.id, "CANCELLED")).toMatchObject({ ok: false, code: "VALIDATION" });
       expect((await db.prisma.projectTask.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DONE");
+      expect((await db.prisma.projectTask.findUniqueOrThrow({ where: { id: a.id } })).status).toBe("DONE");
+    });
+    it("createTaskDetail rejects CANCELLED as a tracker status", async () => {
+      await seed(["A"], { status: "IN_PROGRESS" });
+      const r = await createTaskDetail(projectId, { title: "C", subTitle: "", ownerId: "", value: "CANCELLED", startDate: "", dueDate: "", fileUrl: "" });
+      expect(r).toMatchObject({ ok: false, code: "VALIDATION" });
     });
     it("createTaskDetail takes a status in a tracker project and appends to the bottom", async () => {
       await seed(["A"], { status: "IN_PROGRESS" });
