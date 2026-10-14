@@ -159,6 +159,7 @@ shadcn part inside.
 | `SharedChip` | SharedChip.tsx | `className` | "Shared" mark (icon + text) on requests with two or more assignees. |
 | `EmptyState` | EmptyState.tsx | `icon`, `art`, `title`, `description`, `action`, `titleAs`, `role`, `size` (`page` / `inline`), `className` | Empty list or no-access page, built on shadcn `Empty` (brand art + heading domain logic); `inline` for a one-line "No … yet" in a card (no vertical padding; pass margins to match the spot). |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
+| `StatCard` | StatCard.tsx | `icon`, `label`, `value`, `hint`, `solid` | Summary rows (`<li>` in a `<ul>` grid); the first card of a row is `solid` (blue). |
 | `DatePicker` | DatePicker.tsx | shadcn `Calendar` + `Popover` | Date fields. |
 | `PasswordInput` | PasswordInput.tsx | input + show/hide toggle | Password fields. |
 | `SubmitButton` | SubmitButton.tsx | pending state from the form | Submit in server-action forms. |

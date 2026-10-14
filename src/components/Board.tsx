@@ -54,16 +54,16 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
     <section ref={setNodeRef} role="region" aria-labelledby={id} data-tone={REQUEST_STATUS_TONE[status]}
       data-drop={legal ? (isOver ? "over" : "valid") : dragging ? "invalid" : undefined}
       className={cn(
-        "board-column flex min-w-0 flex-col rounded-2xl p-1 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
-        legal && isOver ? "bg-accent" : "bg-transparent",
+        "board-column flex min-w-0 flex-col rounded-2xl p-2 outline-2 -outline-offset-2 transition-[outline-color,opacity,background-color] duration-150",
+        legal && isOver ? "bg-accent" : "bg-muted",
         legal ? (isOver ? "outline-ring outline-solid" : "outline-ring outline-dashed") : "outline-transparent",
         dragging && !legal && "opacity-60",
       )}>
       <h2 id={id} data-column-header=""
-        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-compact font-semibold text-tone-text">
+        className="mb-2 flex flex-none items-center gap-2 px-2 py-1.5 text-sm font-semibold text-foreground [&_svg]:text-tone-accent">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
-        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-card px-2 py-0.5 text-xs leading-4 font-medium text-muted-foreground tabular-nums shadow-card">{total}</span>
+        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-card px-2 py-0.5 text-xs leading-4 font-semibold text-foreground tabular-nums">{total}</span>
       </h2>
       {dragging && (
         <p className="mb-2 flex flex-none items-center gap-1.5 px-1 text-xs font-medium text-foreground">
@@ -189,14 +189,14 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
       {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="relative grid gap-4 overflow-x-auto rounded-2xl bg-[var(--board-canvas)] bg-[image:radial-gradient(var(--board-dot)_1px,transparent_1px)] p-3 pb-4 [background-size:18px_18px]" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
+        <div className="relative grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (
               <Column key={col.status} status={col.status} total={totals[col.status] ?? 0} shown={inCol.length}
                 dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref}>
                 {inCol.length === 0 ? (
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-card/60 px-3 py-6 text-center text-compact text-muted-foreground">
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong px-3 py-6 text-center text-compact text-muted-foreground">
                     <Inbox aria-hidden="true" strokeWidth={1.75} className="size-5" />
                     <p>No requests here</p>
                   </div>

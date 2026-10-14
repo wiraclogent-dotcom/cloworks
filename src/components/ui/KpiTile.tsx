@@ -8,10 +8,10 @@ export function KpiTile({ icon, label, labelAddon, value, sub, tone = "done", cl
   icon: ReactNode; label: string; labelAddon?: ReactNode; value: ReactNode; sub?: ReactNode; tone?: Tone; className?: string;
 }) {
   return (
-    <div className={cn("lift animate-rise flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-5 text-card-foreground shadow-card", className)}>
-      <span aria-hidden="true" data-tone={tone} className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-tone-tint text-tone-text [&_svg]:size-5">{icon}</span>
+    <div className={cn("flex h-full flex-col gap-5 rounded-xl border border-border bg-card p-5 text-card-foreground", className)}>
+      <span aria-hidden="true" data-tone={tone} className="flex size-10 shrink-0 items-center justify-center rounded-full bg-tone-tint text-tone-text [&_svg]:size-5">{icon}</span>
       <div className="min-w-0">
-        <p className="font-display text-[2rem] leading-9 font-bold tracking-[-0.02em] text-foreground tabular-nums">{typeof value === "number" ? <CountUp value={value} /> : value}</p>
+        <p className="font-display text-[2rem] leading-9 font-semibold tracking-[-0.02em] text-foreground tabular-nums">{typeof value === "number" ? <CountUp value={value} /> : value}</p>
         <p className="mt-1 text-compact text-muted-foreground">{label}{labelAddon ? <span className="ml-1 inline-flex align-middle">{labelAddon}</span> : null}</p>
         {sub ? <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p> : null}
       </div>

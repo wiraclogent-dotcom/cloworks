@@ -37,9 +37,8 @@
   /* Unread notifications: the Requested tint, with its accent for the dot (both follow the theme) */
   --unread: var(--status-requested-tint);
   --unread-dot: var(--status-requested-accent);
-  /* Board canvas: a warm tint with a faint dot grid behind the columns */
+  /* Board canvas (the landing product shot) */
   --board-canvas: #f4f6fa;
-  --board-dot: rgba(10, 15, 31, 0.07);
   --border: #e5e9f2;
   --border-strong: #d3dae6;
   /* Scrollbars: thin, token-coloured thumb on a transparent track (the canvas, card or board shows through). */
@@ -213,7 +212,6 @@
   --progress-complete: #bfd0ff;
 
   --board-canvas: #0b1020;
-  --board-dot: rgba(255, 255, 255, 0.07);
 
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --elevation-raised: 0 8px 24px rgba(0, 0, 0, 0.45);

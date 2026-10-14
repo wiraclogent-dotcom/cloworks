@@ -107,13 +107,13 @@ function columns(rs: RequestRow[]): BoardColumnView[] {
 }
 
 describe("board columns", () => {
-  it("each column header carries its status tone (accent bar + tint) and a count pill", () => {
+  it("each column is a muted panel whose header icon carries its status tone, with a count pill (V3)", () => {
     render(<Board columns={columns([row()])} canMove={false} />);
     const tones = BOARD_STATUSES.map((s) => screen.getByRole("region", { name: new RegExp(`^${s === "ON_PROGRESS" ? "On progress" : s === "FIRST_LOOK" ? "First look" : s === "DONE" ? "Done" : "Requested"}`) }).getAttribute("data-tone"));
     expect(tones).toEqual(["requested", "in-progress", "first-look", "done"]);
     const header = document.querySelector("#col-REQUESTED") as HTMLElement;
-    expect(header.className).toMatch(/rounded-full/);
-    expect(header.className).toMatch(/bg-tone-tint/);
+    expect(header.className).toMatch(/\[&_svg\]:text-tone-accent/);
+    expect(header.closest("section")!.className).toMatch(/bg-muted/);
     expect(header.querySelector("svg[aria-hidden]")).toBeTruthy();
   });
 
