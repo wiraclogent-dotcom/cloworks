@@ -1,7 +1,7 @@
 import { test } from "@e2e-dev/web";
 import { expect } from "e2e";
 
-// Agent steps: need a model (ANTHROPIC_API_KEY, see e2e.config.ts). Read-only: the agent only filters and views.
+// Agent steps: need a model (CMD_API_KEY, see e2e.config.ts). Read-only: the agent only filters and views.
 test("agent narrows the requests to work that needs motion", { session: "qa" }, async ({ app, agent, browser }) => {
   await app.open("/requests");
 
