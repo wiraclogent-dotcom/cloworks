@@ -1,6 +1,7 @@
 # shadcn first: UI consolidation
 
-Date: 2026-10-14 · Branch: `feat/shadcn-first` (from `feat/project-page`)
+Date: 2026-10-14 · Branch: `feat/shadcn-first` (from `feat/project-page`) · **Status: done** (2026-10-14, 16 tasks;
+final audit and score below)
 
 ## Goal
 
@@ -25,6 +26,32 @@ Consistency score 28/40 (Good). Tokens, forms (`fieldClass`), tables and `PageHe
 
 Token aliases in use instead of shadcn names (same values): `text-foreground-secondary` 287×
 (= `text-muted-foreground`, 0×), `bg-surface` 148× (= `bg-card`), `bg-surface-muted` 97× (= `bg-muted`, 0×).
+
+## Final audit (2026-10-14, after Task 16)
+
+Re-ran the audit greps on `src/` (outside `components/landing/`): `<dialog`/`role="dialog"`, `<details`/`role="menu"`,
+`radix-ui` imports outside `shadcn/`, inline `rounded-xl border bg-card` (`tests/cardUsage`), `text-[Npx]` below 12px and
+arbitrary sizes ≥ 12px, `shadow-lg`/`shadow-xl`, disabled opacities other than 55/70, raw `<button>` with hand-made
+classes, the three token aliases, plain `rounded`, and "No … yet" paragraphs. Browser QA (light, dark, 375px) on every
+page group the local session reaches.
+
+**Consistency score: 34/40** (was 28/40; the first audit gave one overall figure, so only the new score is split up).
+
+| Dimension (5 each) | Score | Evidence | Still open |
+|---|---|---|---|
+| Tokens and colour | 5 | Aliases 0 uses (guard `tokenNames`); shadcn folder has no hex, palette or `dark:` (guard `shadcnFolder`) | – |
+| Typography | 4 | Nothing below 12px outside the allowlist; arbitrary sizes ≥ 12px only in the display places the README lists (guard `typeScale`); dialog and card titles one style (16px/600) | A few card headers still 14px (`BriefCalendar` weekly table, `PostPanel`, `CalendarAgenda` day groups); greeting in `TodayOverview` stays 24px as a hero line |
+| Spacing and layout | 4 | Page widths, header spacing and section gaps per README; no page scrolls sideways at 375px | Pre-existing: request calendar at 375px clips card contents; project timeline header labels collide ("28 Sep 2026" / "5 Oct", "Today" flag covers a week label) |
+| Shape and depth | 4 | No `shadow-lg`/`shadow-xl`; overlays `shadow-raised`, cards `shadow-card`, controls `rounded-lg` | Hand-made 4px chips: `CalendarCard` "Overdue", `PostPanel` status, `PostTile` tags (could be `Badge`) |
+| Components (buttons, fields, cards) | 4 | Every `<Button>` has a variant (guard); fields on `Input`/`NativeSelect`/`Textarea`; cards on `Card` (guard, 4 justified exceptions) | Raw buttons left are rows, drag handles and inline text links; chat "Load older messages" pill and `FileLocationLink` copy button are still hand-styled |
+| Overlays (dialogs, menus, popovers, disclosures) | 5 | 0 native `<dialog>`, `<details>` or hand-made `role="menu"`; no direct `radix-ui` imports outside `shadcn/`; one allowed `role="dialog"` (non-modal chat dock) (guard `overlayUsage`) | – |
+| States (empty, loading, feedback) | 4 | Empty states on `EmptyState` (inline variant for one-liners), loading on `Skeleton`/`Spinner`, messages on `Alert` | `ChatList` empty keeps its own centred icon layout; `Toast` not adopted (inline `role="status"` messages) |
+| Interaction (focus, disabled, motion, touch) | 4 | One focus ring; disabled 55% (controls) / 70% (fields) everywhere; overlays use `animate-pop-in/out`; 36px hit areas on `sm` buttons and menu rows | Radix controls need JS (documented in README); chat "Load older" pill is 24px high; auth pages in dark mode: `text-brand-deep-blue` links are low contrast (pre-existing) |
+
+P1 items from the first audit: **all closed** (dialogs, popovers/menus, section titles, inline cards). P2: empty
+states closed except `ChatList`; text below 12px closed; rebuilt icon buttons closed (`MediaStrip`, `MonthPicker`, chat
+send and the AppFrame drawer buttons are `Button`; the sidebar Collapse row stays a nav-styled row). P3: disabled opacity, `shadow-lg`/`shadow-xl` and `HelpSearch` closed;
+plain `rounded` remains on the tiny chips listed above.
 
 ## Decisions
 

@@ -15,9 +15,10 @@ Every screen is built from two folders, in this order of preference:
 The same order applies to **tokens**: use the shadcn token names first, our extension tokens only for roles shadcn has
 no name for (see [Tokens](#tokens-globalscss)).
 
-Migration to this order is in progress (plan and audit:
-`docs/superpowers/specs/2026-10-14-shadcn-first-design.md`). Until a kit component is marked **Migrated** in
-[Component map](#component-map), existing code may still use it, but **new code uses the shadcn component**.
+The migration to this order is done (plan, audit and final score:
+`docs/superpowers/specs/2026-10-14-shadcn-first-design.md`). Every generic element now comes from `shadcn/`; guard
+tests keep the old patterns from coming back (`tests/shadcnFolder`, `tokenNames`, `typeScale`, `buttonUsage`,
+`kitRemoved`, `cardUsage`, `overlayUsage`).
 
 ## Adding a shadcn component
 
@@ -103,9 +104,9 @@ the header spacing (don't put it in a `gap-*`/`space-y-*` parent). Sections belo
 
 ## Component map
 
-Generic elements and where they come from. **Status**: *In use* = shadcn file exists and is the one to use;
-*Planned* = not added yet (add it with the CLI the first time you need it, then use it); *Migrated* = the old kit
-component is gone.
+Generic elements and where they come from. **Status**: *Migrated* = the shadcn file is the one to use and the old
+kit component or hand-rolled pattern is gone; *In use* = shadcn file exists, nothing older to replace; *Planned* = not
+added yet (add it with the CLI the first time you need it, then use it).
 
 | Need | Use (shadcn) | Replaces (kit / hand-rolled) | Status |
 |---|---|---|---|
@@ -133,7 +134,7 @@ component is gone.
 | Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open; `keepMounted` renders it once and hides it while closed, like `<details>`: use it for panels with forms, so typed input survives collapsing). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
 | Table | `Table` (container = the one scroll box: max height via `containerClassName`, never another `overflow-*` wrapper or the sticky header stops sticking; card look: wrap in `<Card className="overflow-hidden p-0">`; width via `className="min-w-[…]"`), `TableHeader`, `TableBody`, `TableRow` (hairline + hover, no zebra), `TableHead` (`scope="col"`; sticky, muted 12px), `TableRowHeader` (`<th scope="row">`), `TableCell`; `numeric` on `TableHead`/`TableCell` right-aligns tabular figures; compact density `className="py-1.5"` on the cells; `TableCaption className="sr-only"`. Server-safe | `ui/table.ts` `tableClass()` | Migrated |
 | Separator | `Separator` (decorative by default; `decorative={false}` for a real separator; `orientation`) | `ui/Divider` | Migrated |
-| Date picking | `Calendar` + `Popover` (our `DatePicker`) | – | In use |
+| Date picking | `Calendar` + `Popover` (kit `DatePicker`) | – | In use |
 | Toast | `Toast` (Sonner) | inline `role="status"` messages after actions | Planned (decide per flow) |
 
 ## Kit components (this folder)
@@ -149,6 +150,13 @@ shadcn part inside.
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |
+| `CollapsibleSection` | CollapsibleSection.tsx | `id`, `storageKey`, `title`, `count`, `className` | A card whose heading row opens and closes it (shadcn `Collapsible`, `keepMounted`); remembers open/closed per `storageKey`. |
+| `Modal` | Modal.tsx | `title`, `description`, `side` (`center` / `right`), `actions`, `className` | Route modal for intercepted routes (`@modal/(.)…`): shadcn `Dialog`, or `Sheet` on the right; closing goes `router.back()` once. |
+| `Avatar`, `UnassignedAvatar`, `AvatarStack` | Avatar.tsx | `name`, `size` (`sm`/`md`/`lg`), `ring`, `decorative`, `src`; stack: `names`, `max`, `label` | People (shadcn `Avatar` with the name palette and workspace photos from `photoDirectory`). |
+| `Switch` | Switch.tsx | `id`, `label`, `description`, `checked`, `onCheckedChange`, `disabled`, `name` | On/off row: label and description beside a shadcn `Switch`. |
+| `RadioCards` | RadioCards.tsx | `name`, `legend`, `options`, `value`/`defaultValue`, `onChange(value)`, `columns` | Choice drawn as cards (shadcn `RadioGroup`). |
+| `ProgressBar` | ProgressBar.tsx | `value`, `max`, `label`, `hideLabel`, `valueText` | Labelled progress (shadcn `Progress`). |
+| `SharedChip` | SharedChip.tsx | `className` | "Shared" mark (icon + text) on requests with two or more assignees. |
 | `EmptyState` | EmptyState.tsx | `icon`, `art`, `title`, `description`, `action`, `titleAs`, `role`, `size` (`page` / `inline`), `className` | Empty list or no-access page, built on shadcn `Empty` (brand art + heading domain logic); `inline` for a one-line "No … yet" in a card (no vertical padding; pass margins to match the spot). |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
 | `DatePicker` | DatePicker.tsx | shadcn `Calendar` + `Popover` | Date fields. |
@@ -161,8 +169,7 @@ shadcn part inside.
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
-Still here until migrated (see Component map, don't use in new code):
-`CollapsibleSection`, `Modal`. Their props are documented in the files themselves.
+Helpers without a row: `photoDirectory.ts` (workspace photos for `Avatar`, filled by the shell).
 
 ## Do
 
@@ -193,3 +200,13 @@ Still here until migrated (see Component map, don't use in new code):
   (tests/shellHydration.test.tsx).
 - Touch targets: `size="sm"` buttons are 32px visually with a 36px hit area (`::after`); keep at least 36px for
   anything else you make clickable.
+
+## Good to know
+
+- **Radix controls need JavaScript.** Toggle groups, popovers (Filters, month picker, date picker), collapsibles,
+  dropdown menus, dialogs and sheets only open, close or switch once the page has hydrated. Anything that must work
+  without JS (or before hydration) stays a plain link or a plain form field: `SegmentedControl`'s link mode,
+  `NativeSelect`, server-action forms. `Collapsible` with `keepMounted` at least puts its content in the server HTML.
+- **Dialogs and sheets lock page scroll while open**, the mobile drawer (`Sheet side="left"`) and the request side
+  panel (`Modal side="right"`) included: the page behind does not scroll, and Radix makes up for the hidden
+  scrollbar so nothing shifts. Long content scrolls inside the dialog or sheet (its own `overflow-y-auto` area).

@@ -71,9 +71,9 @@ describe("Select trigger matches Input", () => {
 
 describe("open/close animations use the app's keyframes", () => {
   for (const f of ["select.tsx", "popover.tsx"]) {
-    it(`${f} has no tw-animate-css utilities (that package is not installed)`, () => {
+    // "No tw-animate-css utilities" is checked for every shadcn file in tests/shadcnFolder.test.tsx.
+    it(`${f} opens and closes with animate-pop-in / animate-pop-out`, () => {
       const s = src(f);
-      expect(s).not.toMatch(/animate-in|animate-out|fade-in|fade-out|zoom-in|zoom-out|slide-in-from|slide-out-to/);
       expect(s).toContain("data-[state=open]:animate-pop-in");
       expect(s).not.toMatch(/data-\[state=open\]:animate-pop(?!-)/);
       expect(s).toContain("data-[state=closed]:animate-pop-out");
