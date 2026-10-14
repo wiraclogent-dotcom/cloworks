@@ -83,8 +83,12 @@ describe("Users page", () => {
     const budi = screen.getByRole("row", { name: /^Budi/ });
     expect(budi.querySelector("[data-active]")!.textContent).toBe("Inactive");
     expect(within(budi).getByText("No login")).toBeTruthy();
-    expect(screen.getByText("Edit Rina").closest("summary")).not.toBeNull();
-    expect(screen.getByText("Edit Budi").closest("summary")).not.toBeNull();
+    // Each person's forms sit under a collapsed "Edit <name>" disclosure.
+    for (const name of ["Rina", "Budi"]) {
+      const toggle = screen.getByRole("button", { name: `Edit ${name}` });
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      fireEvent.click(toggle);
+    }
     expect(screen.getByRole("button", { name: "Save changes for Rina" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reactivate Budi" })).toBeTruthy();
   });
@@ -111,8 +115,10 @@ describe("Lists page", () => {
     expect(screen.getByRole("button", { name: "Rename Zed" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add brand" })).toBeTruthy();
     expect(screen.getByLabelText("Name of Clogent")).toBeTruthy();
-    const summary = screen.getByText("Video").closest("summary")!;
-    expect(within(summary).getByText("Inactive").getAttribute("data-tone")).toBe("tag-neutral");
+    const toggle = screen.getByText("Video").closest("button")!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(within(toggle).getByText("Inactive").getAttribute("data-tone")).toBe("tag-neutral");
+    fireEvent.click(toggle);
     expect(screen.getByRole("button", { name: "Save type Video" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "Add request type" })).toBeTruthy();
   });

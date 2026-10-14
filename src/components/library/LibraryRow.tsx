@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import { ArrowDown, ArrowUp, Ellipsis, FileDown, FileText, Globe, HardDrive, Palette, Pencil, PenTool, Pin, PinOff, Presentation, Sheet, Trash2, type LucideIcon } from "lucide-react";
 import { focusRing } from "@/components/ui/cn";
 import { Badge } from "@/components/shadcn/badge";
 import { BrandTag } from "@/components/ui/BrandTag";
 import { itemBadge, linkKind, type LibraryRow as Row, type LinkKind } from "@/lib/libraryView";
 import { Button } from "@/components/shadcn/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 
 const KIND_ICON: Record<LinkKind, LucideIcon> = {
   docs: FileText,
@@ -30,48 +31,31 @@ export type RowActions = {
   onMove: (dir: "up" | "down") => void;
 };
 
-const itemClass = "flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-55 " + focusRing;
-
-/** Editor-only "…" menu: button with aria-haspopup/aria-expanded and a list of menu items. */
+/** Editor-only "…" menu (Radix: arrow keys, Esc and focus return to the trigger). */
 function RowMenu({ row, actions }: { row: Row; actions: RowActions }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener("mousedown", away);
-    return () => document.removeEventListener("mousedown", away);
-  }, [open]);
-  // The clicked item unmounts with the menu, so park focus on the trigger first (a dialog then returns focus there).
-  const triggerFocus = () => ref.current?.querySelector<HTMLElement>("button[aria-haspopup]")?.focus();
-  const item = (label: string, icon: React.ReactNode, run: () => void, disabled = false) => (
-    <button type="button" role="menuitem" disabled={disabled} className={itemClass} onClick={() => { triggerFocus(); setOpen(false); run(); }}>
-      {icon}{label}
-    </button>
-  );
+  const trigger = useRef<HTMLButtonElement>(null);
+  // Edit and Delete open a dialog, which returns focus to whatever had it when it opened: park focus on the trigger
+  // first (the chosen item unmounts with the menu).
+  const run = (fn: () => void) => () => { trigger.current?.focus(); fn(); };
   return (
-    <div ref={ref} className="relative shrink-0" onKeyDown={(e) => { if (e.key === "Escape" && open) { e.stopPropagation(); setOpen(false); } }}>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        aria-label={`Actions for ${row.title}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-        title={`Actions for ${row.title}`}
-      >
-        <Ellipsis />
-      </Button>
-      {open ? (
-        <div role="menu" aria-label={`Actions for ${row.title}`} className="absolute right-0 z-20 mt-1 w-44 rounded-lg border border-border bg-popover p-1 shadow-raised [&_svg]:size-4 [&_svg]:text-muted-foreground">
-          {item("Edit", <Pencil />, actions.onEdit)}
-          {item(row.pinned ? "Unpin" : "Pin", row.pinned ? <PinOff /> : <Pin />, actions.onPin)}
-          {actions.canMove === false ? null : item("Move up", <ArrowUp />, () => actions.onMove("up"), !actions.canUp)}
-          {actions.canMove === false ? null : item("Move down", <ArrowDown />, () => actions.onMove("down"), !actions.canDown)}
-          {item("Delete", <Trash2 />, actions.onDelete)}
-        </div>
-      ) : null}
-    </div>
+    <DropdownMenu modal={false}>
+      <DropdownMenuTrigger asChild>
+        <Button ref={trigger} variant="ghost" size="icon-sm" aria-label={`Actions for ${row.title}`} title={`Actions for ${row.title}`} className="shrink-0">
+          <Ellipsis />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" aria-label={`Actions for ${row.title}`} className="w-44">
+        <DropdownMenuItem onSelect={run(actions.onEdit)}><Pencil aria-hidden="true" />Edit</DropdownMenuItem>
+        <DropdownMenuItem onSelect={run(actions.onPin)}>{row.pinned ? <PinOff aria-hidden="true" /> : <Pin aria-hidden="true" />}{row.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+        {actions.canMove === false ? null : (
+          <>
+            <DropdownMenuItem disabled={!actions.canUp} onSelect={run(() => actions.onMove("up"))}><ArrowUp aria-hidden="true" />Move up</DropdownMenuItem>
+            <DropdownMenuItem disabled={!actions.canDown} onSelect={run(() => actions.onMove("down"))}><ArrowDown aria-hidden="true" />Move down</DropdownMenuItem>
+          </>
+        )}
+        <DropdownMenuItem onSelect={run(actions.onDelete)}><Trash2 aria-hidden="true" />Delete</DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

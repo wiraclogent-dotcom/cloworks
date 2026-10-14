@@ -177,6 +177,7 @@ describe("Done dialog (restyled)", () => {
 describe("filter pills", () => {
   it("renders pill fields, Apply as the primary button and Clear filters as a ghost link; active filters are tinted", () => {
     render(<FilterBar p={parseParams({ motion: "yes", status: "DONE" })} brands={[]} divisions={[]} assignees={[]} mineHref="/m" clearHref="/c" />);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     const motion = screen.getByLabelText("Motion");
     expect(motion.className).toMatch(/rounded-full/);
     expect(motion.className).toMatch(/bg-accent/);

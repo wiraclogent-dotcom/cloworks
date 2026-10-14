@@ -3,7 +3,9 @@
 import { Bar, CartesianGrid, ComposedChart, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/shadcn/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { tableClass } from "@/components/ui/table";
+import { cn, focusRing } from "@/components/ui/cn";
 
 export type TrendPoint = { month: string; label: string; tasksDone: number; target: number | null };
 
@@ -60,12 +62,12 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
           </ResponsiveContainer>
         </div>
       </figure>
-      <details className="group mt-3 border-t border-border pt-3">
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md text-compact font-medium text-link [&::-webkit-details-marker]:hidden">
-          <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />
+      <Collapsible className="group mt-3 border-t border-border pt-3">
+        <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-compact font-medium text-link", focusRing)}>
+          <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />
           View as table
-        </summary>
-        <div className="relative mt-2 overflow-x-auto">
+        </CollapsibleTrigger>
+        <CollapsibleContent className="relative mt-2 overflow-x-auto">
           <table className={t.table}>
             <caption className="sr-only">Tasks done versus target by month</caption>
             <thead>
@@ -85,8 +87,8 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
               ))}
             </tbody>
           </table>
-        </div>
-      </details>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }

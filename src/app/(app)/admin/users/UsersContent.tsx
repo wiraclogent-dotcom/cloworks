@@ -7,7 +7,8 @@ import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { tableClass } from "@/components/ui/table";
-import { cn } from "@/components/ui/cn";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
+import { cn, focusRing } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { listLinkablePeople } from "@/lib/linkPerson";
@@ -118,18 +119,18 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                 </td>
                 <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
                 <td className={cn(t.td, "min-w-72 align-top")}>
-                  <details className="group">
-                    <summary className="inline-flex cursor-pointer items-center gap-1 rounded-md font-medium text-link hover:underline">
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />Edit {u.name}
-                    </summary>
-                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
+                  <Collapsible className="group">
+                    <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-left font-medium text-link hover:underline", focusRing)}>
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />Edit {u.name}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />
                       <ActiveToggle u={u} />
                       <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name, fullName: o.fullName }))} />
-                    </div>
-                  </details>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </td>
               </tr>
             ))}

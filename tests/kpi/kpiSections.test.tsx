@@ -153,7 +153,7 @@ describe("ScrollIntoViewOnMount re-scroll", () => {
 describe("MonthPicker keep", () => {
   it("carries the other section's params (and user) on every link", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" keep={{ year: "2025", q: "3", junk: undefined }} action="/dashboard" />);
-    fireEvent.click(screen.getByText("March 2026").closest("summary")!);
+    fireEvent.click(screen.getByText("March 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&q=3&user=u9");
     expect(screen.getByRole("link", { name: "This month" }).getAttribute("href")).toBe("/dashboard?month=2026-10&year=2025&q=3&user=u9");
   });
@@ -162,7 +162,7 @@ describe("MonthPicker keep", () => {
 describe("MonthPicker keep order", () => {
   it("keep cannot override month or user", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" keep={{ month: "1999-01", user: "evil", year: "2025" }} action="/dashboard" />);
-    fireEvent.click(screen.getByText("March 2026").closest("summary")!);
+    fireEvent.click(screen.getByText("March 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&user=u9");
   });
 });
@@ -201,8 +201,9 @@ describe("TeamRequestsSection", () => {
     expect(within(section).queryByText("Average progress")).toBeNull();
     expect(section.querySelector("[data-kpi]")).toBeNull();
     expect(within(section).getByRole("table")).toBeTruthy();
-    fireEvent.click(within(section).getByText("October 2026").closest("summary")!);
-    expect(within(section).getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025");
+    fireEvent.click(within(section).getByText("October 2026").closest("button")!);
+    // The month panel is a popover (portalled to the end of the page).
+    expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025");
     expect(within(section).queryByRole("button", { name: "Manage people" })).toBeNull();
   });
   it("shows Manage people (REQUESTS) only for dashboard.team", async () => {
@@ -261,7 +262,7 @@ describe("MyRequestsSection", () => {
     await run();
     const section = screen.getByRole("region", { name: "Requests" });
     expect(within(section).getByText("No request work in October 2026.")).toBeTruthy();
-    expect(within(section).getByText("October 2026", { selector: "summary span" })).toBeTruthy();
+    expect(within(section).getByText("October 2026", { selector: "button span" })).toBeTruthy();
     expect(section.querySelector("[data-kpi]")).toBeNull();
   });
   it("the trend heading is an h3 inside the section", async () => {
@@ -276,8 +277,8 @@ describe("MyRequestsSection", () => {
     expect(section.querySelector('[data-kpi="target"]')).not.toBeNull();
     expect(section.querySelector('[data-kpi="tasksDone"]')).toBeNull(); // the page summary has it now
     expect(within(section).queryByText(/No request work/)).toBeNull();
-    fireEvent.click(within(section).getByText("October 2026", { selector: "summary span" }).closest("summary")!);
-    expect(within(section).getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&q=2&user=u9");
+    fireEvent.click(within(section).getByText("October 2026", { selector: "button span" }).closest("button")!);
+    expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&q=2&user=u9");
   });
 });
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, cleanup, within } from "@testing-library/react";
+import { render, cleanup, within, fireEvent } from "@testing-library/react";
 
 const redirect = vi.fn((url: string) => { throw new Error(`NEXT_REDIRECT ${url}`); });
 vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u), notFound: vi.fn(), useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -24,7 +24,7 @@ vi.mock("@/app/(app)/projects/[id]/MilestoneList", () => ({ MilestoneList: marke
 import nextConfig from "../next.config";
 import { ProjectPageView, type ProjectPageProject } from "@/app/(app)/projects/[id]/ProjectPageView";
 
-afterEach(() => { cleanup(); for (const k of Object.keys(seen)) delete seen[k]; });
+afterEach(() => { cleanup(); for (const k of Object.keys(seen)) delete seen[k]; localStorage.clear(); });
 
 const D = (s: string) => new Date(`${s}T00:00:00+07:00`);
 const task = (id: string, title: string, over: Record<string, unknown> = {}) => ({
@@ -53,15 +53,22 @@ describe("old all-details route", () => {
 describe("project page assembly", () => {
   it("orders details, progress, needs attention, items, timeline (closed), milestones (closed)", () => {
     const { container } = render(view());
-    const order = Array.from(container.querySelectorAll("[data-piece], [data-closed-section]")).map((el) =>
+    const order = () => Array.from(container.querySelectorAll("[data-piece], [data-closed-section]")).map((el) =>
       el.getAttribute("data-piece") ?? `section:${el.getAttribute("data-closed-section")}`);
-    expect(order).toEqual(["details", "progress", "attention", "items", "opener", "section:timeline", "timeline", "section:milestones", "milestones"]);
-    for (const id of ["timeline", "milestones"]) expect(container.querySelector(`details[data-closed-section="${id}"]`)?.hasAttribute("open")).toBe(false);
+    // Closed sections render their body only once opened.
+    expect(order()).toEqual(["details", "progress", "attention", "items", "opener", "section:timeline", "section:milestones"]);
+    for (const id of ["timeline", "milestones"]) {
+      const section = container.querySelector(`[data-closed-section="${id}"]`)!;
+      expect(section.getAttribute("data-state")).toBe("closed");
+      fireEvent.click(within(section as HTMLElement).getByRole("button"));
+    }
+    expect(order()).toEqual(["details", "progress", "attention", "items", "opener", "section:timeline", "timeline", "section:milestones", "milestones"]);
   });
 
   it("hands the stage mode to Needs attention and no href to the timeline", () => {
-    render(view());
+    const { container } = render(view());
     expect(seen.attention.mode).toBe("stage");
+    fireEvent.click(within(container.querySelector<HTMLElement>('[data-closed-section="timeline"]')!).getByRole("button"));
     expect("href" in seen.timeline).toBe(false);
     expect((seen.items.items as unknown[]).length).toBe(2);
   });

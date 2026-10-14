@@ -27,4 +27,18 @@ describe("Overlay usage", () => {
     });
     expect(found).toEqual([]);
   });
+
+  it("no hand-rolled menus or details popovers", () => {
+    // Menus are shadcn DropdownMenu (arrow keys, typeahead, Esc and focus return); floating panels are Popover;
+    // disclosures are Collapsible.
+    const found = files.flatMap((f) => {
+      const rel = path.relative(src, f).split(path.sep).join("/");
+      const text = readFileSync(f, "utf8");
+      const hits: string[] = [];
+      if (/role=\{?\s*["'`]menu(item)?["'`]/.test(text)) hits.push(`${rel}: role="menu"/"menuitem"`);
+      if (/<details[\s>/]/.test(text)) hits.push(`${rel}: <details>`);
+      return hits;
+    });
+    expect(found).toEqual([]);
+  });
 });

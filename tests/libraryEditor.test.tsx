@@ -35,8 +35,10 @@ const rows = [
 const brandOptions = [{ id: "b1", name: "Clogent" }, { id: "b2", name: "Bubble Wash" }];
 const view = (o: Partial<React.ComponentProps<typeof LibraryView>> = {}) =>
   render(<LibraryView rows={rows} categories={cats} brands={[]} brandOptions={brandOptions} canManage now={new Date("2026-10-10T00:00:00Z")} {...o} />);
+/** Radix menus open on pointerdown or Enter/Space/ArrowDown (a bare click event does not open them in jsdom). */
+const openMenu = (trigger: HTMLElement) => { trigger.focus(); fireEvent.keyDown(trigger, { key: "Enter" }); };
 const menu = (title: string, item: string) => {
-  fireEvent.click(screen.getByRole("button", { name: `Actions for ${title}` }));
+  openMenu(screen.getByRole("button", { name: `Actions for ${title}` }));
   fireEvent.click(screen.getByRole("menuitem", { name: item }));
 };
 
@@ -122,8 +124,8 @@ describe("Library editor", () => {
     view();
     menu("Alpha deck", "Pin");
     await waitFor(() => expect(A.setPinned).toHaveBeenCalledWith("r1", true));
-    fireEvent.click(screen.getByRole("button", { name: "Actions for Alpha deck" }));
-    expect((screen.getByRole("menuitem", { name: "Move up" }) as HTMLButtonElement).disabled).toBe(true);
+    openMenu(screen.getByRole("button", { name: "Actions for Alpha deck" }));
+    expect(screen.getByRole("menuitem", { name: "Move up" }).getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(screen.getByRole("menuitem", { name: "Move down" }));
     await waitFor(() => expect(A.moveItem).toHaveBeenCalledWith("r1", "down"));
   });
@@ -140,13 +142,13 @@ describe("Library editor", () => {
     view({ rows: [row({ id: "r1", title: "Alpha deck", pinned: true }), row({ id: "r3", title: "Gamma", sortOrder: 1 })] });
     const trigger = screen.getAllByRole("button", { name: "Actions for Alpha deck" });
     expect(trigger).toHaveLength(2);
-    fireEvent.click(trigger[0]);
+    openMenu(trigger[0]);
     expect(screen.queryByRole("menuitem", { name: "Move up" })).toBeNull();
     expect(screen.queryByRole("menuitem", { name: "Move down" })).toBeNull();
     expect(screen.getByRole("menuitem", { name: "Edit" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Unpin" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Delete" })).toBeTruthy();
-    fireEvent.click(trigger[1]);
+    openMenu(trigger[1]);
     expect(screen.getAllByRole("menuitem", { name: "Move down" })).toHaveLength(1);
   });
 

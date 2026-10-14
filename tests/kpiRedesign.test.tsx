@@ -117,28 +117,29 @@ describe("Trend chart card", () => {
     render(<TrendChart points={[{ month: "2026-09", label: "September 2026", tasksDone: 4, target: 50 }, { month: "2026-10", label: "October 2026", tasksDone: 7, target: null }]} />);
     expect(screen.getByRole("heading", { level: 2, name: "Last 2 months" })).toBeTruthy();
     expect(screen.getByText("Tasks done vs target, last 2 months").tagName).toBe("FIGCAPTION");
-    expect(screen.getByText("View as table").closest("summary")).not.toBeNull();
-    expect(screen.getByRole("table", { name: "Tasks done versus target by month", hidden: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View as table" }));
+    expect(screen.getByRole("table", { name: "Tasks done versus target by month" })).toBeTruthy();
   });
 });
 
 describe("month picker, skeletons, access denied", () => {
   // Regression: month links are soft navigations on the same page, so the popover stayed open over the new month.
   it("choosing a month (or This month) closes the picker", () => {
-    const { container } = render(<MonthPicker month="2026-03" current="2026-10" action="/dashboard" />);
-    const details = container.querySelector("details")!;
+    render(<MonthPicker month="2026-03" current="2026-10" action="/dashboard" />);
+    const trigger = screen.getByRole("button", { name: "Month: March 2026" });
     for (const name of ["May 2026", "This month"]) {
-      details.open = true;
+      fireEvent.click(trigger);
+      expect(trigger.getAttribute("aria-expanded")).toBe("true");
       const link = screen.getByRole("link", { name });
       link.addEventListener("click", (e) => e.preventDefault()); // no real navigation in jsdom
       fireEvent.click(link);
-      expect(details.open).toBe(false);
+      expect(trigger.getAttribute("aria-expanded")).toBe("false");
     }
   });
 
   it("month picker: design-system popover of month links that keep user=", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" action="/dashboard" />);
-    const trigger = screen.getByText("March 2026").closest("summary")!;
+    const trigger = screen.getByText("March 2026").closest("button")!;
     expect(trigger.getAttribute("aria-label")).toBe("Month: March 2026");
     expect(document.querySelector('input[type="month"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
@@ -159,7 +160,7 @@ describe("month picker, skeletons, access denied", () => {
   });
   it("month picker without a user links to the month alone", () => {
     render(<MonthPicker month="2026-10" current="2026-10" action="/dashboard/team" />);
-    fireEvent.click(screen.getByText("October 2026").closest("summary")!);
+    fireEvent.click(screen.getByText("October 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "January 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-01");
   });
   it("KPI fallbacks are skeletons with a loading status", () => {

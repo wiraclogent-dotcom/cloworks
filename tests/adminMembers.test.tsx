@@ -23,6 +23,12 @@ import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { mergeSummary } from "@/app/(app)/admin/users/UserForms";
 
 const when = (s: string) => new Date(s);
+/** Opens a person's collapsed "Edit <name>" panel and returns it. */
+const openEdit = (name: string) => {
+  const toggle = screen.getByRole("button", { name: `Edit ${name}` });
+  fireEvent.click(toggle);
+  return toggle.closest("[data-slot=collapsible]") as HTMLElement;
+};
 const pending = [
   { applicantId: "p1", name: "Andi", email: "andi@gmail.com", source: "LINK", requestedAt: when("2026-10-10T08:00:00Z"), rejectedAt: null },
   { applicantId: "p2", name: "Sari", email: "sari@clogent.co.id", source: "DOMAIN", requestedAt: when("2026-10-09T08:00:00Z"), rejectedAt: null },
@@ -170,7 +176,7 @@ describe("Members page", () => {
     });
     act.mergePerson.mockResolvedValue({ ok: true, message: "Merged.", values: {}, nonce: "m" });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
     expect(Array.from(pick.options).map((o) => o.textContent)).toEqual(["Choose a person", "Rina — Rina S"]); // not Yosi himself
     fireEvent.change(pick, { target: { value: "u3" } });
@@ -193,7 +199,7 @@ describe("Members page", () => {
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
     });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…");
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
@@ -226,7 +232,7 @@ describe("Members page", () => {
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
     });
     render(await UsersContent({}));
-    const details = screen.getByText("Edit Yosi").closest("details") as HTMLElement;
+    const details = openEdit("Yosi");
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
@@ -308,10 +314,11 @@ describe("Members page", () => {
 
   it("Rejected list is collapsed and offers Undo", async () => {
     act.undoRejectRequest.mockResolvedValue({ ok: true, message: "Back in requests.", values: {}, nonce: "z" });
-    const { container } = render(await UsersContent({ tab: "requests" }));
-    const details = container.querySelector("details") as HTMLDetailsElement;
-    expect(details.open).toBe(false);
-    expect(within(details).getByText("Rejected (1)")).toBeTruthy();
+    render(await UsersContent({ tab: "requests" }));
+    const toggle = screen.getByRole("button", { name: "Rejected (1)" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByRole("button", { name: "Undo reject for Rudi" })).toBeNull();
+    fireEvent.click(toggle);
     fireEvent.click(screen.getByRole("button", { name: "Undo reject for Rudi" }));
     await waitFor(() => expect(act.undoRejectRequest).toHaveBeenCalledTimes(1));
     expect((act.undoRejectRequest.mock.calls[0][1] as FormData).get("applicantId")).toBe("r1");

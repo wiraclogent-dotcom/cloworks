@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
-import { Target } from "lucide-react";
+import { ChevronRight, Target } from "lucide-react";
+import { cn, focusRing } from "@/components/ui/cn";
 import type { Quarter } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Card } from "@/components/shadcn/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { ProjectScoreHeader } from "./ProjectScoreHeader";
 import { TargetList } from "./TargetList";
 import { YearSelect } from "./YearSelect";
@@ -77,13 +79,16 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       ) : null}
 
       {kpi.otherWork.length > 0 ? (
-        <Card asChild className="p-0"><details className="group">
-          <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-foreground select-none">Other work ({kpi.otherWork.length})</summary>
-          <div className="border-t border-border">
+        <Card asChild className="p-0"><Collapsible className="group">
+          <CollapsibleTrigger className={cn("flex w-full cursor-pointer items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-medium text-foreground select-none", focusRing, "focus-visible:-outline-offset-2")}>
+            <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
+            Other work ({kpi.otherWork.length})
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t border-border">
             <p className="px-4 pt-3 text-xs text-muted-foreground">Items this person owns rows in that are not targets. Not scored.</p>
             <TargetList items={kpi.otherWork} canManage={false} muted bare />
-          </div>
-        </details></Card>
+          </CollapsibleContent>
+        </Collapsible></Card>
       ) : null}
     </div>
   );

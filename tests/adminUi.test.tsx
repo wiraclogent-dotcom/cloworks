@@ -182,6 +182,8 @@ describe("admin pages gate", () => {
       { ...u, id: "u2", name: "Budi", email: "budi@clogent.co.id", passwordHash: null },
     ]);
     const { container } = render(await UsersContent());
+    // Open both edit panels so their forms are in the page too.
+    for (const name of ["Rina", "Budi"]) fireEvent.click(screen.getByRole("button", { name: `Edit ${name}` }));
     expect(container.innerHTML).not.toContain("TOPSECRETHASH");
     expect(screen.getByText("Password set")).toBeTruthy();
     expect(screen.getByText("No password yet")).toBeTruthy();

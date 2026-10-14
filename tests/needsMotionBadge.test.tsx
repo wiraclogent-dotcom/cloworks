@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { DndContext } from "@dnd-kit/core";
 import { BoardCard } from "@/components/BoardCard";
 import { RequestTable } from "@/components/RequestTable";
@@ -39,7 +39,11 @@ describe("Needs motion badge", () => {
 });
 
 describe("FilterBar Motion select", () => {
-  const bar = (q: Record<string, string>) => render(<FilterBar p={parseParams(q)} brands={[]} divisions={[]} assignees={[]} mineHref="/m" clearHref="/c" />);
+  // The select lives in the Filters popover: open it first.
+  const bar = (q: Record<string, string>) => {
+    render(<FilterBar p={parseParams(q)} brands={[]} divisions={[]} assignees={[]} mineHref="/m" clearHref="/c" />);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
+  };
   it("offers Any / Needs motion / No motion, named motion, defaulting to Any", () => {
     bar({});
     const sel = screen.getByLabelText("Motion") as HTMLSelectElement;

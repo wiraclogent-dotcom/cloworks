@@ -2,7 +2,10 @@
 
 import { AdminForm, ConfirmAction } from "@/components/admin/AdminForm";
 import { Card } from "@/components/shadcn/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { Badge } from "@/components/shadcn/badge";
+import { ChevronRight } from "lucide-react";
+import { cn, focusRing } from "@/components/ui/cn";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { PersonRoleFields } from "./PersonRoleFields";
 import { approveRequest, rejectRequest, undoRejectRequest } from "./actions";
@@ -56,9 +59,12 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
       )}
 
       {rejected.length > 0 && (
-        <Card asChild><details className="group">
-          <summary className="cursor-pointer text-sm font-medium text-foreground">Rejected ({rejected.length})</summary>
-          <ul className="mt-3 space-y-3">
+        <Card asChild><Collapsible className="group">
+          <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1.5 rounded-md text-left text-sm font-medium text-foreground", focusRing)}>
+            <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
+            Rejected ({rejected.length})
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-3"><ul className="space-y-3">
             {rejected.map((r) => (
               <li key={r.applicantId} aria-label={r.name} className="flex flex-wrap items-center justify-between gap-3">
                 <Who r={r} />
@@ -68,8 +74,8 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
                 </AdminForm>
               </li>
             ))}
-          </ul>
-        </details></Card>
+          </ul></CollapsibleContent>
+        </Collapsible></Card>
       )}
     </div>
   );

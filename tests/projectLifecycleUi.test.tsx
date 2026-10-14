@@ -13,6 +13,10 @@ const row = (o: Partial<ProjectRow> & { id: string }): ProjectRow => ({
   title: o.id, subTitle: null, brandName: null, ownerName: "Rina", status: "IN_PROGRESS", startDate: null, dueDate: null, fileUrl: null, ...o,
 });
 const KEY = (s: "completed" | "canceled") => `cloworks:projects:${s}-open`;
+/** The Completed / Canceled sections (Collapsible roots); open state is data-state, the heading row is the trigger. */
+const sections = (c: HTMLElement) => [...c.querySelectorAll<HTMLElement>("[data-closed-section]")];
+const isOpen = (s: HTMLElement) => s.getAttribute("data-state") === "open";
+const toggle = (s: HTMLElement) => fireEvent.click(within(s).getAllByRole("button")[0]);
 
 describe("deadline chip", () => {
   it("is shown for open projects and for neither Done nor Canceled", () => {
@@ -68,14 +72,14 @@ describe("ProjectsView: active list + closed sections", () => {
   });
   it("renders collapsed Completed / Canceled sections with counts; closed by default", () => {
     const { container } = view();
-    const sections = [...container.querySelectorAll("details")];
-    expect(sections).toHaveLength(2);
-    expect(sections.every((s) => !s.open)).toBe(true);
+    expect(sections(container)).toHaveLength(2);
+    expect(sections(container).some(isOpen)).toBe(false);
     expect(screen.getByText("Completed projects (3)")).toBeTruthy();
     expect(screen.getByText("Canceled projects (1)")).toBeTruthy();
   });
   it("sections sort by due date desc (no date last) in one flat table, same columns", () => {
     const { container } = view();
+    sections(container).forEach(toggle);
     const completed = container.querySelector("[data-closed-section='completed']") as HTMLElement;
     expect(within(completed).getAllByRole("rowheader").map((r) => r.textContent)).toEqual(["Done new", "Done old", "Done none"]);
     expect(completed.querySelectorAll("[data-group-header]")).toHaveLength(0);
@@ -88,27 +92,28 @@ describe("ProjectsView: active list + closed sections", () => {
   });
   it("omits a section when it is empty", () => {
     const { container } = view(rows.filter((r) => r.status !== "CANCELLED"));
-    expect(container.querySelectorAll("details")).toHaveLength(1);
+    expect(sections(container)).toHaveLength(1);
     expect(screen.queryByText(/Canceled projects/)).toBeNull();
   });
   it("no closed projects: no sections at all", () => {
     const { container } = view(rows.filter((r) => r.status === "IN_PROGRESS" || r.status === "ON_HOLD"));
-    expect(container.querySelectorAll("details")).toHaveLength(0);
+    expect(sections(container)).toHaveLength(0);
   });
   it("only closed projects: EmptyState 'No active projects.' and no timeline", () => {
     const { container } = view(rows.filter((r) => r.status === "DONE" || r.status === "CANCELLED"));
     expect(screen.getByText("No active projects.")).toBeTruthy();
     expect(screen.queryByText("No projects yet.")).toBeNull();
     expect(container.querySelector("#timeline-h")).toBeNull();
-    expect(container.querySelectorAll("details")).toHaveLength(2);
+    expect(sections(container)).toHaveLength(2);
   });
   it("no projects at all: 'No projects yet.'", () => {
     view([]);
     expect(screen.getByText("No projects yet.")).toBeTruthy();
     expect(screen.queryByText("No active projects.")).toBeNull();
   });
-  it("Edit links stay available inside the closed sections when the viewer can manage", () => {
-    view(rows, true);
+  it("Edit links are available inside the closed sections when the viewer can manage", () => {
+    const { container } = view(rows, true);
+    sections(container).forEach(toggle);
     expect(screen.getAllByRole("link", { name: "Edit Cx 1" })).toHaveLength(1);
   });
 });
@@ -154,23 +159,21 @@ describe("ProjectTimeline links", () => {
 describe("collapsible sections remember open/closed", () => {
   const rows = [row({ id: "Done 1", status: "DONE" }), row({ id: "Cx 1", status: "CANCELLED" })];
   beforeEach(() => { try { localStorage.clear(); } catch { /* not available */ } });
-  const sec = (c: HTMLElement, k: string) => c.querySelector(`[data-closed-section='${k}'] details, details[data-closed-section='${k}']`) as HTMLDetailsElement;
+  const sec = (c: HTMLElement, k: string) => c.querySelector(`[data-closed-section='${k}']`) as HTMLElement;
 
   it("opens a section that was left open last time", async () => {
     localStorage.setItem(KEY("completed"), "1");
     const { container } = render(<ProjectsView rows={rows} canManage={false} now={now} />);
     await act(async () => {});
-    expect(sec(container, "completed").open).toBe(true);
-    expect(sec(container, "canceled").open).toBe(false);
+    expect(isOpen(sec(container, "completed"))).toBe(true);
+    expect(isOpen(sec(container, "canceled"))).toBe(false);
   });
   it("stores the choice when toggled", async () => {
     const { container } = render(<ProjectsView rows={rows} canManage={false} now={now} />);
     const s = sec(container, "canceled");
-    s.open = true;
-    await act(async () => { fireEvent(s, new Event("toggle")); });
+    await act(async () => { toggle(s); });
     expect(localStorage.getItem(KEY("canceled"))).toBe("1");
-    s.open = false;
-    await act(async () => { fireEvent(s, new Event("toggle")); });
+    await act(async () => { toggle(s); });
     expect(localStorage.getItem(KEY("canceled"))).toBe("0");
   });
   it("renders closed and works when localStorage throws", async () => {
@@ -181,10 +184,9 @@ describe("collapsible sections remember open/closed", () => {
       const { container } = render(<ProjectsView rows={rows} canManage={false} now={now} />);
       await act(async () => {});
       const s = sec(container, "completed");
-      expect(s.open).toBe(false);
-      s.open = true;
-      await act(async () => { fireEvent(s, new Event("toggle")); });
-      expect(s.open).toBe(true);
+      expect(isOpen(s)).toBe(false);
+      await act(async () => { toggle(s); });
+      expect(isOpen(s)).toBe(true);
     } finally { Storage.prototype.getItem = get; Storage.prototype.setItem = set; }
   });
 });

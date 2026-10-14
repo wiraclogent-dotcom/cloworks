@@ -113,11 +113,11 @@ component is gone.
 | Verification code | `Input OTP` | `/verify` code field | Planned |
 | Dialog / confirm | `Dialog` + `DialogContent` (X top-right; `showClose={false}` to place it yourself with `DialogCloseButton`), `DialogHeader`, `DialogTitle`, `DialogDescription` (or `aria-describedby={undefined}`), `DialogFooter`; `AlertDialog` for confirms. A dialog mounted only while open takes `open` + `onOpenChange={(o) => { if (!o) onClose(); }}`; focus returns to whatever opened it. Kit `ui/Modal` (intercepted routes: closing goes `router.back()`) and `library/LibraryDialog` compose them; `tests/overlayUsage.test.ts` fails on a new `<dialog>` or `role="dialog"` | `ui/Modal` native `<dialog>`, `calendar/DayDialog`, `library/LibraryDialog`, `briefs/BriefDayDialog`, `DoneDialog` | Migrated |
 | Side panel / mobile drawer | `Sheet` + `SheetContent` (`side` right/left, full width on phones; width via `className`), `SheetHeader`, `SheetTitle` | `Modal side="right"` (migrated), AppFrame drawer | In use |
-| Menu of actions | `Dropdown Menu` | Radix `DropdownMenu` used directly (profile, bell), `role="menu"` in `LibraryRow` | Planned |
-| Floating panel (filters, month picker, info) | `Popover` | `<details>` popovers in `FilterBar`, `MonthPicker` | In use |
+| Menu of actions | `DropdownMenu` + `DropdownMenuTrigger` (`asChild` on a `Button`), `DropdownMenuContent` (width via `className`), `DropdownMenuItem` (`onSelect`; `disabled` = `aria-disabled`, skipped by arrow keys; `asChild` for a `<Link>`), `DropdownMenuCheckboxItem` (`indicator={false}` when the row draws its own state), `DropdownMenuSeparator`. Arrow keys, typeahead, Esc and focus return to the trigger come from Radix | Radix `DropdownMenu` used directly (profile, bell), `role="menu"` in `LibraryRow` | Migrated |
+| Floating panel (filters, month picker, info) | `Popover` + `PopoverTrigger` + `PopoverContent` (Esc and outside click close it, focus returns to the trigger). `portal={false}` keeps the panel where it is written, for named fields that must submit with their `<form>` (FilterBar's `FilterPanel`) | `<details>` popovers in `FilterBar`, `MonthPicker` | Migrated |
 | Hint on hover/focus | `Tooltip` | `title=""` on icon buttons | Planned |
 | Tabs / view switch | `Tabs` or `Toggle Group` | `ui/SegmentedControl`, Library category pills | Planned |
-| Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`details`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
+| Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`Collapsible`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
 | Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
 | Inline message | `Alert` + `AlertTitle`, `AlertDescription`, `AlertAction` (`variant` default/success/warning/destructive; `role` defaults to alert for destructive, status otherwise, `null` = silent; `icon` swaps or drops the icon) | `ui/Alert` (`tone`, `title`, `action` props) | Migrated |
 | Empty list / no results / error page | `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle` (`asChild` for a heading), `EmptyDescription`, `EmptyContent`. Kit `ui/EmptyState` composes them (brand art, `titleAs`, `role`); `size="inline"` for a quiet one-line "No … yet" inside a card | ad-hoc "No … yet" paragraphs (the Board column placeholder stays: icon + dashed box) | Migrated |
@@ -125,7 +125,7 @@ component is gone.
 | Person | `Avatar`, `AvatarImage`, `AvatarFallback` (Radix: photo once loaded, initials until then). Kit `ui/Avatar` (`Avatar`, `UnassignedAvatar`, `AvatarStack`) composes them with the name palette, workspace photos and `decorative` | `<img>` + initials spans | Migrated |
 | On/off, choice | `Switch`, `Checkbox`, `RadioGroup` + `RadioGroupItem` (Radix: a `role` button plus, inside a `<form>`, a hidden input that posts `name=value`; `Switch`/`Checkbox` post `on` or their `value` only while on). Kit `ui/Switch` (row label + description, `onCheckedChange`) and `ui/RadioCards` (card radios, `onChange(value)`) compose them | bare `<input type="checkbox">`, native radios, hand-built switch track | Migrated |
 | Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
-| Collapsible block | `Collapsible` / `Accordion` | `<details>` in `CollapsibleSection`, admin lists | Planned |
+| Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
 | Table | `Table` | `tableClass()` | Planned |
 | Separator | `Separator` (decorative by default; `decorative={false}` for a real separator; `orientation`) | `ui/Divider` | Migrated |
 | Date picking | `Calendar` + `Popover` (our `DatePicker`) | – | In use |
@@ -170,8 +170,8 @@ Still here until migrated (see Component map, don't use in new code):
 
 ## Don't
 
-- No hand-rolled dialogs, menus or popovers (`<dialog>` copies, `role="menu"` by hand, `<details>` used as a
-  popover): use `Dialog`, `Dropdown Menu`, `Popover`.
+- No hand-rolled dialogs, menus, popovers or disclosures (`<dialog>` copies, `role="menu"` by hand, `<details>`):
+  use `Dialog`, `DropdownMenu`, `Popover`, `Collapsible`.
 - No card, field or button rebuilt from raw classes in a page (`rounded-xl border bg-card…`, local `iconBtn`
   constants): use the component.
 - No arbitrary font sizes (`text-[11px]`…) outside the type scale above.
