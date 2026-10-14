@@ -42,7 +42,7 @@ export function ProjectScoreHeader({ label, score, parts, usedParts, sub }: {
         </p>
         <div className="pb-1">
           <p className="text-sm font-medium text-foreground">{label}</p>
-          {sub ? <p className="text-xs text-foreground-secondary">{sub}</p> : null}
+          {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
         </div>
       </div>
       {parts ? (
@@ -55,7 +55,7 @@ export function ProjectScoreHeader({ label, score, parts, usedParts, sub }: {
             ))}
           </ul>
           {score !== null && used < PARTS.length ? (
-            <p className="text-xs text-foreground-secondary">Based on {used} of {PARTS.length} measures</p>
+            <p className="text-xs text-muted-foreground">Based on {used} of {PARTS.length} measures</p>
           ) : null}
         </>
       ) : null}

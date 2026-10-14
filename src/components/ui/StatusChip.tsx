@@ -1,7 +1,7 @@
 import type { ProjectStatus, RequestStatus } from "@prisma/client";
 import { PROJECT_STATUS_TONE, REQUEST_STATUS_TONE } from "@/lib/palette";
 import { PROJECT_STATUS_LABEL, STATUS_LABEL } from "@/lib/statusLabels";
-import { Chip } from "./Chip";
+import { Badge } from "@/components/shadcn/badge";
 import { StatusIcon } from "./StatusIcon";
 
 /**
@@ -22,5 +22,5 @@ export function statusLabel(status: RequestStatus | ProjectStatus, kind?: Status
 /** Request or project status as a chip: palette tint + shape icon + label. */
 export function StatusChip({ status, kind, className }: { status: RequestStatus | ProjectStatus; kind?: StatusKind; className?: string }) {
   const tone = isRequestStatus(status, kind) ? REQUEST_STATUS_TONE[status as RequestStatus] : PROJECT_STATUS_TONE[status as ProjectStatus];
-  return <Chip tone={tone} icon={<StatusIcon status={status} />} className={className}>{statusLabel(status, kind)}</Chip>;
+  return <Badge tone={tone} className={className}><StatusIcon status={status} />{statusLabel(status, kind)}</Badge>;
 }

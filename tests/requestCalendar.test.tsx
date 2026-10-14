@@ -59,9 +59,6 @@ beforeEach(() => {
   reschedule.mockReset();
   refresh.mockReset();
   mockNarrow(false);
-  // jsdom has no showModal/close on <dialog>.
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
@@ -210,7 +207,7 @@ describe("RequestCalendar", () => {
 
   it("shows an empty state with a Today link when nothing is due", () => {
     view([]);
-    const empty = screen.getByText("Nothing due in October").parentElement!;
+    const empty = screen.getByText("Nothing due in October").closest<HTMLElement>("[data-slot=empty]")!;
     expect(within(empty).getByRole("link", { name: "Today" }).getAttribute("href")).toBe(HREFS.todayHref);
     expect(document.querySelector("[data-day]")).toBeNull();
   });

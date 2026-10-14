@@ -1,8 +1,11 @@
 "use client";
 
-import { AdminForm, Labeled, control, textareaControl } from "@/components/admin/AdminForm";
-import { hintClass } from "@/components/ui/Field";
+import { AdminForm, Labeled } from "@/components/admin/AdminForm";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { FieldDescription } from "@/components/shadcn/field";
 import { saveBrand, saveDivision, saveRequestType } from "./actions";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: string; name?: string }) {
   const action = kind === "brand" ? saveBrand : saveDivision;
@@ -13,13 +16,13 @@ export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: 
       prefix={`${kind}-${id ?? "new"}`}
       submitLabel={id ? "Rename" : `Add ${noun}`}
       submitAriaLabel={id ? `Rename ${name}` : undefined}
-      submitVariant={id ? "secondary" : "primary"}
+      submitVariant={id ? "outline" : "default"}
       hidden={id ? { id } : undefined}
       className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2"
     >
       {({ v, idFor, aria }) => (
         <Labeled id={idFor("name")} label={id ? `Name of ${name}` : `New ${noun} name`} className={id ? "[&>label]:sr-only" : undefined}>
-          <input id={idFor("name")} name="name" maxLength={60} className={control} defaultValue={v("name", name ?? "")} {...aria()} />
+          <Input id={idFor("name")} name="name" maxLength={60} defaultValue={v("name", name ?? "")} {...aria()} />
         </Labeled>
       )}
     </AdminForm>
@@ -32,18 +35,18 @@ export function TypeForm({ t }: { t?: { id: string; name: string; active: boolea
       {({ v, idFor, aria, failed }) => (
         <>
           <Labeled id={idFor("name")} label="Name">
-            <input id={idFor("name")} name="name" maxLength={60} className={control} defaultValue={v("name", t?.name ?? "")} {...aria()} />
+            <Input id={idFor("name")} name="name" maxLength={60} defaultValue={v("name", t?.name ?? "")} {...aria()} />
           </Labeled>
           <label className="flex min-h-9 items-center gap-2 text-sm font-medium text-foreground" htmlFor={idFor("active")}>
-            <input id={idFor("active")} name="active" type="checkbox" className="size-4 accent-primary" defaultChecked={failed ? v("active") === "on" : (t?.active ?? true)} />
+            <Checkbox id={idFor("active")} name="active" defaultChecked={failed ? v("active") === "on" : (t?.active ?? true)} />
             Active (shown on the new request form)
           </label>
           <Labeled id={idFor("fieldSchema")} label="Field schema (JSON array)">
-            <textarea id={idFor("fieldSchema")} name="fieldSchema" rows={8} spellCheck={false} className={`${textareaControl} font-mono text-[13px]`} defaultValue={v("fieldSchema", t?.schemaText ?? "[]")} {...aria()} />
+            <Textarea id={idFor("fieldSchema")} name="fieldSchema" rows={8} spellCheck={false} className="font-mono text-compact" defaultValue={v("fieldSchema", t?.schemaText ?? "[]")} {...aria()} />
           </Labeled>
-          <p className={hintClass}>
+          <FieldDescription>
             Each field: key, label, type (text, select, checkbox or url), optional required and, for select, options.
-          </p>
+          </FieldDescription>
         </>
       )}
     </AdminForm>

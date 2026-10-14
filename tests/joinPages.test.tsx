@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { act } from "react";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
 const redirect = vi.fn((url: string) => { throw new Error(`NEXT_REDIRECT:${url}`); });
 vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
@@ -136,11 +136,12 @@ describe("/signup", () => {
   });
   it("has an unchecked Remember me box and passes it to the sign-in", async () => {
     render(await SignUpView({ searchParams: sp({}) }));
-    const box = screen.getByLabelText("Remember me") as HTMLInputElement;
-    expect(box.type).toBe("checkbox");
-    expect(box.checked).toBe(false);
-    expect(box.name).toBe("remember");
-    expect(box.value).toBe("1");
+    const box = screen.getByRole("checkbox", { name: "Remember me" });
+    expect(box.getAttribute("aria-checked")).toBe("false");
+    const form = box.closest("form")!;
+    expect(new FormData(form).get("remember")).toBeNull();
+    fireEvent.click(box);
+    expect(new FormData(form).get("remember")).toBe("1");
     lib.signUp.mockResolvedValue({ applicantId: "a1" });
     await signUpAction(null, fd({ name: "Andi", email: "andi@gmail.com", password: "long-enough-1", remember: "1" }));
     expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", remember: "1", redirectTo: "/verify" });
@@ -363,9 +364,12 @@ describe("/join/invite/[token]", () => {
   it("password path has an unchecked Remember me box and passes it on", async () => {
     lib.describeInvite.mockResolvedValue(open);
     render(await InviteView({ params }));
-    const box = screen.getByLabelText("Remember me") as HTMLInputElement;
-    expect(box.checked).toBe(false);
+    const box = screen.getByRole("checkbox", { name: "Remember me" });
+    expect(box.getAttribute("aria-checked")).toBe("false");
     expect(box.closest("form")?.querySelector('input[name="mode"]')?.getAttribute("value")).toBe("password");
+    expect(new FormData(box.closest("form")!).get("remember")).toBeNull();
+    fireEvent.click(box);
+    expect(new FormData(box.closest("form")!).get("remember")).toBe("1");
     lib.acceptInvite.mockResolvedValue({ userId: "u1", email: "andi@gmail.com" });
     await acceptInviteAction(null, fd({ token: "tok", mode: "password", name: "Andi", password: "long-enough-1", remember: "1" }));
     expect(signIn).toHaveBeenCalledWith("credentials", { email: "andi@gmail.com", password: "long-enough-1", remember: "1", redirectTo: "/requests" });

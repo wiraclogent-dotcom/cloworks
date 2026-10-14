@@ -12,9 +12,9 @@ import { AccessDenied } from "@/components/AccessDenied";
 import { KpiSectionSkeleton, KpiSkeleton, SummarySkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { buttonClass } from "@/components/ui/Button";
 import { kpiHref } from "@/lib/kpi/href";
 import { keepParams, parseMonthParam, parseUserParam, parseViewParam, resolveSubject } from "./params";
+import { Button } from "@/components/shadcn/button";
 
 /** Tab title: "My KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "My KPI" };
@@ -38,7 +38,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   if (!subject) {
     return (
       <EmptyState role="alert" titleAs="h1" art="empty-search" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
-        action={<Link href="/dashboard/team" className={buttonClass({ variant: "secondary" })}><ArrowLeft aria-hidden="true" />Back to team</Link>} />
+        action={<Button asChild variant="outline"><Link href="/dashboard/team"><ArrowLeft aria-hidden="true" />Back to team</Link></Button>} />
     );
   }
 
@@ -49,7 +49,7 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
     <>
       <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
         title={own ? "My KPI" : `KPI: ${subject.name}`} description="Request and project KPIs"
-        actions={!own && canTeam ? <Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year"]) })} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null} />
+        actions={!own && canTeam ? <Button asChild variant="ghost" size="sm"><Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year"]) })}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : null} />
       <div className="space-y-8">
         <Suspense fallback={<SummarySkeleton count={4} />}>
           <MySummary db={db} subject={subject} month={month} year={year} />

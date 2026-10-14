@@ -6,9 +6,11 @@ import { loadLobbyState } from "@/lib/joinDeps";
 import { requireApplicantOrRedirect } from "@/lib/session";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldDescription } from "@/components/shadcn/field";
 import { joinWithCodeAction, signOutAction } from "./actions";
 import { LobbyPoll } from "./LobbyPoll";
 
@@ -39,7 +41,7 @@ function Panel({ title, children }: { title: string; children?: ReactNode }) {
   );
 }
 
-const lead = "text-base leading-relaxed text-foreground-secondary";
+const lead = "text-base leading-relaxed text-muted-foreground";
 
 export async function LobbyView({ searchParams }: { searchParams: LobbySearch }) {
   const me = await requireApplicantOrRedirect();
@@ -52,7 +54,7 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
     return (
       <Panel title="Request sent">
         <p className={lead}>Request sent to {state.workspaceName}. We&apos;ll email you when you&apos;re approved.</p>
-        <p className="text-sm text-foreground-secondary">You can keep this page open: it moves you in as soon as you&apos;re approved.</p>
+        <p className="text-sm text-muted-foreground">You can keep this page open: it moves you in as soon as you&apos;re approved.</p>
         <LobbyPoll />
       </Panel>
     );
@@ -61,7 +63,7 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
     return (
       <Panel title="Not approved">
         <p className={lead}>Your request to {state.workspaceName} wasn&apos;t approved.</p>
-        <p className="text-sm text-foreground-secondary">If you think this is a mistake, contact your admin.</p>
+        <p className="text-sm text-muted-foreground">If you think this is a mistake, contact your admin.</p>
       </Panel>
     );
   }
@@ -70,13 +72,13 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
   return (
     <Panel title="Almost there">
       <p className={lead}>You&apos;re not in a workspace yet. Ask your admin for an invite link, or paste it here.</p>
-      {notice && <Alert tone="danger">{notice}</Alert>}
+      {notice && <Alert variant="destructive"><AlertDescription>{notice}</AlertDescription></Alert>}
       <AuthForm action={joinWithCodeAction} submitLabel="Request to join" pendingLabel="Sending request…">
         <div>
-          <label htmlFor="lobby-link" className={labelClass}>Invite link</label>
-          <input id="lobby-link" name="link" type="text" autoComplete="off" required maxLength={500} placeholder="https://…/join/…" aria-describedby="lobby-link-hint"
-            className={fieldClass({ className: "h-11" })} />
-          <p id="lobby-link-hint" className={hintClass}>The whole link, or just the code at its end.</p>
+          <Label htmlFor="lobby-link">Invite link</Label>
+          <Input id="lobby-link" name="link" type="text" autoComplete="off" required maxLength={500} placeholder="https://…/join/…" aria-describedby="lobby-link-hint"
+            className="h-11" />
+          <FieldDescription id="lobby-link-hint">The whole link, or just the code at its end.</FieldDescription>
         </div>
       </AuthForm>
     </Panel>

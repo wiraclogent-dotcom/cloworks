@@ -3,15 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { DropdownMenu } from "radix-ui";
 import { Bell } from "lucide-react";
 import { BrandArt } from "@/components/ui/BrandArt";
 import type { InboxItem } from "@/lib/inbox";
 import { notificationHref } from "@/lib/notificationLinks";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 import { NotificationItem, unreadRow } from "../notifications/NotificationItem";
-import { Skeleton } from "../ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { cn, focusRing } from "../ui/cn";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
 
 type Ok = { ok: true };
 type Fail = { ok: false };
@@ -22,8 +22,8 @@ export type BellActions = {
 };
 const serverActions: BellActions = { list: listNotifications, markRead: markNotificationRead, markAll: markAllNotificationsRead };
 
-const rowClass = "block w-full cursor-default rounded-md outline-none select-none data-[highlighted]:bg-surface-muted";
-const linkClass = "flex h-9 w-full cursor-default items-center justify-center rounded-md px-2.5 text-sm font-medium text-link outline-none select-none data-[highlighted]:bg-surface-muted";
+/** A notification row: NotificationItem brings its own padding and layout. */
+const rowClass = "block p-0";
 
 /**
  * Top-bar bell: unread badge, and a dropdown of the newest notifications. Opening it fetches the list; selecting one
@@ -68,54 +68,51 @@ export function NotificationBellView({ unread, actions = serverActions }: { unre
 
   const label = count > 0 ? `Notifications, ${count} unread` : "Notifications";
   return (
-    <DropdownMenu.Root modal={false} onOpenChange={(o) => { if (o) void load(); }}>
-      <DropdownMenu.Trigger aria-label={label} title="Notifications"
-        className={cn("relative inline-flex size-9 items-center justify-center rounded-full text-foreground-secondary transition-colors hover:bg-surface-muted hover:text-foreground", focusRing)}>
+    <DropdownMenu modal={false} onOpenChange={(o) => { if (o) void load(); }}>
+      <DropdownMenuTrigger aria-label={label} title="Notifications"
+        className={cn("relative inline-flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground", focusRing)}>
         <Bell aria-hidden="true" strokeWidth={1.75} className="size-5" />
         {count > 0 && (
-          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-[11px] leading-none font-semibold text-destructive-foreground ring-2 ring-background">
+          <span aria-hidden="true" className="absolute -top-0.5 -right-0.5 inline-flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-destructive px-1 text-xs leading-none font-semibold text-destructive-foreground ring-2 ring-background">
             {count > 9 ? "9+" : count}
           </span>
         )}
-      </DropdownMenu.Trigger>
-      <DropdownMenu.Portal>
-        <DropdownMenu.Content align="end" sideOffset={6}
-          className="z-50 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-border bg-background p-1.5 text-foreground shadow-raised">
-          <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
-            <p className="text-sm font-semibold">Notifications</p>
-            <DropdownMenu.Item disabled={count === 0} onSelect={(e) => { e.preventDefault(); void markAll(); }}
-              className="cursor-default rounded-md px-2 py-1 text-xs font-medium text-link outline-none select-none data-[disabled]:text-foreground-muted data-[highlighted]:bg-surface-muted">
-              Mark all as read
-            </DropdownMenu.Item>
-          </div>
-          <DropdownMenu.Separator className="my-1 h-px bg-border" />
-          <div className="max-h-96 overflow-y-auto">
-            {items === null && loadFailed ? (
-              <p role="alert" className="px-2.5 py-6 text-center text-sm text-foreground-secondary">Couldn&apos;t load notifications. Close and open again to retry.</p>
-            ) : items === null ? (
-              <div role="status" aria-busy="true" className="grid gap-2 p-2.5">
-                <span className="sr-only">Loading…</span>
-                {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
-              </div>
-            ) : items.length === 0 ? (
-              <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-foreground-secondary">
-                <BrandArt name="empty-notifications" width={88} className="animate-float mb-1 size-22 object-contain" />
-                You&apos;re all caught up.
-              </div>
-            ) : (
-              items.map((n) => (
-                <DropdownMenu.Item key={n.id} onSelect={() => void select(n)} className={cn(rowClass, n.readAt === null && unreadRow)}>
-                  <NotificationItem item={n} now={now} />
-                </DropdownMenu.Item>
-              ))
-            )}
-          </div>
-          <DropdownMenu.Separator className="my-1 h-px bg-border" />
-          <DropdownMenu.Item asChild className={linkClass}>
-            <Link href="/notifications">See all notifications</Link>
-          </DropdownMenu.Item>
-        </DropdownMenu.Content>
-      </DropdownMenu.Portal>
-    </DropdownMenu.Root>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={6} className="w-80 max-w-[calc(100vw-2rem)]">
+        <div className="flex items-center justify-between gap-2 px-2.5 py-1.5">
+          <p className="text-sm font-semibold">Notifications</p>
+          <DropdownMenuItem disabled={count === 0} onSelect={(e) => { e.preventDefault(); void markAll(); }}
+            className="w-auto px-2 py-1 text-xs font-medium text-link">
+            Mark all as read
+          </DropdownMenuItem>
+        </div>
+        <DropdownMenuSeparator />
+        <div className="max-h-96 overflow-y-auto">
+          {items === null && loadFailed ? (
+            <p role="alert" className="px-2.5 py-6 text-center text-sm text-muted-foreground">Couldn&apos;t load notifications. Close and open again to retry.</p>
+          ) : items === null ? (
+            <div role="status" aria-busy="true" className="grid gap-2 p-2.5">
+              <span className="sr-only">Loading…</span>
+              {[0, 1, 2].map((i) => <Skeleton key={i} className="h-10 w-full" />)}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="flex flex-col items-center px-2.5 py-5 text-center text-sm text-muted-foreground">
+              <BrandArt name="empty-notifications" width={88} className="animate-float mb-1 size-22 object-contain" />
+              You&apos;re all caught up.
+            </div>
+          ) : (
+            items.map((n) => (
+              <DropdownMenuItem key={n.id} onSelect={() => void select(n)} className={cn(rowClass, n.readAt === null && unreadRow)}>
+                <NotificationItem item={n} now={now} />
+              </DropdownMenuItem>
+            ))
+          )}
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="h-9 justify-center font-medium text-link">
+          <Link href="/notifications">See all notifications</Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

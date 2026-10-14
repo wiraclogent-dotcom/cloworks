@@ -269,7 +269,7 @@
   --avatar-8-text: #d3dce8;
 }
 
-/* `data-tone` exposes one palette entry as --tone-accent/tint/text (Chip, StatusChip, column bars, Alert). */
+/* `data-tone` exposes one palette entry as --tone-accent/tint/text (Badge, StatusChip, column bars, Alert). */
 [data-tone="requested"] { --tone-accent: var(--status-requested-accent); --tone-tint: var(--status-requested-tint); --tone-text: var(--status-requested-text); }
 [data-tone="in-progress"] { --tone-accent: var(--status-in-progress-accent); --tone-tint: var(--status-in-progress-tint); --tone-text: var(--status-in-progress-text); }
 [data-tone="first-look"] { --tone-accent: var(--status-first-look-accent); --tone-tint: var(--status-first-look-tint); --tone-text: var(--status-first-look-text); }
@@ -283,6 +283,8 @@
 [data-tone="tag-neutral"] { --tone-accent: var(--status-tag-neutral-accent); --tone-tint: var(--status-tag-neutral-tint); --tone-text: var(--status-tag-neutral-text); }
 
 @theme inline {
+  --text-compact: 0.8125rem;
+  --text-compact--line-height: 1.125rem;
   --color-brand-deep-blue: var(--brand-deep-blue);
   --color-brand-aqua: var(--brand-aqua);
   --color-brand-aqua-strong: var(--brand-aqua-strong);
@@ -295,13 +297,10 @@
   --color-brand-gradient-to: var(--brand-gradient-to);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-foreground-secondary: var(--foreground-secondary);
   --color-foreground-muted: var(--foreground-muted);
   --color-placeholder: var(--placeholder);
   --color-heading: var(--heading);
   --color-link: var(--link);
-  --color-surface: var(--surface);
-  --color-surface-muted: var(--surface-muted);
   --color-unread: var(--unread);
   --color-unread-dot: var(--unread-dot);
   --color-card: var(--card);
@@ -459,9 +458,6 @@
   :root[data-sidebar="collapsed"] .app-sidebar .sb-expanded-only {
     display: none;
   }
-  :root[data-sidebar="expanded"] .app-sidebar .sb-collapsed-only {
-    display: none;
-  }
 }
 /* Default (no stored choice), 768–1279.98px: the rail. Same declarations as `collapsed` above. */
 @media (min-width: 768px) and (max-width: 1279.98px) {
@@ -488,17 +484,6 @@
     box-shadow: none;
   }
   :root:not([data-sidebar]) .app-sidebar .sb-expanded-only {
-    display: none;
-  }
-}
-/* Default (no stored choice), ≥ 1280px: expanded. */
-@media (min-width: 1280px) {
-  :root:not([data-sidebar]) .app-sidebar .sb-collapsed-only {
-    display: none;
-  }
-}
-@media (max-width: 767.98px) {
-  .app-sidebar .sb-collapsed-only {
     display: none;
   }
 }

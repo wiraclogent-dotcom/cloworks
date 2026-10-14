@@ -3,8 +3,8 @@ import { requireScope } from "@/lib/session";
 import { accountRows } from "@/lib/settings/account";
 import { photoUrl } from "@/lib/profilePhotoUrl";
 import { Avatar } from "@/components/ui/Avatar";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Chip } from "@/components/ui/Chip";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
 import { ChangePasswordForm } from "./ChangePasswordForm";
 import { PhotoEditor } from "./PhotoEditor";
 
@@ -36,10 +36,10 @@ export async function SettingsContent() {
           <Avatar name={fullName} size="lg" src={photoSrc} className="size-24 text-2xl" />
           <div className="mt-3"><PhotoEditor hasPhoto={!!photoSrc} /></div>
           <p className="mt-4 text-lg font-semibold text-foreground">{fullName}</p>
-          {title !== "—" ? <p className="text-sm text-foreground-secondary">{title}</p> : null}
+          {title !== "—" ? <p className="text-sm text-muted-foreground">{title}</p> : null}
           <div className="mt-3 flex flex-wrap justify-center gap-1.5">
-            <Chip>{value("Role")}</Chip>
-            <Chip>{value("Job role")}</Chip>
+            <Badge>{value("Role")}</Badge>
+            <Badge>{value("Job role")}</Badge>
           </div>
         </div>
         <dl className="mt-5 grid gap-4 border-t border-border pt-5">
@@ -53,7 +53,7 @@ export async function SettingsContent() {
           <CardHeader>
             <div>
               <CardTitle as="h2">Password</CardTitle>
-              <p className="mt-1 text-sm text-foreground-secondary">
+              <p className="mt-1 text-sm text-muted-foreground">
                 Use at least 10 characters. Changing it signs you out, so sign in again with the new one.
               </p>
             </div>
@@ -61,7 +61,7 @@ export async function SettingsContent() {
           {hasPassword ? (
             <ChangePasswordForm />
           ) : (
-            <p className="text-sm text-foreground-secondary">You sign in without a password. Ask an admin if you want one.</p>
+            <p className="text-sm text-muted-foreground">You sign in without a password. Ask an admin if you want one.</p>
           )}
         </Card>
       </div>

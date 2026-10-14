@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Labeled, selectControl, type FormCtx } from "@/components/admin/AdminForm";
+import { Labeled, type FormCtx } from "@/components/admin/AdminForm";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { enumLabel } from "@/lib/adminChips";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { personLabel } from "@/lib/personLabel";
@@ -30,20 +31,20 @@ export function PersonRoleFields({ linkable, v, idFor, name, label, noneLabel }:
   return (
     <>
       <Labeled id={idFor(name)} label={label}>
-        <select id={idFor(name)} name={name} className={selectControl} value={userId} onChange={(e) => pick(e.target.value)}>
+        <NativeSelect id={idFor(name)} name={name} value={userId} onChange={(e) => pick(e.target.value)}>
           <option value="">{noneLabel}</option>
           {linkable.map((p) => <option key={p.id} value={p.id}>{personLabel(p)}</option>)}
-        </select>
+        </NativeSelect>
       </Labeled>
       <Labeled id={idFor("appRole")} label="App role">
-        <select id={idFor("appRole")} name="appRole" className={selectControl} value={appRole} onChange={(e) => setAppRole(e.target.value)}>
+        <NativeSelect id={idFor("appRole")} name="appRole" value={appRole} onChange={(e) => setAppRole(e.target.value)}>
           {APP_ROLES.map((r) => <option key={r} value={r}>{enumLabel(r)}</option>)}
-        </select>
+        </NativeSelect>
       </Labeled>
       <Labeled id={idFor("jobRole")} label="Job role">
-        <select id={idFor("jobRole")} name="jobRole" className={selectControl} value={jobRole} onChange={(e) => setJobRole(e.target.value)}>
+        <NativeSelect id={idFor("jobRole")} name="jobRole" value={jobRole} onChange={(e) => setJobRole(e.target.value)}>
           {JOB_ROLES.map((r) => <option key={r} value={r}>{enumLabel(r)}</option>)}
-        </select>
+        </NativeSelect>
       </Labeled>
     </>
   );

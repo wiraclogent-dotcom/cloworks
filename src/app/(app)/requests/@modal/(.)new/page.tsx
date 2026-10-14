@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "New request" };
 export default function NewRequestPanel() {
   return (
     <Modal side="right" title="New request">
-      <p className="mb-4 text-sm text-foreground-secondary">Tell the creative team what you need. Fields marked * are required.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Tell the creative team what you need. Fields marked * are required.</p>
       <Suspense fallback={<FormSkeleton />}><NewRequestContent /></Suspense>
     </Modal>
   );

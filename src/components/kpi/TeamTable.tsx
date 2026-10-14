@@ -3,10 +3,12 @@ import type { JobRole } from "@prisma/client";
 import { formatCount, formatDays, formatPercent, progressPercent } from "@/lib/kpi/format";
 import type { KpiResult } from "@/lib/kpi/metrics";
 import { PROGRESS_LEVEL_LABEL, progressLevel } from "@/lib/kpi/presentation";
+import { Progress } from "@/components/shadcn/progress";
 import { cn } from "@/components/ui/cn";
 import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
-import { TeamPersonCell, TeamTableFrame, teamT as t } from "./TeamTableParts";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
+import { TeamPersonCell, TeamTableFrame } from "./TeamTableParts";
 
 export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
 
@@ -15,10 +17,7 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   const level = progressLevel(pct);
   return (
     <div data-level={level} className="flex items-center gap-2">
-      <div role="progressbar" aria-label={`${name} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, pct)} aria-valuetext={`${pct}%`}
-        className="h-2 w-16 shrink-0 overflow-hidden rounded-full bg-surface-muted outline outline-1 -outline-offset-1 outline-border">
-        <div className={cn("h-full rounded-full", PROGRESS_FILL[level])} style={{ width: `${Math.min(100, pct)}%` }} />
-      </div>
+      <Progress aria-label={`${name} progress`} aria-valuetext={`${pct}%`} value={Math.min(100, pct)} className="w-16 shrink-0" indicatorClassName={PROGRESS_FILL[level]} />
       <span className="inline-flex items-center gap-0.5 tabular-nums">
         {level === "complete" ? <Check aria-hidden="true" strokeWidth={2.25} className="size-3.5 text-progress-complete" /> : null}
         {pct}%
@@ -35,39 +34,39 @@ export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: Team
   const xlOnly = "hidden xl:table-cell";
   return (
     <TeamTableFrame caption="KPI per person for the selected month" minWidth={canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0"}>
-      <thead>
-        <tr>
-          <th scope="col" className={cn(t.th, "w-full")}>Person</th>
-          <th scope="col" className={cn(t.th, t.numeric, "w-24")}>Tasks done</th>
-          <th scope="col" className={cn(t.th, t.numeric, "w-20")}>Target</th>
-          <th scope="col" className={cn(t.th, "w-40")}>Progress</th>
-          <th scope="col" className={cn(t.th, t.numeric, "w-24")}>On-time</th>
-          <th scope="col" className={cn(t.th, t.numeric, xlOnly, "w-32")}>Turnaround (days)</th>
-          <th scope="col" className={cn(t.th, t.numeric, xlOnly, "w-24")}>Workload</th>
-          {canEdit ? <th scope="col" className={cn(t.th, "w-44")}>Set target</th> : null}
-        </tr>
-      </thead>
-      <tbody>
+      <TableHeader>
+        <TableRow>
+          <TableHead scope="col" className="w-full">Person</TableHead>
+          <TableHead scope="col" numeric className="w-24">Tasks done</TableHead>
+          <TableHead scope="col" numeric className="w-20">Target</TableHead>
+          <TableHead scope="col" className="w-40">Progress</TableHead>
+          <TableHead scope="col" numeric className="w-24">On-time</TableHead>
+          <TableHead scope="col" numeric className={cn(xlOnly, "w-32")}>Turnaround (days)</TableHead>
+          <TableHead scope="col" numeric className={cn(xlOnly, "w-24")}>Workload</TableHead>
+          {canEdit ? <TableHead scope="col" className="w-44">Set target</TableHead> : null}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {rows.map((r) => {
           const pct = progressPercent(r.kpi.progress);
           return (
-            <tr key={r.userId} className={t.tr}>
+            <TableRow key={r.userId}>
               <TeamPersonCell name={r.name} role={r.role} href={canOpen ? `/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}` : undefined} />
-              <td className={cn(t.td, t.numeric)}>{r.kpi.tasksDone}</td>
-              <td className={cn(t.td, t.numeric)}>{formatCount(r.kpi.target)}</td>
-              <td className={t.td}>{pct === null ? <span className="text-foreground-secondary">—</span> : <TeamProgress name={r.name} pct={pct} />}</td>
-              <td className={cn(t.td, t.numeric)}>{formatPercent(r.kpi.onTimeRate)}</td>
-              <td className={cn(t.td, t.numeric, xlOnly)}>{formatDays(r.kpi.avgTurnaroundDays)}</td>
-              <td className={cn(t.td, t.numeric, xlOnly)}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</td>
+              <TableCell numeric>{r.kpi.tasksDone}</TableCell>
+              <TableCell numeric>{formatCount(r.kpi.target)}</TableCell>
+              <TableCell>{pct === null ? <span className="text-muted-foreground">—</span> : <TeamProgress name={r.name} pct={pct} />}</TableCell>
+              <TableCell numeric>{formatPercent(r.kpi.onTimeRate)}</TableCell>
+              <TableCell numeric className={xlOnly}>{formatDays(r.kpi.avgTurnaroundDays)}</TableCell>
+              <TableCell numeric className={xlOnly}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</TableCell>
               {canEdit ? (
-                <td className={t.td}>
+                <TableCell>
                   <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} />
-                </td>
+                </TableCell>
               ) : null}
-            </tr>
+            </TableRow>
           );
         })}
-      </tbody>
+      </TableBody>
     </TeamTableFrame>
   );
 }

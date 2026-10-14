@@ -49,7 +49,7 @@ export function MeasureInfo({ label, weight, help }: { label: string; weight: nu
           onPointerEnter={onEnter}
           onPointerLeave={onLeave}
           onClick={onClick}
-          className="relative inline-flex shrink-0 after:absolute after:-inset-[5px] after:content-[''] cursor-pointer items-center justify-center rounded-full align-middle text-foreground-secondary hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="relative inline-flex shrink-0 after:absolute after:-inset-[5px] after:content-[''] cursor-pointer items-center justify-center rounded-full align-middle text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <Info className="size-3.5" aria-hidden="true" />
         </button>
@@ -57,7 +57,7 @@ export function MeasureInfo({ label, weight, help }: { label: string; weight: nu
       <PopoverContent align="start" className="w-auto max-w-72 space-y-1.5 p-3 text-xs" onPointerEnter={onEnter} onPointerLeave={onLeave}>
         <p className="text-sm font-medium text-heading">{label} · {Math.round(weight * 100)}%</p>
         <p>{help}</p>
-        <p className="text-foreground-secondary">— means there&apos;s no data yet. This measure&apos;s weight is shared among the others.</p>
+        <p className="text-muted-foreground">— means there&apos;s no data yet. This measure&apos;s weight is shared among the others.</p>
       </PopoverContent>
     </Popover>
   );

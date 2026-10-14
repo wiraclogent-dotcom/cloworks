@@ -1,8 +1,8 @@
 import { Clapperboard, Video } from "lucide-react";
-import { Chip } from "./Chip";
+import { Badge } from "@/components/shadcn/badge";
 
 /** "Needs motion" mark: clapperboard icon plus text, never colour alone. `video` marks a Video request instead. */
 export function NeedsMotionChip({ video = false, className }: { video?: boolean; className?: string }) {
-  if (video) return <Chip tone="needs-motion" icon={<Video aria-hidden="true" strokeWidth={1.75} />} className={className}>Video</Chip>;
-  return <Chip tone="needs-motion" icon={<Clapperboard aria-hidden="true" strokeWidth={1.75} />} className={className}>Needs motion</Chip>;
+  if (video) return <Badge tone="needs-motion" className={className}><Video aria-hidden="true" strokeWidth={1.75} />Video</Badge>;
+  return <Badge tone="needs-motion" className={className}><Clapperboard aria-hidden="true" strokeWidth={1.75} />Needs motion</Badge>;
 }

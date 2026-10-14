@@ -1,13 +1,17 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { FilterBar } from "@/components/FilterBar";
 import { parseParams } from "@/app/(app)/requests/params";
 
 afterEach(cleanup);
 const bar = (raw: Record<string, string>) =>
   render(<FilterBar p={parseParams(raw)} brands={[]} divisions={[]} assignees={[]} mineHref="/requests?mine=1" clearHref="/requests" />);
-const hidden = (c: HTMLElement) => Object.fromEntries([...c.querySelectorAll<HTMLInputElement>('input[type="hidden"]')].map((i) => [i.name, i.value]));
+/** The Filters panel's own fields ride along as hidden inputs while it is closed; these tests are about the rest. */
+const PANEL_FIELDS = new Set(["status", "brand", "division", "assignee", "motion"]);
+const hidden = (c: HTMLElement) => Object.fromEntries([...c.querySelectorAll<HTMLInputElement>('input[type="hidden"]')]
+  .filter((i) => !PANEL_FIELDS.has(i.name)).map((i) => [i.name, i.value]));
+const openFilters = () => fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
 
 describe("FilterBar", () => {
   it("carries the current table sort and direction through Apply", () => {
@@ -31,11 +35,14 @@ describe("FilterBar", () => {
     cleanup();
     const { container } = render(<FilterBar p={parseParams({ work: "1" })} brands={[]} divisions={[]} assignees={[]} mineHref="/requests?mine=1" workHref="/requests" clearHref="/requests" />);
     expect(screen.getByRole("link", { name: /My work/ }).getAttribute("aria-current")).toBe("true");
-    expect(container.querySelector('select[name="assignee"]')).toBeNull();
+    expect(new FormData(container.querySelector("form")!).has("assignee")).toBe(false);
+    openFilters();
+    expect(screen.queryByLabelText("Assignee")).toBeNull();
     expect(hidden(container)).toEqual({ work: "1" });
   });
   it("lists only the open statuses in the calendar view", () => {
     bar({ view: "calendar" });
+    openFilters();
     const opts = [...screen.getByLabelText("Status").querySelectorAll("option")].map((o) => o.textContent);
     expect(opts).toEqual(["All", "Requested", "On progress", "First look"]);
   });
@@ -45,6 +52,7 @@ describe("FilterBar", () => {
   });
   it("lists only the open statuses in the timeline view", () => {
     bar({ view: "timeline" });
+    openFilters();
     const opts = [...screen.getByLabelText("Status").querySelectorAll("option")].map((o) => o.textContent);
     expect(opts).toEqual(["All", "Requested", "On progress", "First look"]);
   });
@@ -58,10 +66,13 @@ describe("FilterBar", () => {
   it("shows the new filters, and closes the panel, when the URL's filters change without a remount", () => {
     const props = { brands: [], divisions: [], assignees: [], mineHref: "/requests?mine=1", clearHref: "/requests" };
     const { container, rerender } = render(<FilterBar p={parseParams({ status: "DONE", q: "ads" })} {...props} />);
-    container.querySelector("details")!.open = true;
+    openFilters();
+    expect(screen.getByRole("dialog", { name: "Filters" })).toBeTruthy();
     rerender(<FilterBar p={parseParams({})} {...props} />);
-    expect(container.querySelector<HTMLSelectElement>('select[name="status"]')!.value).toBe("");
+    expect(new FormData(container.querySelector("form")!).get("status")).toBe("");
     expect(container.querySelector<HTMLInputElement>('input[name="q"]')!.value).toBe("");
-    expect(container.querySelector("details")!.open).toBe(false);
+    expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull();
+    openFilters();
+    expect((screen.getByLabelText("Status") as HTMLSelectElement).value).toBe("");
   });
 });

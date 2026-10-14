@@ -6,10 +6,14 @@ import type { SubmitState, WorkKind } from "@/lib/submitRequest";
 import { errorSummary } from "@/lib/formErrors";
 import Link from "next/link";
 import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, UserCheck } from "lucide-react";
-import { Alert } from "@/components/ui/Alert";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { Card, CardTitle } from "@/components/ui/Card";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardTitle } from "@/components/shadcn/card";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { RadioCards } from "@/components/ui/RadioCards";
 
 type Opt = { id: string; name: string };
@@ -17,12 +21,12 @@ type Opt = { id: string; name: string };
 function Field({ id, label, error, required, hint, children }: { id: string; label: string; error?: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>
+      <Label htmlFor={id}>
         {label}
         {required && <span aria-hidden="true" className="text-danger"> *</span>}
-      </label>
+      </Label>
       {children}
-      {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-foreground-secondary">{hint}</p>}
+      {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
   );
@@ -69,10 +73,10 @@ const STEPS = (assignee: string): { icon: React.ReactNode; title: string; text: 
   { icon: <Mail aria-hidden="true" strokeWidth={1.75} />, title: "You'll be notified when it's ready", text: "Notifications are by email only: we email you when its status changes, including when it is marked Done." },
 ];
 
-/** Right-column help card (static). */
+/** Right-column help card. The sticky offset sits on the `<aside>` (the grid cell is as tall as the form), not on the card, which would have nothing to stick within. */
 function WhatHappensNext({ assignee }: { assignee: string }) {
   return (
-    <Card className="@3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16">
+    <Card>
       <CardTitle>What happens next</CardTitle>
       <ol className="mt-3 space-y-4">
         {STEPS(assignee).map((s, i) => (
@@ -80,7 +84,7 @@ function WhatHappensNext({ assignee }: { assignee: string }) {
             <span aria-hidden="true" data-tone="done" className="flex size-8 shrink-0 items-center justify-center rounded-full bg-tone-tint text-tone-text [&_svg]:size-4">{s.icon}</span>
             <div className="min-w-0">
               <p className="text-sm font-medium text-foreground"><span className="sr-only">Step {i + 1}: </span>{s.title}</p>
-              <p className="mt-0.5 text-[13px] text-foreground-secondary">{s.text}</p>
+              <p className="mt-0.5 text-compact text-muted-foreground">{s.text}</p>
             </div>
           </li>
         ))}
@@ -94,10 +98,9 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
   const v = state?.values;
-  const props = (k: string, kind: "input" | "select" | "textarea" = "input") => ({
+  const props = (k: string) => ({
     id: k,
     name: k,
-    className: fieldClass({ kind, invalid: !!errs[k] }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -135,7 +138,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
   const deadlineRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (state?.nonce) {
-      const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid] input');
+      const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]:not([role="radiogroup"]), [data-invalid] [role="radio"]');
       first?.focus();
     }
   }, [state?.nonce]);
@@ -147,7 +150,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
     <div className="@container">
     <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_20rem]">
     <form ref={formRef} key={nonce} action={action} className="min-w-0 space-y-5" noValidate>
-      {generic && <Alert tone="danger">{generic}</Alert>}
+      {generic && <Alert variant="destructive"><AlertDescription>{generic}</AlertDescription></Alert>}
       <Card>
         <StepTitle n={1}>What do you need?</StepTitle>
         <div className="mt-3" data-invalid={errs.workKind ? "" : undefined}>
@@ -162,16 +165,16 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <StepTitle n={2}>Which brand &amp; team?</StepTitle>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field id="brandId" label="Brand" required error={errs.brandId}>
-            <select {...props("brandId", "select")} defaultValue={v?.brandId ?? ""} required>
+            <NativeSelect {...props("brandId")} defaultValue={v?.brandId ?? ""} required>
               <option value="" disabled>Select a brand</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
           <Field id="divisionId" label="Division" required error={errs.divisionId}>
-            <select {...props("divisionId", "select")} defaultValue={v?.divisionId ?? ""} required>
+            <NativeSelect {...props("divisionId")} defaultValue={v?.divisionId ?? ""} required>
               <option value="" disabled>Select a division</option>
               {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
           <div className="sm:col-span-2">
             <div role="group" aria-label="Assignees" aria-describedby={describedBy}>
@@ -180,17 +183,17 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
                   const id = i === 0 ? "assigneeIds" : `assigneeIds-${i + 1}`;
                   return (
                     <div key={i}>
-                      <label htmlFor={id} className={labelClass}>{slotLabel(i)}</label>
-                      <select {...props("assigneeIds", "select")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
+                      <Label htmlFor={id}>{slotLabel(i)}</Label>
+                      <NativeSelect {...props("assigneeIds")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
                         defaultValue={v?.assigneeIds[i] ?? ""} aria-describedby={describedBy}>
                         <option value="">{i < base ? "Unassigned" : "Choose someone"}</option>
                         {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
+                      </NativeSelect>
                     </div>
                   );
                 })}
               </div>
-              <p id="assigneeIds-hint" className="mt-1 text-xs text-foreground-secondary">Optional. Leave it unassigned and a lead will pick someone.</p>
+              <p id="assigneeIds-hint" className="mt-1 text-xs text-muted-foreground">Optional. Leave it unassigned and a lead will pick someone.</p>
               <FieldError id="assigneeIds-error">{errs.assigneeIds}</FieldError>
               <Button type="button" variant="ghost" size="sm" className="mt-1" onClick={addPerson}>+ Add person</Button>
             </div>
@@ -202,14 +205,14 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <StepTitle n={3}>Describe it</StepTitle>
         <div className="mt-4 space-y-4">
           <Field id="title" label="Title" required error={errs.title}>
-            <input {...props("title")} type="text" required maxLength={200} placeholder={copy.title} defaultValue={v?.title} />
+            <Input {...props("title")} type="text" required maxLength={200} placeholder={copy.title} defaultValue={v?.title} />
           </Field>
           <Field id="briefUrl" label="Brief link" hint={copy.brief} error={errs.briefUrl}>
-            <input {...props("briefUrl")} type="url" placeholder="https://" defaultValue={v?.briefUrl}
+            <Input {...props("briefUrl")} type="url" placeholder="https://" defaultValue={v?.briefUrl}
               aria-describedby={[errs.briefUrl ? "briefUrl-error" : "", "briefUrl-hint"].filter(Boolean).join(" ")} />
           </Field>
           <Field id="notes" label="Notes" error={errs.notes}>
-            <textarea {...props("notes", "textarea")} rows={4} placeholder={copy.notes} defaultValue={v?.notes} />
+            <Textarea {...props("notes")} rows={4} placeholder={copy.notes} defaultValue={v?.notes} />
           </Field>
         </div>
       </Card>
@@ -219,12 +222,12 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <div className="w-full sm:w-56">
             <Field id="deadline" label="Deadline" error={errs.deadline}>
-              <input {...props("deadline")} ref={deadlineRef} type="date" defaultValue={v?.deadline} />
+              <Input {...props("deadline")} ref={deadlineRef} type="date" defaultValue={v?.deadline} />
             </Field>
           </div>
           <div className="flex flex-wrap gap-2 pb-px" role="group" aria-label="Quick deadline">
             {QUICK_DEADLINES.map((q) => (
-              <Button key={q.label} type="button" variant="secondary" size="sm"
+              <Button key={q.label} type="button" variant="outline" size="sm"
                 onClick={() => { if (deadlineRef.current) deadlineRef.current.value = jakartaDatePlus(q.days); }}>
                 {q.label}
               </Button>
@@ -234,13 +237,13 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
       </Card>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="primary" loading={pending} icon={<Send aria-hidden="true" strokeWidth={1.75} />}>
+        <Button type="submit" variant="default" loading={pending} icon={<Send aria-hidden="true" strokeWidth={1.75} />}>
           {pending ? "Creating…" : "Create request"}
         </Button>
-        <Link href="/requests" className={buttonClass({ variant: "ghost" })}>Cancel</Link>
+        <Button asChild variant="ghost"><Link href="/requests">Cancel</Link></Button>
       </div>
     </form>
-    <aside aria-label="What happens next" className="min-w-0">
+    <aside aria-label="What happens next" className="min-w-0 @3xl:sticky @3xl:top-6 in-data-[slot=sheet-content]:@3xl:top-16">
       <WhatHappensNext assignee={copy.assignee} />
     </aside>
     </div>

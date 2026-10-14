@@ -133,6 +133,26 @@ describe("admin forms", () => {
   });
 });
 
+describe("request type form Active checkbox", () => {
+  it("posts active=on while ticked (new types start active) and nothing when unticked", async () => {
+    act.saveRequestType.mockResolvedValue({ ok: true, message: "ok", values: {}, nonce: "a1" });
+    render(<TypeForm />);
+    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
+    await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(1));
+    expect((act.saveRequestType.mock.calls[0][1] as FormData).get("active")).toBe("on");
+    // The form remounts (key = nonce) once the save resolves; its success status is rendered inside the new form, so
+    // wait for it before touching the box, or the click can land on the old, unmounting checkbox.
+    expect(await screen.findByRole("status")).toHaveProperty("textContent", "ok");
+    await waitFor(() => expect(screen.getByRole("button", { name: /add request type/i }).getAttribute("aria-busy")).not.toBe("true"));
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Active/ }));
+    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
+    await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(2));
+    expect((act.saveRequestType.mock.calls[1][1] as FormData).get("active")).toBeNull();
+  });
+});
+
 describe("admin pages gate", () => {
   for (const role of ["REQUESTER", "CREATIVE", "LEAD"]) {
     it(`${role} sees access denied and no query runs`, async () => {
@@ -165,6 +185,8 @@ describe("admin pages gate", () => {
       { ...u, id: "u2", name: "Budi", email: "budi@clogent.co.id", passwordHash: null },
     ]);
     const { container } = render(await UsersContent());
+    // Open both edit panels so their forms are in the page too.
+    for (const name of ["Rina", "Budi"]) fireEvent.click(screen.getByRole("button", { name: `Edit ${name}` }));
     expect(container.innerHTML).not.toContain("TOPSECRETHASH");
     expect(screen.getByText("Password set")).toBeTruthy();
     expect(screen.getByText("No password yet")).toBeTruthy();

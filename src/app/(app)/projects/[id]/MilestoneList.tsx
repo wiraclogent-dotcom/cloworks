@@ -3,13 +3,14 @@
 import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import { IconButton } from "@/components/ui/IconButton";
-import { Chip } from "@/components/ui/Chip";
+import { Button } from "@/components/shadcn/button";
+import { Badge } from "@/components/shadcn/badge";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export type MilestoneRow = { id: string; title: string; dateIso: string; done: boolean };
 
@@ -21,7 +22,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
   return (
     <div className="grid gap-3">
       {milestones.length === 0 && !adding && (
-        <p className="text-sm text-foreground-secondary">No meetings or milestones recorded yet.</p>
+        <EmptyState size="inline" title="No meetings or milestones recorded yet." />
       )}
       {milestones.length > 0 && (
         <ul className="grid gap-2">
@@ -54,7 +55,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
         />
       ) : (
         <div>
-          <Button size="sm" variant="secondary" icon={<Plus aria-hidden="true" />} onClick={() => setAdding(true)}>
+          <Button size="sm" variant="outline" icon={<Plus aria-hidden="true" />} onClick={() => setAdding(true)}>
             Add milestone
           </Button>
         </div>
@@ -82,14 +83,31 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
     <div className="grid gap-1">
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <span>{m.title}</span>
-        <span className="flex items-center gap-2 tabular-nums text-foreground-secondary">
+        <span className="flex items-center gap-2 tabular-nums text-muted-foreground">
           {formatJakartaDay(m.dateIso)}
-          <Chip tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Chip>
+          <Badge tone={m.done ? "done" : "tag-neutral"}>{m.done ? "Done" : "Upcoming"}</Badge>
           {canManage && !confirming && (
             <>
-              <IconButton size="sm" className="size-7 [&_svg]:size-3.5" title="Edit" aria-label={`Edit ${m.title}`} icon={<Pencil aria-hidden="true" />} onClick={onEdit} />
-              <IconButton size="sm" title="Delete" aria-label={`Delete ${m.title}`} icon={<Trash2 aria-hidden="true" />}
-                className="size-7 text-danger hover:text-danger [&_svg]:size-3.5" onClick={() => { setError(null); setConfirming(true); }} />
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="size-7 [&_svg]:size-3.5"
+                title="Edit"
+                aria-label={`Edit ${m.title}`}
+                onClick={onEdit}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                title="Delete"
+                aria-label={`Delete ${m.title}`}
+                className="size-7 text-danger hover:text-danger [&_svg]:size-3.5"
+                onClick={() => { setError(null); setConfirming(true); }}
+              >
+                <Trash2 aria-hidden="true" />
+              </Button>
             </>
           )}
         </span>
@@ -97,7 +115,7 @@ function MilestoneItem({ projectId, milestone: m, canManage, onEdit }: {
       {confirming && (
         <div role="group" aria-label={`Confirm deleting ${m.title}`} className="flex flex-wrap items-center justify-end gap-1.5 text-xs">
           <span>Delete this milestone?</span>
-          <Button size="sm" variant="danger" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
+          <Button size="sm" variant="destructive" disabled={pending} onClick={remove}>{pending ? "Deleting…" : "Delete"}</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(false)} autoFocus>Cancel</Button>
         </div>
       )}
@@ -128,19 +146,19 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
   return (
     <form onSubmit={submit} className="grid gap-2 rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
-          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className={fieldClass({ size: "sm", className: "min-w-48 flex-1" })} autoFocus />
+        <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
+          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className="min-w-48 flex-1" size="sm" autoFocus />
         <DatePicker value={form.date || null} onChange={(iso) => setForm((f) => ({ ...f, date: iso ?? "" }))} disabled={pending}
           size="sm" aria-label={`Date for ${label}`} placeholder="Pick a date" className="w-40" />
         <label className="flex items-center gap-1.5 text-sm">
-          <input type="checkbox" checked={form.done} onChange={(e) => setForm((f) => ({ ...f, done: e.target.checked }))} disabled={pending} />
+          <Checkbox checked={form.done} onCheckedChange={(c) => setForm((f) => ({ ...f, done: c === true }))} disabled={pending} />
           Done
         </label>
       </div>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="sm" variant="primary" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button type="submit" size="sm" variant="default" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );

@@ -1,9 +1,12 @@
 import type { ReactNode } from "react";
-import { Target } from "lucide-react";
+import { ChevronRight, Target } from "lucide-react";
+import { cn, focusRing } from "@/components/ui/cn";
 import type { Quarter } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Card } from "@/components/shadcn/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { ProjectScoreHeader } from "./ProjectScoreHeader";
 import { TargetList } from "./TargetList";
 import { YearSelect } from "./YearSelect";
@@ -68,21 +71,24 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       {kpi.excluded.length > 0 ? (
         <section aria-labelledby="not-scored" className="space-y-2">
           <div>
-            <Heading id="not-scored" className="text-sm font-semibold text-foreground-secondary">Not scored</Heading>
-            <p className="text-xs text-foreground-secondary">Cancelled items and items removed from their project do not count.</p>
+            <Heading id="not-scored" className="text-sm font-semibold text-muted-foreground">Not scored</Heading>
+            <p className="text-xs text-muted-foreground">Cancelled items and items removed from their project do not count.</p>
           </div>
           <TargetList items={kpi.excluded} canManage={canManage} muted />
         </section>
       ) : null}
 
       {kpi.otherWork.length > 0 ? (
-        <details className="group rounded-xl border border-border bg-card shadow-card">
-          <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-foreground select-none">Other work ({kpi.otherWork.length})</summary>
-          <div className="border-t border-border">
-            <p className="px-4 pt-3 text-xs text-foreground-secondary">Items this person owns rows in that are not targets. Not scored.</p>
+        <Card asChild className="p-0"><Collapsible className="group">
+          <CollapsibleTrigger className={cn("flex w-full cursor-pointer items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-medium text-foreground select-none", focusRing, "focus-visible:-outline-offset-2")}>
+            <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
+            Other work ({kpi.otherWork.length})
+          </CollapsibleTrigger>
+          <CollapsibleContent className="border-t border-border">
+            <p className="px-4 pt-3 text-xs text-muted-foreground">Items this person owns rows in that are not targets. Not scored.</p>
             <TargetList items={kpi.otherWork} canManage={false} muted bare />
-          </div>
-        </details>
+          </CollapsibleContent>
+        </Collapsible></Card>
       ) : null}
     </div>
   );

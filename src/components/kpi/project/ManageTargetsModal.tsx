@@ -3,10 +3,13 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)/dashboard/projects/actions";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 /**
  * "Manage targets" for one person and year: pick a project, tick the items to add. Items already targeted on this
@@ -19,7 +22,7 @@ export function ManageTargetsModal({ userId, name, year, projects }: {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button variant="primary" icon={<Plus aria-hidden="true" />} onClick={() => setOpen(true)}>Manage targets</Button>
+      <Button variant="default" icon={<Plus aria-hidden="true" />} onClick={() => setOpen(true)}>Manage targets</Button>
       {open ? <Picker userId={userId} name={name} year={year} projects={projects} onClose={() => setOpen(false)} /> : null}
     </>
   );
@@ -81,31 +84,31 @@ function Picker({ userId, name, year, projects, onClose }: {
     <LibraryDialog title={`Manage targets · ${name} · ${year}`} onClose={onClose}>
       <form onSubmit={save} className="space-y-4">
         <div>
-          <label htmlFor={`${uid}-project`} className={labelClass}>Project</label>
-          <select id={`${uid}-project`} value={projectId} onChange={(e) => void choose(e.target.value)} className={fieldClass({ kind: "select" })}>
+          <Label htmlFor={`${uid}-project`}>Project</Label>
+          <NativeSelect id={`${uid}-project`} value={projectId} onChange={(e) => void choose(e.target.value)}>
             <option value="">Choose a project</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-          </select>
+          </NativeSelect>
         </div>
 
-        {loading ? <p role="status" className="text-sm text-foreground-secondary">Loading items…</p> : null}
-        {options && options.length === 0 ? <p className="text-sm text-foreground-secondary">This project has no items yet.</p> : null}
+        {loading ? <p role="status" className="text-sm text-muted-foreground">Loading items…</p> : null}
+        {options && options.length === 0 ? <p className="text-sm text-muted-foreground">This project has no items yet.</p> : null}
         {options && options.length > 0 ? (
           <fieldset className="space-y-1">
-            <legend className={labelClass}>Items to add as targets for {name}</legend>
+            <legend className={labelClassName}>Items to add as targets for {name}</legend>
             <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
               {options.map((o) => {
                 const mine = o.assignedTo.some((a) => a.userId === userId);
                 const others = o.assignedTo.filter((a) => a.userId !== userId);
                 return (
                   <li key={o.itemTitle}>
-                    <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm text-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:text-foreground-secondary">
-                      <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" disabled={mine} checked={mine || picked.has(o.itemTitle)}
-                        onChange={() => toggle(o.itemTitle)} />
+                    <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm text-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:text-muted-foreground">
+                      <Checkbox className="mt-0.5" disabled={mine} checked={mine || picked.has(o.itemTitle)}
+                        onCheckedChange={() => toggle(o.itemTitle)} />
                       <span className="min-w-0 break-words">
                         {o.itemTitle}
-                        {mine ? <span className="ml-1.5 text-xs text-foreground-secondary">(already a target)</span> : null}
-                        {others.length > 0 ? <span className="ml-1.5 text-xs text-foreground-secondary">{`· also ${others.map((a) => a.name).join(", ")}`}</span> : null}
+                        {mine ? <span className="ml-1.5 text-xs text-muted-foreground">(already a target)</span> : null}
+                        {others.length > 0 ? <span className="ml-1.5 text-xs text-muted-foreground">{`· also ${others.map((a) => a.name).join(", ")}`}</span> : null}
                       </span>
                     </label>
                   </li>
@@ -115,11 +118,11 @@ function Picker({ userId, name, year, projects, onClose }: {
           </fieldset>
         ) : null}
 
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
         <div className="flex justify-end gap-2">
-          <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={saving} disabled={picked.size === 0}>Save</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={saving} disabled={picked.size === 0}>Save</Button>
         </div>
       </form>
     </LibraryDialog>

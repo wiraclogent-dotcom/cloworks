@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { RotateCcw, TriangleAlert } from "lucide-react";
-import { Button, buttonClass } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
@@ -14,9 +14,9 @@ export default function AppError({ retry }: { error: Error & { digest?: string }
     <EmptyState role="alert" titleAs="h1" icon={<TriangleAlert />} title="Something went wrong" className="mx-auto mt-6 max-w-xl"
       description="Something went wrong. Try again, or sign in again."
       action={<>
-        <Button variant="primary" icon={<RotateCcw aria-hidden="true" />} onClick={() => retry()}>Try again</Button>
-        <Link href="/requests" className={buttonClass({ variant: "secondary" })}>Back to requests</Link>
-        <Link href="/signin" className={buttonClass({ variant: "ghost" })}>Sign in again</Link>
+        <Button variant="default" icon={<RotateCcw aria-hidden="true" />} onClick={() => retry()}>Try again</Button>
+        <Button asChild variant="outline"><Link href="/requests">Back to requests</Link></Button>
+        <Button asChild variant="ghost"><Link href="/signin">Sign in again</Link></Button>
       </>} />
   );
 }

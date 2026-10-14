@@ -232,7 +232,10 @@ describe("ProjectItemRow", () => {
     const { container } = renderRow(false);
     expect(container.querySelector("#item-laundry-pods-regular-4")!.className).toMatch(/(^|\s)min-w-0(\s|$)/);
     fireEvent.click(screen.getByRole("button", { name: "Laundry Pods Regular 4, 3 variants" }));
-    expect(container.querySelector("table")!.parentElement!.className).toContain("overflow-x-auto");
+    // The wrapper is the shadcn Table container now: overflow-auto (it scrolls sideways; was overflow-x-auto).
+    const wrapper = container.querySelector("table")!.parentElement!;
+    expect(wrapper.getAttribute("data-slot")).toBe("table-container");
+    expect(wrapper.className).toMatch(/(^|\s)overflow-(x-)?auto(\s|$)/);
   });
 
   it("Rename focuses the input on open and returns focus to the Rename button on Cancel and Escape", () => {

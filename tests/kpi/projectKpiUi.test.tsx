@@ -26,10 +26,7 @@ import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi, TargetItem } from "@/lib/kpi/projectQueries";
 import type { QuarterScore } from "@/lib/kpi/projectScore";
 
-// jsdom has no showModal on <dialog>.
 beforeEach(() => {
-  HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) { this.setAttribute("open", ""); };
-  HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
   addProjectTargets.mockReset(); removeProjectTarget.mockReset(); loadItemOptions.mockReset(); push.mockReset();
 });
 afterEach(cleanup);
@@ -256,11 +253,13 @@ describe("ProjectKpiPanel", () => {
     expect(within(group).getByText("Cancelled")).toBeTruthy();
     expect(within(group).getByText(/Old banner/)).toBeTruthy();
   });
-  it("other work is a collapsed details element", () => {
+  it("other work is a collapsed disclosure", () => {
     panel(kpiOf({ otherWork: [facts({ itemTitle: "Side job", projectTitle: "Misc" }), facts({ itemTitle: "Other job" })] }));
-    const d = screen.getByText("Other work (2)").closest("details") as HTMLDetailsElement;
-    expect(d.open).toBe(false);
-    expect(within(d).getByText(/Side job/)).toBeTruthy();
+    const toggle = screen.getByRole("button", { name: "Other work (2)" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.queryByText(/Side job/)).toBeNull();
+    fireEvent.click(toggle);
+    expect(within(toggle.closest("[data-slot=card]") as HTMLElement).getByText(/Side job/)).toBeTruthy();
   });
   it("omits other work when there is none", () => {
     panel(kpiOf());

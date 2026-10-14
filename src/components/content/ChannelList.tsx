@@ -7,12 +7,13 @@ import { Plus, Settings2 } from "lucide-react";
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
-import { CountPill } from "@/components/ui/Chip";
-import { fieldClass, labelClass } from "@/components/ui/Field";
-import { IconButton } from "@/components/ui/IconButton";
+import { Badge } from "@/components/shadcn/badge";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Label } from "@/components/shadcn/label";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ChannelActions, type ChannelMove } from "./ChannelActions";
 import { AddChannelButton, type BrandOption } from "./ChannelForm";
+import { Button } from "@/components/shadcn/button";
 
 /** Channels in list order, grouped by brand id (a brand's group sits where its first channel is). */
 function byBrand(channels: ChannelSummary[]): ChannelSummary[][] {
@@ -40,7 +41,7 @@ function movesOf(channels: ChannelSummary[], c: ChannelSummary): { up: ChannelMo
 
 /**
  * Left column: channels grouped by brand with their "awaiting approval" counts. Below 1024px it collapses to a
- * <select>. Switching channel keeps the tab and closes any open post. Channel managers also get Edit, Move and
+ * <NativeSelect>. Switching channel keeps the tab and closes any open post. Channel managers also get Edit, Move and
  * Delete per channel (behind a "Manage" toggle, so the list stays quiet).
  */
 export function ChannelList({ channels, currentId, tab, canManage, brands }: {
@@ -58,27 +59,35 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
     <>
       <div className="flex items-end gap-2 lg:hidden">
         <div className="min-w-0 flex-1">
-          <label htmlFor="content-channel" className={labelClass}>Channel</label>
-          <select id="content-channel" value={currentId ?? ""} className={fieldClass({ kind: "select" })}
+          <Label htmlFor="content-channel">Channel</Label>
+          <NativeSelect id="content-channel" value={currentId ?? ""}
             onChange={(e) => router.push(planHref({ channel: e.target.value, tab }))}>
             {channels.map((c) => (
               <option key={c.id} value={c.id}>{`${c.brandName} · @${c.handle}${c.awaiting ? ` (${c.awaiting} awaiting)` : ""}`}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {canManage && selected ? (
-          <IconButton aria-label="Manage selected channel" aria-expanded={managingSelected} icon={<Settings2 />} variant="secondary"
-            onClick={() => setManagingSelected((v) => !v)} />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Manage selected channel"
+            aria-expanded={managingSelected}
+            onClick={() => setManagingSelected((v) => !v)}
+            title="Manage selected channel"
+          >
+            <Settings2 />
+          </Button>
         ) : null}
         {add}
       </div>
       {canManage && selected && managingSelected ? <div className="lg:hidden">{actions(selected)}</div> : null}
       <nav aria-label="Channels" className="hidden lg:block">
-        <p className="mb-2 px-2 text-xs font-medium tracking-wide text-foreground-secondary uppercase">Channels</p>
+        <p className="mb-2 px-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Channels</p>
         <div className="space-y-4">
           {byBrand(channels).map((list) => (
             <section key={list[0].brandId}>
-              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-foreground-secondary">{list[0].brandName}</h3>
+              <h3 className="mb-1 truncate px-2 text-xs font-semibold text-muted-foreground">{list[0].brandName}</h3>
               <ul className="space-y-0.5">
                 {list.map((c) => {
                   const on = c.id === currentId;
@@ -88,14 +97,22 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
                       <div className="flex items-center gap-0.5">
                         <Link href={planHref({ channel: c.id, tab })} aria-current={on ? "page" : undefined}
                           className={cn("flex h-10 min-w-0 flex-1 items-center gap-2 rounded-lg px-2 text-sm transition-colors duration-150 ease-out", focusRing,
-                            on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-surface-muted")}>
+                            on ? "bg-accent font-medium text-accent-foreground" : "text-foreground hover:bg-muted")}>
                           <Avatar name={c.displayName} src={c.avatarUrl} size="sm" decorative />
                           <span className="min-w-0 flex-1 truncate">@{c.handle}</span>
-                          {c.awaiting ? <CountPill value={c.awaiting} aria-label={`${c.awaiting} awaiting approval`} /> : null}
+                          {c.awaiting ? <Badge variant="count" aria-label={`${c.awaiting} awaiting approval`}>{c.awaiting}</Badge> : null}
                         </Link>
                         {canManage ? (
-                          <IconButton size="sm" aria-label={`Manage @${c.handle}`} aria-expanded={open} icon={<Settings2 />}
-                            onClick={() => setManaging(open ? null : c.id)} />
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Manage @${c.handle}`}
+                            aria-expanded={open}
+                            onClick={() => setManaging(open ? null : c.id)}
+                            title={`Manage @${c.handle}`}
+                          >
+                            <Settings2 />
+                          </Button>
                         ) : null}
                       </div>
                       {canManage && open ? actions(c) : null}

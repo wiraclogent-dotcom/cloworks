@@ -4,7 +4,7 @@ import { useEffect, useId, useState, type ChangeEvent } from "react";
 import { Plus, RotateCw } from "lucide-react";
 import { registerUpload, requestUploadSignature } from "@/app/(app)/content/actions";
 import { IMAGE_FORMATS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, VIDEO_FORMATS } from "@/lib/media/config";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 
 type Accept = "image" | "video" | "both";
@@ -118,9 +118,9 @@ export function MediaUpload({ purpose, accept, onUploaded, onBusyChange, disable
   return (
     <div className={cn("flex flex-col gap-1", className)}>
       <label htmlFor={`${uid}-file`} aria-disabled={off || undefined}
-        className={cn("relative flex aspect-[3/4] w-14 cursor-pointer items-center justify-center rounded-md border border-dashed border-border-strong bg-surface text-foreground-secondary",
-          "transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring [&_svg]:size-5",
-          off && "cursor-not-allowed opacity-55 hover:bg-surface")}>
+        className={cn("relative flex aspect-[3/4] w-14 cursor-pointer items-center justify-center rounded-md border border-dashed border-border-strong bg-card text-muted-foreground",
+          "transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring [&_svg]:size-5",
+          off && "cursor-not-allowed opacity-55 hover:bg-card")}>
         {busy ? <span className="text-xs tabular-nums">{progress}%</span> : <Plus aria-hidden="true" />}
         <input id={`${uid}-file`} type="file" accept={types} aria-label="Add media" disabled={off} onChange={onChange}
           aria-describedby={error ? `${uid}-err` : undefined} className={cn("sr-only", focusRing)} />

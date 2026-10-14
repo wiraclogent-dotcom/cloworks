@@ -11,7 +11,7 @@ export function DisabledNavItem({ label, icon }: { label: string; icon: ReactNod
         className="sb-item flex h-9 cursor-not-allowed items-center gap-3 rounded-lg px-2.5 text-sm text-sidebar-foreground-secondary opacity-70 [&_svg]:size-[18px] [&_svg]:shrink-0">
         {icon}
         <span className="sb-label truncate">{label}</span>
-        <span className="sb-label ml-auto rounded-full bg-surface-muted px-1.5 py-px text-[11px] font-medium text-foreground-secondary">Soon</span>
+        <span className="sb-label ml-auto rounded-full bg-muted px-1.5 py-px text-xs font-medium text-muted-foreground">Soon</span>
       </span>
     </li>
   );

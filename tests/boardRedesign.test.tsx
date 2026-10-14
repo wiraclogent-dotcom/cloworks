@@ -142,9 +142,8 @@ describe("board columns", () => {
 });
 
 describe("Done dialog (restyled)", () => {
-  // Regression: inside the request side panel (a native <dialog>), an Escape that was only stopPropagation'd still
-  // fired the panel's cancel event, so one Escape closed the Done dialog and the whole panel.
-  it("Escape cancels only this dialog: it claims the key so an enclosing <dialog> does not close too", () => {
+  // Esc over the request side panel closing only this dialog (not the panel too) is in tests/dialogs.test.tsx.
+  it("Escape cancels this dialog and claims the key", () => {
     const onCancel = vi.fn();
     render(<DoneDialog title="Poster" onCancel={onCancel} onSubmit={() => {}} />);
     const notCanceled = fireEvent.keyDown(screen.getByLabelText(/Number of outputs/), { key: "Escape" });
@@ -153,19 +152,21 @@ describe("Done dialog (restyled)", () => {
   });
 
   it("keeps the labelled modal, kit fields and buttons, and inline errors with an icon", () => {
-    render(<DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} />);
+    render(<><button type="button">Board card</button><DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} /></>);
     const dialog = screen.getByRole("dialog", { name: "Mark as done" });
-    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.getAttribute("aria-describedby")).toBe(screen.getByText(/is finished\. Tell us what was delivered\./).id);
+    // Modal: the page behind is hidden from assistive tech (Radix sets aria-hidden on it) and dimmed by the backdrop.
+    expect(screen.queryByRole("button", { name: "Board card" })).toBeNull();
     expect(dialog.className).toMatch(/rounded-xl/);
     expect(dialog.className).toMatch(/shadow-raised/);
-    expect(dialog.parentElement!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
-    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-surface-muted/);
+    expect(document.querySelector("[data-slot=dialog-overlay]")!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
+    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-muted/);
     expect(screen.getByRole("button", { name: "Mark as done" }).className).toMatch(/bg-primary/);
     const count = screen.getByLabelText(/Number of outputs/);
     expect(document.activeElement).toBe(count);
     fireEvent.change(count, { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
-    const err = screen.getByText(/whole number from 1 to 1000/i).closest("p")!;
+    const err = screen.getByText(/whole number from 1 to 1000/i).closest("[data-slot=field-error]")!;
     expect(count.getAttribute("aria-describedby")).toBe(err.id);
     expect(count.getAttribute("aria-invalid")).toBe("true");
     expect(err.querySelector("svg[aria-hidden]")).toBeTruthy();
@@ -176,12 +177,13 @@ describe("Done dialog (restyled)", () => {
 describe("filter pills", () => {
   it("renders pill fields, Apply as the primary button and Clear filters as a ghost link; active filters are tinted", () => {
     render(<FilterBar p={parseParams({ motion: "yes", status: "DONE" })} brands={[]} divisions={[]} assignees={[]} mineHref="/m" clearHref="/c" />);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     const motion = screen.getByLabelText("Motion");
     expect(motion.className).toMatch(/rounded-full/);
     expect(motion.className).toMatch(/bg-accent/);
-    expect(motion.className).not.toMatch(/bg-surface\b/);
+    expect(motion.className).not.toMatch(/bg-card\b/);
     const brand = screen.getByLabelText("Brand");
-    expect(brand.className).toMatch(/bg-surface/);
+    expect(brand.className).toMatch(/bg-card/);
     expect(brand.className).not.toMatch(/bg-accent/);
     expect(screen.getByLabelText("Status").className).toMatch(/bg-accent/);
     expect(screen.getByRole("button", { name: "Apply" }).className).toMatch(/bg-primary/);
@@ -191,7 +193,7 @@ describe("filter pills", () => {
     // The toolbar row matches the view switcher: My requests is a segment in a muted tray, search and Filters share that surface.
     const mine = screen.getByRole("link", { name: "My requests" });
     expect(mine.className).toMatch(/rounded-lg/);
-    expect(mine.parentElement!.className).toMatch(/bg-surface-muted/);
-    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-surface-muted|bg-surface-muted.*rounded-xl/);
+    expect(mine.parentElement!.className).toMatch(/bg-muted/);
+    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-muted|bg-muted.*rounded-xl/);
   });
 });

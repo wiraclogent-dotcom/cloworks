@@ -5,18 +5,21 @@ import { submitProject, submitProjectInPlace } from "./actions";
 import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
 import Link from "next/link";
-import { Alert } from "@/components/ui/Alert";
-import { Button, buttonClass } from "@/components/ui/Button";
-import { Card, CardTitle } from "@/components/ui/Card";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardTitle } from "@/components/shadcn/card";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 
 type Opt = { id: string; name: string };
 
 function Field({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label id={`${id}-label`} htmlFor={id} className={labelClass}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
+      <Label id={`${id}-label`} htmlFor={id}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</Label>
       {children}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
@@ -40,8 +43,8 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
   const failed = state && !state.ok ? state : null;
   const errs = failed?.fieldErrors || {};
   const v = failed?.values ?? initial;
-  const props = (k: string, kind: "input" | "select" = "input") => ({
-    id: k, name: k, className: fieldClass({ kind, invalid: !!errs[k] }),
+  const props = (k: string) => ({
+    id: k, name: k,
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -75,33 +78,33 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
     <p role="status" aria-live="polite" className="sr-only">{pending ? "" : summary}</p>
     <form ref={formRef} key={nonce} action={action} className="space-y-4" noValidate>
-      {generic && <Alert tone="danger">{generic}</Alert>}
+      {generic && <Alert variant="destructive"><AlertDescription>{generic}</AlertDescription></Alert>}
       <Card className="space-y-4">
       <CardTitle>Project</CardTitle>
       <Field id="title" label="Title" required error={errs.title}>
-        <input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
+        <Input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
       </Field>
       <Field id="subTitle" label="Sub title" error={errs.subTitle}>
-        <input {...props("subTitle")} type="text" maxLength={200} defaultValue={v?.subTitle} />
+        <Input {...props("subTitle")} type="text" maxLength={200} defaultValue={v?.subTitle} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
       <Field id="brandId" label="Brand" error={errs.brandId}>
-        <select {...props("brandId", "select")} defaultValue={v?.brandId ?? ""}>
+        <NativeSelect {...props("brandId")} defaultValue={v?.brandId ?? ""}>
           <option value="">No brand</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       <Field id="ownerId" label="Owner" required error={errs.ownerId}>
-        <select {...props("ownerId", "select")} defaultValue={v?.ownerId ?? ""} required>
+        <NativeSelect {...props("ownerId")} defaultValue={v?.ownerId ?? ""} required>
           <option value="" disabled>Select an owner</option>
           {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       </div>
       <Field id="status" label="Status" required error={errs.status}>
-        <select {...props("status", "select")} defaultValue={v?.status || "NOT_STARTED"} required>
+        <NativeSelect {...props("status")} defaultValue={v?.status || "NOT_STARTED"} required>
           {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{PROJECT_STATUS_LABEL[s]}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       </Card>
       <Card className="space-y-4">
@@ -115,16 +118,16 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
         </Field>
       </div>
       <Field id="fileUrl" label="File link" error={errs.fileUrl}>
-        <input {...props("fileUrl")} type="text" inputMode="url" autoComplete="off" placeholder="https://… or \\server\folder" maxLength={2048} defaultValue={v?.fileUrl} />
+        <Input {...props("fileUrl")} type="text" inputMode="url" autoComplete="off" placeholder="https://… or \\server\folder" maxLength={2048} defaultValue={v?.fileUrl} />
       </Field>
       </Card>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" variant="primary" loading={pending}>
+        <Button type="submit" variant="default" loading={pending}>
           {pending ? "Saving…" : projectId ? "Save changes" : "Create project"}
         </Button>
         {onCancel
           ? <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-          : <Link href="/projects" className={buttonClass({ variant: "ghost" })}>Cancel</Link>}
+          : <Button asChild variant="ghost"><Link href="/projects">Cancel</Link></Button>}
       </div>
     </form>
     </>

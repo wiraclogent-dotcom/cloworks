@@ -83,8 +83,12 @@ describe("Users page", () => {
     const budi = screen.getByRole("row", { name: /^Budi/ });
     expect(budi.querySelector("[data-active]")!.textContent).toBe("Inactive");
     expect(within(budi).getByText("No login")).toBeTruthy();
-    expect(screen.getByText("Edit Rina").closest("summary")).not.toBeNull();
-    expect(screen.getByText("Edit Budi").closest("summary")).not.toBeNull();
+    // Each person's forms sit under a collapsed "Edit <name>" disclosure.
+    for (const name of ["Rina", "Budi"]) {
+      const toggle = screen.getByRole("button", { name: `Edit ${name}` });
+      expect(toggle.getAttribute("aria-expanded")).toBe("false");
+      fireEvent.click(toggle);
+    }
     expect(screen.getByRole("button", { name: "Save changes for Rina" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reactivate Budi" })).toBeTruthy();
   });
@@ -102,6 +106,17 @@ describe("Users page", () => {
 });
 
 describe("Lists page", () => {
+  it("a request type panel keeps what was typed when it is collapsed and opened again", async () => {
+    render(await ListsContent());
+    const toggle = screen.getByText("Video").closest("button")!;
+    fireEvent.click(toggle);
+    const panel = toggle.parentElement!;
+    fireEvent.change(within(panel).getByLabelText("Field schema (JSON array)"), { target: { value: '[{"key":"x"}]' } });
+    fireEvent.click(toggle);
+    expect(within(panel).queryByRole("button", { name: "Save type Video" })).toBeNull();
+    fireEvent.click(toggle);
+    expect((within(panel).getByLabelText("Field schema (JSON array)") as HTMLTextAreaElement).value).toBe('[{"key":"x"}]');
+  });
   it("PageHeader + switcher, three cards, unique rename buttons, type status chip", async () => {
     render(await ListsContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Brands, divisions and request types"]);
@@ -111,8 +126,10 @@ describe("Lists page", () => {
     expect(screen.getByRole("button", { name: "Rename Zed" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Add brand" })).toBeTruthy();
     expect(screen.getByLabelText("Name of Clogent")).toBeTruthy();
-    const summary = screen.getByText("Video").closest("summary")!;
-    expect(within(summary).getByText("Inactive").getAttribute("data-tone")).toBe("tag-neutral");
+    const toggle = screen.getByText("Video").closest("button")!;
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(within(toggle).getByText("Inactive").getAttribute("data-tone")).toBe("tag-neutral");
+    fireEvent.click(toggle);
     expect(screen.getByRole("button", { name: "Save type Video" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "Add request type" })).toBeTruthy();
   });

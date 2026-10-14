@@ -4,13 +4,14 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Folder, Pin, Plus, Search, Settings2 } from "lucide-react";
 import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/library/actions";
-import { Alert } from "@/components/ui/Alert";
-import { Button } from "@/components/ui/Button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { CountPill } from "@/components/ui/Chip";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { fieldClass } from "@/components/ui/Field";
-import { cn, focusRing } from "@/components/ui/cn";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
 import { filterRows, type LibraryRow } from "@/lib/libraryView";
 import { LibraryRowItem } from "./LibraryRow";
 import { categoryIcon } from "./categoryIcons";
@@ -29,12 +30,8 @@ export type LibraryViewProps = {
   now: Date;
 };
 
-const chipClass = (on: boolean) =>
-  cn(
-    "inline-flex h-8 items-center rounded-full border px-3 text-[13px] font-medium whitespace-nowrap transition-colors duration-150",
-    on ? "border-transparent bg-accent text-accent-foreground" : "border-border-strong bg-surface text-foreground hover:bg-surface-muted",
-    focusRing,
-  );
+/** Value of the "All" category pill (category ids are cuids, so it cannot collide). */
+const ALL = "__all";
 
 export function LibraryView({ rows, categories, brands, brandOptions = [], canManage, now }: LibraryViewProps) {
   const router = useRouter();
@@ -91,46 +88,45 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative block">
           <span className="sr-only">Search library</span>
-          <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-foreground-secondary" />
-          <input
+          <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             maxLength={200}
             placeholder="Search title, notes or site"
-            className={fieldClass({ className: "w-full pl-8 sm:w-64" })}
+            className="w-full pl-8 sm:w-64"
           />
         </label>
         {brands.length > 0 ? (
           <label className="block">
             <span className="sr-only">Brand</span>
-            <select
+            <NativeSelect
               value={brandId ?? ""}
               onChange={(e) => setBrandId(e.target.value || null)}
-              className={fieldClass({ kind: "select", className: "w-auto" })}
+              className="w-fit"
             >
               <option value="">All brands</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
           </label>
         ) : null}
         {canManage ? (
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="secondary" icon={<Settings2 />} onClick={() => setManaging(true)}>Manage categories</Button>
-            <Button variant="primary" icon={<Plus />} disabled={categories.length === 0} onClick={() => setItemDraft(newItem())}>Add link</Button>
+            <Button variant="outline" icon={<Settings2 />} onClick={() => setManaging(true)}>Manage categories</Button>
+            <Button variant="default" icon={<Plus />} disabled={categories.length === 0} onClick={() => setItemDraft(newItem())}>Add link</Button>
           </div>
         ) : null}
       </div>
-      <div className="-mt-1 flex flex-wrap gap-2">
-        <button type="button" aria-pressed={categoryId === null} onClick={() => setCategoryId(null)} className={chipClass(categoryId === null)}>All</button>
+      <ToggleGroup type="single" aria-label="Category" variant="outline" size="sm" className="-mt-1 flex-wrap gap-2"
+        value={categoryId ?? ALL} onValueChange={(v) => setCategoryId(v === ALL ? null : v)}>
+        <ToggleGroupItem value={ALL} className="rounded-full">All</ToggleGroupItem>
         {categories.filter((c) => canManage || rows.some((r) => r.categoryId === c.id)).map((c) => (
-          <button key={c.id} type="button" aria-pressed={categoryId === c.id} onClick={() => setCategoryId(c.id)} className={chipClass(categoryId === c.id)}>
-            {c.name}
-          </button>
+          <ToggleGroupItem key={c.id} value={c.id} className="rounded-full">{c.name}</ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
-      {error ? <Alert tone="danger">{error}</Alert> : null}
+      {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
       {categories.length === 0 && canManage ? (
         <EmptyState
@@ -138,7 +134,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           icon={<Folder />}
           title="No categories yet"
           description="Create a category with Manage categories, then add links to it."
-          action={<Button variant="secondary" onClick={() => setManaging(true)}>Manage categories</Button>}
+          action={<Button variant="outline" onClick={() => setManaging(true)}>Manage categories</Button>}
         />
       ) : filtered.length === 0 && filtering ? (
         <EmptyState
@@ -146,7 +142,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           icon={<Search />}
           title="No links match"
           description="Try a different search or clear the filters."
-          action={<Button variant="secondary" onClick={clear}>Clear filters</Button>}
+          action={<Button variant="outline" onClick={clear}>Clear filters</Button>}
         />
       ) : filtered.length === 0 && !canManage ? (
         <EmptyState art="empty-library" icon={<Folder />} title="No links yet" description="Shared links will show up here." />
@@ -155,7 +151,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           {pinned.length > 0 ? (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />Pinned</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Pin aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />Pinned</CardTitle>
               </CardHeader>
               <div className="space-y-0.5">
                 {pinned.map((r) => renderRow(r, true))}
@@ -166,11 +162,12 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
             const Icon = categoryIcon(c.icon);
             return (
               <Card key={c.id}>
-                <CardHeader actions={<CountPill value={items.length} aria-label={`${items.length} links`} />}>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary" />
+                    <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />
                     {c.name}
                   </CardTitle>
+                  <CardAction><Badge variant="count" aria-label={`${items.length} links`}>{items.length}</Badge></CardAction>
                 </CardHeader>
                 {items.length > 0 ? (
                   <div className="space-y-0.5">
@@ -178,8 +175,8 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-foreground-secondary">No links in this category yet.</p>
-                    {canManage ? <Button size="sm" variant="secondary" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
+                    <EmptyState size="inline" title="No links in this category yet." />
+                    {canManage ? <Button size="sm" variant="outline" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
                   </div>
                 )}
               </Card>

@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { useRouter } from "next/navigation";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 
 /** Year picker for the KPI views. Hrefs are built on the server (the page owns the URL shape); changing it navigates. */
 export function YearSelect({ value, options }: { value: number; options: { year: number; href: string }[] }) {
@@ -10,11 +10,11 @@ export function YearSelect({ value, options }: { value: number; options: { year:
   const id = useId();
   return (
     <div className="inline-flex items-center gap-2">
-      <label htmlFor={id} className="text-[13px] text-foreground-secondary">Year</label>
-      <select id={id} value={value} onChange={(e) => { const o = options.find((x) => x.year === Number(e.target.value)); if (o) router.push(o.href); }}
-        className={fieldClass({ kind: "select", size: "sm", className: "w-auto tabular-nums" })}>
+      <label htmlFor={id} className="text-compact text-muted-foreground">Year</label>
+      <NativeSelect id={id} value={value} onChange={(e) => { const o = options.find((x) => x.year === Number(e.target.value)); if (o) router.push(o.href); }}
+        size="sm" className="w-fit" selectClassName="tabular-nums">
         {options.map((o) => <option key={o.year} value={o.year}>{o.year}</option>)}
-      </select>
+      </NativeSelect>
     </div>
   );
 }

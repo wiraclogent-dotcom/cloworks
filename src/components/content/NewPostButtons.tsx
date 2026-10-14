@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { createPost } from "@/app/(app)/content/actions";
 import { planHref, TAB_SURFACE, type ContentTab } from "@/lib/content/params";
-import { Button } from "@/components/ui/Button";
-import { FieldError, fieldClass } from "@/components/ui/Field";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
+import { FieldError } from "@/components/shadcn/field";
 import { cn, focusRing } from "@/components/ui/cn";
 import { TILE_ASPECT } from "./PostTile";
 
@@ -32,13 +33,13 @@ export function NewPostTile({ channelId, tab }: { channelId: string; tab: Conten
   return (
     <div className="relative">
       <button type="button" onClick={add} disabled={pending} aria-label="New post" title="New post" aria-busy={pending || undefined}
-        className={cn("flex w-full items-center justify-center border border-dashed border-border-strong bg-surface text-foreground-secondary",
-          "transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
+        className={cn("flex w-full items-center justify-center border border-dashed border-border-strong bg-card text-muted-foreground",
+          "transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground disabled:opacity-55 [&_svg]:size-6",
           TILE_ASPECT[tab], focusRing)}>
         <Plus aria-hidden="true" />
       </button>
       {error ? (
-        <p role="alert" className="pointer-events-none absolute inset-x-1 bottom-1 rounded bg-background/90 px-1 text-center text-[10px] leading-3.5 text-danger">
+        <p role="alert" className="pointer-events-none absolute inset-x-1 bottom-1 rounded bg-background/90 px-1 text-center text-xs leading-4 text-danger">
           {error}
         </p>
       ) : null}
@@ -78,11 +79,11 @@ export function AlreadyPostedButton({ channelId, tab }: { channelId: string; tab
   }
   return (
     <form onSubmit={submit} noValidate className="flex flex-wrap items-center justify-center gap-2">
-      <label htmlFor={`${uid}-date`} className="text-xs text-foreground-secondary">Posted on</label>
-      <input id={`${uid}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} required autoFocus
+      <label htmlFor={`${uid}-date`} className="text-xs text-muted-foreground">Posted on</label>
+      <Input id={`${uid}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} required autoFocus
         aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-err` : undefined}
-        className={fieldClass({ size: "sm", invalid: !!error, className: "w-auto" })} />
-      <Button type="submit" size="sm" variant="primary" loading={pending}>Add</Button>
+        className="w-auto" size="sm" />
+      <Button type="submit" size="sm" variant="default" loading={pending}>Add</Button>
       <Button size="sm" variant="ghost" onClick={() => { setOpen(false); setError(null); }}>Cancel</Button>
       <FieldError id={`${uid}-err`} className="w-full justify-center">{error}</FieldError>
     </form>

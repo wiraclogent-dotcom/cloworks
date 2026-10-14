@@ -178,11 +178,11 @@ describe("mention text", () => {
 });
 
 describe("IncludeKpiToggle", () => {
-  it("is a labelled checkbox that saves the new value and refreshes", async () => {
+  it("is a labelled switch that saves the new value and refreshes", async () => {
     setIncludeKpi.mockResolvedValue({ ok: true });
     render(<IncludeKpiToggle requestId="r1" initial={true} />);
-    const box = screen.getByLabelText("Counts toward KPI") as HTMLInputElement;
-    expect(box.checked).toBe(true);
+    const box = screen.getByRole("switch", { name: "Counts toward KPI" });
+    expect(box.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(box);
     await waitFor(() => expect(setIncludeKpi).toHaveBeenCalledWith("r1", false));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
@@ -192,7 +192,7 @@ describe("IncludeKpiToggle", () => {
     render(<IncludeKpiToggle requestId="r1" initial={true} />);
     fireEvent.click(screen.getByLabelText("Counts toward KPI"));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
-    expect((screen.getByLabelText("Counts toward KPI") as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("switch", { name: "Counts toward KPI" }).getAttribute("aria-checked")).toBe("true");
   });
 });
 
@@ -201,11 +201,11 @@ describe("NeedsMotionToggle", () => {
     render(<NeedsMotionToggle requestId="r1" initial={false} canEdit={false} />);
     expect(screen.queryByLabelText("Needs motion")).toBeNull();
   });
-  it("is a labelled checkbox for editors that saves the new value and refreshes", async () => {
+  it("is a labelled switch for editors that saves the new value and refreshes", async () => {
     setNeedsMotion.mockResolvedValue({ ok: true });
     render(<NeedsMotionToggle requestId="r1" initial={false} canEdit />);
-    const box = screen.getByLabelText("Needs motion") as HTMLInputElement;
-    expect(box.checked).toBe(false);
+    const box = screen.getByRole("switch", { name: "Needs motion" });
+    expect(box.getAttribute("aria-checked")).toBe("false");
     fireEvent.click(box);
     await waitFor(() => expect(setNeedsMotion).toHaveBeenCalledWith("r1", true));
     await waitFor(() => expect(refresh).toHaveBeenCalled());
@@ -215,7 +215,7 @@ describe("NeedsMotionToggle", () => {
     render(<NeedsMotionToggle requestId="r1" initial={true} canEdit />);
     fireEvent.click(screen.getByLabelText("Needs motion"));
     expect((await screen.findByRole("alert")).textContent).toMatch(/Only leads and admins/);
-    expect((screen.getByLabelText("Needs motion") as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("switch", { name: "Needs motion" }).getAttribute("aria-checked")).toBe("true");
   });
 });
 

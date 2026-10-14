@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, cleanup, act } from "@testing-library/react";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { setPhotoDirectory } from "@/components/ui/photoDirectory";
 
-afterEach(() => { cleanup(); setPhotoDirectory([]); });
+// jsdom never loads images; Radix Avatar shows a photo only once `new Image()` reports it loaded (initials until then).
+beforeEach(() => { vi.stubGlobal("Image", class { complete = true; naturalWidth = 1; addEventListener() {} removeEventListener() {} }); });
+afterEach(() => { cleanup(); setPhotoDirectory([]); vi.unstubAllGlobals(); });
 
 describe("Avatar with a profile photo", () => {
   it("shows the photo when there is one", () => {

@@ -5,10 +5,15 @@ import { useRouter } from "next/navigation";
 import { createChannel, updateChannel } from "@/app/(app)/content/actions";
 import { planHref } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button, type ButtonVariant } from "@/components/ui/Button";
-import { FieldError, fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { Button, type ButtonProps } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { labelClassName } from "@/components/shadcn/label-class";
+import { FieldDescription, FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { MediaUpload } from "@/components/media/MediaUpload";
 
@@ -65,37 +70,33 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
   return (
     <LibraryDialog title={channel ? "Edit channel" : "Add channel"} onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
+        {formError ? <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert> : null}
+        {brands.length === 0 ? <Alert variant="warning" role={null}><AlertDescription>Add a brand in Admin → Lists first.</AlertDescription></Alert> : null}
         <div>
-          <label htmlFor={`${uid}-brandId`} className={labelClass}>Brand</label>
-          <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
-            className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
+          <Label htmlFor={`${uid}-brandId`}>Brand</Label>
+          <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
             {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+          </NativeSelect>
           {err("brandId")}
         </div>
         <div>
-          <label htmlFor={`${uid}-handle`} className={labelClass}>Instagram handle</label>
-          <input {...f("handle")} value={handle} onChange={(e) => setHandle(e.target.value)} maxLength={31} autoFocus
-            placeholder="@brand" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-            className={fieldClass({ invalid: !!errors.handle })} />
+          <Label htmlFor={`${uid}-handle`}>Instagram handle</Label>
+          <Input {...f("handle")} value={handle} onChange={(e) => setHandle(e.target.value)} maxLength={31} autoFocus
+            placeholder="@brand" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           {err("handle")}
         </div>
         <div>
-          <label htmlFor={`${uid}-displayName`} className={labelClass}>Display name</label>
-          <input {...f("displayName")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60}
-            className={fieldClass({ invalid: !!errors.displayName })} />
+          <Label htmlFor={`${uid}-displayName`}>Display name</Label>
+          <Input {...f("displayName")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} />
           {err("displayName")}
         </div>
         <div>
-          <label htmlFor={`${uid}-bio`} className={labelClass}>Bio</label>
-          <textarea {...f("bio")} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={150}
-            className={fieldClass({ kind: "textarea", invalid: !!errors.bio })} />
-          {errors.bio ? err("bio") : <p className={hintClass}>Optional, up to 150 characters.</p>}
+          <Label htmlFor={`${uid}-bio`}>Bio</Label>
+          <Textarea {...f("bio")} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={150} />
+          {errors.bio ? err("bio") : <FieldDescription>Optional, up to 150 characters.</FieldDescription>}
         </div>
         <div>
-          <span className={labelClass}>Avatar</span>
+          <span className={labelClassName}>Avatar</span>
           <div className="flex items-end gap-3">
             <Avatar name={displayName || handle || "?"} src={avatar.url} size="lg" decorative />
             <MediaUpload purpose="content" accept="image" onUploaded={(m) => setAvatar({ id: m.id, url: m.url })} onBusyChange={setUploading} />
@@ -103,8 +104,8 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
           </div>
         </div>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="primary" loading={pending} disabled={brands.length === 0 || uploading}>{channel ? "Save" : "Add channel"}</Button>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="default" loading={pending} disabled={brands.length === 0 || uploading}>{channel ? "Save" : "Add channel"}</Button>
         </div>
       </form>
     </LibraryDialog>
@@ -112,8 +113,8 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
 }
 
 /** Button that opens <ChannelForm>. Channel managers only (the caller decides). */
-export function AddChannelButton({ brands, children, variant = "secondary", size = "md", icon }: {
-  brands: BrandOption[]; children: ReactNode; variant?: ButtonVariant; size?: "sm" | "md"; icon?: ReactNode;
+export function AddChannelButton({ brands, children, variant = "outline", size = "default", icon }: {
+  brands: BrandOption[]; children: ReactNode; variant?: ButtonProps["variant"]; size?: ButtonProps["size"]; icon?: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (

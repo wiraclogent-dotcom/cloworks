@@ -1,5 +1,5 @@
 import { AvatarStack } from "@/components/ui/Avatar";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { ItemLink } from "./ItemLink";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { daysLeft } from "@/lib/daysLeft";
@@ -26,7 +26,7 @@ export function NeedsAttention({ items, now, mode = "stage" }: { items: ProjectI
             <ItemLink slug={item.slug} className="min-w-0 flex-1 basis-40 truncate text-sm font-medium text-foreground hover:underline focus-visible:underline" title={item.title}>{item.title}</ItemLink>
             {item.owners.length > 0 && <AvatarStack names={item.owners} max={3} size="sm" label="Owners" />}
             <DeadlineChip daysLeft={daysLeft(item.dueDate, now)} />
-            <span className="basis-full text-xs text-foreground-secondary">
+            <span className="basis-full text-xs text-muted-foreground">
               {item.counts.map((c) => `${countLabel(c.key, mode)} ${c.n}`).join(" · ")}
             </span>
           </li>
