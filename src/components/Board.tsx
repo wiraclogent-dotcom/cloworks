@@ -179,7 +179,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   }
 
   return (
-    <div data-page-wide="">
+    <div>
       {message && (
         <Alert variant="destructive" className="mb-3">
           <AlertDescription><p>{message}</p></AlertDescription>

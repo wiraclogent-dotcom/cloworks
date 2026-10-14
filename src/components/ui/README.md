@@ -96,9 +96,9 @@ arbitrary size (`text-[15px]`, `text-[2rem]`) is display text and is allowed onl
 for counts, dates and KPI values. Spacing on the 4px grid; card padding 16px.
 
 Layout: page padding comes from AppFrame only (never add it in a page). Page width is set on the shell, never with
-`mx-auto max-w-*` in a page (that would pull the PageHeader top bar away from the pinned bell/profile menu): default
-1440px; `data-page-width="medium"` (72rem: two-column details and forms, help articles); `data-page-width="narrow"`
-(48rem: single-column forms and lists); `data-page-wide` (no cap: board, table, calendar, timeline). PageHeader owns
+`mx-auto max-w-*` in a page (that would pull the PageHeader top bar away from the pinned bell/profile menu): one
+1440px container for every page, so the header never moves between pages. A single-column form or article caps its
+own body below the PageHeader (`max-w-3xl`, left aligned), never the page. PageHeader owns
 the header spacing (don't put it in a `gap-*`/`space-y-*` parent). Sections below it are 20px apart (`space-y-5`,
 `mt-5`/`mb-5`); a toolbar sits 16px above its content (`mb-4`); full-page error/denied panels use `mx-auto mt-6 max-w-xl`.
 

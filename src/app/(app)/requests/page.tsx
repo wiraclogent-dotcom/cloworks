@@ -102,7 +102,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           })} />
         )
       ) : tablePage ? (
-        <div data-page-wide="">
+        <div>
           <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
             hrefFor={(key, dir) => hrefWith(p, { sort: key, dir })}
             footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}

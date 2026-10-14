@@ -23,11 +23,11 @@ describe("Projects table (card, groups, chips)", () => {
     row({ id: "Clo 2", brandName: "Clogent", status: "NOT_STARTED", dueDate: d("2026-12-01") }),
     row({ id: "None", brandName: null, status: "DONE", dueDate: d("2026-10-02") }),
   ];
-  it("one card with a group header strip per brand (brand tone, h2, count) in the same order as before", () => {
+  it("one card with a plain group header strip per brand (h2, count, no colour edge) in the same order as before", () => {
     const { container } = render(<ProjectTable rows={rows} canManage={false} now={now} />);
     const headers = [...container.querySelectorAll("[data-group-header]")];
     expect(headers.map((h) => h.querySelector("h2")!.textContent)).toEqual(["Clogent", "Zed", "No brand"]);
-    expect(headers.map((h) => h.getAttribute("data-tone"))).toEqual(["tag-clogent", "tag-neutral", "tag-neutral"]);
+    expect(headers.every((h) => !h.className.includes("border-l-4"))).toBe(true);
     expect(within(headers[0] as HTMLElement).getByLabelText("2 projects")).toBeTruthy();
     expect(container.querySelectorAll(".rounded-xl.bg-card").length).toBe(1);
   });

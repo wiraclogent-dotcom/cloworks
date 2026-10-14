@@ -114,7 +114,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
   function onDragCancel() { drag.stop(); setActiveId(null); }
 
   return (
-    <div data-page-wide="">
+    <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="text-base font-semibold text-heading">{monthName(month, { month: "long", year: "numeric" })}</h2>
         <nav aria-label="Month" className="ml-auto flex items-center gap-1">
