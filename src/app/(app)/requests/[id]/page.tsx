@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "Request" };
 
 export default function RequestDetailPage({ params }: PageProps<"/requests/[id]">) {
   return (
-    <div data-page-width="medium">
+    <div>
       <Suspense fallback={<DetailSkeleton />}>
         <DetailContent params={params} fullPage />
       </Suspense>

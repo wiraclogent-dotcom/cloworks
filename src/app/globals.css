@@ -490,24 +490,10 @@
 }
 
 /*
- * Page widths. The cap lives on `.app-content` (not on a wrapper inside the page) so the bell and profile menu, pinned
- * to its top-right corner, always line up with the page's PageHeader top bar.
- * Default 1440px (lists, dashboards, admin). A page opts into another width with an attribute anywhere inside it:
- *   data-page-wide              no cap (board, calendar, timeline, table)
- *   data-page-width="medium"    72rem: two-column details and forms, help articles
- *   data-page-width="narrow"    48rem: single-column forms and lists
- * Only the visible page counts: Next keeps recently visited pages mounted but hidden (React <Activity> sets an inline
- * `display: none !important`), and a hidden Settings page must not keep capping the board after going back.
+ * Page width: one container for every signed-in page (`.app-content`, max 1440px, centred in AppFrame), so the
+ * breadcrumb, title and the pinned bell/profile menu sit in the same place on every page. Single-column forms and
+ * articles cap their own body (e.g. `max-w-3xl`) inside that container instead of shrinking the container.
  */
-.app-content:has([data-page-wide]:not([style*="display: none"], [style*="display: none"] *)) {
-  max-width: none;
-}
-.app-content:has([data-page-width="medium"]:not([style*="display: none"], [style*="display: none"] *)) {
-  max-width: 72rem;
-}
-.app-content:has([data-page-width="narrow"]:not([style*="display: none"], [style*="display: none"] *)) {
-  max-width: 48rem;
-}
 
 /* Board columns fill the viewport and scroll their cards independently, so the page height never depends on the card count. */
 .board-column {

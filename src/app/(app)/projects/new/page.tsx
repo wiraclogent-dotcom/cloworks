@@ -9,9 +9,9 @@ export const metadata: Metadata = { title: "New project" };
 
 export default function NewProjectPage() {
   return (
-    <div data-page-width="narrow">
+    <div>
       <PageHeader breadcrumb={[{ label: "Work" }, { label: "Projects", href: "/projects" }, { label: "New project" }]} title="New project" description="Add a project to the brand timeline." />
-      <Suspense fallback={<FormSkeleton label="Loading…" header={false} />}><NewProjectContent /></Suspense>
+      <div className="max-w-3xl"><Suspense fallback={<FormSkeleton label="Loading…" header={false} />}><NewProjectContent /></Suspense></div>
     </div>
   );
 }

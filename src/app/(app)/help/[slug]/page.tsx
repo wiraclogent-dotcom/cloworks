@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Help" };
 
 export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   return (
-    <div data-page-width="medium">
+    <div>
       <Suspense fallback={<ArticleSkeleton />}>
         <ArticleContent params={params} />
       </Suspense>

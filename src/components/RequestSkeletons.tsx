@@ -3,9 +3,9 @@ import { Card } from "@/components/shadcn/card";
 import { cn } from "./ui/cn";
 
 /** Screen-reader status for a loading region; the skeleton blocks themselves are aria-hidden. */
-export function Busy({ label, wide, className, children }: { label: string; wide?: boolean; className?: string; children: React.ReactNode }) {
+export function Busy({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
   return (
-    <div role="status" aria-busy="true" aria-live="polite" data-page-wide={wide ? "" : undefined} className={className}>
+    <div role="status" aria-busy="true" aria-live="polite" className={className}>
       <span className="sr-only">{label}</span>
       {children}
     </div>
@@ -31,7 +31,7 @@ function HeaderSkeleton() {
 /** Requests board fallback: 4 columns with 3 card placeholders each. */
 export function BoardSkeleton() {
   return (
-    <Busy label="Loading requests…" wide className="w-full">
+    <Busy label="Loading requests…" className="w-full">
       <HeaderSkeleton />
       <div className="grid gap-3 overflow-hidden pb-4" style={{ gridTemplateColumns: "repeat(4, minmax(15rem, 1fr))" }} data-skeleton-board="">
         {[0, 1, 2, 3].map((c) => (
@@ -55,7 +55,7 @@ export function BoardSkeleton() {
 /** Requests table fallback: header row + 8 row placeholders inside the table card. */
 export function TableSkeleton() {
   return (
-    <Busy label="Loading requests…" wide className="w-full">
+    <Busy label="Loading requests…" className="w-full">
       <HeaderSkeleton />
       <Card className="overflow-hidden p-0">
         <div className="flex h-10 items-center gap-6 border-b border-border bg-muted px-3">
@@ -78,7 +78,7 @@ export function TableSkeleton() {
 /** Requests calendar fallback: month bar, weekday row and a 5-week grid with a few card placeholders. */
 export function CalendarSkeleton() {
   return (
-    <Busy label="Loading calendar…" wide className="w-full">
+    <Busy label="Loading calendar…" className="w-full">
       <HeaderSkeleton />
       <div className="mb-3 flex items-center gap-2">
         <Skeleton className="h-6 w-36" />
@@ -100,7 +100,7 @@ export function CalendarSkeleton() {
 /** Requests timeline fallback: range bar, then a label column + 14 day columns with a few bar placeholders per person. */
 export function TimelineSkeleton() {
   return (
-    <Busy label="Loading timeline…" wide className="w-full">
+    <Busy label="Loading timeline…" className="w-full">
       <HeaderSkeleton />
       <div className="mb-3 flex items-center gap-2">
         <Skeleton className="h-6 w-44" />

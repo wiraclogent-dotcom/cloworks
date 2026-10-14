@@ -30,7 +30,7 @@ export function RequestTimeline({ rows, people, week, today, assigneeId, prevHre
   const empty = persons.every((p) => p.count === 0);
 
   return (
-    <div data-page-wide="">
+    <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="text-base font-semibold text-heading">{rangeLabel(win.from, win.to)}</h2>
         <nav aria-label="Weeks" className="ml-auto flex items-center gap-1">
