@@ -1,13 +1,22 @@
 import * as React from "react"
+import { Slot } from "radix-ui"
 import { cn } from "@/components/ui/cn"
 
 /**
  * White surface, 12px radius, hairline border, soft shadow, 16px padding.
  * Edge-to-edge tables pass `className="p-0"` (and `overflow-hidden` to clip the corners).
+ * `asChild` puts the surface on the child instead of a `div`, for a card that must be a `section`, `li`, `details`
+ * or `Link` (our addition; shadcn's Card has none). Put size/spacing overrides on `<Card className>`, not on the
+ * child: Radix joins the two class lists without resolving conflicts.
  */
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "div"
   return (
-    <div
+    <Comp
       data-slot="card"
       className={cn(
         "rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card",

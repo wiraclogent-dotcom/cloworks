@@ -2,7 +2,7 @@
 
 import { Bar, CartesianGrid, ComposedChart, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/shadcn/card";
 import { tableClass } from "@/components/ui/table";
 
 export type TrendPoint = { month: string; label: string; tasksDone: number; target: number | null };

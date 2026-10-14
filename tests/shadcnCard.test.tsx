@@ -23,6 +23,14 @@ describe("Card", () => {
     expect(have).not.toContain("p-4");
   });
 
+  it("asChild puts the surface on the child element and keeps its role and name", () => {
+    render(<Card asChild className="p-3"><section aria-label="Month summary">Body</section></Card>);
+    const el = screen.getByRole("region", { name: "Month summary" });
+    expect(el.tagName).toBe("SECTION");
+    expect(tokens(el)).toEqual(expect.arrayContaining(["rounded-xl", "bg-card", "shadow-card", "p-3"]));
+    expect(tokens(el)).not.toContain("p-4");
+  });
+
   it("CardTitle is an h2 by default and h3 with as='h3'", () => {
     render(<><CardTitle>Details</CardTitle><CardTitle as="h3">Nested</CardTitle><CardTitle as="h4">Deeper</CardTitle></>);
     expect(screen.getByRole("heading", { level: 2, name: "Details" })).toBeTruthy();

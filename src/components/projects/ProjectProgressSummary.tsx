@@ -1,5 +1,5 @@
 import type { ProjectStatus } from "@prisma/client";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/shadcn/card";
 import { Chip } from "@/components/ui/Chip";
 import type { ItemRowInput, ProjectItem } from "@/lib/projectItemList";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";

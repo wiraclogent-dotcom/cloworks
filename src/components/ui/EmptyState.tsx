@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { ArtName } from "@/lib/brand/art";
+import { Card } from "@/components/shadcn/card";
 import { BrandArt } from "./BrandArt";
 import { cn } from "./cn";
 
@@ -15,7 +16,7 @@ export function EmptyState({ icon, art, title, description, action, titleAs: Tit
 }) {
   const showArt = art && process.env.NEXT_PUBLIC_BRAND_CLOUD;
   return (
-    <div role={role} className={cn("animate-rise flex flex-col items-center rounded-xl border border-dashed border-border-strong bg-card px-6 py-10 text-center", className)}>
+    <Card role={role} className={cn("animate-rise flex flex-col items-center border-dashed border-border-strong px-6 py-10 text-center shadow-none", className)}>
       {showArt ? (
         <BrandArt name={art} width={144} className="animate-float mb-2 size-36 object-contain" />
       ) : icon ? (
@@ -25,6 +26,6 @@ export function EmptyState({ icon, art, title, description, action, titleAs: Tit
       {description ? <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p> : null}
       {children}
       {action ? <div className="mt-4 flex flex-wrap items-center justify-center gap-2">{action}</div> : null}
-    </div>
+    </Card>
   );
 }

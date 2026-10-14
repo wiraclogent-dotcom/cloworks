@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, UserCheck } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardTitle } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/shadcn/card";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";

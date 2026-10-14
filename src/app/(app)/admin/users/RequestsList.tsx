@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminForm, ConfirmAction } from "@/components/admin/AdminForm";
+import { Card } from "@/components/shadcn/card";
 import { Chip } from "@/components/ui/Chip";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { PersonRoleFields } from "./PersonRoleFields";
@@ -27,11 +28,11 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
-        <p className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">No join requests waiting.</p>
+        <Card><p className="text-sm text-muted-foreground">No join requests waiting.</p></Card>
       ) : (
         <ul className="space-y-3">
           {pending.map((r) => (
-            <li key={r.applicantId} aria-label={r.name} className="rounded-xl border border-border bg-card p-4 shadow-card">
+            <Card asChild key={r.applicantId}><li aria-label={r.name}>
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <Who r={r} />
                 <div className="flex flex-wrap items-end gap-3">
@@ -48,13 +49,13 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
                     question={`Reject ${r.name}? They are told nothing; you can undo this later.`} confirmLabel={`Yes, reject ${r.name}`} />
                 </div>
               </div>
-            </li>
+            </li></Card>
           ))}
         </ul>
       )}
 
       {rejected.length > 0 && (
-        <details className="group rounded-xl border border-border bg-card p-4">
+        <Card asChild><details className="group">
           <summary className="cursor-pointer text-sm font-medium text-foreground">Rejected ({rejected.length})</summary>
           <ul className="mt-3 space-y-3">
             {rejected.map((r) => (
@@ -67,7 +68,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
               </li>
             ))}
           </ul>
-        </details>
+        </details></Card>
       )}
     </div>
   );

@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import type { AdminFormState } from "@/lib/adminForm";
 import { AdminForm, ConfirmAction, Labeled, type FormCtx } from "@/components/admin/AdminForm";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Chip } from "@/components/ui/Chip";
 import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";

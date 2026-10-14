@@ -4,7 +4,7 @@ import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { ChevronRight } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Chip } from "@/components/ui/Chip";
 import { activeChip } from "@/lib/adminChips";
 import { NameForm, TypeForm } from "./ListForms";

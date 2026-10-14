@@ -5,6 +5,7 @@ import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { cn } from "@/components/ui/cn";
 import { Button } from "@/components/shadcn/button";
+import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { sidebarRowClass } from "./classes";
 
@@ -102,7 +103,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
           {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
               chevron: a chevron here would promise a menu that does not exist. */}
           <div className="flex-none px-3 pt-3">
-            <div className="sb-item sb-frame flex items-center gap-2.5 rounded-xl border border-border bg-card p-2 shadow-card">
+            <Card className="sb-item sb-frame flex items-center gap-2.5 p-2">
               <LogoMark size={32} />
               <div className="sb-label min-w-0 flex-1 leading-tight">
                 <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
@@ -112,7 +113,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
                 className="text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-sidebar-ring md:hidden">
                 <X aria-hidden="true" />
               </Button>
-            </div>
+            </Card>
           </div>
 
           {/* Search is shown for the reference layout only: it is disabled until search exists. */}

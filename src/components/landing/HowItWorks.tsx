@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Check, CheckCheck, Clapperboard, FilePlus2, MessageSquareText, Palette, UserCheck } from "lucide-react";
+import { Card } from "@/components/shadcn/card";
 import { Avatar } from "@/components/ui/Avatar";
 import { BrandTag, Chip } from "@/components/ui/Chip";
 import { cn } from "@/components/ui/cn";
@@ -11,7 +12,7 @@ const display = "font-display tracking-[-0.02em]";
 /* ---------- one small illustration per step: a decorative slice of the screen used at that step ---------- */
 
 function Frame({ children }: { children: ReactNode }) {
-  return <div aria-hidden="true" className="rounded-xl border border-border bg-card p-3 text-[11px] shadow-card">{children}</div>;
+  return <Card aria-hidden="true" className="p-3 text-[11px]">{children}</Card>;
 }
 
 function BriefForm() {

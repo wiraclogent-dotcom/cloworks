@@ -10,7 +10,7 @@ import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { ProgressBar } from "@/components/kpi/ProgressBar";
 import { TrendChart } from "@/components/kpi/TrendChart";
 import { cn } from "@/components/ui/cn";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 
 const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone }> = {
   tasksDone: { icon: <CircleCheckBig />, tone: "done" },
@@ -40,7 +40,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
     <KpiSection id="requests" title="Requests"
       controls={<MonthPicker month={month} current={jakartaMonth(new Date())} userId={own ? undefined : subject.id} action="/dashboard" keep={keep} />}>
       {isEmpty ? (
-        <p className="rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">No request work in {monthLabel(month)}.</p>
+        <Card asChild className="px-4 py-3"><p className="text-sm text-muted-foreground">No request work in {monthLabel(month)}.</p></Card>
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="kpi-numbers">

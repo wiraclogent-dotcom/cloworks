@@ -6,7 +6,7 @@ import type { ProjectStatus } from "@prisma/client";
 import { Pencil } from "lucide-react";
 import { ProjectForm } from "@/app/(app)/projects/ProjectForm";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { jakartaDate } from "@/lib/createRequest";
@@ -69,8 +69,9 @@ export function ProjectDetailsCard({ project, brands, owners, canManage }: { pro
   const day = (iso: string | null) => (iso ? formatJakartaDay(new Date(iso)) : MISSING);
   return (
     <Card>
-      <CardHeader actions={canManage ? <Button variant="outline" ref={editRef} size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button> : undefined}>
+      <CardHeader>
         <CardTitle>Details</CardTitle>
+        {canManage ? <CardAction><Button variant="outline" ref={editRef} size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button></CardAction> : null}
       </CardHeader>
       <dl className="grid gap-x-6 gap-y-3 grid-cols-2 lg:grid-cols-3">
         <Row label="Brand">{project.brandName ?? MISSING}</Row>

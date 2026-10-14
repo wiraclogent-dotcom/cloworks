@@ -22,6 +22,7 @@ import { AddDetailForm } from "@/app/(app)/projects/[id]/tasks/AddDetailForm";
 import { TaskRow, type TaskRowData } from "@/app/(app)/projects/[id]/tasks/TaskRow";
 import { renameItem, setItemStage, setItemStatus } from "@/app/(app)/projects/[id]/tasks/actions";
 import { ITEM_OPEN_EVENT, slugFromHash } from "./ItemHashOpener";
+import { Card } from "@/components/shadcn/card";
 
 const tbl = tableClass();
 
@@ -116,7 +117,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
   }
 
   return (
-    <div ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card shadow-card">
+    <Card ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="min-w-0 scroll-mt-4 p-0">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
         <div className="flex min-w-0 flex-1 basis-56 items-center gap-1">
         <button
@@ -245,6 +246,6 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

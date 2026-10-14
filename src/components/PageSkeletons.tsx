@@ -1,4 +1,5 @@
 import { Busy } from "./RequestSkeletons";
+import { Card } from "@/components/shadcn/card";
 import { Skeleton } from "./ui/Skeleton";
 import { cn } from "./ui/cn";
 
@@ -19,15 +20,15 @@ function HeaderSkeleton({ actions = 1 }: { actions?: number }) {
 
 function TileSkeleton() {
   return (
-    <div data-skeleton-tile="" className="flex items-start gap-3 rounded-xl border border-border bg-card p-4 shadow-card">
+    <Card data-skeleton-tile="" className="flex items-start gap-3">
       <Skeleton className="size-10" rounded="xl" />
       <div className="flex-1 space-y-2"><Skeleton className="h-3.5 w-24" /><Skeleton className="h-7 w-16" /></div>
-    </div>
+    </Card>
   );
 }
 
 function CardSkeleton({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("rounded-xl border border-border bg-card p-4 shadow-card", className)}>{children}</div>;
+  return <Card className={className}>{children}</Card>;
 }
 
 function TableRowsSkeleton({ rows, cols }: { rows: number; cols: number }) {

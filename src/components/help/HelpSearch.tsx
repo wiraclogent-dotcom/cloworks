@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Article, Section } from "@/lib/help/content";
 import { searchArticles } from "@/lib/help/search";
 import { Input } from "@/components/shadcn/input";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 /**

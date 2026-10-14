@@ -1,4 +1,5 @@
 import { Skeleton } from "./ui/Skeleton";
+import { Card } from "@/components/shadcn/card";
 import { cn } from "./ui/cn";
 
 /** Screen-reader status for a loading region; the skeleton blocks themselves are aria-hidden. */
@@ -37,12 +38,12 @@ export function BoardSkeleton() {
           <div key={c} data-skeleton-column="" className="flex flex-col gap-2 rounded-xl border border-border bg-muted p-2">
             <Skeleton className="h-9 w-full" rounded="xl" />
             {[0, 1, 2].map((k) => (
-              <div key={k} data-skeleton-card="" className="space-y-2.5 rounded-xl border border-border bg-card p-3 shadow-card">
+              <Card key={k} data-skeleton-card="" className="space-y-2.5">
                 <Skeleton className="h-4 w-4/5" />
                 <Skeleton className="h-4 w-3/5" />
                 <div className="flex gap-1.5"><Skeleton className="h-5 w-16" /><Skeleton className="h-5 w-20" /></div>
                 <div className="flex items-center justify-between"><Skeleton className="h-4 w-24" /><Skeleton className="size-7" rounded="full" /></div>
-              </div>
+              </Card>
             ))}
           </div>
         ))}
@@ -56,7 +57,7 @@ export function TableSkeleton() {
   return (
     <Busy label="Loading requests…" wide className="w-full">
       <HeaderSkeleton />
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+      <Card className="overflow-hidden p-0">
         <div className="flex h-10 items-center gap-6 border-b border-border bg-muted px-3">
           {[24, 16, 16, 14, 16].map((w, i) => <Skeleton key={i} className={cn("h-3", WIDTH[w])} />)}
         </div>
@@ -69,7 +70,7 @@ export function TableSkeleton() {
             <Skeleton className="h-4 w-20" />
           </div>
         ))}
-      </div>
+      </Card>
     </Busy>
   );
 }
@@ -105,7 +106,7 @@ export function TimelineSkeleton() {
         <Skeleton className="h-6 w-44" />
         <Skeleton className="ml-auto h-8 w-32" rounded="xl" />
       </div>
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card" data-skeleton-timeline="">
+      <Card className="overflow-hidden p-0" data-skeleton-timeline="">
         <div className="h-9 border-b border-border bg-muted" />
         {[0, 1, 2, 3, 4].map((r) => (
           <div key={r} data-skeleton-person="" className="grid grid-cols-[12rem_minmax(0,1fr)] border-t border-border first:border-t-0">
@@ -119,7 +120,7 @@ export function TimelineSkeleton() {
             </div>
           </div>
         ))}
-      </div>
+      </Card>
     </Busy>
   );
 }
@@ -138,17 +139,17 @@ export function DetailSkeleton() {
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" data-skeleton-detail="">
         <div className="space-y-5">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
+            <Card key={i} className="space-y-3">
               <Skeleton className="h-5 w-32" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-5/6" />
-            </div>
+            </Card>
           ))}
         </div>
-        <div className="space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
+        <Card className="space-y-3">
           <Skeleton className="h-5 w-24" />
           {Array.from({ length: 6 }, (_, i) => <div key={i} className="flex justify-between gap-4"><Skeleton className="h-4 w-20" /><Skeleton className="h-4 w-28" /></div>)}
-        </div>
+        </Card>
       </div>
     </Busy>
   );

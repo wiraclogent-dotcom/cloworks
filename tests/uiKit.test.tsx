@@ -2,7 +2,6 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, cleanup, fireEvent, within } from "@testing-library/react";
 import { Inbox } from "lucide-react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Chip, BrandTag, CountPill } from "@/components/ui/Chip";
@@ -29,19 +28,6 @@ const noHex = (el: Element) => expect(el.outerHTML).not.toMatch(/#[0-9a-f]{6}\b|
 describe("cn", () => {
   it("joins truthy class names", () => {
     expect(cn("a", false, null, undefined, 0, "b")).toBe("a b");
-  });
-});
-
-describe("Card", () => {
-  it("renders a card with a header, h2 title and actions", () => {
-    render(<Card data-testid="c"><CardHeader actions={<button>Edit</button>}><CardTitle>Details</CardTitle></CardHeader>Body</Card>);
-    expect(screen.getByRole("heading", { level: 2, name: "Details" })).toBeTruthy();
-    expect(screen.getByTestId("c").className).toMatch(/rounded-xl/);
-    expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy();
-  });
-  it("padded=false drops the padding", () => {
-    render(<Card padded={false} data-testid="c" />);
-    expect(screen.getByTestId("c").className).not.toMatch(/\bp-4\b/);
   });
 });
 

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { Card } from "@/components/shadcn/card";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { ChangePasswordPageForm } from "./ChangePasswordPageForm";
@@ -25,7 +26,7 @@ export default function ChangePasswordPage() {
         </div>
       </div>
       <div className="-mt-16 flex justify-center px-4 pb-8">
-        <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 text-card-foreground shadow-raised">
+        <Card className="w-full max-w-sm p-8 shadow-raised">
           <div className="mb-5 text-center">
             <h1 className="text-[22px] leading-7 font-semibold">Choose a new password</h1>
             <p className="mt-1 text-sm text-muted-foreground">Choose your own password before you continue. The one you were given is temporary.</p>
@@ -34,7 +35,7 @@ export default function ChangePasswordPage() {
           <form action={signOutFromPasswordChange} className="mt-4 text-center">
             <SubmitButton variant="ghost" size="sm" pendingLabel="Signing out…">Sign out</SubmitButton>
           </form>
-        </div>
+        </Card>
       </div>
     </main>
   );

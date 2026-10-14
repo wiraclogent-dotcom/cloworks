@@ -8,6 +8,7 @@ import { StatusIcon } from "../status";
 import { cn, focusRing } from "../ui/cn";
 import { barText } from "./barText";
 import { PersonHeading } from "./PersonHeading";
+import { Card } from "@/components/shadcn/card";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 /** Label column + 14 day columns; day columns never get narrower than 3.5rem (the card scrolls sideways instead). */
@@ -79,7 +80,7 @@ function PersonRow({ person, days, rows }: { person: TimelinePerson; days: Timel
 /** Wide screens: label column + 14 day columns in a sideways-scrolling card. Each person is a section with a list of links. */
 export function TimelineChart({ days, persons, rows }: { days: TimelineDay[]; persons: TimelinePerson[]; rows: Map<string, TimelineRow> }) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-card">
+    <Card className="overflow-x-auto p-0">
       <div className="min-w-[61rem]">
         <div className={cn(ROW_GRID, "bg-muted text-xs font-medium text-muted-foreground")}>
           <div className="border-r border-border px-3 py-2">Person</div>
@@ -94,6 +95,6 @@ export function TimelineChart({ days, persons, rows }: { days: TimelineDay[]; pe
         </div>
         {persons.map((p) => <PersonRow key={p.key} person={p} days={days} rows={rows} />)}
       </div>
-    </div>
+    </Card>
   );
 }

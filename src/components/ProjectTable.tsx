@@ -12,7 +12,7 @@ import { CountPill } from "./ui/Chip";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { EmptyState } from "./ui/EmptyState";
 import { StatusChip } from "./ui/StatusChip";
-import { Card } from "./ui/Card";
+import { Card } from "@/components/shadcn/card";
 import { tableClass } from "./ui/table";
 import { cn } from "./ui/cn";
 import { Button } from "@/components/shadcn/button";
@@ -111,7 +111,7 @@ export function ProjectTable({ rows, canManage, now, emptyTitle = "No projects y
         description={emptyDescription ?? (canManage ? "Use “New project” to add the first one." : undefined)} />
     );
   return (
-    <Card padded={false} className="overflow-hidden">
+    <Card className="overflow-hidden p-0">
       {groupProjects(rows).map((g, gi) => {
         const hid = `brand-${g.brand ?? "none"}`.replace(/\s+/g, "-");
         return (

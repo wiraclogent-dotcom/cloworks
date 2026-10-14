@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { BriefDay, BriefItem, BriefMonth, BriefPerson } from "@/lib/briefCalendar";
 import { avatarColor } from "@/lib/palette";
 import { dayLabel, utc, weekdayOf } from "@/lib/calendar";
+import { Card } from "@/components/shadcn/card";
 import { useNarrow } from "../useNarrow";
 import { cn, focusRing } from "../ui/cn";
 import { BriefDayDialog } from "./BriefDayDialog";
@@ -122,7 +123,7 @@ export function BriefCalendar({ model, typeOrder }: {
 
   return (
     <div className="space-y-5">
-      <section aria-label="Month summary" className="rounded-xl border border-border bg-card p-4 shadow-card sm:p-5">
+      <Card asChild className="sm:p-5"><section aria-label="Month summary">
         <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <li aria-label="Briefs this month" className="min-w-0">
             <span className="text-compact text-muted-foreground">Briefs this month</span>
@@ -153,9 +154,9 @@ export function BriefCalendar({ model, typeOrder }: {
             )}
           </li>
         </ul>
-      </section>
+      </section></Card>
 
-      <section aria-labelledby="brief-weeks-h" className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+      <Card asChild className="overflow-hidden p-0"><section aria-labelledby="brief-weeks-h">
         <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-sm font-semibold text-heading">Briefs per requester, per week</h2>
         {model.rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-muted-foreground">No briefs this month yet.</p>
@@ -193,10 +194,10 @@ export function BriefCalendar({ model, typeOrder }: {
             </table>
           </div>
         )}
-      </section>
+      </section></Card>
 
       {narrow ? (
-        <ol aria-label="Days" className="divide-y divide-border rounded-xl border border-border bg-card">
+        <Card asChild className="divide-y divide-border overflow-hidden p-0"><ol aria-label="Days">
           {days.map((d) => (
             <li key={d.day} aria-current={d.isToday ? "date" : undefined}>
               <button type="button" aria-haspopup="dialog" aria-label={dayAria(d)} onClick={() => setOpen(d.day)}
@@ -206,7 +207,7 @@ export function BriefCalendar({ model, typeOrder }: {
               </button>
             </li>
           ))}
-        </ol>
+        </ol></Card>
       ) : (
         <div>
           <div aria-hidden="true" className="mb-1 grid grid-cols-7 gap-1">

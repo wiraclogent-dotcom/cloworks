@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { BellRing, CalendarDays, CirclePlay, FolderKanban, LayoutGrid, MessageSquareText, Table2 } from "lucide-react";
+import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { Chip } from "@/components/ui/Chip";
@@ -63,7 +64,7 @@ const BRIEFERS: { name: string; days: boolean[] }[] = [
 
 function BriefWeek() {
   return (
-    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
+    <Card asChild className="p-5"><figure>
       <figcaption className="mb-4 text-compact font-semibold text-foreground">Brief calendar, this week</figcaption>
       <table className="w-full border-separate border-spacing-y-2 text-compact">
         <thead>
@@ -90,7 +91,7 @@ function BriefWeek() {
           ))}
         </tbody>
       </table>
-    </figure>
+    </figure></Card>
   );
 }
 
@@ -102,7 +103,7 @@ const QUEUE: { title: string; due: string; tone: "due-soon" | "overdue" | "tag-n
 
 function DesignerQueue() {
   return (
-    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
+    <Card asChild className="p-5"><figure>
       <figcaption className="mb-3 text-compact font-semibold text-foreground">Assigned to you</figcaption>
       <ul className="divide-y divide-border">
         {QUEUE.map((q) => (
@@ -113,7 +114,7 @@ function DesignerQueue() {
           </li>
         ))}
       </ul>
-    </figure>
+    </figure></Card>
   );
 }
 
@@ -126,7 +127,7 @@ const TARGET = 20;
 
 function TeamKpi() {
   return (
-    <figure className="rounded-xl border border-border bg-card p-5 shadow-card">
+    <Card asChild className="p-5"><figure>
       <figcaption className="mb-4 flex items-baseline justify-between text-compact">
         <span className="font-semibold text-foreground">Team KPI, October</span>
         <span className="text-muted-foreground">Target {TARGET} each</span>
@@ -148,7 +149,7 @@ function TeamKpi() {
           );
         })}
       </ul>
-    </figure>
+    </figure></Card>
   );
 }
 

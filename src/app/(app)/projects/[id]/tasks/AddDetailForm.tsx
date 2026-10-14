@@ -4,7 +4,7 @@ import { safeAction } from "@/lib/safeAction";
 import { useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";

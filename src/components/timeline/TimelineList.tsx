@@ -6,6 +6,7 @@ import { STATUS_LABEL, StatusIcon } from "../status";
 import { Users } from "lucide-react";
 import { cn, focusRing } from "../ui/cn";
 import { PersonHeading } from "./PersonHeading";
+import { Card } from "@/components/shadcn/card";
 
 const sharedWith = (row: TimelineRow, ownerId: string | null) => row.assignees.filter((a) => a.id !== ownerId).map((a) => a.name).join(", ");
 
@@ -13,7 +14,7 @@ function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string
   const headingId = useId();
   const bars = person.lanes.flat().sort((a, b) => a.startCol - b.startCol || a.endCol - b.endCol);
   return (
-    <section aria-labelledby={headingId} className="rounded-xl border border-border bg-card p-3 shadow-card">
+    <Card asChild className="p-3"><section aria-labelledby={headingId}>
       <PersonHeading person={person} headingId={headingId} />
       {bars.length === 0 ? (
         <p className="mt-2 text-sm text-muted-foreground">No open requests</p>
@@ -41,7 +42,7 @@ function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string
           })}
         </ul>
       )}
-    </section>
+    </section></Card>
   );
 }
 

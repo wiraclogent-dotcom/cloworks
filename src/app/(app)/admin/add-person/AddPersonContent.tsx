@@ -1,7 +1,7 @@
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card } from "@/components/ui/Card";
+import { Card } from "@/components/shadcn/card";
 import { AdminDenied } from "../AdminDenied";
 import { AddPersonForm } from "../users/UserForms";
 

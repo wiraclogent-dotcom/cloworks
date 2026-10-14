@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from "lucide-react";
 import type { RequestRow, SortKey } from "@/lib/requests";
 import { NeedsMotionBadge, StatusBadge } from "./status";
 import { assigneeLabel } from "@/lib/assignees";
+import { Card } from "@/components/shadcn/card";
 import { Avatar, AvatarStack } from "./ui/Avatar";
 import { BrandTag } from "./ui/Chip";
 import { DeadlineChip } from "./ui/DeadlineChip";
@@ -64,7 +65,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
     );
   }
   return (
-    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-card">
+    <Card className="overflow-hidden p-0">
       <div className="relative max-h-[calc(100dvh-15rem)] overflow-auto" data-table-scroll="">
         <table className={t.table}>
           <thead>
@@ -117,6 +118,6 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
         </table>
       </div>
       {footer}
-    </div>
+    </Card>
   );
 }

@@ -2,6 +2,7 @@ import { requireScope } from "@/lib/session";
 import { countNotificationsWith, listNotificationsWith, unreadCountWith } from "@/lib/inbox";
 import { pageWindow, parsePage, rangeText, TABLE_PAGE_SIZE } from "@/lib/paging";
 import { Pagination } from "@/components/Pagination";
+import { Card } from "@/components/shadcn/card";
 import { BrandArt } from "@/components/ui/BrandArt";
 import { MarkAllButton } from "./MarkAllButton";
 import { NotificationLink } from "./NotificationLink";
@@ -14,7 +15,7 @@ export async function NotificationsContent({ searchParams }: { searchParams: Pro
   const items = await listNotificationsWith(db, user.id, { limit: TABLE_PAGE_SIZE, offset: w.skip });
   const now = new Date();
   return (
-    <section aria-label="All notifications" className="overflow-hidden rounded-xl border border-border bg-card">
+    <Card asChild className="overflow-hidden p-0"><section aria-label="All notifications">
       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2">
         <p className="text-sm text-muted-foreground">{unread > 0 ? `${unread} unread` : "All read"}</p>
         <MarkAllButton disabled={unread === 0} />
@@ -32,6 +33,6 @@ export async function NotificationsContent({ searchParams }: { searchParams: Pro
       )}
       <Pagination text={rangeText(w, total)} page={w.page} pageCount={w.pageCount}
         hrefFor={(p) => (p === 1 ? "/notifications" : `/notifications?page=${p}`)} />
-    </section>
+    </section></Card>
   );
 }

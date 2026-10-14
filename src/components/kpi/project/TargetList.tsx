@@ -6,6 +6,7 @@ import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { TargetItem } from "@/lib/kpi/projectQueries";
 import { Chip } from "@/components/ui/Chip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
+import { Card } from "@/components/shadcn/card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { cn } from "@/components/ui/cn";
 import { RemoveTargetButton } from "./RemoveTargetButton";
@@ -58,9 +59,7 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
 
 /** A bordered list of rows (`bare`: no frame, for use inside another card). */
 export function TargetList({ items, canManage, muted = false, bare = false }: { items: (ItemFacts & { targetId?: string })[]; canManage: boolean; muted?: boolean; bare?: boolean }) {
-  return (
-    <ul className={cn("divide-y divide-border overflow-hidden", !bare && "rounded-xl border border-border bg-card shadow-card")}>
-      {items.map((it, i) => <TargetRow key={`${(it as TargetItem).targetId ?? "other"}-${i}`} item={it} canManage={canManage} muted={muted} />)}
-    </ul>
-  );
+  const rows = items.map((it, i) => <TargetRow key={`${(it as TargetItem).targetId ?? "other"}-${i}`} item={it} canManage={canManage} muted={muted} />);
+  if (bare) return <ul className="divide-y divide-border overflow-hidden">{rows}</ul>;
+  return <Card asChild className="divide-y divide-border overflow-hidden p-0"><ul>{rows}</ul></Card>;
 }

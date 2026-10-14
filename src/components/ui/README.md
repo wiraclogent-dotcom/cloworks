@@ -117,7 +117,7 @@ component is gone.
 | Floating panel (filters, month picker, info) | `Popover` | `<details>` popovers in `FilterBar`, `MonthPicker` | In use |
 | Hint on hover/focus | `Tooltip` | `title=""` on icon buttons | Planned |
 | Tabs / view switch | `Tabs` or `Toggle Group` | `ui/SegmentedControl`, Library category pills | Planned |
-| Card | `Card` | `ui/Card`, inline `rounded-xl border bg-card` blocks | Planned |
+| Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`details`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
 | Tag, count, label pill | `Badge` | `ui/Chip`, `BrandTag`, `CountPill` | Planned |
 | Inline message | `Alert` | `ui/Alert` | Planned |
 | Empty list / no results / error page | `Empty` | `ui/EmptyState`, ad-hoc "No … yet" paragraphs | Planned |
@@ -153,7 +153,7 @@ shadcn part inside.
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
-Still here until migrated (see Component map, don't use in new code): `Card`,
+Still here until migrated (see Component map, don't use in new code):
 `Chip`, `Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 

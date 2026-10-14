@@ -4,7 +4,7 @@ import { useActionState, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { ConfirmAction } from "@/components/admin/AdminForm";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Switch } from "@/components/ui/Switch";
 import type { AdminFormState } from "@/lib/adminForm";
 import { resetInviteLink, toggleInviteLink } from "./actions";

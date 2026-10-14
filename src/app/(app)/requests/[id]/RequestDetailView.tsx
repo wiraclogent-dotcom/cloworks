@@ -10,7 +10,7 @@ import { splitMentions } from "@/lib/mentions";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { STATUS_LABEL } from "@/components/status";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { BrandTag, Chip, CountPill } from "@/components/ui/Chip";
 import { StatusChip } from "@/components/ui/StatusChip";
 import { BrandArt } from "@/components/ui/BrandArt";

@@ -1,5 +1,5 @@
 import { AvatarStack } from "@/components/ui/Avatar";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { ItemLink } from "./ItemLink";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { daysLeft } from "@/lib/daysLeft";

@@ -7,6 +7,7 @@ import { KpiSection } from "@/components/kpi/KpiSection";
 import { PersonProjectKpiSection } from "@/components/kpi/project/PersonProjectKpiSection";
 import { YearSelect } from "@/components/kpi/project/YearSelect";
 import { Button } from "@/components/shadcn/button";
+import { Card } from "@/components/shadcn/card";
 
 /**
  * My KPI › Projects: the person's quarterly Project KPI for `year`, under a header with the year picker. `keep` is
@@ -28,10 +29,10 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
     <KpiSection id="projects" title="Projects" autoScroll={autoScroll}
       controls={<YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y }) }))} />}>
       {targetCount === 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <Card className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <p className="text-sm text-muted-foreground">No project targets for {year}.</p>
           {canTeam ? <Button asChild variant="outline" size="sm"><Link href={`/dashboard/projects/${subject.id}?year=${year}`}>Set targets</Link></Button> : null}
-        </div>
+        </Card>
       ) : (
         <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} yearSelect={false} headingLevel={3} />
       )}

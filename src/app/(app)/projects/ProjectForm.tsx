@@ -7,7 +7,7 @@ import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type Pro
 import Link from "next/link";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardTitle } from "@/components/ui/Card";
+import { Card, CardTitle } from "@/components/shadcn/card";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";

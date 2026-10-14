@@ -4,6 +4,7 @@ import type { Quarter } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi } from "@/lib/kpi/projectQueries";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { Card } from "@/components/shadcn/card";
 import { ProjectScoreHeader } from "./ProjectScoreHeader";
 import { TargetList } from "./TargetList";
 import { YearSelect } from "./YearSelect";
@@ -76,13 +77,13 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       ) : null}
 
       {kpi.otherWork.length > 0 ? (
-        <details className="group rounded-xl border border-border bg-card shadow-card">
+        <Card asChild className="p-0"><details className="group">
           <summary className="cursor-pointer rounded-xl px-4 py-3 text-sm font-medium text-foreground select-none">Other work ({kpi.otherWork.length})</summary>
           <div className="border-t border-border">
             <p className="px-4 pt-3 text-xs text-muted-foreground">Items this person owns rows in that are not targets. Not scored.</p>
             <TargetList items={kpi.otherWork} canManage={false} muted bare />
           </div>
-        </details>
+        </details></Card>
       ) : null}
     </div>
   );

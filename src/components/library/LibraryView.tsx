@@ -6,7 +6,7 @@ import { Folder, Pin, Plus, Search, Settings2 } from "lucide-react";
 import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { CountPill } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NativeSelect } from "@/components/shadcn/native-select";
@@ -167,11 +167,12 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
             const Icon = categoryIcon(c.icon);
             return (
               <Card key={c.id}>
-                <CardHeader actions={<CountPill value={items.length} aria-label={`${items.length} links`} />}>
+                <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground" />
                     {c.name}
                   </CardTitle>
+                  <CardAction><CountPill value={items.length} aria-label={`${items.length} links`} /></CardAction>
                 </CardHeader>
                 {items.length > 0 ? (
                   <div className="space-y-0.5">
