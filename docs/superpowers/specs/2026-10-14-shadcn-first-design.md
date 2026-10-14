@@ -48,7 +48,8 @@ Each step ends with `npm run typecheck`, the affected tests and, for UI steps, a
    until nothing uses them, then remove them. Add the 13px table size to the type scale; remove sub-12px sizes.
 3. **Base components**: add and restyle `button`, `input`, `textarea`, `label`, `field`, `native-select`, `card`,
    `badge`, `alert`, `skeleton`, `spinner`, `avatar`, `switch`, `checkbox`, `radio-group`, `progress`, `separator`,
-   `table`, `tabs`/`toggle-group`, `empty`, `tooltip`.
+   `table`, `toggle-group`, `empty`. (`tooltip`, `combobox`, `input-otp`, `toast` are added only when a screen
+   needs them.)
 4. **Migrate call sites** component by component (Button → Field → Card → Badge → Alert → Empty → rest); kit files
    are deleted once unused and the README map marks them *Migrated*.
 5. **Overlays**: `dialog`, `alert-dialog`, `sheet`, `dropdown-menu`; move the 5 dialogs, the request side panel,
@@ -56,4 +57,10 @@ Each step ends with `npm run typecheck`, the affected tests and, for UI steps, a
 6. **Polish**: section titles, dialog titles, disabled opacity, shadows/radius leftovers.
 7. **QA**: every page in light/dark and at phone width; `npm run build`.
 
-Estimate: 3–4 working days.
+Estimate: 3–4 working days. Task-by-task plan: `docs/superpowers/plans/2026-10-14-shadcn-first.md`.
+
+## Safety
+
+- Base commit tagged `pre-shadcn-migration` (`7e10e74`, also `origin/feat/project-page`); all work on
+  `feat/shadcn-first`, nothing merged without the user's review of a preview deploy.
+- Every task is its own commit(s) and can be reverted alone; guard tests keep migrated patterns from returning.
