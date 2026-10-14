@@ -44,9 +44,12 @@ export type TaskRowData = {
  * stage or status, dates and file link become editable, and the row can be moved or deleted). Only managers see
  * the pencil. `mode` says what the fourth column holds for this project: design stages, or tracker statuses.
  */
-export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isLast }: {
+export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isLast, hideItem = false }: {
   projectId: string; canManage: boolean; task: TaskRowData; owners: { id: string; name: string }[]; mode: TaskMode;
   isFirst: boolean; isLast: boolean;
+  /** Leaves out the Item cell (the row sits under its item): the pencil, move and delete controls move to the Detail cell
+   *  and the item name is not editable here. */
+  hideItem?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
@@ -58,36 +61,50 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
   const dueText = task.dueTbc ? "TBC" : task.dueIso ? formatJakartaDay(task.dueIso) : "—";
   const fileText = task.fileName ?? task.notes?.replace(/^Sheet file column: /, "") ?? (task.fileUrl ? "Open file" : "No file");
 
+  const pencil = canManage && (
+    <IconButton
+      size="sm"
+      className="size-7 [&_svg]:size-3.5"
+      aria-label={editing ? `Done editing ${label}` : `Edit ${label}`}
+      aria-pressed={editing}
+      title={editing ? "Done editing" : "Edit this row"}
+      icon={editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
+      onClick={() => { setNameError(null); setEditing((e) => !e); }}
+    />
+  );
+  const actions = <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />;
+
   return (
     <tr className={cn(tbl.tr, canceled && "text-foreground-muted line-through opacity-60")} data-editing={editing || undefined}>
-      <td className={cell("font-medium")}>
-        <div className="flex items-center gap-2">
-          {canManage && (
-            <IconButton
-              size="sm"
-              className="size-7 [&_svg]:size-3.5"
-              aria-label={editing ? `Done editing ${label}` : `Edit ${label}`}
-              aria-pressed={editing}
-              title={editing ? "Done editing" : "Edit this row"}
-              icon={editing ? <Check aria-hidden="true" /> : <Pencil aria-hidden="true" />}
-              onClick={() => { setNameError(null); setEditing((e) => !e); }}
-            />
-          )}
-          {editing ? (
-            <EditableName projectId={projectId} taskId={task.id} field="title" value={task.title} label={label} onFail={nameFailed} />
-          ) : (
-            <span>{task.title}</span>
-          )}
-        </div>
-        {nameError && <p role="alert" className="mt-1 pl-9 text-xs text-danger">{nameError}</p>}
-        {editing && (
-          <div className="mt-1.5 pl-9">
-            <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />
+      {!hideItem && (
+        <td className={cell("font-medium")}>
+          <div className="flex items-center gap-2">
+            {pencil}
+            {editing ? (
+              <EditableName projectId={projectId} taskId={task.id} field="title" value={task.title} label={label} onFail={nameFailed} />
+            ) : (
+              <span>{task.title}</span>
+            )}
           </div>
-        )}
-      </td>
-      <td className={cell()}>
-        {editing ? (
+          {nameError && <p role="alert" className="mt-1 pl-9 text-xs text-danger">{nameError}</p>}
+          {editing && <div className="mt-1.5 pl-9">{actions}</div>}
+        </td>
+      )}
+      <td className={cell(hideItem ? "font-medium" : undefined)}>
+        {hideItem ? (
+          <>
+            <div className="flex items-center gap-2">
+              {pencil}
+              {editing ? (
+                <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} onFail={nameFailed} />
+              ) : (
+                <span>{task.subTitle ?? "—"}</span>
+              )}
+            </div>
+            {nameError && <p role="alert" className="mt-1 pl-9 text-xs text-danger">{nameError}</p>}
+            {editing && <div className="mt-1.5 pl-9">{actions}</div>}
+          </>
+        ) : editing ? (
           <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} onFail={nameFailed} />
         ) : task.subTitle ?? "—"}
       </td>
