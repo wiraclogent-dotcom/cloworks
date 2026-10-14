@@ -23,6 +23,11 @@ describe("Overlay usage", () => {
       const hits: string[] = [];
       if (/<dialog[\s>/]/.test(text)) hits.push(`${rel}: <dialog>`);
       if (/role=\{?\s*["'`]dialog["'`]/.test(text) && !ALLOWED_ROLE_DIALOG.has(rel)) hits.push(`${rel}: role="dialog"`);
+      if (/role=\{?\s*["'`]alertdialog["'`]/.test(text)) hits.push(`${rel}: role="alertdialog"`);
+      if (/aria-modal\b/.test(text)) hits.push(`${rel}: aria-modal`);
+      if (/\.showModal\(/.test(text)) hits.push(`${rel}: .showModal()`);
+      // Matched the old native <dialog> panel; the route panel is a Radix Sheet now (in-data-[slot=sheet-content]).
+      if (/\bin-\[dialog\]/.test(text)) hits.push(`${rel}: in-[dialog] variant`);
       return hits;
     });
     expect(found).toEqual([]);

@@ -105,14 +105,14 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
       className={cn("flex flex-col gap-4 bg-card p-4 max-xl:fixed max-xl:inset-0 max-xl:z-40 max-xl:overflow-y-auto",
         "xl:rounded-xl xl:border xl:border-border xl:shadow-card")}>
       <header className="flex items-center gap-2">
-        {approveForm ? <h2 className="text-sm font-semibold text-foreground">Approve &amp; create request</h2> : (
+        {approveForm ? <h2 className="text-base font-semibold text-heading">Approve &amp; create request</h2> : (
           <>
             {!published ? (
               <span data-badge="" data-tone={STATUS_TONE[post.status]} className="rounded bg-tone-tint px-1.5 py-0.5 text-xs font-semibold text-tone-text">
                 {STATUS_LABEL[post.status]}
               </span>
             ) : null}
-            <h2 className="text-sm font-semibold text-foreground">{published ? `Posted ${SURFACE_TITLE[post.surface].toLowerCase()}` : SURFACE_TITLE[post.surface]}</h2>
+            <h2 className="text-base font-semibold text-heading">{published ? `Posted ${SURFACE_TITLE[post.surface].toLowerCase()}` : SURFACE_TITLE[post.surface]}</h2>
           </>
         )}
         <Link href={closeHref} aria-label="Close" title="Close"

@@ -40,7 +40,7 @@ page group the local session reaches.
 | Dimension (5 each) | Score | Evidence | Still open |
 |---|---|---|---|
 | Tokens and colour | 5 | Aliases 0 uses (guard `tokenNames`); shadcn folder has no hex, palette or `dark:` (guard `shadcnFolder`) | – |
-| Typography | 4 | Nothing below 12px outside the allowlist; arbitrary sizes ≥ 12px only in the display places the README lists (guard `typeScale`); dialog and card titles one style (16px/600) | A few card headers still 14px (`BriefCalendar` weekly table, `PostPanel`, `CalendarAgenda` day groups); greeting in `TodayOverview` stays 24px as a hero line |
+| Typography | 4 | Nothing below 12px outside the allowlist; arbitrary sizes ≥ 12px only in the display places the README lists (guard `typeScale`); dialog and card titles one style (16px/600) | `CalendarAgenda` day-group headers are still 14px (they group rows, they are not section titles); greeting in `TodayOverview` stays 24px as a hero line |
 | Spacing and layout | 4 | Page widths, header spacing and section gaps per README; no page scrolls sideways at 375px | Pre-existing: request calendar at 375px clips card contents; project timeline header labels collide ("28 Sep 2026" / "5 Oct", "Today" flag covers a week label) |
 | Shape and depth | 4 | No `shadow-lg`/`shadow-xl`; overlays `shadow-raised`, cards `shadow-card`, controls `rounded-lg` | Hand-made 4px chips: `CalendarCard` "Overdue", `PostPanel` status, `PostTile` tags (could be `Badge`) |
 | Components (buttons, fields, cards) | 4 | Every `<Button>` has a variant (guard); fields on `Input`/`NativeSelect`/`Textarea`; cards on `Card` (guard, 4 justified exceptions) | Raw buttons left are rows, drag handles and inline text links; chat "Load older messages" pill and `FileLocationLink` copy button are still hand-styled |
@@ -56,7 +56,7 @@ plain `rounded` remains on the tiny chips listed above.
 ## Decisions
 
 - shadcn components are restyled to match today's kit (36px controls, `rounded-lg`, our variants), and gain our
-  extra props in their own file (`Button`: `loading`, `icon`, `iconRight`; variants primary/secondary/ghost/danger).
+  extra props in their own file (`Button`: `loading`, `icon`, `iconRight`; variants default/outline/secondary/ghost/destructive/link, sizes default/sm/icon/icon-sm).
   Migrating a call site is then mostly an import swap.
 - Form selects use shadcn `Native Select` (native picker on phones, works in plain server-action forms); Radix
   `Select` only for rich custom lists.

@@ -158,7 +158,7 @@ export function BriefCalendar({ model, typeOrder }: {
       </section></Card>
 
       <Card asChild className="overflow-hidden p-0"><section aria-labelledby="brief-weeks-h">
-        <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-sm font-semibold text-heading">Briefs per requester, per week</h2>
+        <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-base font-semibold text-heading">Briefs per requester, per week</h2>
         {model.rows.length === 0 ? (
           <EmptyState size="inline" title="No briefs this month yet." className="px-4 py-6" />
         ) : (
