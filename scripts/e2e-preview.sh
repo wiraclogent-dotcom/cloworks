@@ -8,6 +8,16 @@ url="${1:?usage: bash scripts/e2e-preview.sh <preview-url>}"
 url="${url%/}"
 
 read -rsp "Vercel 'Protection Bypass for Automation' secret (empty if the preview is public): " bypass; echo
+
+# Fail fast while Vercel Deployment Protection still sends us to vercel.com/login.
+status=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -H "x-vercel-protection-bypass: ${bypass}" "$url/signin")
+if [[ "$status" == 30[1278]*"vercel.com/sso-api"* || "$status" == 401* ]]; then
+  echo "The preview is still behind Vercel Authentication (got: ${status%% *})." >&2
+  echo "Create the secret in Vercel > cloworks > Settings > Deployment Protection > Protection Bypass for Automation," >&2
+  echo "then run this script again and paste it at the first prompt." >&2
+  exit 1
+fi
+
 read -rp  "Account email on the preview: " email
 read -rsp "Password for that account: " password; echo
 
