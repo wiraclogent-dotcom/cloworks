@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ProjectStatus } from "@prisma/client";
 import { Pencil } from "lucide-react";
@@ -35,9 +35,23 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function ProjectDetailsCard({ project, brands, owners, canManage }: { project: ProjectDetails; brands: Opt[]; owners: Opt[]; canManage: boolean }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
+  const editRef = useRef<HTMLButtonElement>(null);
+  const formWrap = useRef<HTMLDivElement>(null);
+  const wasEditing = useRef(false);
+
+  // Focus follows the editor: into Title when the form opens, back to the Edit button when it closes.
+  useEffect(() => {
+    if (editing) formWrap.current?.querySelector<HTMLElement>('input[name="title"]')?.focus();
+    else if (wasEditing.current) editRef.current?.focus();
+    wasEditing.current = editing;
+  }, [editing]);
 
   if (editing && canManage) {
     return (
+      <div
+        ref={formWrap}
+        onKeyDown={(e) => { if (e.key === "Escape" && !e.defaultPrevented) setEditing(false); }}
+      >
       <ProjectForm
         stay projectId={project.id} brands={brands} owners={owners}
         initial={{
@@ -48,16 +62,17 @@ export function ProjectDetailsCard({ project, brands, owners, canManage }: { pro
         onSaved={() => { setEditing(false); router.refresh(); }}
         onCancel={() => setEditing(false)}
       />
+      </div>
     );
   }
 
   const day = (iso: string | null) => (iso ? formatJakartaDay(new Date(iso)) : MISSING);
   return (
     <Card>
-      <CardHeader actions={canManage ? <Button size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button> : undefined}>
+      <CardHeader actions={canManage ? <Button ref={editRef} size="sm" onClick={() => setEditing(true)}><Pencil aria-hidden="true" strokeWidth={1.75} />Edit</Button> : undefined}>
         <CardTitle>Details</CardTitle>
       </CardHeader>
-      <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="grid gap-x-6 gap-y-3 grid-cols-2 lg:grid-cols-3">
         <Row label="Brand">{project.brandName ?? MISSING}</Row>
         <Row label="Owner">{project.ownerName}</Row>
         <Row label="Status"><StatusChip status={project.status} kind="project" /></Row>

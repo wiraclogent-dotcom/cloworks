@@ -42,6 +42,39 @@ describe("ProjectDetailsCard read view", () => {
   });
 });
 
+describe("ProjectDetailsCard layout", () => {
+  it("lists the facts two per row on phones", () => {
+    const { container } = render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);
+    const cls = container.querySelector("dl")!.className;
+    expect(cls).toContain("grid-cols-2");
+    expect(cls).not.toMatch(/(^|\s)(sm|md):grid-cols-2/);
+  });
+});
+
+describe("ProjectDetailsCard focus", () => {
+  it("focuses Title when the form opens and returns focus to Edit on Cancel", () => {
+    render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(document.activeElement).toBe(screen.getByLabelText(/Title/));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit" }));
+  });
+  it("returns focus to Edit on Escape", () => {
+    render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.keyDown(screen.getByLabelText(/Title/), { key: "Escape" });
+    expect(screen.queryByLabelText(/Title/)).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit" }));
+  });
+  it("returns focus to Edit after a successful save", async () => {
+    h.inPlace.mockResolvedValue({ ok: true, nonce: "n1" });
+    render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("button", { name: "Edit" })));
+  });
+});
+
 describe("ProjectDetailsCard edit view", () => {
   it("opens a prefilled form with a Cancel button, and Cancel returns to the read view", () => {
     render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);

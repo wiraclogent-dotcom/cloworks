@@ -34,7 +34,7 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
   return (
     <li data-state={item.state} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", muted && "text-foreground-secondary")}>
       <div className="min-w-0 grow basis-60">
-        {/* Slug of the title alone: in a project where two titles collide only the first matches, which is fine because target titles are unique per project. */}
+        {/* The link uses the base slug of the title alone. If two different titles slug to the same value (e.g. "A-B" and "A B"), the page gives the second one a "-2" suffix, so this link opens the first matching item. */}
         <Link href={`/projects/${item.projectId}#item-${itemSlug(item.itemTitle, new Set())}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
           <span className="text-foreground-secondary">{item.projectTitle}</span> › {item.itemTitle}
         </Link>

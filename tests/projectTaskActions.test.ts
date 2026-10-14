@@ -28,7 +28,9 @@ describe("project task and milestone actions", () => {
     h.revalidated.length = 0;
     await db.prisma.projectTask.deleteMany({});
     await db.prisma.projectMilestone.deleteMany({});
+    await db.prisma.projectTaskEvent.deleteMany({});
   });
+  const eventCount = () => db.prisma.projectTaskEvent.count();
 
   const seed = (titles: string[], extra: object = {}) =>
     Promise.all(titles.map((title, i) => db.prisma.projectTask.create({ data: { projectId, title, position: i + 1, ...extra } })));
@@ -67,6 +69,7 @@ describe("project task and milestone actions", () => {
     it("swaps a variant with its neighbour in the same item", async () => {
       const [a, b, c] = await seed(["A", "A", "A"]);
       expect(await moveTask(projectId, b.id, "up")).toEqual({ ok: true });
+      expect(await eventCount()).toBe(0);
       expect(await ids()).toEqual([b.id, a.id, c.id]);
       expect(await moveTask(projectId, b.id, "down")).toEqual({ ok: true });
       expect(await moveTask(projectId, c.id, "up")).toEqual({ ok: true });
@@ -117,6 +120,7 @@ describe("project task and milestone actions", () => {
       await seed(["A", "B"]);
       const r = await createTaskDetail(projectId, input("A", "new"));
       expect(r.ok).toBe(true);
+      expect(await eventCount()).toBe(0);
       const rows = await db.prisma.projectTask.findMany({ where: { projectId }, orderBy: { position: "asc" } });
       expect(rows.map((t) => t.title)).toEqual(["A", "A", "B"]);
       expect(rows[1].subTitle).toBe("new");
@@ -134,6 +138,7 @@ describe("project task and milestone actions", () => {
       await seed(["A", "B", "A"]);
       await db.prisma.projectKpiTarget.create({ data: { userId: ownerId, year: 2026, projectId, itemTitle: "A", createdById: ownerId } });
       expect(await renameItem(projectId, "A", "  Z  ")).toEqual({ ok: true });
+      expect(await eventCount()).toBe(0);
       expect(await order()).toEqual(["Z", "B", "Z"]);
       expect((await db.prisma.projectKpiTarget.findMany({ where: { projectId } })).map((t) => t.itemTitle)).toEqual(["Z"]);
     });

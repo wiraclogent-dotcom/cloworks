@@ -202,6 +202,51 @@ describe("ProjectItemRow", () => {
     expect(screen.queryByRole("combobox")).toBeNull();
   });
 
+  it("Apply that changes nothing says so in a polite status", async () => {
+    setItemStage.mockResolvedValue({ ok: true, changed: 0 });
+    renderRow(true);
+    const status = screen.getByRole("status");
+    expect(status.textContent).toBe("");
+    choose("Laundry Pods Regular 4", "APPROVAL");
+    await act(async () => { fireEvent.click(apply("Laundry Pods Regular 4")); });
+    expect(status.textContent).toBe("No variants changed. Canceled variants are skipped.");
+    expect(status.getAttribute("aria-live")).toBe("polite");
+    // A later change clears the note.
+    setItemStage.mockResolvedValue({ ok: true, changed: 2 });
+    choose("Laundry Pods Regular 4", "FINAL_ARTWORK");
+    await act(async () => { fireEvent.click(apply("Laundry Pods Regular 4")); });
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
+  it("an all-canceled item has no Set all select or Apply", () => {
+    const gone = make("Gone", [{ sub: "A", owner: null, stage: "CANCELLED" }, { sub: "B", owner: null, stage: "CANCELLED" }]);
+    const [item] = groupItems(gone.inputs, "stage");
+    expect(item.allCancelled).toBe(true);
+    render(<ProjectItemRow projectId="p1" item={item} rows={gone.data} mode="stage" owners={[]} canManage />);
+    expect(screen.queryByLabelText(/^Set all variants of/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Apply to all/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Rename item Gone" })).toBeTruthy();
+  });
+
+  it("keeps the row from blowing out a narrow grid: min-w-0 on the root, a scrolling wrapper around the variant table", () => {
+    const { container } = renderRow(false);
+    expect(container.querySelector("#item-laundry-pods-regular-4")!.className).toMatch(/(^|\s)min-w-0(\s|$)/);
+    fireEvent.click(screen.getByRole("button", { name: "Laundry Pods Regular 4, 3 variants" }));
+    expect(container.querySelector("table")!.parentElement!.className).toContain("overflow-x-auto");
+  });
+
+  it("Rename focuses the input on open and returns focus to the Rename button on Cancel and Escape", () => {
+    renderRow(true);
+    fireEvent.click(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+    const box = screen.getByLabelText("New name for Laundry Pods Regular 4");
+    expect(document.activeElement).toBe(box);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+    fireEvent.click(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+    fireEvent.keyDown(screen.getByLabelText("New name for Laundry Pods Regular 4"), { key: "Escape" });
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+  });
+
   it("opens itself and scrolls on project-item-open for its slug, ignoring others", () => {
     const { container } = renderRow(false);
     const scroll = window.HTMLElement.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
@@ -254,6 +299,14 @@ describe("ProjectItemsList", () => {
     expect((screen.getByRole("button", { name: "Move Box A up" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "Move Box B up" }) as HTMLButtonElement).disabled).toBe(false);
     expect((screen.getByRole("button", { name: "Move Box B down" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("lays rows out in a flex column so a wide table cannot widen the page", () => {
+    const rowsData = new Map(pods.data.map((d) => [d.id, d]));
+    const { container } = render(<ProjectItemsList projectId="p1" items={[podsItem]} rowsData={rowsData} mode="stage" owners={[]} canManage={false} />);
+    const cls = (container.firstElementChild as HTMLElement).className;
+    expect(cls).toContain("flex-col");
+    expect(cls).not.toMatch(/(^|\s)grid(\s|$)/);
   });
 
   it("renders a row per item plus Add item when managing", () => {

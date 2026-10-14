@@ -46,7 +46,7 @@ describe("ProjectProgressSummary", () => {
     const rows = [stageRow("FINAL_ARTWORK", { title: "A" }), stageRow("CANCELLED", { title: "B" })];
     const { container } = render(<ProjectProgressSummary rows={rows} items={groupItems(rows)} />);
     expect(screen.getByText("100% done")).toBeTruthy();
-    expect(screen.getByText("1 of 1 items done")).toBeTruthy();
+    expect(screen.getByText("1 of 1 item done")).toBeTruthy();
     expect(container.querySelectorAll("[data-segment]")).toHaveLength(1);
   });
 

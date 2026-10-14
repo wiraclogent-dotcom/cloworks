@@ -140,6 +140,22 @@ describe("projectItemList", () => {
       ]);
     });
 
+    it("uses the Jakarta calendar day at the boundary (20:00Z is 03:00 the next day in Jakarta)", () => {
+      const lateNight = new Date("2026-10-13T20:00:00Z");
+      const out = needsAttention(
+        [
+          item("overdue", { dueDate: d("2026-10-13") }),
+          item("edge", { dueDate: d("2026-10-21") }),
+          item("later", { dueDate: d("2026-10-22") }),
+        ],
+        lateNight,
+      );
+      expect(out.map((o) => [o.item.title, o.overdue])).toEqual([
+        ["overdue", true],
+        ["edge", false],
+      ]);
+    });
+
     it("excludes done, all-cancelled and undated items", () => {
       const done = groupItems([stageRow("FINAL_ARTWORK", { title: "done", dueDate: d("2026-10-01") })])[0];
       const cancelled = groupItems([stageRow("CANCELLED", { title: "cx", dueDate: d("2026-10-01") })])[0];

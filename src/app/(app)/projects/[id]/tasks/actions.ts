@@ -214,7 +214,7 @@ export type CreateDetailResult = { ok: true; id: string } | { ok: false; code: T
 
 /**
  * Adds a row to a project. The Stage or Status value must match what the project uses (stages for design projects,
- * statuses for tracker projects). New rows go to the bottom of the table. Needs `project.manage`.
+ * statuses for tracker projects). A new variant of an existing item is inserted right after that item's last row; a new item is appended at the bottom. Needs `project.manage`.
  */
 export async function createTaskDetail(projectId: string, input: NewDetailInput): Promise<CreateDetailResult> {
   return withUser<CreateDetailResult, CreateDetailResult>(requireUser, async (user) => {

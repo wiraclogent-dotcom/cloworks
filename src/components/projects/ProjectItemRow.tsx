@@ -44,12 +44,23 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
   const panelId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const selectRef = useRef<HTMLSelectElement>(null);
+  const renameBtnRef = useRef<HTMLButtonElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const wasRenaming = useRef(false);
+  const [note, setNote] = useState("");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [setAll, setSetAll] = useState("");
   const [renaming, setRenaming] = useState(false);
   const [draft, setDraft] = useState(item.title);
   const [pending, startTransition] = useTransition();
+
+  // Focus follows the inline editor: into the field when it opens, back to the Rename button when it closes.
+  useEffect(() => {
+    if (renaming) renameInputRef.current?.focus();
+    else if (wasRenaming.current) renameBtnRef.current?.focus();
+    wasRenaming.current = renaming;
+  }, [renaming]);
 
   useEffect(() => {
     function reveal() {
@@ -75,12 +86,14 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
     if (!setAll) return;
     const value = setAll;
     setError(null);
+    setNote("");
     startTransition(async () => {
       const r = await safeAction(() => mode === "status"
         ? setItemStatus(projectId, item.title, value as ProjectStatus)
         : setItemStage(projectId, item.title, value as ProjectStage));
       if (r.ok) {
         setSetAll("");
+        if (r.changed === 0) setNote("No variants changed. Canceled variants are skipped.");
         router.refresh();
         selectRef.current?.focus();
       } else {
@@ -103,7 +116,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
   }
 
   return (
-    <div ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="scroll-mt-4 rounded-xl border border-border bg-card shadow-card">
+    <div ref={ref} id={`item-${item.slug}`} data-open={open || undefined} className="min-w-0 scroll-mt-4 rounded-xl border border-border bg-card shadow-card">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5">
         <div className="flex min-w-0 flex-1 basis-56 items-center gap-1">
         <button
@@ -124,6 +137,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           <IconButton
             size="sm"
             className="size-7 shrink-0 [&_svg]:size-3.5"
+            ref={renameBtnRef}
             aria-label={`Rename item ${item.title}`}
             title="Rename item"
             icon={<Pencil aria-hidden="true" />}
@@ -149,7 +163,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           {item.dueDate ? <DeadlineChip daysLeft={daysLeft(item.dueDate)} /> : item.dueTbc ? <span className="text-foreground-secondary">TBC</span> : <span className="text-foreground-muted">—</span>}
         </div>
 
-        {canManage && (
+        {canManage && !item.allCancelled && (
           <div className="flex items-center gap-1.5">
             <select
               ref={selectRef}
@@ -179,7 +193,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
             onKeyDown={(e) => { if (e.key === "Escape") { setRenaming(false); setError(null); } }}
             aria-label={`New name for ${item.title}`}
             disabled={pending}
-            autoFocus
+            ref={renameInputRef}
             className={fieldClass({ size: "sm", className: "min-w-56 flex-1" })}
           />
           <Button type="submit" size="sm" variant="primary" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
@@ -187,11 +201,15 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
         </form>
       )}
 
+      {canManage && !item.allCancelled && (
+        <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-foreground-secondary" : "sr-only"}>{note}</p>
+      )}
+
       {error && <div className="px-3 pb-2.5"><Alert tone="danger">{error}</Alert></div>}
 
       {open && (
         <div id={panelId} className="border-t border-border">
-          <div className={cn(tbl.wrapper, "rounded-none border-0 shadow-none")}>
+          <div className={cn(tbl.wrapper, "max-w-full overflow-x-auto rounded-none border-0 shadow-none")}>
             <table className={tbl.table}>
               <thead className={tbl.thead}>
                 <tr>

@@ -21,7 +21,7 @@ export function ProjectItemsList({ projectId, items, rowsData, mode, owners, can
     );
   }
   return (
-    <div className="grid gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       {items.map((item) => (
         <ProjectItemRow
           key={item.slug}
