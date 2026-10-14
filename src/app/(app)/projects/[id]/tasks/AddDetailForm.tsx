@@ -1,10 +1,11 @@
 "use client";
 
 import { safeAction } from "@/lib/safeAction";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { fieldClass } from "@/components/ui/Field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { PROJECT_STAGES } from "@/lib/projectProgress";
@@ -18,6 +19,7 @@ const EMPTY: NewDetailInput = { title: "", subTitle: "", ownerId: NONE, value: N
 export function AddDetailForm({ projectId, mode, owners }: {
   projectId: string; mode: "stage" | "status"; owners: { id: string; name: string }[];
 }) {
+  const uid = useId();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<NewDetailInput>(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -94,14 +96,16 @@ export function AddDetailForm({ projectId, mode, owners }: {
             </SelectContent>
           </Select>
         </div>
-        <label className="grid gap-1.5 text-sm">
-          Start
-          <input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} disabled={pending} className={fieldClass()} />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          Due
-          <input type="date" value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} disabled={pending} className={fieldClass()} />
-        </label>
+        <div className="grid gap-1.5 text-sm">
+          <label id={`${uid}-start-label`} htmlFor={`${uid}-start`}>Start</label>
+          <DatePicker id={`${uid}-start`} aria-labelledby={`${uid}-start-label`} allowClear disabled={pending}
+            value={form.startDate || null} onChange={(iso) => set("startDate", iso ?? "")} />
+        </div>
+        <div className="grid gap-1.5 text-sm">
+          <label id={`${uid}-due-label`} htmlFor={`${uid}-due`}>Due</label>
+          <DatePicker id={`${uid}-due`} aria-labelledby={`${uid}-due-label`} allowClear disabled={pending}
+            value={form.dueDate || null} onChange={(iso) => set("dueDate", iso ?? "")} />
+        </div>
         <label className="grid gap-1.5 text-sm sm:col-span-2">
           File link
           <input type="text" inputMode="url" autoComplete="off" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://… or \\server\folder" className={fieldClass()} />

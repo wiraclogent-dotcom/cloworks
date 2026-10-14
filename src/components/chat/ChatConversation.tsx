@@ -79,7 +79,7 @@ export function ChatConversation({ conv, title, status, userId, now, onBack, onO
         <IconButton aria-label="Back to chats" size="sm" icon={<ArrowLeft />} onClick={onBack} className="md:hidden" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-foreground">{title ?? "Chat"}</p>
-          {status && <StatusChip status={status} className="mt-0.5" />}
+          {status && <StatusChip status={status} kind="request" className="mt-0.5" />}
         </div>
         <Link href={`/requests/${encodeURIComponent(conv.id)}`} onClick={onOpenRequest}
           className={cn("inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-[13px] font-medium text-link hover:bg-surface-muted", focusRing)}>

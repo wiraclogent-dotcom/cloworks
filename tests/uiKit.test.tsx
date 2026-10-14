@@ -156,6 +156,13 @@ describe("StatusChip", () => {
     expect(chip.getAttribute("data-tone")).toBe(tone);
     expect(chip.querySelector("svg[aria-hidden='true']")).toBeTruthy();
   });
+  it("a project CANCELLED resolves the project label (Canceled), not the request one (Cancelled)", () => {
+    render(<StatusChip status="CANCELLED" kind="project" />);
+    const chip = screen.getByText("Canceled");
+    expect(chip.getAttribute("data-tone")).toBe("cancelled");
+    expect(chip.querySelector("svg[aria-hidden='true']")).toBeTruthy();
+    expect(screen.queryByText("Cancelled")).toBeNull();
+  });
   it("StatusBadge (old name) still works", () => {
     render(<StatusBadge status="DONE" />);
     expect(screen.getByText("Done").getAttribute("data-tone")).toBe("done");

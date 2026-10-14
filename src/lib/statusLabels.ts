@@ -15,4 +15,5 @@ export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
   IN_REVIEW: "In review",
   DONE: "Done",
   ON_HOLD: "On hold",
+  CANCELLED: "Canceled", // American spelling, matching the stage label (the request status keeps "Cancelled")
 };

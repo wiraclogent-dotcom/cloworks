@@ -252,6 +252,11 @@ describe("itemFacts", () => {
     expect(facts(rows).progress).toBeCloseTo((0 + 0.5 + 0.8 + 0.5 + 1) / 5, 10);
   });
 
+  it("a CANCELLED status row weighs 0 progress (it never earns credit)", () => {
+    const rows = ["DONE", "CANCELLED"].map((s, i) => row(String(i), { stage: null, status: s as ItemRow["status"] }));
+    expect(facts(rows).progress).toBeCloseTo((1 + 0) / 2, 10);
+  });
+
   it("startAt is the earliest live startDate", () => {
     const f = facts([row("1", { startDate: jakartaDay("2026-10-05") }), row("2", { startDate: jakartaDay("2026-10-03") })]);
     expect(f.startAt).toEqual(jakartaDay("2026-10-03"));

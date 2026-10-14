@@ -49,7 +49,7 @@ the header spacing (don't put it in a `gap-*`/`space-y-*` parent). Sections belo
 | `PageHeader` | PageHeader.tsx | `title`, `count`, `description`, `switcher`, `actions` | Top of every page (renders the `<h1>`). |
 | `SegmentedControl` | SegmentedControl.tsx | `label`, `value`, `items: {value,label,icon?,href?,onSelect?}[]` | Board/Table switch, tabs. Links → `aria-current`; buttons → `aria-pressed`. |
 | `Chip`, `BrandTag`, `CountPill` | Chip.tsx | `tone`, `icon`; `name`; `value` | Tags and counts. |
-| `StatusChip` | StatusChip.tsx | `status: RequestStatus \| ProjectStatus` | Status anywhere (icon + label + tint). Old name `StatusBadge` still exported by `components/status`. |
+| `StatusChip` | StatusChip.tsx | `status: RequestStatus \| ProjectStatus`, `kind?: "request" \| "project"` (pass `project` for project statuses: Canceled vs Cancelled) | Status anywhere (icon + label + tint). Old name `StatusBadge` still exported by `components/status`. |
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |

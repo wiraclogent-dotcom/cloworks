@@ -37,6 +37,8 @@ enum ProjectStatus {
   IN_REVIEW
   DONE
   ON_HOLD
+  /// Project-level only: a canceled project (task rows never carry it; their canceled state is ProjectStage.CANCELLED).
+  CANCELLED
 }
 
 // Every scoped model carries `workspaceId String @default(dbgenerated())`. The database has NO default (an insert

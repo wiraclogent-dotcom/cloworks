@@ -9,9 +9,9 @@ describe("schema enums", () => {
       ["CANCELLED", "DONE", "FIRST_LOOK", "ON_PROGRESS", "REQUESTED"].sort(),
     );
   });
-  it("ProjectStatus has exactly 5 values", () => {
+  it("ProjectStatus has exactly 6 values", () => {
     expect(Object.values(ProjectStatus).sort()).toEqual(
-      ["DONE", "IN_PROGRESS", "IN_REVIEW", "NOT_STARTED", "ON_HOLD"].sort(),
+      ["CANCELLED", "DONE", "IN_PROGRESS", "IN_REVIEW", "NOT_STARTED", "ON_HOLD"].sort(),
     );
   });
   it("AppRole has exactly 4 values", () => {

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup, within } from "@testing-library/react";
 import { act } from "react";
 
@@ -79,6 +79,23 @@ describe("ProjectTimeline", () => {
 });
 
 describe("ProjectForm", () => {
+  // The date fields are calendar pickers (hidden inputs carry the YYYY-MM-DD the server action reads). The calendar opens on
+  // today's month, so pin "today" to October 2026.
+  class RO { observe() {} unobserve() {} disconnect() {} }
+  beforeEach(() => {
+    globalThis.ResizeObserver = RO as unknown as typeof ResizeObserver;
+    window.HTMLElement.prototype.scrollIntoView = () => {};
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-14T03:00:00Z"));
+  });
+  afterEach(() => vi.useRealTimers());
+  const pickDay = (field: string, day: number) => {
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${field}`) }));
+    const cell = screen.getAllByRole("gridcell").filter((c) => !c.hasAttribute("data-outside")).find((c) => c.textContent === String(day))!;
+    fireEvent.click(cell.querySelector("button")!);
+  };
+  const hidden = (name: string) => document.querySelector<HTMLInputElement>(`input[type="hidden"][name="${name}"]`)!;
+
   it("keeps typed values and focuses the first invalid field after a failed submit", async () => {
     submit.mockImplementation(async (_id: unknown, _prev: unknown, fd: FormData) => ({
       ok: false, code: "VALIDATION", message: "bad", nonce: "n1", fieldErrors: { dueDate: "Due date cannot be before the start date" },
@@ -90,8 +107,10 @@ describe("ProjectForm", () => {
     fireEvent.change(screen.getByLabelText("Brand"), { target: { value: "b1" } });
     fireEvent.change(screen.getByLabelText(/^Owner/), { target: { value: "u1" } });
     fireEvent.change(screen.getByLabelText(/^Status/), { target: { value: "IN_REVIEW" } });
-    fireEvent.change(screen.getByLabelText("Start date"), { target: { value: "2026-10-10" } });
-    fireEvent.change(screen.getByLabelText("Due date"), { target: { value: "2026-10-01" } });
+    pickDay("Start date", 10);
+    pickDay("Due date", 1);
+    expect(hidden("startDate").value).toBe("2026-10-10");
+    expect(hidden("dueDate").value).toBe("2026-10-01");
     fireEvent.change(screen.getByLabelText("File link"), { target: { value: "https://x.test/f" } });
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Create project/ })); });
     await waitFor(() => expect(screen.getByText("Due date cannot be before the start date")).toBeTruthy());
@@ -100,11 +119,13 @@ describe("ProjectForm", () => {
     expect((screen.getByLabelText("Brand") as HTMLSelectElement).value).toBe("b1");
     expect((screen.getByLabelText(/^Owner/) as HTMLSelectElement).value).toBe("u1");
     expect((screen.getByLabelText(/^Status/) as HTMLSelectElement).value).toBe("IN_REVIEW");
-    expect((screen.getByLabelText("Start date") as HTMLInputElement).value).toBe("2026-10-10");
-    expect((screen.getByLabelText("Due date") as HTMLInputElement).value).toBe("2026-10-01");
+    expect(hidden("startDate").value).toBe("2026-10-10");
+    expect(hidden("dueDate").value).toBe("2026-10-01");
+    expect(screen.getByRole("button", { name: /^Start date/ }).textContent).toContain("10 Oct 2026");
+    expect(screen.getByRole("button", { name: /^Due date/ }).textContent).toContain("1 Oct 2026");
     expect((screen.getByLabelText("File link") as HTMLInputElement).value).toBe("https://x.test/f");
-    expect(document.activeElement).toBe(screen.getByLabelText("Due date"));
-    expect(screen.getByLabelText("Due date").getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Due date/ }));
+    expect(screen.getByRole("button", { name: /^Due date/ }).getAttribute("aria-invalid")).toBe("true");
     const live = screen.getByRole("status");
     expect(live.getAttribute("aria-live")).toBe("polite");
     expect(live.textContent).toBe("1 problem: Due date cannot be before the start date");
