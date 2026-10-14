@@ -57,7 +57,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
     return (
       <>
         <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters." />
-        {footer ? <div className="mt-3 overflow-hidden rounded-xl border border-border shadow-card [&>nav]:border-t-0">{footer}</div> : null}
+        {footer ? <Card className="mt-3 overflow-hidden p-0 [&>nav]:border-t-0">{footer}</Card> : null}
       </>
     );
   }

@@ -23,6 +23,16 @@ describe("type scale", () => {
     expect(hits(SUB_12, files)).toEqual([]);
   });
 
+  it("arbitrary sizes of 12px and up only for display text in the places the README lists", () => {
+    // README "Type": page title (PageHeader), KPI values (KpiTile), the sidebar wordmark (AppFrame) and the sign-in
+    // family (auth components and the standalone join / reset / change-password pages). Everything else uses the scale.
+    const DISPLAY = ["components/ui/PageHeader.tsx", "components/ui/KpiTile.tsx", "components/shell/AppFrame.tsx",
+      "components/auth/", "app/join/", "app/reset/", "app/change-password/"].map((p) => p.split("/").join(path.sep));
+    const allowed = (f: string) => ALLOWED(f) || DISPLAY.some((p) => f.includes(`${path.sep}${p}`));
+    const files = srcFiles("src", /\.(ts|tsx)$/).filter((f) => !allowed(f));
+    expect(hits(/text-\[[0-9.]+(?:px|rem)\]/g, files)).toEqual([]);
+  });
+
   it("13px is the text-compact token", () => {
     expect(hits(/text-\[13px\]/g, srcFiles("src", /\.(ts|tsx)$/))).toEqual([]);
     const css = readFileSync(path.resolve(__dirname, "../src/app/globals.css"), "utf8");

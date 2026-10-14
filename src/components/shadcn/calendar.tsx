@@ -5,7 +5,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import { DayPicker } from "react-day-picker"
 import { cn, focusRing } from "@/components/ui/cn"
 
-/** Same look as the kit's ghost IconButton: square, rounded-lg, muted hover, app focus ring. */
+/** Same look as `<Button variant="ghost" size="icon-sm">`: 32px square, rounded-lg, muted hover, app focus ring. */
 const navButton = cn(
   "inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 ease-out hover:bg-muted hover:text-foreground disabled:pointer-events-none disabled:opacity-55 [&_svg]:size-4",
   focusRing,

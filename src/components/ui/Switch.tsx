@@ -16,8 +16,9 @@ export function Switch({ id, label, description, checked, disabled, onCheckedCha
   const descId = description ? `${id}-desc` : undefined;
   const describedByIds = [descId, describedBy].filter(Boolean).join(" ") || undefined;
   return (
-    <label htmlFor={id} className={cn("flex cursor-pointer items-center justify-between gap-3 text-sm", disabled && "cursor-not-allowed opacity-70", className)}>
-      <span className="min-w-0">
+    <label htmlFor={id} className={cn("flex cursor-pointer items-center justify-between gap-3 text-sm", disabled && "cursor-not-allowed", className)}>
+      {/* Disabled: the text dims here and the track dims itself (disabled:opacity-55), so nothing is dimmed twice. */}
+      <span className={cn("min-w-0", disabled && "opacity-55")}>
         <span id={labelId} className="block font-medium text-foreground">{label}</span>
         {description ? <span id={descId} className="block text-xs text-muted-foreground">{description}</span> : null}
       </span>

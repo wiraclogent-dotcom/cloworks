@@ -31,7 +31,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
       controls={<YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y }) }))} />}>
       {targetCount === 0 ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <EmptyState size="inline" title={`No project targets for ${year}.`} className="py-0" />
+          <EmptyState size="inline" title={`No project targets for ${year}.`} />
           {canTeam ? <Button asChild variant="outline" size="sm"><Link href={`/dashboard/projects/${subject.id}?year=${year}`}>Set targets</Link></Button> : null}
         </Card>
       ) : (

@@ -11,8 +11,8 @@ import { cn } from "./cn";
  * whole page (403, not found: `h1`); `role` announces it (e.g. "alert" for access denied).
  *
  * `size="inline"` is a quiet one-line "nothing here yet" for inside a card or a section: no border, no media, left
- * aligned, the title only (description, action and children are ignored). Its `py-3` is the default; pass
- * `className` (`py-0`, `mb-4`, `mt-2`) to match the spacing the line replaces.
+ * aligned, the title only (description, action and children are ignored). It has no vertical padding; pass margins
+ * in `className` (`mb-4`, `mt-2`) to match the spacing the line replaces.
  */
 export function EmptyState({ icon, art, title, description, action, titleAs: Title = "p", role, size = "page", className, children }: {
   icon?: ReactNode; art?: ArtName; title: string; description?: ReactNode; action?: ReactNode;
@@ -20,7 +20,7 @@ export function EmptyState({ icon, art, title, description, action, titleAs: Tit
 }) {
   if (size === "inline") {
     return (
-      <Empty role={role} className={cn("items-start justify-start rounded-none border-0 bg-transparent px-0 py-3 text-left", className)}>
+      <Empty role={role} className={cn("items-start justify-start rounded-none border-0 bg-transparent px-0 py-0 text-left", className)}>
         <EmptyTitle asChild className="text-sm font-normal tracking-normal text-muted-foreground"><Title>{title}</Title></EmptyTitle>
       </Empty>
     );

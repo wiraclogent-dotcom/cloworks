@@ -458,9 +458,6 @@
   :root[data-sidebar="collapsed"] .app-sidebar .sb-expanded-only {
     display: none;
   }
-  :root[data-sidebar="expanded"] .app-sidebar .sb-collapsed-only {
-    display: none;
-  }
 }
 /* Default (no stored choice), 768–1279.98px: the rail. Same declarations as `collapsed` above. */
 @media (min-width: 768px) and (max-width: 1279.98px) {
@@ -487,17 +484,6 @@
     box-shadow: none;
   }
   :root:not([data-sidebar]) .app-sidebar .sb-expanded-only {
-    display: none;
-  }
-}
-/* Default (no stored choice), ≥ 1280px: expanded. */
-@media (min-width: 1280px) {
-  :root:not([data-sidebar]) .app-sidebar .sb-collapsed-only {
-    display: none;
-  }
-}
-@media (max-width: 767.98px) {
-  .app-sidebar .sb-collapsed-only {
     display: none;
   }
 }

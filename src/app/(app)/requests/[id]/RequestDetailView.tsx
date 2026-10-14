@@ -135,7 +135,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="files-h">
               <CardHeader className="mb-2"><CardTitle id="files-h">Attachments</CardTitle></CardHeader>
               {req.attachments.length === 0 ? (
-                <EmptyState size="inline" title="No links yet." className="mb-4 py-0" />
+                <EmptyState size="inline" title="No links yet." className="mb-4" />
               ) : (
                 <ul className="mb-4 divide-y divide-border">
                   {req.attachments.map((a) => (
@@ -158,7 +158,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="comments-h">
               <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <Badge variant="count">{req.comments.length}</Badge></CardTitle></CardHeader>
               {req.comments.length === 0 ? (
-                <EmptyState size="inline" title="No comments yet." className="mb-4 py-0" />
+                <EmptyState size="inline" title="No comments yet." className="mb-4" />
               ) : (
                 <ol className="mb-4 space-y-4">
                   {req.comments.map((c) => (
@@ -182,7 +182,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="history-h">
               <CardTitle id="history-h">Activity</CardTitle>
               {activity.length === 0 ? (
-                <EmptyState size="inline" title="No activity yet." className="mt-3 py-0" />
+                <EmptyState size="inline" title="No activity yet." className="mt-3" />
               ) : (
                 <ol className="relative mt-3 space-y-4 before:absolute before:top-1.5 before:bottom-1.5 before:left-[5px] before:w-px before:bg-border" data-timeline="">
                   {activity.map((a) => (

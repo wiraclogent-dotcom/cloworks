@@ -43,7 +43,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
             </Button>
           </div>
         ) : (
-          <EmptyState size="inline" title="No link yet. Use Reset link to create one." className="py-0" />
+          <EmptyState size="inline" title="No link yet. Use Reset link to create one." />
         )}
         {emailDomain && <p className="mt-2 text-sm text-muted-foreground">People with @{emailDomain} can request to join</p>}
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">

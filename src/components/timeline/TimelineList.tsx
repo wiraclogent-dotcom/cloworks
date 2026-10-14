@@ -18,7 +18,7 @@ function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string
     <Card asChild className="p-3"><section aria-labelledby={headingId}>
       <PersonHeading person={person} headingId={headingId} />
       {bars.length === 0 ? (
-        <EmptyState size="inline" title="No open requests" className="mt-2 py-0" />
+        <EmptyState size="inline" title="No open requests" className="mt-2" />
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {bars.map((b) => {

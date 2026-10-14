@@ -32,7 +32,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
-        <Card><EmptyState size="inline" title="No join requests waiting." className="py-0" /></Card>
+        <Card><EmptyState size="inline" title="No join requests waiting." /></Card>
       ) : (
         <ul className="space-y-3">
           {pending.map((r) => (

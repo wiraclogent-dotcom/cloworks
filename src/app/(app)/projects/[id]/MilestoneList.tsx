@@ -22,7 +22,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
   return (
     <div className="grid gap-3">
       {milestones.length === 0 && !adding && (
-        <EmptyState size="inline" title="No meetings or milestones recorded yet." className="py-0" />
+        <EmptyState size="inline" title="No meetings or milestones recorded yet." />
       )}
       {milestones.length > 0 && (
         <ul className="grid gap-2">

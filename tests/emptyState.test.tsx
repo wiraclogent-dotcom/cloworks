@@ -51,8 +51,8 @@ describe("EmptyState", () => {
     expect(screen.queryByRole("link")).toBeNull();
   });
 
-  it("inline takes spacing from the call site", () => {
-    const { container } = render(<EmptyState size="inline" title="No comments yet." className="mb-4 py-0" />);
+  it("inline has no vertical padding of its own and takes margins from the call site", () => {
+    const { container } = render(<EmptyState size="inline" title="No comments yet." className="mb-4" />);
     expect(container.firstElementChild!.className).toMatch(/\bmb-4\b/);
     expect(container.firstElementChild!.className).toMatch(/\bpy-0\b/);
     expect(container.firstElementChild!.className).not.toMatch(/\bpy-3\b/);

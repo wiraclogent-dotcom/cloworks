@@ -71,7 +71,7 @@ export async function ListsContent() {
             })}
           </ul>
           <div className="border-t border-border pt-4">
-            <h3 className="mb-3 text-[15px] font-semibold text-foreground">Add request type</h3>
+            <h3 className="mb-3 text-base font-semibold text-foreground">Add request type</h3>
             <TypeForm />
           </div>
         </section>

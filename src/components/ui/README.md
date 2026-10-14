@@ -86,9 +86,13 @@ Tones (`src/lib/palette.ts`): `requested`, `in-progress`, `first-look`, `done`, 
 Shape: 8px controls (`rounded-lg`), 12px cards and dialogs (`rounded-xl`), 6px badges (`rounded-md`), pills/avatars
 `rounded-full`. Plain `rounded` (4px) only for tiny handles inside media tiles.
 
-Type: base 14px; page title 22px/600 (PageHeader); dialog title 16px/600; section/card title 16px/600 (`CardTitle`);
-table 13px; badges and meta text 12px/500. Nothing smaller than 12px. Use `tabular-nums` for counts, dates and KPI
-values. Spacing on the 4px grid; card padding 16px.
+Type: base 14px; page title 28px/700 display font (PageHeader); dialog title 16px/600; section/card title 16px/600
+(`CardTitle`); table 13px (`text-compact`); badges and meta text 12px/500. Nothing smaller than 12px (exceptions:
+`components/landing/**` and avatar initials). Use Tailwind's scale (`text-xs`…`text-2xl`) or `text-compact`; an
+arbitrary size (`text-[15px]`, `text-[2rem]`) is display text and is allowed only in: `PageHeader` (title), `KpiTile`
+(value), `AppFrame` (sidebar wordmark) and the sign-in family (`components/auth/**`, `/join`, `/reset`,
+`/change-password`: 15px body, display headlines). `tests/typeScale.test.ts` enforces this list. Use `tabular-nums`
+for counts, dates and KPI values. Spacing on the 4px grid; card padding 16px.
 
 Layout: page padding comes from AppFrame only (never add it in a page). Page width is set on the shell, never with
 `mx-auto max-w-*` in a page (that would pull the PageHeader top bar away from the pinned bell/profile menu): default
@@ -145,7 +149,7 @@ shadcn part inside.
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |
-| `EmptyState` | EmptyState.tsx | `icon`, `art`, `title`, `description`, `action`, `titleAs`, `role`, `size` (`page` / `inline`), `className` | Empty list or no-access page, built on shadcn `Empty` (brand art + heading domain logic); `inline` for a one-line "No … yet" in a card (pass `py-0` / margins to match the spot). |
+| `EmptyState` | EmptyState.tsx | `icon`, `art`, `title`, `description`, `action`, `titleAs`, `role`, `size` (`page` / `inline`), `className` | Empty list or no-access page, built on shadcn `Empty` (brand art + heading domain logic); `inline` for a one-line "No … yet" in a card (no vertical padding; pass margins to match the spot). |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
 | `DatePicker` | DatePicker.tsx | shadcn `Calendar` + `Popover` | Date fields. |
 | `PasswordInput` | PasswordInput.tsx | input + show/hide toggle | Password fields. |
@@ -175,7 +179,7 @@ Still here until migrated (see Component map, don't use in new code):
   use `Dialog`, `DropdownMenu`, `Popover`, `Collapsible`.
 - No card, field or button rebuilt from raw classes in a page (`rounded-xl border bg-card…`, local `iconBtn`
   constants): use the component.
-- No arbitrary font sizes (`text-[11px]`…) outside the type scale above.
+- No arbitrary font sizes (`text-[11px]`, `text-[15px]`…) outside the display places listed under Type.
 - No hex, `text-white`, `bg-black` or Tailwind palette colours (`red-600`…) in components. Tokens already switch with
   the theme, so `dark:` is rarely needed (if you must, it follows `data-theme`, not the OS).
 - No gradients, glass, heavy shadows (`shadow-lg`/`shadow-xl`) or animation beyond 120–180 ms hover/focus
