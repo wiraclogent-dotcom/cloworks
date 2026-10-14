@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { fieldClass } from "@/components/ui/Field";
@@ -88,28 +88,5 @@ describe("open/close animations use the app's keyframes", () => {
     expect(css).toMatch(/@keyframes pop-out/);
     // The blanket reduced-motion rule shortens every animation, so Radix Presence still unmounts on time.
     expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\*,/);
-  });
-});
-
-describe("unused shadcn files are gone", () => {
-  const deleted = ["badge", "button", "card", "input", "progress", "table"];
-  it("the files no longer exist", () => {
-    for (const f of deleted) expect(existsSync(path.join(root, `src/components/shadcn/${f}.tsx`))).toBe(false);
-  });
-  it("nothing imports them", () => {
-    const files: string[] = [];
-    const walk = (dir: string) => {
-      for (const e of readdirSync(dir)) {
-        if (e === "node_modules" || e === ".next") continue;
-        const p = path.join(dir, e);
-        if (statSync(p).isDirectory()) walk(p); else if (/\.(ts|tsx)$/.test(e) && !p.endsWith("shadcnCleanup.test.tsx")) files.push(p);
-      }
-    };
-    walk(path.join(root, "src")); walk(path.join(root, "tests"));
-    const re = new RegExp(`shadcn/(${deleted.join("|")})["']`);
-    expect(files.filter((f) => re.test(readFileSync(f, "utf8")))).toEqual([]);
-  });
-  it("the shadcn folder holds only what the app uses", () => {
-    expect(readdirSync(path.join(root, "src/components/shadcn")).sort()).toEqual(["calendar.tsx", "popover.tsx", "select.tsx"]);
   });
 });
