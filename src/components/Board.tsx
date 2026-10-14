@@ -14,7 +14,6 @@ import { BOARD_DND_ID, SCREEN_READER_INSTRUCTIONS, buildAnnouncements } from "@/
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { ArrowDownToLine, Ban, ChevronDown, Inbox, Table2, X } from "lucide-react";
 import { BoardCard, CARD_OVERLAY, CardFace } from "./BoardCard";
-import { celebrate, centreOf } from "@/lib/celebrate";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
 import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
@@ -148,7 +147,6 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
     const undo = canTransition(card.status, to) ? applyMove(card, to) : () => {};
     try {
       const res = await moveRequest(card.id, to, opts);
-      if (res.ok && to === "DONE") celebrate(centreOf(document.querySelector(`[data-card="${CSS.escape(card.id)}"]`)));
       if (res.ok) router.refresh();
       else { undo(); setMessage(res.message); }
     } catch {

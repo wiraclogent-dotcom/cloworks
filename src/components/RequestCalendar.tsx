@@ -131,11 +131,11 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
       )}
       {rows.length === 0 ? (
         filtered ? (
-          <EmptyState art="empty-search" icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title={`No requests match these filters in ${monthName(month, { month: "long" })}`}
+          <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title={`No requests match these filters in ${monthName(month, { month: "long" })}`}
             description="Try another search, another month, or clear the filters."
             action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
-          <EmptyState art="empty-requests" icon={<CalendarDays />} title={`Nothing due in ${monthName(month, { month: "long" })}`}
+          <EmptyState icon={<CalendarDays />} title={`Nothing due in ${monthName(month, { month: "long" })}`}
             description="Open requests with a deadline this month show up here."
             action={<Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>} />
         )

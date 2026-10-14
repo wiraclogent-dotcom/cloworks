@@ -1,6 +1,6 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { BrandArt } from "@/components/ui/BrandArt";
+import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { cn } from "@/components/ui/cn";
 
@@ -12,16 +12,14 @@ export const authTitleClass = cn(display, "text-[2.25rem] leading-[1.1] font-bol
 
 /**
  * Layout for the public account pages (/signin, /signup, /verify, /join/*, /lobby): the form side with the landing
- * hero's wash, and on wide screens the Deep Blue panel with the clay studio floating in it. `title` is the page's h1;
+ * calm canvas, and on wide screens the blue V3 panel with a few flat product cards. `title` is the page's h1;
  * pass `title={null}` when the content renders its own (e.g. a heading that depends on request data).
  */
 export function AuthShell({ title, intro, children }: { title: ReactNode; intro?: ReactNode; children: ReactNode }) {
   return (
     <div className="grid flex-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      {/* Form side: the landing hero's Aqua and Deep Blue wash with its faint grid. */}
-      <div className="relative isolate flex min-h-dvh flex-col overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(70%_45%_at_20%_0%,color-mix(in_srgb,var(--brand-aqua)_16%,transparent),transparent_70%),radial-gradient(50%_40%_at_90%_15%,color-mix(in_srgb,var(--brand-deep-blue)_12%,transparent),transparent_70%)]" />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-40 [mask-image:radial-gradient(60%_50%_at_20%_0%,black,transparent)]" />
+      {/* Form side: plain card surface. */}
+      <div className="relative isolate flex min-h-dvh flex-col overflow-hidden bg-card">
 
         <header className="flex h-16 items-center justify-between px-4 sm:px-8">
           <Link href="/" className="flex items-center gap-2.5 rounded-md text-[17px] font-semibold text-heading">
@@ -34,7 +32,7 @@ export function AuthShell({ title, intro, children }: { title: ReactNode; intro?
         </header>
 
         <main id="main" className="flex flex-1 items-center px-4 pt-6 pb-16 sm:px-8">
-          <div className="animate-rise mx-auto w-full max-w-[400px]">
+          <div className="mx-auto w-full max-w-[400px]">
             {title !== null && <h1 className={authTitleClass}>{title}</h1>}
             {intro && <p className="mt-3 text-base leading-relaxed text-muted-foreground">{intro}</p>}
             <div className={cn(title !== null && "mt-8")}>{children}</div>
@@ -42,20 +40,25 @@ export function AuthShell({ title, intro, children }: { title: ReactNode; intro?
         </main>
       </div>
 
-      {/* Brand panel (wide screens): Deep Blue with an Aqua edge and the clay studio. Art is lazy, so phones (panel hidden) never fetch it. */}
-      <aside data-brand-panel="" aria-label="About Cloworks" className="relative isolate hidden overflow-hidden border-l-4 border-brand-aqua bg-brand-deep-blue text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_80%_0%,color-mix(in_srgb,var(--brand-aqua)_35%,transparent),transparent_70%)]" />
-        <div aria-hidden="true" className="animate-mesh absolute inset-0 -z-10 bg-[radial-gradient(45%_40%_at_30%_40%,color-mix(in_srgb,var(--brand-aqua)_28%,transparent),transparent),radial-gradient(35%_35%_at_80%_70%,color-mix(in_srgb,var(--brand-gradient-via)_35%,transparent),transparent)] bg-no-repeat" />
-        <div aria-hidden="true" className="relative flex min-h-0 flex-1 items-center justify-center px-10 pt-10 xl:px-14">
-          <BrandArt name="auth" width={420} sizes="(min-width: 1280px) 420px, 34vw" className="animate-float relative max-h-[62dvh] w-auto object-contain drop-shadow-[0_30px_40px_rgba(0,0,0,0.35)]" />
-          <BrandArt name="step-brief" width={120} style={{ "--float-delay": "-2s" } as CSSProperties} className="animate-float absolute top-[12%] left-[10%] size-24 object-contain xl:size-28" />
-          <BrandArt name="celebrate" width={110} style={{ "--float-delay": "-4s" } as CSSProperties} className="animate-float absolute right-[10%] bottom-[14%] size-20 object-contain xl:size-24" />
-        </div>
-        <div className="relative px-10 pt-6 pb-12 xl:px-14">
-          <p className={cn(display, "max-w-md text-[1.75rem] leading-tight font-bold")}>Every creative request, from brief to done.</p>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-white/75">
+      {/* Product panel (wide screens): the V3 blue that fades to a pale sky, with a few flat product cards. Decorative. */}
+      <aside data-brand-panel="" aria-label="About Cloworks" className="relative isolate hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:p-4">
+        <div className="relative isolate flex flex-1 flex-col overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,var(--brand-deep-blue)_0%,var(--brand-gradient-via)_42%,var(--brand-aqua)_68%,var(--brand-aqua-tint)_100%)] px-10 pt-14 xl:px-14">
+          <p className="inline-flex w-fit items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-sm font-medium ring-1 ring-white/35 ring-inset">Creative ops for Clogent</p>
+          <p className={cn(display, "mt-6 max-w-md text-[2.5rem] leading-[1.06] font-semibold")}>Every creative request, from brief to done.</p>
+          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/85">
             Carousels, reels, stories and banners for Clogent&apos;s brands. Each one started as a request here.
           </p>
+          <div aria-hidden="true" className="mt-auto grid w-full max-w-md gap-3 self-center pb-12 text-foreground">
+            <Card className="p-5">
+              <p className="flex items-center justify-between text-compact"><span className="font-semibold">REQ-A04D</span><span data-tone="first-look" className="rounded-full bg-tone-tint px-2.5 py-0.5 font-medium text-tone-text">First look</span></p>
+              <p className="mt-2 text-lg font-semibold">Product launch reel</p>
+              <p className="mt-3 rounded-xl rounded-bl-sm bg-muted px-3.5 py-2.5 text-sm"><span className="font-semibold">Nadia</span> Can the logo hold a beat longer?</p>
+            </Card>
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="border-primary bg-primary p-4 text-primary-foreground"><p className="text-compact opacity-90">October target</p><p className="mt-1 text-2xl font-semibold">18 / 20</p></Card>
+              <Card className="p-4"><p className="text-compact text-muted-foreground">Open requests</p><p className="mt-1 text-2xl font-semibold">13</p></Card>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

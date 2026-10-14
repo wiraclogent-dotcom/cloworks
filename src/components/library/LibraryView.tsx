@@ -130,7 +130,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
 
       {categories.length === 0 && canManage ? (
         <EmptyState
-          art="empty-library"
+         
           icon={<Folder />}
           title="No categories yet"
           description="Create a category with Manage categories, then add links to it."
@@ -138,14 +138,14 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
         />
       ) : filtered.length === 0 && filtering ? (
         <EmptyState
-          art="empty-search"
+         
           icon={<Search />}
           title="No links match"
           description="Try a different search or clear the filters."
           action={<Button variant="outline" onClick={clear}>Clear filters</Button>}
         />
       ) : filtered.length === 0 && !canManage ? (
-        <EmptyState art="empty-library" icon={<Folder />} title="No links yet" description="Shared links will show up here." />
+        <EmptyState icon={<Folder />} title="No links yet" description="Shared links will show up here." />
       ) : (
         <>
           {pinned.length > 0 ? (

@@ -5,7 +5,7 @@ Every screen is built from two folders, in this order of preference:
 1. **`src/components/shadcn/`**: shadcn/ui components (Radix underneath), restyled with our tokens. **Default for
    every generic element**: buttons, fields, dialogs, menus, popovers, tabs, badges, cards, alerts, skeletons, tables…
 2. **`src/components/ui/`** (this folder): our own kit, **only** for what shadcn does not have: domain components
-   (`StatusChip`, `DeadlineChip`, `KpiTile`, `PageHeader`, `BrandArt`…) and small helpers (`cn`, `focusRing`,
+   (`StatusChip`, `DeadlineChip`, `KpiTile`, `PageHeader`, `LogoMark`…) and small helpers (`cn`, `focusRing`,
    `darkMode`). A kit component that needs a generic part composes the shadcn one (e.g. `StatusChip` renders a
    shadcn `Badge`) instead of re-creating it.
 3. **Neither has it?** Add it to the kit (documented in the table below), never inline in a page. Before writing one,
@@ -31,7 +31,7 @@ rewrites the `cn` import to `@/components/ui/cn`. Then, in the generated file:
 
 - Replace any literal colour or Tailwind palette class with our tokens; keep only shadcn token names
   (`bg-primary`, `text-muted-foreground`, `border-input`…).
-- Match our sizes and shape: controls 36px high (`h-9`), `size="sm"` 32px; controls `rounded-lg`, cards `rounded-xl`,
+- Match our sizes and shape: controls 36px high (`h-9`), `size="sm"` 32px; buttons are pills (`rounded-full`, V3 flat blue), fields `rounded-lg`, cards `rounded-xl`,
   badges `rounded-md`; overlays use `shadow-raised`, cards `shadow-card`; transitions 150 ms.
 - Keep Radix's roles, focus handling and keyboard support; don't strip `data-slot` attributes.
 - Always pass an explicit `variant` to `Button` (`default` is the primary look; use `outline` for a plain button);
@@ -84,7 +84,7 @@ Tones (`src/lib/palette.ts`): `requested`, `in-progress`, `first-look`, `done`, 
 `<section data-tone="in-progress" className="border-t-4 border-tone-accent">`. Statuses map with
 `REQUEST_STATUS_TONE` / `PROJECT_STATUS_TONE`; brands with `brandTone(name)`.
 
-Shape: 8px controls (`rounded-lg`), 12px cards and dialogs (`rounded-xl`), 6px badges (`rounded-md`), pills/avatars
+Shape: pill buttons (`rounded-full`, the `Button` default), 8px fields and other controls (`rounded-lg`), 12px cards and dialogs (`rounded-xl`), 6px badges (`rounded-md`), pills/avatars
 `rounded-full`. Plain `rounded` (4px) only for tiny handles inside media tiles.
 
 Type: base 14px; page title 28px/700 display font (PageHeader); dialog title 16px/600; section/card title 16px/600
@@ -164,7 +164,7 @@ shadcn part inside.
 | `SubmitButton` | SubmitButton.tsx | pending state from the form | Submit in server-action forms. |
 | `FileLocationLink` | FileLocationLink.tsx | server path + copy | Design-folder paths. |
 | `CountUp` | CountUp.tsx | animated number | KPI values. |
-| `BrandArt`, `LogoMark` | BrandArt.tsx, LogoMark.tsx | `size` | Brand illustrations and mark (decorative). |
+| `LogoMark` | LogoMark.tsx | `size` | Brand mark (decorative). No illustrations: empty states use an icon tile. |
 | `SegmentedControl` | SegmentedControl.tsx | `label`, `value`, `items: {value,label,icon?,href?,onSelect?}[]` | Board/Table and admin tabs (links: `<nav>` + `aria-current`, no JS); local switches (buttons: shadcn `ToggleGroup`). `SEGMENT_TRAY` / `segmentClass` style link segments elsewhere (FilterBar quick filters). |
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |

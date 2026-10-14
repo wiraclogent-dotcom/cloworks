@@ -1,3 +1,4 @@
+import { BellOff } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { countNotificationsWith, listNotificationsWith, unreadCountWith } from "@/lib/inbox";
 import { pageWindow, parsePage, rangeText, TABLE_PAGE_SIZE } from "@/lib/paging";
@@ -21,7 +22,7 @@ export async function NotificationsContent({ searchParams }: { searchParams: Pro
         <MarkAllButton disabled={unread === 0} />
       </div>
       {items.length === 0 ? (
-        <EmptyState art="empty-notifications" title="No notifications yet."
+        <EmptyState icon={<BellOff />} title="No notifications yet."
           description="You'll hear here when someone comments, mentions you, assigns you, or sends a design on your requests."
           className="rounded-none border-0 bg-transparent px-4 py-12" />
       ) : (

@@ -42,35 +42,35 @@ const UI = 3;
 const themes: Theme[] = ["light", "dark"];
 
 describe("brand theme", () => {
-  it("keeps the four brand colors unchanged", () => {
-    expect(token("--brand-deep-blue").toLowerCase()).toBe("#09426d");
-    expect(token("--brand-aqua").toLowerCase()).toBe("#11aa9f");
+  it("brand colors are the V3 flat blue set", () => {
+    expect(token("--brand-deep-blue").toLowerCase()).toBe("#1f5eff");
+    expect(token("--brand-aqua").toLowerCase()).toBe("#5b8cff");
     expect(token("--brand-grey").toLowerCase()).toBe("#cccccc");
     expect(token("--brand-white").toLowerCase()).toBe("#ffffff");
-    expect(token("--brand-aqua-strong").toLowerCase()).toBe("#0b756d");
+    expect(token("--brand-aqua-strong").toLowerCase()).toBe("#1650e6");
   });
 
   it("light is the default with no OS dependence; dark only under data-theme", () => {
     expect(css).not.toMatch(/prefers-color-scheme/);
-    expect(token("--background")).toBe("#f5f3ee");
+    expect(token("--background")).toBe("#f4f6fa");
     expect(token("--surface")).toBe("#ffffff");
-    expect(token("--background", "dark")).toBe("#111113");
-    expect(token("--surface", "dark")).toBe("#1a1a1d");
+    expect(token("--background", "dark")).toBe("#0b1020");
+    expect(token("--surface", "dark")).toBe("#121a2e");
   });
 
   it("maps the shadcn semantic tokens onto the spec tokens", () => {
-    expect(token("--foreground")).toBe("#17181c");
+    expect(token("--foreground")).toBe("#0a0f1f");
     expect(token("--card")).toBe(token("--surface"));
     expect(token("--muted")).toBe(token("--surface-muted"));
     expect(token("--muted-foreground")).toBe(token("--foreground-secondary"));
-    expect(token("--border")).toBe("#e6e3dc");
-    expect(token("--border-strong")).toBe("#d3cfc5");
-    expect(token("--primary").toLowerCase()).toBe("#17181c");
+    expect(token("--border")).toBe("#e5e9f2");
+    expect(token("--border-strong")).toBe("#d3dae6");
+    expect(token("--primary").toLowerCase()).toBe("#1f5eff");
     expect(token("--primary-foreground")).toBe("#ffffff");
-    expect(token("--sidebar").toLowerCase()).toBe("#f5f3ee");
-    expect(token("--primary", "dark")).toBe("#f2f1ee");
-    expect(token("--primary-foreground", "dark")).toBe("#111113");
-    expect(token("--sidebar", "dark")).toBe("#111113");
+    expect(token("--sidebar").toLowerCase()).toBe("#ffffff");
+    expect(token("--primary", "dark")).toBe("#2f66ff");
+    expect(token("--primary-foreground", "dark")).toBe("#ffffff");
+    expect(token("--sidebar", "dark")).toBe("#121a2e");
   });
 
   it("contrast helper matches known values", () => {
@@ -169,7 +169,7 @@ describe.each(themes)("contrast (%s)", (theme) => {
 });
 
 describe("light-only pairs", () => {
-  it("Aqua strong on white and Deep Blue on white meet AA", () => {
+  it("brand link blue and brand blue on white meet AA", () => {
     expect(contrastRatio(token("--brand-aqua-strong"), "#ffffff")).toBeGreaterThanOrEqual(AA);
     expect(contrastRatio(token("--brand-deep-blue"), "#ffffff")).toBeGreaterThanOrEqual(AA);
   });

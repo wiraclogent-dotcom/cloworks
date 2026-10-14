@@ -30,7 +30,7 @@ async function PersonContent({ params, searchParams }: {
   const subject = userId ? await db.user.findUnique({ where: { id: userId }, select: { id: true, name: true } }) : null;
   if (!subject) {
     return (
-      <EmptyState role="alert" titleAs="h1" art="empty-search" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
+      <EmptyState role="alert" titleAs="h1" icon={<UserX />} title="Person not found." className="mx-auto mt-6 max-w-xl"
         action={<Button asChild variant="outline"><Link href="/dashboard/team"><ArrowLeft aria-hidden="true" />Back to team</Link></Button>} />
     );
   }

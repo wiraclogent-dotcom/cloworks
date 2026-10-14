@@ -14,7 +14,6 @@ import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { BrandTag } from "@/components/ui/BrandTag";
 import { StatusChip } from "@/components/ui/StatusChip";
-import { BrandArt } from "@/components/ui/BrandArt";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
@@ -90,7 +89,6 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
       <PageHeader title={<span className="break-words">{req.title}</span>} className="mb-2"
         breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
       <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
-        {req.status === "DONE" ? <BrandArt name="celebrate" width={36} className="animate-pop size-9 object-contain" /> : null}
         <StatusChip status={req.status} kind="request" />
         {people.length > 0 && <AvatarStack names={people.map((p) => p.name)} size="sm" label="Assignees" />}
         {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}

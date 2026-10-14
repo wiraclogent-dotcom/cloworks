@@ -1,14 +1,11 @@
 import Link from "next/link";
-import { ArrowUpRight, CircleCheckBig, Clock, Inbox, Moon, Sun, Sunrise, TriangleAlert } from "lucide-react";
-import { SCOPE_LABEL, dayPeriodFor, greetingFor, summarySentence, type DayPeriod, type TodayOverview as Overview } from "@/lib/todayOverview";
-import { WelcomeIllustration } from "./WelcomeIllustration";
+import { ArrowUpRight, CircleCheckBig, Clock, Inbox, TriangleAlert } from "lucide-react";
+import { SCOPE_LABEL, greetingFor, summarySentence, type TodayOverview as Overview } from "@/lib/todayOverview";
 import { Card } from "@/components/shadcn/card";
 import { cn, focusRing } from "./ui/cn";
 import { CountUp } from "./ui/CountUp";
 
 const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", weekday: "long", day: "numeric", month: "long", year: "numeric" });
-
-const PERIOD_ICON: Record<DayPeriod, React.ReactNode> = { morning: <Sunrise />, afternoon: <Sun />, evening: <Moon /> };
 
 /** One number that opens the list it counts. `emphasis` colours the number only when there is something to act on. */
 /** `tone` tints the icon tile with that status colour; `i` staggers the tiles' entrance. */
@@ -35,22 +32,13 @@ function Tile({ href, icon, label, value, emphasis, tone, i }: { href: string; i
  */
 export function TodayOverview({ name, now, overview }: { name: string; now: Date; overview: Overview }) {
   const firstName = name.trim().split(/\s+/)[0] ?? "";
-  const period = dayPeriodFor(now);
   return (
     <section aria-label="Today" className="mb-4 grid min-w-0 gap-3">
-      <Card className="animate-rise relative flex min-w-0 items-center gap-6 overflow-hidden p-5">
-        {/* Soft Aqua wash from the illustration side */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_120%_at_100%_50%,var(--accent),transparent_70%)] opacity-60" />
-        <div className="relative min-w-0 flex-1">
-          <p className="inline-flex items-center gap-1.5 text-compact text-muted-foreground">
-            <span aria-hidden="true" className="text-[var(--status-due-soon-accent)] [&_svg]:size-4">{PERIOD_ICON[period]}</span>
-            {DATE_FORMAT.format(now)}
-          </p>
+      <Card className="flex min-w-0 items-center gap-6 p-5">
+        <div className="min-w-0 flex-1">
+          <p className="text-compact text-muted-foreground">{DATE_FORMAT.format(now)}</p>
           <h2 className="mt-1 font-display text-2xl leading-8 font-bold tracking-[-0.01em] text-heading">{greetingFor(now)}{firstName ? `, ${firstName}` : ""}</h2>
           <p className="mt-1 text-sm text-muted-foreground">{summarySentence(overview)}</p>
-        </div>
-        <div className="relative hidden h-[7.5rem] w-[234px] shrink-0 sm:block">
-          <WelcomeIllustration period={period} />
         </div>
       </Card>
       <ul className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">

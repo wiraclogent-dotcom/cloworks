@@ -1,26 +1,24 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { BellRing, CalendarDays, CirclePlay, FolderKanban, LayoutGrid, MessageSquareText, Table2 } from "lucide-react";
 import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
-import { BrandArt } from "@/components/ui/BrandArt";
-import type { ArtName } from "@/lib/brand/art";
 import { cn } from "@/components/ui/cn";
 import { HeroBoard } from "./HeroBoard";
 import { HowItWorks } from "./HowItWorks";
 
 const display = "font-display tracking-[-0.02em]";
 const signInLight =
-  "inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-[15px] font-semibold text-brand-deep-blue " +
-  "shadow-card transition-colors hover:bg-brand-aqua-tint focus-visible:outline-white";
+  "inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[15px] font-semibold text-heading " +
+  "transition-colors hover:bg-brand-aqua-tint focus-visible:outline-white";
 /** Brand Deep Blue button (both themes); the page's main call to action. */
 const ctaPrimary =
-  "inline-flex items-center justify-center rounded-lg bg-brand-deep-blue font-semibold text-white " +
-  "shadow-brand transition-colors hover:bg-brand-deep-blue-hover";
+  "inline-flex items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground " +
+  "transition-colors hover:bg-primary-hover";
 
 /** Sections the top bar links to. */
 const NAV = [
@@ -30,8 +28,6 @@ const NAV = [
   { href: "#features", label: "Features" },
 ];
 
-/** Sample people for the hero avatar stack (decorative). */
-const CREW = ["Nadia", "Raka", "Sari", "Dimas"];
 
 
 const TOOLS: { icon: ReactNode; title: string; body: string; tone: string }[] = [
@@ -153,14 +149,13 @@ function TeamKpi() {
   );
 }
 
-const ROLES: { who: string; title: string; body: string; points: string[]; visual: ReactNode; art: ArtName }[] = [
+const ROLES: { who: string; title: string; body: string; points: string[]; visual: ReactNode }[] = [
   {
     who: "Social media",
     title: "Brief once. Know where it is.",
     body: "Send a request in a minute and follow it to done. No more asking in the group chat whether the post is ready.",
     points: ["See every request you sent and its status", "Review on First look and leave feedback in one place", "The brief calendar shows which days you've sent briefs"],
     visual: <BriefWeek />,
-    art: "role-social",
   },
   {
     who: "Designers",
@@ -168,7 +163,6 @@ const ROLES: { who: string; title: string; body: string; points: string[]; visua
     body: "Everything assigned to you is in one list, with the brief, the brand and the deadline on the card.",
     points: ["Due-soon and late work is marked before it slips", "Motion jobs are flagged so you can plan the time", "Move a card and the requester is told"],
     visual: <DesignerQueue />,
-    art: "step-make",
   },
   {
     who: "Leads",
@@ -176,7 +170,6 @@ const ROLES: { who: string; title: string; body: string; points: string[]; visua
     body: "Assign new work to whoever has room, and track each person's finished work against their monthly target.",
     points: ["Team KPI by month, with each person's progress", "A timeline of who is busy before you assign", "Manage people, brands and divisions in Admin"],
     visual: <TeamKpi />,
-    art: "role-lead",
   },
 ];
 
@@ -206,54 +199,30 @@ export function Landing() {
       </header>
 
       <main id="main">
-      {/* Hero: centred, on a soft Aqua and Deep Blue wash, with the app window as the product shot. */}
-      <div className="relative isolate overflow-hidden">
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[radial-gradient(60%_50%_at_50%_0%,color-mix(in_srgb,var(--brand-aqua)_18%,transparent),transparent_70%),radial-gradient(40%_40%_at_85%_30%,color-mix(in_srgb,var(--brand-deep-blue)_14%,transparent),transparent_70%),radial-gradient(35%_35%_at_10%_40%,color-mix(in_srgb,var(--status-in-progress-accent)_12%,transparent),transparent_70%)]" />
-        <div aria-hidden="true" className="absolute inset-0 -z-10 bg-[linear-gradient(var(--border)_1px,transparent_1px),linear-gradient(90deg,var(--border)_1px,transparent_1px)] bg-[size:48px_48px] opacity-50 [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)]" />
-
-        <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-12 sm:px-6 sm:pt-16">
-          <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)] lg:gap-6">
-            <div className="text-center lg:text-left">
-              <p style={{ "--i": 0 } as CSSProperties} className="animate-rise inline-flex items-center gap-2 rounded-full border border-border bg-card/80 px-3 py-1 text-compact font-medium text-muted-foreground shadow-card backdrop-blur">
-                <span aria-hidden="true" className="relative flex size-2"><span className="absolute inset-0 animate-ping rounded-full bg-brand-aqua opacity-60" /><span className="relative size-2 rounded-full bg-brand-aqua" /></span>
-                Clogent&apos;s creative studio, in one board
-              </p>
-              <h1 id="hero-title" style={{ "--i": 1 } as CSSProperties} className={cn(display, "animate-rise mt-5 text-[2.5rem] leading-[1.06] font-bold text-heading sm:text-6xl lg:text-[4rem]")}>
-                Every creative request,{" "}
-                <span className="bg-gradient-to-r from-brand-gradient-from via-brand-gradient-via to-brand-gradient-to bg-clip-text text-transparent">from brief to done.</span>
-              </h1>
-              <p style={{ "--i": 2 } as CSSProperties} className="animate-rise mx-auto mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg lg:mx-0">
-                Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
-                picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
-              </p>
-              <div style={{ "--i": 3 } as CSSProperties} className="animate-rise mt-8 flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-                <Link href="/signin" className={cn(ctaPrimary, "press h-11 px-5 text-[15px]")}>Sign in to Cloworks</Link>
-                <a href="#how" className="press inline-flex h-11 items-center gap-2 rounded-lg border border-border-strong bg-card px-5 text-[15px] font-medium text-foreground shadow-card transition-colors hover:bg-muted [&_svg]:size-4">
-                  <CirclePlay aria-hidden="true" />See how it works
-                </a>
-              </div>
-              <div style={{ "--i": 4 } as CSSProperties} className="animate-rise mt-8 flex items-center justify-center gap-3 text-compact text-muted-foreground lg:justify-start">
-                <span aria-hidden="true" className="inline-flex -space-x-2.5">
-                  {CREW.map((name) => <Avatar key={name} name={name} size="lg" ring decorative className="size-9 text-xs" />)}
-                </span>
-                Briefs, designs and reels for every Clogent brand
-              </div>
-            </div>
-
-            {/* The studio in clay: floats gently over a slow-drifting Aqua and Deep Blue glow. */}
-            <div aria-hidden="true" className="animate-pop relative mx-auto w-full max-w-[560px]" style={{ "--i": 2 } as CSSProperties}>
-              <div className="animate-mesh absolute inset-[8%] -z-10 rounded-full bg-[radial-gradient(closest-side,color-mix(in_srgb,var(--brand-aqua)_35%,transparent),transparent),radial-gradient(closest-side,color-mix(in_srgb,var(--brand-deep-blue)_22%,transparent),transparent),radial-gradient(closest-side,color-mix(in_srgb,var(--chart-cat-4)_18%,transparent),transparent)] bg-no-repeat blur-2xl" />
-              <BrandArt name="hero" width={560} priority sizes="(min-width: 1024px) 560px, 90vw" className="animate-float w-full" />
-            </div>
+      {/* Hero: V3 blue that fades to white, centred copy, and the app window as the product shot. */}
+      <div className="relative isolate overflow-hidden bg-[linear-gradient(180deg,var(--brand-deep-blue)_0%,var(--brand-gradient-via)_30%,var(--brand-aqua)_52%,var(--brand-aqua-tint)_72%,var(--background)_88%)]">
+        <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-16 text-center sm:px-6 sm:pt-20">
+          <p className="inline-flex items-center gap-2 rounded-full bg-white/12 px-4 py-1.5 text-compact font-medium text-white ring-1 ring-white/35 ring-inset">
+            Clogent&apos;s creative studio, in one board
+          </p>
+          <h1 id="hero-title" className={cn(display, "mx-auto mt-6 max-w-3xl text-[2.5rem] leading-[1.05] font-semibold text-white sm:text-6xl lg:text-[4.25rem]")}>
+            Every creative request, from brief to done.
+          </h1>
+          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/90 sm:text-lg">
+            Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
+            picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
+          </p>
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+            <Link href="/signin" className={cn(signInLight, "h-12 px-6 text-[15px]")}>Sign in to Cloworks</Link>
+            <a href="#how" className="inline-flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-medium text-white ring-1 ring-white/60 ring-inset transition-colors hover:bg-white/10 [&_svg]:size-4">
+              <CirclePlay aria-hidden="true" />See how it works
+            </a>
           </div>
 
-          <div className="reveal relative mx-auto mt-14 max-w-5xl sm:mt-16">
-            <div aria-hidden="true" className="absolute -inset-x-6 -top-6 bottom-0 -z-10 rounded-[28px] bg-gradient-to-b from-brand-aqua/20 to-transparent blur-2xl" />
+          <div className="relative mx-auto mt-16 max-w-5xl text-left">
             <HeroBoard />
           </div>
         </section>
-        {/* Fade the product shot into the next section. */}
-        <div aria-hidden="true" className="pointer-events-none relative -mt-24 h-24 bg-gradient-to-b from-transparent to-background" />
       </div>
 
       {/* What the requests turn into: the work itself, so the page shows creative output and not only the tool. */}
@@ -311,9 +280,7 @@ export function Landing() {
                     ))}
                   </ul>
                 </div>
-                <div className={cn("relative w-full max-w-lg pt-10 lg:max-w-none", i % 2 === 1 && "lg:order-1")}>
-                  <BrandArt name={role.art} width={160} style={{ "--float-delay": `${i * -2}s` } as CSSProperties}
-                    className={cn("animate-float absolute -top-6 z-10 size-28 object-contain drop-shadow-xl sm:size-36", i % 2 === 1 ? "-left-4" : "-right-4")} />
+                <div className={cn("relative w-full max-w-lg lg:max-w-none", i % 2 === 1 && "lg:order-1")}>
                   {role.visual}
                 </div>
               </article>
@@ -341,10 +308,9 @@ export function Landing() {
         </div>
       </section>
 
-      <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-brand-deep-blue text-white">
-        <div aria-hidden="true" className="animate-mesh absolute inset-0 -z-10 bg-[radial-gradient(40%_80%_at_0%_0%,color-mix(in_srgb,var(--brand-aqua)_45%,transparent),transparent),radial-gradient(35%_70%_at_100%_100%,color-mix(in_srgb,var(--brand-aqua)_30%,transparent),transparent),radial-gradient(30%_60%_at_60%_0%,color-mix(in_srgb,var(--brand-gradient-via)_40%,transparent),transparent)] bg-no-repeat" />
+      <section aria-labelledby="cta-title" className="relative isolate overflow-hidden bg-[var(--brand-deep-blue-night)] text-white">
+        <div aria-hidden="true" className="absolute inset-x-0 bottom-0 -z-10 h-full bg-[radial-gradient(50%_80%_at_50%_120%,color-mix(in_srgb,var(--brand-deep-blue)_70%,transparent),transparent)]" />
         <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between">
-          <BrandArt name="celebrate" width={140} className="animate-float hidden size-32 object-contain md:order-2 md:block" />
           <div className="md:order-1">
             <h2 id="cta-title" className={cn(display, "text-3xl leading-tight font-bold sm:text-[2.75rem]")}>Got something to brief?</h2>
             <p className="mt-3 text-base text-white/80">Sign in with your Clogent account. New here? Ask your workspace lead for a join link.</p>

@@ -5,14 +5,14 @@ import { Slot } from "radix-ui"
 import { cn, focusRing } from "@/components/ui/cn"
 
 const buttonStyles = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-lg font-medium whitespace-nowrap select-none transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-55 aria-disabled:cursor-not-allowed aria-disabled:opacity-55 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 " +
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap select-none transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-55 aria-disabled:cursor-not-allowed aria-disabled:opacity-55 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 " +
     focusRing,
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground shadow-card hover:bg-primary-hover",
-        destructive: "bg-destructive text-destructive-foreground shadow-card hover:bg-destructive-hover",
-        outline: "border border-border-strong bg-card text-foreground shadow-card hover:bg-muted",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive-hover",
+        outline: "border border-border-strong bg-card text-foreground hover:border-primary hover:bg-card",
         secondary: "bg-muted text-foreground hover:bg-muted/80",
         ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
         link: "text-link underline-offset-4 hover:underline",
