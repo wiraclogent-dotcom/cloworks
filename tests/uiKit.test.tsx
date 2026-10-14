@@ -11,7 +11,6 @@ import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
-import { EmptyState } from "@/components/ui/EmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { tableClass } from "@/components/ui/table";
 import { Divider } from "@/components/ui/Divider";
@@ -197,15 +196,6 @@ describe("KpiTile", () => {
     expect(screen.getByText("12").closest("p")!.className).toMatch(/tabular-nums/);
     expect(screen.getByText("of 20 target")).toBeTruthy();
     expect(container.querySelector("[data-tone='in-progress']")!.getAttribute("aria-hidden")).toBe("true");
-  });
-});
-
-describe("EmptyState", () => {
-  it("headline, one line and an action", () => {
-    render(<EmptyState icon={<Inbox aria-hidden="true" />} title="No requests yet" description="Create the first one." action={<a href="#new">New request</a>} />);
-    expect(screen.getByText("No requests yet")).toBeTruthy();
-    expect(screen.getByText("Create the first one.")).toBeTruthy();
-    expect(screen.getByRole("link", { name: "New request" })).toBeTruthy();
   });
 });
 

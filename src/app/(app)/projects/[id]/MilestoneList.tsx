@@ -9,6 +9,7 @@ import { DatePicker } from "@/components/ui/DatePicker";
 import { Input } from "@/components/shadcn/input";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export type MilestoneRow = { id: string; title: string; dateIso: string; done: boolean };
 
@@ -20,7 +21,7 @@ export function MilestoneList({ projectId, milestones, canManage }: { projectId:
   return (
     <div className="grid gap-3">
       {milestones.length === 0 && !adding && (
-        <p className="text-sm text-muted-foreground">No meetings or milestones recorded yet.</p>
+        <EmptyState size="inline" title="No meetings or milestones recorded yet." className="py-0" />
       )}
       {milestones.length > 0 && (
         <ul className="grid gap-2">

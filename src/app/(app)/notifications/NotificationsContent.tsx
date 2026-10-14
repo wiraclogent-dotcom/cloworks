@@ -3,9 +3,9 @@ import { countNotificationsWith, listNotificationsWith, unreadCountWith } from "
 import { pageWindow, parsePage, rangeText, TABLE_PAGE_SIZE } from "@/lib/paging";
 import { Pagination } from "@/components/Pagination";
 import { Card } from "@/components/shadcn/card";
-import { BrandArt } from "@/components/ui/BrandArt";
 import { MarkAllButton } from "./MarkAllButton";
 import { NotificationLink } from "./NotificationLink";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /** The signed-in person's notifications, newest first, 50 a page (`?page=N`, clamped). */
 export async function NotificationsContent({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -21,11 +21,9 @@ export async function NotificationsContent({ searchParams }: { searchParams: Pro
         <MarkAllButton disabled={unread === 0} />
       </div>
       {items.length === 0 ? (
-        <div className="animate-rise flex flex-col items-center px-4 py-12 text-center">
-          <BrandArt name="empty-notifications" width={144} className="animate-float mb-2 size-36 object-contain" />
-          <p className="font-display text-lg font-semibold">No notifications yet.</p>
-          <p className="mt-1 text-sm text-muted-foreground">You&apos;ll hear here when someone comments, mentions you, assigns you, or sends a design on your requests.</p>
-        </div>
+        <EmptyState art="empty-notifications" title="No notifications yet."
+          description="You'll hear here when someone comments, mentions you, assigns you, or sends a design on your requests."
+          className="rounded-none border-0 bg-transparent px-4 py-12" />
       ) : (
         <ul className="divide-y divide-border p-1.5">
           {items.map((n) => <li key={n.id} className="py-0.5"><NotificationLink item={n} now={now} /></li>)}

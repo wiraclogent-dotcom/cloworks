@@ -210,7 +210,7 @@ describe("RequestCalendar", () => {
 
   it("shows an empty state with a Today link when nothing is due", () => {
     view([]);
-    const empty = screen.getByText("Nothing due in October").parentElement!;
+    const empty = screen.getByText("Nothing due in October").closest<HTMLElement>("[data-slot=empty]")!;
     expect(within(empty).getByRole("link", { name: "Today" }).getAttribute("href")).toBe(HREFS.todayHref);
     expect(document.querySelector("[data-day]")).toBeNull();
   });

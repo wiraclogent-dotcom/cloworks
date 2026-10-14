@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Switch } from "@/components/ui/Switch";
 import type { AdminFormState } from "@/lib/adminForm";
 import { resetInviteLink, toggleInviteLink } from "./actions";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * The shared join link. `base` is the trusted origin ("" when unknown): then the path is shown and Copy builds the
@@ -42,7 +43,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
             </Button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No link yet. Use Reset link to create one.</p>
+          <EmptyState size="inline" title="No link yet. Use Reset link to create one." className="py-0" />
         )}
         {emailDomain && <p className="mt-2 text-sm text-muted-foreground">People with @{emailDomain} can request to join</p>}
         <div className="mt-3 flex flex-wrap items-start justify-between gap-4">

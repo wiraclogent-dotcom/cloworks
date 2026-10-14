@@ -7,6 +7,7 @@ import { Users } from "lucide-react";
 import { cn, focusRing } from "../ui/cn";
 import { PersonHeading } from "./PersonHeading";
 import { Card } from "@/components/shadcn/card";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const sharedWith = (row: TimelineRow, ownerId: string | null) => row.assignees.filter((a) => a.id !== ownerId).map((a) => a.name).join(", ");
 
@@ -17,7 +18,7 @@ function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string
     <Card asChild className="p-3"><section aria-labelledby={headingId}>
       <PersonHeading person={person} headingId={headingId} />
       {bars.length === 0 ? (
-        <p className="mt-2 text-sm text-muted-foreground">No open requests</p>
+        <EmptyState size="inline" title="No open requests" className="mt-2 py-0" />
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {bars.map((b) => {

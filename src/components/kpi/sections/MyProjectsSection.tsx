@@ -8,6 +8,7 @@ import { PersonProjectKpiSection } from "@/components/kpi/project/PersonProjectK
 import { YearSelect } from "@/components/kpi/project/YearSelect";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
  * My KPI › Projects: the person's quarterly Project KPI for `year`, under a header with the year picker. `keep` is
@@ -30,7 +31,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
       controls={<YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y }) }))} />}>
       {targetCount === 0 ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <p className="text-sm text-muted-foreground">No project targets for {year}.</p>
+          <EmptyState size="inline" title={`No project targets for ${year}.`} className="py-0" />
           {canTeam ? <Button asChild variant="outline" size="sm"><Link href={`/dashboard/projects/${subject.id}?year=${year}`}>Set targets</Link></Button> : null}
         </Card>
       ) : (

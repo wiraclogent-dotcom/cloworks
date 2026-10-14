@@ -180,7 +180,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
                   </div>
                 ) : (
                   <div className="flex flex-wrap items-center gap-3">
-                    <p className="text-sm text-muted-foreground">No links in this category yet.</p>
+                    <EmptyState size="inline" title="No links in this category yet." className="py-0" />
                     {canManage ? <Button size="sm" variant="outline" onClick={() => setItemDraft(newItem(c.id))}>Add the first link</Button> : null}
                   </div>
                 )}

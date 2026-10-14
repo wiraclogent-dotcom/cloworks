@@ -120,7 +120,7 @@ component is gone.
 | Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`details`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
 | Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
 | Inline message | `Alert` + `AlertTitle`, `AlertDescription`, `AlertAction` (`variant` default/success/warning/destructive; `role` defaults to alert for destructive, status otherwise, `null` = silent; `icon` swaps or drops the icon) | `ui/Alert` (`tone`, `title`, `action` props) | Migrated |
-| Empty list / no results / error page | `Empty` | `ui/EmptyState`, ad-hoc "No … yet" paragraphs | Planned |
+| Empty list / no results / error page | `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle` (`asChild` for a heading), `EmptyDescription`, `EmptyContent`. Kit `ui/EmptyState` composes them (brand art, `titleAs`, `role`); `size="inline"` for a quiet one-line "No … yet" inside a card | ad-hoc "No … yet" paragraphs (the Board column placeholder stays: icon + dashed box) | Migrated |
 | Loading placeholder / spinner | `Skeleton`, `Spinner` | `ui/Skeleton`, `LoaderCircle` spinners | Planned |
 | Person | `Avatar` | `ui/Avatar` | Planned |
 | On/off, choice | `Switch`, `Checkbox`, `Radio Group` | `ui/Switch`, `ui/RadioCards`, bare `accent-primary` checkboxes | Planned |
@@ -144,6 +144,7 @@ shadcn part inside.
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |
+| `EmptyState` | EmptyState.tsx | `icon`, `art`, `title`, `description`, `action`, `titleAs`, `role`, `size` (`page` / `inline`), `className` | Empty list or no-access page, built on shadcn `Empty` (brand art + heading domain logic); `inline` for a one-line "No … yet" in a card (pass `py-0` / margins to match the spot). |
 | `KpiTile` | KpiTile.tsx | `icon`, `label`, `value`, `sub`, `tone` | KPI rows. |
 | `DatePicker` | DatePicker.tsx | shadcn `Calendar` + `Popover` | Date fields. |
 | `PasswordInput` | PasswordInput.tsx | input + show/hide toggle | Password fields. |
@@ -155,7 +156,7 @@ shadcn part inside.
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
+`Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 
 ## Do

@@ -21,6 +21,7 @@ import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
 import { cn, focusRing } from "@/components/ui/cn";
 import { AssigneesPicker, AttachmentForm, CommentForm, DeadlineControl, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
 import { Button } from "@/components/shadcn/button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 const day = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
@@ -134,7 +135,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="files-h">
               <CardHeader className="mb-2"><CardTitle id="files-h">Attachments</CardTitle></CardHeader>
               {req.attachments.length === 0 ? (
-                <p className="mb-4 text-sm text-muted-foreground">No links yet.</p>
+                <EmptyState size="inline" title="No links yet." className="mb-4 py-0" />
               ) : (
                 <ul className="mb-4 divide-y divide-border">
                   {req.attachments.map((a) => (
@@ -157,7 +158,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="comments-h">
               <CardHeader className="mb-2"><CardTitle id="comments-h" className="flex items-center gap-2">Comments <Badge variant="count">{req.comments.length}</Badge></CardTitle></CardHeader>
               {req.comments.length === 0 ? (
-                <p className="mb-4 text-sm text-muted-foreground">No comments yet.</p>
+                <EmptyState size="inline" title="No comments yet." className="mb-4 py-0" />
               ) : (
                 <ol className="mb-4 space-y-4">
                   {req.comments.map((c) => (
@@ -181,7 +182,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <section aria-labelledby="history-h">
               <CardTitle id="history-h">Activity</CardTitle>
               {activity.length === 0 ? (
-                <p className="mt-3 text-sm text-muted-foreground">No activity yet.</p>
+                <EmptyState size="inline" title="No activity yet." className="mt-3 py-0" />
               ) : (
                 <ol className="relative mt-3 space-y-4 before:absolute before:top-1.5 before:bottom-1.5 before:left-[5px] before:w-px before:bg-border" data-timeline="">
                   {activity.map((a) => (

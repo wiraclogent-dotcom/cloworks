@@ -6,6 +6,7 @@ import { Badge } from "@/components/shadcn/badge";
 import type { LinkablePerson } from "@/lib/linkPerson";
 import { PersonRoleFields } from "./PersonRoleFields";
 import { approveRequest, rejectRequest, undoRejectRequest } from "./actions";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export type RequestRow = { applicantId: string; name: string; email: string; source: "LINK" | "DOMAIN"; requestedAt: string };
 
@@ -28,7 +29,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
   return (
     <div className="space-y-5">
       {pending.length === 0 ? (
-        <Card><p className="text-sm text-muted-foreground">No join requests waiting.</p></Card>
+        <Card><EmptyState size="inline" title="No join requests waiting." className="py-0" /></Card>
       ) : (
         <ul className="space-y-3">
           {pending.map((r) => (
