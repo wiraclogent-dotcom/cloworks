@@ -17,6 +17,14 @@ beforeEach(() => { submit.mockReset(); });
 afterEach(cleanup);
 
 describe("NewRequestForm", () => {
+  it("the sticky 'What happens next' box is the aside (the grid-tall cell), offset below the panel header inside the Sheet", () => {
+    render(<NewRequestForm brands={brands} divisions={divisions} />);
+    const aside = screen.getByRole("complementary", { name: "What happens next" });
+    expect(aside.className.split(/\s+/)).toEqual(expect.arrayContaining(["@3xl:sticky", "@3xl:top-6", "in-data-[slot=sheet-content]:@3xl:top-16"]));
+    // Not the card inside it: that is only as tall as the aside, so it would have no room to stick.
+    expect(aside.firstElementChild!.className).not.toContain("sticky");
+  });
+
   it("has no request type control or type-specific detail fields", () => {
     render(<NewRequestForm brands={brands} divisions={divisions} />);
     expect(screen.queryByLabelText(/Request type/)).toBeNull();

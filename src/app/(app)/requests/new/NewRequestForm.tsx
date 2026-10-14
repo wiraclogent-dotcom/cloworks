@@ -73,10 +73,10 @@ const STEPS = (assignee: string): { icon: React.ReactNode; title: string; text: 
   { icon: <Mail aria-hidden="true" strokeWidth={1.75} />, title: "You'll be notified when it's ready", text: "Notifications are by email only: we email you when its status changes, including when it is marked Done." },
 ];
 
-/** Right-column help card (static). */
+/** Right-column help card. The sticky offset sits on the `<aside>` (the grid cell is as tall as the form), not on the card, which would have nothing to stick within. */
 function WhatHappensNext({ assignee }: { assignee: string }) {
   return (
-    <Card className="@3xl:sticky @3xl:top-6 in-data-[slot=sheet-content]:@3xl:top-16">
+    <Card>
       <CardTitle>What happens next</CardTitle>
       <ol className="mt-3 space-y-4">
         {STEPS(assignee).map((s, i) => (
@@ -243,7 +243,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <Button asChild variant="ghost"><Link href="/requests">Cancel</Link></Button>
       </div>
     </form>
-    <aside aria-label="What happens next" className="min-w-0">
+    <aside aria-label="What happens next" className="min-w-0 @3xl:sticky @3xl:top-6 in-data-[slot=sheet-content]:@3xl:top-16">
       <WhatHappensNext assignee={copy.assignee} />
     </aside>
     </div>
