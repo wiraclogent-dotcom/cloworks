@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)/dashboard/projects/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Label, labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 
@@ -83,10 +83,10 @@ function Picker({ userId, name, year, projects, onClose }: {
       <form onSubmit={save} className="space-y-4">
         <div>
           <Label htmlFor={`${uid}-project`}>Project</Label>
-          <select id={`${uid}-project`} value={projectId} onChange={(e) => void choose(e.target.value)} className={fieldClass({ kind: "select" })}>
+          <NativeSelect id={`${uid}-project`} value={projectId} onChange={(e) => void choose(e.target.value)}>
             <option value="">Choose a project</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-          </select>
+          </NativeSelect>
         </div>
 
         {loading ? <p role="status" className="text-sm text-muted-foreground">Loading items…</p> : null}

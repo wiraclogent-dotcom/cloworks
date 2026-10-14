@@ -8,7 +8,7 @@ import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
 import { CountPill } from "@/components/ui/Chip";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Label } from "@/components/shadcn/label";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ChannelActions, type ChannelMove } from "./ChannelActions";
@@ -41,7 +41,7 @@ function movesOf(channels: ChannelSummary[], c: ChannelSummary): { up: ChannelMo
 
 /**
  * Left column: channels grouped by brand with their "awaiting approval" counts. Below 1024px it collapses to a
- * <select>. Switching channel keeps the tab and closes any open post. Channel managers also get Edit, Move and
+ * <NativeSelect>. Switching channel keeps the tab and closes any open post. Channel managers also get Edit, Move and
  * Delete per channel (behind a "Manage" toggle, so the list stays quiet).
  */
 export function ChannelList({ channels, currentId, tab, canManage, brands }: {
@@ -60,12 +60,12 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
       <div className="flex items-end gap-2 lg:hidden">
         <div className="min-w-0 flex-1">
           <Label htmlFor="content-channel">Channel</Label>
-          <select id="content-channel" value={currentId ?? ""} className={fieldClass({ kind: "select" })}
+          <NativeSelect id="content-channel" value={currentId ?? ""}
             onChange={(e) => router.push(planHref({ channel: e.target.value, tab }))}>
             {channels.map((c) => (
               <option key={c.id} value={c.id}>{`${c.brandName} · @${c.handle}${c.awaiting ? ` (${c.awaiting} awaiting)` : ""}`}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
         {canManage && selected ? (
           <Button

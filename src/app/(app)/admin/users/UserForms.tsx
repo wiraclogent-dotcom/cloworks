@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { AdminForm, ConfirmAction, Labeled, selectControl } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction, Labeled } from "@/components/admin/AdminForm";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -33,14 +34,14 @@ export function EditUserForm({ u }: { u: UserRowData }) {
             <Input id={idFor("title")} name="title" defaultValue={v("title", u.title ?? "")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
-            <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", u.appRole)}>
+            <NativeSelect id={idFor("appRole")} name="appRole" defaultValue={v("appRole", u.appRole)}>
               {APP_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
-            </select>
+            </NativeSelect>
           </Labeled>
           <Labeled id={idFor("jobRole")} label="Job role">
-            <select id={idFor("jobRole")} name="jobRole" className={selectControl} defaultValue={v("jobRole", u.jobRole)}>
+            <NativeSelect id={idFor("jobRole")} name="jobRole" defaultValue={v("jobRole", u.jobRole)}>
               {JOB_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
-            </select>
+            </NativeSelect>
           </Labeled>
           <div className="sm:col-span-2">
             <Labeled id={idFor("aliases")} label="Aliases (comma separated)">
@@ -117,14 +118,14 @@ export function AddPersonForm() {
             <Input id={idFor("department")} name="department" defaultValue={v("department")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
-            <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", "REQUESTER")}>
+            <NativeSelect id={idFor("appRole")} name="appRole" defaultValue={v("appRole", "REQUESTER")}>
               {APP_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
-            </select>
+            </NativeSelect>
           </Labeled>
           <Labeled id={idFor("jobRole")} label="Job role">
-            <select id={idFor("jobRole")} name="jobRole" className={selectControl} defaultValue={v("jobRole", "OTHER")}>
+            <NativeSelect id={idFor("jobRole")} name="jobRole" defaultValue={v("jobRole", "OTHER")}>
               {JOB_ROLES.map((r) => <option key={r} value={r}>{label(r)}</option>)}
-            </select>
+            </NativeSelect>
           </Labeled>
           <div className="sm:col-span-2">
             <Labeled id={idFor("aliases")} label="Aliases (comma separated)">
@@ -193,10 +194,10 @@ export function MergeForm({ u, others }: { u: UserRowData; others: { id: string;
       <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); startTransition(() => run(fd)); }}>
         <input type="hidden" name="fromId" value={u.id} />
         <Labeled id={`${id}-into`} label="Merge into…">
-          <select id={`${id}-into`} name="intoId" required className={selectControl} value={intoId} onChange={(e) => setIntoId(e.target.value)}>
+          <NativeSelect id={`${id}-into`} name="intoId" required value={intoId} onChange={(e) => setIntoId(e.target.value)}>
             <option value="" disabled>Choose a person</option>
             {others.map((o) => <option key={o.id} value={o.id}>{personLabel(o)}</option>)}
-          </select>
+          </NativeSelect>
         </Labeled>
         <Button type="submit" variant="outline" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>
       </form>

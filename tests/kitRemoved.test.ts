@@ -4,7 +4,7 @@ import path from "node:path";
 import { srcFiles } from "./helpers/srcFiles";
 
 /** Kit components replaced by shadcn ones (see src/components/ui/README.md). Each migration task appends its names. */
-const REMOVED = ["Button", "IconButton"];
+const REMOVED = ["Button", "IconButton", "Field"];
 
 const root = path.resolve(__dirname, "..");
 const files = [...srcFiles(path.join(root, "src")), ...srcFiles(path.join(root, "tests"))].filter((f) => f !== __filename);

@@ -9,7 +9,7 @@ import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CountPill } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { cn, focusRing } from "@/components/ui/cn";
 import { filterRows, type LibraryRow } from "@/lib/libraryView";
@@ -105,14 +105,14 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
         {brands.length > 0 ? (
           <label className="block">
             <span className="sr-only">Brand</span>
-            <select
+            <NativeSelect
               value={brandId ?? ""}
               onChange={(e) => setBrandId(e.target.value || null)}
-              className={fieldClass({ kind: "select", className: "w-auto" })}
+              className="w-fit"
             >
               <option value="">All brands</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
           </label>
         ) : null}
         {canManage ? (

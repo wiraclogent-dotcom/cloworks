@@ -15,7 +15,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label, labelClassName } from "@/components/shadcn/label";
@@ -188,15 +188,14 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
           ))}
         </ul>
       )}
-      <select ref={selectRef} aria-label="Add assignee" value="" disabled={addable.length === 0} aria-disabled={pending || undefined} aria-describedby={error ? `${uid}-e` : undefined}
+      <NativeSelect ref={selectRef} aria-label="Add assignee" value="" disabled={addable.length === 0} aria-disabled={pending || undefined} aria-describedby={error ? `${uid}-e` : undefined}
         onChange={(e) => {
           const pick = addable.find((o) => o.id === e.target.value);
           if (pick) apply({ add: { id: pick.id, name: pick.name } });
-        }}
-        className={fieldClass({ kind: "select" })}>
+        }}>
         <option value="">+ Add person</option>
         {addable.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-      </select>
+      </NativeSelect>
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>
   );
@@ -226,12 +225,11 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
   return (
     <div>
       <Label htmlFor={`${uid}-m`}>Move to…</Label>
-      <select id={`${uid}-m`} value="" disabled={pending} aria-describedby={`${uid}-mh`}
-        onChange={(e) => { const to = e.target.value as RequestStatus; if (!to) return; if (to === "DONE") setPendingDone(true); else move(to); }}
-        className={fieldClass({ kind: "select" })}>
+      <NativeSelect id={`${uid}-m`} value="" disabled={pending} aria-describedby={`${uid}-mh`}
+        onChange={(e) => { const to = e.target.value as RequestStatus; if (!to) return; if (to === "DONE") setPendingDone(true); else move(to); }}>
         <option value="">Choose a status</option>
         {legal.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
-      </select>
+      </NativeSelect>
       <FieldDescription id={`${uid}-mh`}>{status === "CANCELLED" ? "Choose Requested to restore this request." : legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</FieldDescription>
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}

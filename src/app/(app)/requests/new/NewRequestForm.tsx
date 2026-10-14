@@ -9,7 +9,7 @@ import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, U
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
@@ -98,11 +98,9 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
   const v = state?.values;
-  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs and textareas get it from <Input>/<Textarea>.
-  const props = (k: string, kind: "input" | "select" = "input") => ({
+  const props = (k: string) => ({
     id: k,
     name: k,
-    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errs[k] }) }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -167,16 +165,16 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <StepTitle n={2}>Which brand &amp; team?</StepTitle>
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <Field id="brandId" label="Brand" required error={errs.brandId}>
-            <select {...props("brandId", "select")} defaultValue={v?.brandId ?? ""} required>
+            <NativeSelect {...props("brandId")} defaultValue={v?.brandId ?? ""} required>
               <option value="" disabled>Select a brand</option>
               {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
           <Field id="divisionId" label="Division" required error={errs.divisionId}>
-            <select {...props("divisionId", "select")} defaultValue={v?.divisionId ?? ""} required>
+            <NativeSelect {...props("divisionId")} defaultValue={v?.divisionId ?? ""} required>
               <option value="" disabled>Select a division</option>
               {divisions.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
+            </NativeSelect>
           </Field>
           <div className="sm:col-span-2">
             <div role="group" aria-label="Assignees" aria-describedby={describedBy}>
@@ -186,11 +184,11 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
                   return (
                     <div key={i}>
                       <Label htmlFor={id}>{slotLabel(i)}</Label>
-                      <select {...props("assigneeIds", "select")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
+                      <NativeSelect {...props("assigneeIds")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
                         defaultValue={v?.assigneeIds[i] ?? ""} aria-describedby={describedBy}>
                         <option value="">{i < base ? "Unassigned" : "Choose someone"}</option>
                         {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                      </select>
+                      </NativeSelect>
                     </div>
                   );
                 })}

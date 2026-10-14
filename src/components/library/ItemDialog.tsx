@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label, labelClassName } from "@/components/shadcn/label";
@@ -99,19 +99,17 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor={`${uid}-categoryId`}>Category</Label>
-            <select {...f("categoryId")} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
-              className={fieldClass({ kind: "select", invalid: !!errors.categoryId })}>
+            <NativeSelect {...f("categoryId")} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            </NativeSelect>
             {err("categoryId")}
           </div>
           <div>
             <Label htmlFor={`${uid}-brandId`}>Brand</Label>
-            <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
-              className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
+            <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
               <option value="">No brand</option>
               {brandOptions.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+            </NativeSelect>
             {err("brandId")}
           </div>
         </div>

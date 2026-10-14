@@ -8,7 +8,7 @@ import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
 import { parseFieldSchema, type FieldDef } from "@/lib/fieldSchema";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { FieldError } from "@/components/shadcn/field";
@@ -93,10 +93,8 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   }
 
   const id = (k: string) => `${uid}-${k}`;
-  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs get it from <Input>.
-  const props = (k: string, kind: "input" | "select" = "input") => ({
+  const props = (k: string) => ({
     id: id(k),
-    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errors[k] }) }),
     "aria-invalid": errors[k] ? (true as const) : undefined,
     "aria-describedby": errors[k] ? `${id(k)}-err` : undefined,
   });
@@ -109,15 +107,15 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       </Row>
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("divisionId")} label="Division" required error={errors.divisionId}>
-          <select {...props("divisionId", "select")} value={divisionId} onChange={(e) => setDivisionId(e.target.value)}>
+          <NativeSelect {...props("divisionId")} value={divisionId} onChange={(e) => setDivisionId(e.target.value)}>
             <option value="" disabled>Select a division</option>
             {form.divisions.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
         <Row id={id("typeId")} label="Type" error={errors.typeId}>
-          <select {...props("typeId", "select")} value={typeId} onChange={(e) => { setTypeId(e.target.value); setValues({}); }}>
+          <NativeSelect {...props("typeId")} value={typeId} onChange={(e) => { setTypeId(e.target.value); setValues({}); }}>
             {form.types.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
       </div>
       {defs.map((f) => {
@@ -140,10 +138,10 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         return (
           <Row key={f.key} id={id(k)} label={f.label} required={f.required} error={errors[k]}>
             {f.type === "select" ? (
-              <select {...props(k, "select")} value={value} onChange={(e) => set(e.target.value)}>
+              <NativeSelect {...props(k)} value={value} onChange={(e) => set(e.target.value)}>
                 <option value="">Select…</option>
                 {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
+              </NativeSelect>
             ) : (
               <Input {...props(k)} type={f.type === "url" ? "url" : "text"} value={value} onChange={(e) => set(e.target.value)} />
             )}
@@ -152,10 +150,10 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
       })}
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("assigneeIds")} label="Assignee" error={errors.assigneeIds}>
-          <select {...props("assigneeIds", "select")} value={designerId} onChange={(e) => setDesignerId(e.target.value)}>
+          <NativeSelect {...props("assigneeIds")} value={designerId} onChange={(e) => setDesignerId(e.target.value)}>
             <option value="">Unassigned</option>
             {form.team.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-          </select>
+          </NativeSelect>
         </Row>
         <Row id={id("deadline")} label="Deadline" error={errors.deadline}>
           <Input {...props("deadline")} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />

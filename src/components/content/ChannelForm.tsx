@@ -8,7 +8,7 @@ import type { ChannelSummary } from "@/lib/content/view";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, type ButtonProps } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label, labelClassName } from "@/components/shadcn/label";
@@ -73,10 +73,9 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
         {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
         <div>
           <Label htmlFor={`${uid}-brandId`}>Brand</Label>
-          <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
-            className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
+          <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
             {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+          </NativeSelect>
           {err("brandId")}
         </div>
         <div>

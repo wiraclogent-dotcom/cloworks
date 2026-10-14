@@ -9,7 +9,7 @@ import { Button } from "@/components/shadcn/button";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { cn } from "@/components/ui/cn";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { tableClass } from "@/components/ui/table";
 import { daysLeft } from "@/lib/daysLeft";
@@ -167,16 +167,17 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
 
         {canManage && !item.allCancelled && (
           <div className="flex items-center gap-1.5">
-            <select
+            <NativeSelect
               ref={selectRef}
               aria-label={`Set all variants of ${item.title}`}
               value={setAll}
               onChange={(e) => setSetAll(e.target.value)}
-              className={fieldClass({ kind: "select", size: "sm", className: "w-36" })}
+              size="sm"
+              className="w-36"
             >
               <option value="">Set all to…</option>
               {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
+            </NativeSelect>
             <Button size="sm" variant="outline" aria-label={`Apply to all variants of ${item.title}`} disabled={!setAll || pending} onClick={applyAll}>
               {pending && setAll ? "Applying…" : "Apply"}
             </Button>

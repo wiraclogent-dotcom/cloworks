@@ -9,7 +9,7 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { FieldError } from "@/components/shadcn/field";
@@ -43,9 +43,8 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
   const failed = state && !state.ok ? state : null;
   const errs = failed?.fieldErrors || {};
   const v = failed?.values ?? initial;
-  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs get it from <Input>.
-  const props = (k: string, kind: "input" | "select" = "input") => ({
-    id: k, name: k, ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errs[k] }) }),
+  const props = (k: string) => ({
+    id: k, name: k,
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -90,22 +89,22 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
       <Field id="brandId" label="Brand" error={errs.brandId}>
-        <select {...props("brandId", "select")} defaultValue={v?.brandId ?? ""}>
+        <NativeSelect {...props("brandId")} defaultValue={v?.brandId ?? ""}>
           <option value="">No brand</option>
           {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       <Field id="ownerId" label="Owner" required error={errs.ownerId}>
-        <select {...props("ownerId", "select")} defaultValue={v?.ownerId ?? ""} required>
+        <NativeSelect {...props("ownerId")} defaultValue={v?.ownerId ?? ""} required>
           <option value="" disabled>Select an owner</option>
           {owners.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       </div>
       <Field id="status" label="Status" required error={errs.status}>
-        <select {...props("status", "select")} defaultValue={v?.status || "NOT_STARTED"} required>
+        <NativeSelect {...props("status")} defaultValue={v?.status || "NOT_STARTED"} required>
           {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{PROJECT_STATUS_LABEL[s]}</option>)}
-        </select>
+        </NativeSelect>
       </Field>
       </Card>
       <Card className="space-y-4">

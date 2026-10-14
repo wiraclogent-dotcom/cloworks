@@ -9,7 +9,7 @@ import type { PostPatch } from "@/lib/content/posts";
 import type { PostPanelView } from "@/lib/content/panelView";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label } from "@/components/shadcn/label";
@@ -111,10 +111,8 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
   }
 
   const id = (k: string) => `${uid}-${k}`;
-  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs and textareas get it from <Input>/<Textarea>.
-  const props = (k: Key, kind: "input" | "select" = "input") => ({
+  const props = (k: Key) => ({
     id: id(k),
-    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errors[k] }) }),
     "aria-invalid": errors[k] ? (true as const) : undefined,
     "aria-describedby": errors[k] ? id(`${k}-err`) : undefined,
   });
@@ -126,9 +124,9 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor={id("format")}>Format</Label>
-          <select {...props("format", "select")} disabled={submitting} value={fields.format} onChange={(e) => change("format", e.target.value as ContentFormat, true)}>
+          <NativeSelect {...props("format")} disabled={submitting} value={fields.format} onChange={(e) => change("format", e.target.value as ContentFormat, true)}>
             {(Object.keys(FORMAT_LABEL) as ContentFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
-          </select>
+          </NativeSelect>
         </div>
         {!published ? (
           <div>
@@ -148,10 +146,10 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       {!published ? (
         <div>
           <Label htmlFor={id("typeId")}>Request type</Label>
-          <select {...props("typeId", "select")} disabled={submitting} value={fields.typeId} onChange={(e) => change("typeId", e.target.value, true)}>
+          <NativeSelect {...props("typeId")} disabled={submitting} value={fields.typeId} onChange={(e) => change("typeId", e.target.value, true)}>
             <option value="">No preference</option>
             {view.types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          </NativeSelect>
         </div>
       ) : null}
       <div>

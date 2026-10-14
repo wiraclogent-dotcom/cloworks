@@ -10,7 +10,6 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
-import { fieldClass } from "@/components/ui/Field";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
@@ -182,16 +181,6 @@ describe("Avatar", () => {
     render(<AvatarStack names={["Rina", "Cami", "Dimas", "Fafa", "Ibnu"]} max={3} label="Assignees" />);
     const stack = screen.getByRole("img", { name: "Assignees: Rina, Cami, Dimas, Fafa, Ibnu" });
     expect(stack.textContent).toContain("+2");
-  });
-});
-
-describe("fieldClass (selects until the shadcn select)", () => {
-  it("36px, input outline, focus ring; invalid swaps to the danger border", () => {
-    expect(fieldClass()).toMatch(/h-9/);
-    expect(fieldClass()).toMatch(/border-input/);
-    expect(fieldClass()).toMatch(/focus-visible:outline-ring/);
-    expect(fieldClass({ invalid: true })).toMatch(/border-danger/);
-    expect(fieldClass({ kind: "textarea" })).not.toMatch(/h-9/);
   });
 });
 

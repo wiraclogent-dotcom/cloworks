@@ -7,6 +7,7 @@ import { STATUS_LABEL } from "./status";
 import { cn, focusRing } from "./ui/cn";
 import { SEGMENT_TRAY, segmentClass } from "./ui/SegmentedControl";
 import { Button } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
 
 type Opt = { id: string; name: string };
 
@@ -59,10 +60,10 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
   const select = (name: string, label: string, value: string | undefined, opts: Opt[]) => (
     <label className={LABEL}>
       {label}
-      <select name={name} defaultValue={value ?? ""} className={cn(pill(!!value), "w-full pr-7 pl-3")}>
+      <NativeSelect name={name} defaultValue={value ?? ""} size="sm" selectClassName={cn(pill(!!value), "pr-7 pl-3")}>
         <option value="">All</option>
         {opts.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-      </select>
+      </NativeSelect>
     </label>
   );
   return (
@@ -108,11 +109,11 @@ export function FilterBar({ p, brands, divisions, assignees, mineHref, workHref,
           {!p.work && select("assignee", "Assignee", p.assigneeId, assignees)}
           <label className={LABEL}>
             Motion
-            <select name="motion" defaultValue={p.motion ?? ""} className={cn(pill(!!p.motion), "w-full pr-7 pl-3")}>
+            <NativeSelect name="motion" defaultValue={p.motion ?? ""} size="sm" selectClassName={cn(pill(!!p.motion), "pr-7 pl-3")}>
               <option value="">Any</option>
               <option value="yes">Needs motion</option>
               <option value="no">No motion</option>
-            </select>
+            </NativeSelect>
           </label>
           <div className="flex items-center justify-between gap-2 border-t border-border pt-3">
             <Button variant="default" size="sm" type="submit">Apply</Button>

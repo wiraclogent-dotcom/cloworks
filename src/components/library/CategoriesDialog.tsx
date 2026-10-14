@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, moveCategory, updateCategory, type LibraryActionResult } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { CATEGORY_ICON_KEYS } from "./categoryIcons";
 import { LibraryDialog } from "./LibraryDialog";
@@ -15,10 +15,10 @@ type Cat = { id: string; name: string; icon: string | null };
 
 function IconSelect({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   return (
-    <select aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className={fieldClass({ kind: "select", className: "w-28" })}>
+    <NativeSelect aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="w-28">
       <option value="">Default</option>
       {CATEGORY_ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
-    </select>
+    </NativeSelect>
   );
 }
 

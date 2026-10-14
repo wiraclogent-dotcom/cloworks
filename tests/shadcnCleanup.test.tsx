@@ -4,7 +4,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 
 class RO { observe() {} unobserve() {} disconnect() {} }
 beforeEach(() => {
@@ -17,22 +17,23 @@ afterEach(cleanup);
 
 const root = path.resolve(__dirname, "..");
 const src = (p: string) => readFileSync(path.join(root, "src/components/shadcn", p), "utf8");
-// Utilities fieldClass sets for a block-level text input that a flex trigger deliberately replaces.
-const LAYOUT_ONLY = new Set(["block", "w-full", "pr-8"]);
+// Utilities Input sets for a block-level text input that a flex trigger deliberately replaces.
+const LAYOUT_ONLY = new Set(["block", "w-full", "min-w-0"]);
 
 function tokens(cls: string) { return cls.split(/\s+/).filter(Boolean); }
 
-describe("Select trigger matches fieldClass()", () => {
-  for (const [size, shadcnSize] of [["md", "default"], ["sm", "sm"]] as const) {
-    it(`carries every fieldClass token (size ${size})`, () => {
+describe("Select trigger matches Input", () => {
+  for (const size of ["default", "sm"] as const) {
+    it(`carries every Input class (size ${size})`, () => {
       render(
         <Select>
-          <SelectTrigger size={shadcnSize} aria-label="Pick"><SelectValue placeholder="Choose" /></SelectTrigger>
+          <SelectTrigger size={size} aria-label="Pick"><SelectValue placeholder="Choose" /></SelectTrigger>
           <SelectContent><SelectItem value="a">A</SelectItem></SelectContent>
         </Select>,
       );
       const have = new Set(tokens(screen.getByRole("combobox", { name: "Pick" }).className));
-      const missing = tokens(fieldClass({ size })).filter((t) => !LAYOUT_ONLY.has(t) && !have.has(t));
+      const input = render(<Input size={size} aria-label="Text" />).getByRole("textbox", { name: "Text" });
+      const missing = tokens(input.className).filter((t) => !LAYOUT_ONLY.has(t) && !have.has(t));
       expect(missing).toEqual([]);
     });
   }

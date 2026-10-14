@@ -113,10 +113,8 @@ describe("field usage", () => {
     expect(users.map((f) => path.relative(root, f))).toEqual([]);
   });
 
-  it("fieldClass only styles selects (and the shadcn Select trigger) until the native select lands", () => {
-    const users = files
-      .filter((f) => !/components\/(?:ui\/Field|shadcn\/select)\.tsx$/.test(f))
-      .filter((f) => /fieldClass\(\{[^)]*kind: "(?:input|textarea)"|fieldClass\(\)/.test(read(f)) || /<(?:input|textarea)\b[^>]*fieldClass/.test(read(f)));
+  it("fieldClass and the kit Field file are gone", () => {
+    const users = files.filter((f) => /\bfieldClass\b|ui\/Field["']/.test(read(f)));
     expect(users.map((f) => path.relative(root, f))).toEqual([]);
   });
 });

@@ -4,7 +4,7 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { cn } from "@/components/ui/cn";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonVariants } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { inputClass } from "@/components/shadcn/input";
 import { useDarkMode } from "@/components/ui/darkMode";
 import { readThemePref, resetThemeMemory, setThemePref } from "@/lib/theme";
 
@@ -32,14 +32,14 @@ describe("cn() resolves Tailwind conflicts (tailwind-merge, last wins)", () => {
   });
   it("a className override on a kit component replaces the default", () => {
     expect(buttonVariants({ variant: "outline", className: "h-10" })).not.toMatch(/\bh-9\b/);
-    expect(fieldClass({ className: "h-8" }).split(" ")).not.toContain("h-9");
+    expect(cn(inputClass(), "h-8").split(" ")).not.toContain("h-9");
   });
 });
 
 describe("placeholders use the AA placeholder token", () => {
-  it("fieldClass uses placeholder:text-placeholder", () => {
-    expect(fieldClass()).toContain("placeholder:text-placeholder");
-    expect(fieldClass()).not.toContain("foreground-muted");
+  it("inputClass uses placeholder:text-placeholder", () => {
+    expect(inputClass()).toContain("placeholder:text-placeholder");
+    expect(inputClass()).not.toContain("foreground-muted");
   });
 });
 

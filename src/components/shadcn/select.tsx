@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { cn } from "@/components/ui/cn"
-import { fieldClass } from "@/components/ui/Field"
+import { inputClass } from "@/components/shadcn/input"
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 import { Select as SelectPrimitive } from "radix-ui"
 
@@ -37,9 +37,9 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        // Same look as every other field: fieldClass supplies height, radius, border, surface, hover, disabled and focus ring.
-        // Only the layout parts of a text input (block, full width, right padding) are replaced for a flex trigger.
-        fieldClass({ size: size === "sm" ? "sm" : "md" }),
+        // Same look as every other field: inputClass supplies height, radius, border, surface, hover, disabled and focus ring.
+        // Only the layout parts of a text input (block, full width) are replaced for a flex trigger.
+        inputClass(size),
         "flex w-fit items-center justify-between gap-2 whitespace-nowrap aria-invalid:border-danger data-[placeholder]:text-placeholder *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}

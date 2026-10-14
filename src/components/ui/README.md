@@ -106,8 +106,8 @@ component is gone.
 | Need | Use (shadcn) | Replaces (kit / hand-rolled) | Status |
 |---|---|---|---|
 | Action button, icon-only button, link styled as button | `Button` (`size="icon"` for icon-only, `asChild` for `<Link>`) | `ui/Button`, `buttonClass()`, `ui/IconButton`, local `iconBtn`/`yearBtn` classes | Migrated |
-| Text field, textarea, label, hint, error | `Input`, `Textarea`, `Label` (`labelClassName` for a `<legend>`/`<span>`), `FieldDescription`, `FieldError` | `fieldClass()` (inputs, textareas), `labelClass`, `hintClass`, kit `FieldError`. Error look comes from `aria-invalid`. | Migrated |
-| Select in a form | `Native Select` (native picker on phones) | `<select className={fieldClass(...)}>` | Planned |
+| Text field, textarea, label, hint, error | `Input`, `Textarea`, `Label` (`labelClassName` for a `<legend>`/`<span>`), `FieldDescription`, `FieldError` | `fieldClass()`, `labelClass`, `hintClass`, kit `FieldError`. Error look comes from `aria-invalid`. | Migrated |
+| Select in a form | `NativeSelect` (native picker on phones; `className` = wrapper width, `selectClassName` = the select) | `<select className={fieldClass(...)}>`, `selectControl` | Migrated |
 | Custom dropdown list (icons, rich rows) | `Select` | – | In use |
 | Search-as-you-type picker | `Combobox` | – | Planned |
 | Verification code | `Input OTP` | `/verify` code field | Planned |
@@ -153,7 +153,7 @@ shadcn part inside.
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
-Still here until migrated (see Component map, don't use in new code): `Field`, `Card`,
+Still here until migrated (see Component map, don't use in new code): `Card`,
 `Chip`, `Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 
