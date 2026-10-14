@@ -73,6 +73,7 @@ model Workspace {
   projectTaskEvents ProjectTaskEvent[]
   projectKpiTargets ProjectKpiTarget[]
   kpiRosterEntries  KpiRosterEntry[]
+  requestAssignees  RequestAssignee[]
   libraryCategories LibraryCategory[]
   libraryItems      LibraryItem[]
   invites           Invite[]
@@ -112,6 +113,7 @@ model User {
 
   requested                Request[]          @relation("RequestRequester")
   assigned                 Request[]          @relation("RequestAssignee")
+  assignments              RequestAssignee[]  @relation("RequestAssigneeUser")
   statusEvents             StatusEvent[]
   deadlineEvents           DeadlineEvent[]
   comments                 Comment[]
@@ -211,6 +213,8 @@ model Request {
   type      RequestType @relation(fields: [typeId], references: [id])
   requester User        @relation("RequestRequester", fields: [requesterId], references: [id])
   assignee  User?       @relation("RequestAssignee", fields: [assigneeId], references: [id])
+
+  assignees RequestAssignee[]
 
   statusEvents   StatusEvent[]
   deadlineEvents DeadlineEvent[]
@@ -517,6 +521,23 @@ model KpiRosterEntry {
 
   @@unique([userId, kind])
   @@index([workspaceId, kind])
+}
+
+/// One person assigned to a request. A request can have several; ordered by addedAt then userId (ASSIGNEE_ORDER).
+model RequestAssignee {
+  requestId String
+  userId    String
+  addedAt   DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User    @relation("RequestAssigneeUser", fields: [userId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@id([requestId, userId])
+  @@index([userId])
+  @@index([workspaceId])
 }
 
 /// A named group of Library links (e.g. "Product Knowledge"). `icon` is a key from a small fixed lucide set.
