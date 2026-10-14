@@ -20,10 +20,18 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  portal = true,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  /**
+   * false renders the panel where it is written instead of in a portal at the end of <body>: a panel of named fields
+   * must stay inside its <form> to be submitted with it (FilterBar).
+   */
+  portal?: boolean
+}) {
+  const Wrap = portal ? PopoverPrimitive.Portal : React.Fragment
   return (
-    <PopoverPrimitive.Portal>
+    <Wrap>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}
@@ -34,7 +42,7 @@ function PopoverContent({
         )}
         {...props}
       />
-    </PopoverPrimitive.Portal>
+    </Wrap>
   )
 }
 
