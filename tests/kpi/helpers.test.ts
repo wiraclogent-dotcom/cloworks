@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { isValidMonth, jakartaMonth, monthBounds, trailingMonths, monthLabel } from "@/lib/kpi/months";
 import { formatPercent, formatDays, formatCount, progressPercent } from "@/lib/kpi/format";
-import { parseMonthParam, parseUserParam, resolveSubject } from "@/app/(app)/dashboard/params";
+import { canViewPersonKpi, parseMonthParam, parseUserParam, resolveSubject } from "@/app/(app)/dashboard/params";
 
 describe("months", () => {
   it("validates YYYY-MM with real month", () => {
@@ -74,5 +74,11 @@ describe("dashboard params", () => {
     expect(resolveSubject({ id: "me", appRole: "CREATIVE" }, "other")).toBe("me");
     expect(resolveSubject({ id: "me", appRole: "REQUESTER" }, "other")).toBe("me");
     expect(resolveSubject({ id: "me", appRole: "LEAD" }, undefined)).toBe("me");
+  });
+  it("canViewPersonKpi: team viewers see anyone, others only themselves", () => {
+    expect(canViewPersonKpi({ id: "me", appRole: "LEAD" }, "other")).toBe(true);
+    expect(canViewPersonKpi({ id: "me", appRole: "CREATIVE" }, "me")).toBe(true);
+    expect(canViewPersonKpi({ id: "me", appRole: "CREATIVE" }, "other")).toBe(false);
+    expect(canViewPersonKpi({ id: "me", appRole: "CREATIVE" }, undefined)).toBe(false);
   });
 });

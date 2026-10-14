@@ -131,6 +131,39 @@ describe("mergeUsers", () => {
     expect(rows.map((r) => [r.month, r.targetTasks])).toEqual([["2026-10", 5], ["2026-11", 7]]);
   });
 
+  it("keeps the survivor's project KPI target for a clashing item and moves the rest", async () => {
+    const from = await person();
+    const into = await person();
+    const project = await db.prisma.project.create({ data: { title: "P", ownerId: admin.id } });
+    const task = await db.prisma.projectTask.create({ data: { projectId: project.id, position: 0, title: "A" } });
+    const t = (userId: string, itemTitle: string, createdById = admin.id) =>
+      db.prisma.projectKpiTarget.create({ data: { userId, year: 2026, projectId: project.id, itemTitle, createdById } });
+    await t(into.id, "A");
+    await t(from.id, "A");
+    await t(from.id, "B", from.id);
+    await db.prisma.projectTaskEvent.create({ data: { taskId: task.id, kind: "STAGE", fromValue: null, toValue: "APPROVAL", actorId: from.id } });
+    await mergeUsers(db.prisma, admin, from.id, into.id);
+    const rows = await db.raw.projectKpiTarget.findMany({ where: { userId: into.id }, orderBy: { itemTitle: "asc" } });
+    expect(rows.map((r) => [r.itemTitle, r.createdById])).toEqual([["A", admin.id], ["B", into.id]]);
+    expect(await db.raw.projectTaskEvent.count({ where: { actorId: into.id } })).toBe(1);
+  });
+
+  it("keeps the survivor's roster entry for a clashing kind and moves the rest, including who updated them", async () => {
+    const from = await person();
+    const into = await person();
+    const entry = (userId: string, kind: "REQUESTS" | "PROJECTS", included: boolean, updatedById = admin.id) =>
+      db.prisma.kpiRosterEntry.create({ data: { userId, kind, included, updatedById } });
+    await entry(into.id, "REQUESTS", true);
+    await entry(from.id, "REQUESTS", false);
+    await entry(from.id, "PROJECTS", false, from.id);
+    await entry(admin.id, "PROJECTS", true, from.id);
+    await mergeUsers(db.prisma, admin, from.id, into.id);
+    const rows = await db.raw.kpiRosterEntry.findMany({ where: { userId: into.id }, orderBy: { kind: "asc" } });
+    expect(rows.map((r) => [r.kind, r.included, r.updatedById])).toEqual([["REQUESTS", true, admin.id], ["PROJECTS", false, into.id]]);
+    expect(await db.raw.kpiRosterEntry.count({ where: { updatedById: into.id } })).toBe(2);
+    expect(await db.raw.kpiRosterEntry.count({ where: { OR: [{ userId: from.id }, { updatedById: from.id }] } })).toBe(0);
+  });
+
   it("keeps the later chat read for a clashing request", async () => {
     const T1 = new Date("2026-10-01T00:00:00Z");
     const T2 = new Date("2026-10-02T00:00:00Z");
