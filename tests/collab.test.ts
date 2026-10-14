@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { addCommentWith, setAssigneesWith, addAttachmentWith, removeAttachmentWith, splitMentions } from "@/lib/collab";
 import type { NotifyInput } from "@/lib/notify";
+import { ASSIGNEE_ORDER } from "@/lib/assignees";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("collaboration cores", () => {
@@ -122,6 +123,23 @@ describe("collaboration cores", () => {
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.dimas);
       await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier);
       expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(ids.irsyad);
+    });
+    it("assigneeId follows the first assignee by ASSIGNEE_ORDER, and promotes the next when they are removed", async () => {
+      const legacy = async () => (await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId;
+      await setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas, ids.irsyad], notifier);
+      const first = (await db.prisma.requestAssignee.findMany({ where: { requestId: reqId }, orderBy: [...ASSIGNEE_ORDER] })).map((r) => r.userId);
+      expect(first).toHaveLength(2);
+      expect(await legacy()).toBe(first[0]);
+      await setAssigneesWith(db.prisma, lead(), reqId, [first[1]], notifier);
+      expect(await legacy()).toBe(first[1]);
+    });
+    it("concurrent additions leave assigneeId on the first of the stored rows", async () => {
+      await Promise.all([
+        setAssigneesWith(db.prisma, lead(), reqId, [ids.dimas], notifier),
+        setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad], notifier),
+      ]);
+      const rowsNow = await db.prisma.requestAssignee.findMany({ where: { requestId: reqId }, orderBy: [...ASSIGNEE_ORDER] });
+      expect((await db.prisma.request.findUnique({ where: { id: reqId } }))?.assigneeId).toBe(rowsNow[0]?.userId ?? null);
     });
     it("duplicates in the list store one row", async () => {
       expect(await setAssigneesWith(db.prisma, lead(), reqId, [ids.irsyad, ids.irsyad], notifier)).toMatchObject({ ok: true, added: [ids.irsyad] });

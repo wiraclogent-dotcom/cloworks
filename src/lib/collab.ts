@@ -107,13 +107,15 @@ export async function setAssigneesWith(
   }
   try {
     await db.$transaction(async (tx) => {
+      // Lock the request row first so concurrent edits queue up: the rows and assigneeId below are then computed
+      // from a state no one else can change until we commit. A request cancelled since the reads above rolls back.
+      const locked = await tx.$queryRaw<{ status: string }[]>`SELECT "status"::text AS status FROM "Request" WHERE "id" = ${requestId} FOR UPDATE`;
+      if (locked.length === 0 || locked[0].status === "CANCELLED") throw new CancelledDuringAssign();
       if (removed.length) await tx.requestAssignee.deleteMany({ where: { requestId, userId: { in: removed } } });
       if (added.length) await tx.requestAssignee.createMany({ data: added.map((userId) => ({ requestId, userId })), skipDuplicates: true });
       // Until Request.assigneeId is dropped, keep it on the first assignee so unconverted readers stay right.
       const first = await tx.requestAssignee.findFirst({ where: { requestId }, orderBy: [...ASSIGNEE_ORDER], select: { userId: true } });
-      // Atomic guard: a request cancelled after the reads above matches 0 rows, and the changes above roll back.
-      const res = await tx.request.updateMany({ where: { id: requestId, status: { not: "CANCELLED" } }, data: { assigneeId: first?.userId ?? null } });
-      if (res.count === 0) throw new CancelledDuringAssign();
+      await tx.request.updateMany({ where: { id: requestId }, data: { assigneeId: first?.userId ?? null } });
     });
   } catch (e) {
     if (!(e instanceof CancelledDuringAssign)) throw e;
