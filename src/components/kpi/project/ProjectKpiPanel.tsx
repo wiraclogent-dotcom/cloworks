@@ -16,13 +16,15 @@ const QUARTERS: Quarter[] = [1, 2, 3, 4];
  * change of year and/or tab, so any page (the person page, the Insights view) can host it. `manage` is the
  * manager's "Manage targets" control, shown only when `canManage`.
  */
-export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manage }: {
+export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manage, yearSelect = true }: {
   kpi: PersonProjectKpi;
   quarter: Quarter | "u";
   years: number[];
   canManage: boolean;
   hrefFor: (p: { year?: number; q?: string }) => string;
   manage?: ReactNode;
+  /** False when the host page already shows the year picker (the My KPI Projects section header). */
+  yearSelect?: boolean;
 }) {
   const unscheduled = quarter === "u";
   const q = unscheduled ? null : kpi.quarters[quarter];
@@ -47,7 +49,7 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <SegmentedControl label="Quarter" items={tabs} value={tab} />
-          <YearSelect value={kpi.year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y, q: tab }) }))} />
+          {yearSelect ? <YearSelect value={kpi.year} options={yearOptions.map((y) => ({ year: y, href: hrefFor({ year: y, q: tab }) }))} /> : null}
         </div>
         {showManage && items.length > 0 ? manage : null}
       </div>

@@ -71,6 +71,24 @@ export function TeamKpiSkeleton() {
   );
 }
 
+/** One KPI section's fallback (Requests / Projects): the real title with a controls placeholder, a scorecard row and a table. */
+export function KpiSectionSkeleton({ title, tiles = 3 }: { title: string; tiles?: number }) {
+  return (
+    <Busy label={`Loading ${title}…`}>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <h2 className="font-display text-xl leading-7 font-semibold text-heading">{title}</h2>
+        <Skeleton className="h-9 w-36" rounded="full" />
+      </div>
+      {tiles > 0 ? (
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {Array.from({ length: tiles }, (_, i) => <TileSkeleton key={i} />)}
+        </div>
+      ) : null}
+      <TableRowsSkeleton rows={4} cols={6} />
+    </Busy>
+  );
+}
+
 /** Brief Calendar fallback: header, 3 person tiles, month grid card. */
 export function BriefCalendarSkeleton() {
   return (

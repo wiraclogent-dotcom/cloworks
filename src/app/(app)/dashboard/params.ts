@@ -27,21 +27,18 @@ export function canViewPersonKpi(viewer: { id: string; appRole: AppRole }, userI
   return can(viewer.appRole, "dashboard.team") || (userId !== undefined && userId === viewer.id && can(viewer.appRole, "dashboard.self"));
 }
 
-/** `view=projects|requests` for the KPI pages; anything else is undefined (the page picks its default). */
+/** Legacy `view=projects|requests`. The KPI pages show both sections now; `view=projects` only scrolls to Projects. */
 export function parseViewParam(raw: RawParam): "requests" | "projects" | undefined {
   const v = first(raw);
   return v === "projects" || v === "requests" ? v : undefined;
 }
 
-/**
- * My KPI's view. An explicit `view` wins; a chosen `month` means Requests (months are a Requests concept, and the
- * month picker drops `view`); otherwise Projects only for the viewer's own page when nothing was counted this month
- * and they have project targets this year.
- */
-export function defaultKpiView({ view, month, own, countedZero, hasTargets }: {
-  view: "requests" | "projects" | undefined; month: RawParam; own: boolean; countedZero: boolean; hasTargets: boolean;
-}): "requests" | "projects" {
-  if (view) return view;
-  if (month !== undefined) return "requests";
-  return own && countedZero && hasTargets ? "projects" : "requests";
+/** The first value of each named param that is present, so a picker's links can carry the other section's state. */
+export function keepParams(sp: Record<string, RawParam>, keys: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of keys) {
+    const v = first(sp[k]);
+    if (v) out[k] = v;
+  }
+  return out;
 }

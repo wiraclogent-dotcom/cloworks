@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn, focusRing } from "@/components/ui/cn";
+import { kpiHref } from "@/lib/kpi/href";
 
 const SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -12,13 +13,16 @@ const label = (month: string) => `${LONG[Number(month.slice(5, 7)) - 1]} ${month
 
 /**
  * Month field for the PageHeader actions: a design-system popover (not the browser's native month input) with a
- * year switcher and a grid of month links. Links work without JS; `user` is kept for leads viewing someone else.
+ * year switcher and a grid of month links. Links work without JS; `user` is kept for leads viewing someone else, and
+ * `keep` carries the other params of the page (the Projects section's year and quarter) so a month change leaves them be.
  * Months after `current` (this Jakarta month, from the server) have no data yet and are shown disabled.
  */
-export function MonthPicker({ month, current, userId, action }: { month: string; current: string; userId?: string; action: string }) {
+export function MonthPicker({ month, current, userId, action, keep }: {
+  month: string; current: string; userId?: string; action: string; keep?: Record<string, string | undefined>;
+}) {
   const [year, setYear] = useState(Number(month.slice(0, 4)));
   const ref = useRef<HTMLDetailsElement>(null);
-  const href = (m: string) => `${action}?${new URLSearchParams({ month: m, ...(userId ? { user: userId } : {}) })}`;
+  const href = (m: string) => kpiHref(action, { month: m, ...keep, user: userId });
   const maxYear = Number(current.slice(0, 4));
   // Month links are soft navigations on this same page, so nothing else would close the popover after a pick.
   const close = () => { if (ref.current) ref.current.open = false; };

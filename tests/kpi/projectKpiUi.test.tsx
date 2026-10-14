@@ -20,8 +20,7 @@ import { MeasureInfo } from "@/components/kpi/project/MeasureInfo";
 import { TargetRow, targetBadge } from "@/components/kpi/project/TargetList";
 import { ManageTargetsModal } from "@/components/kpi/project/ManageTargetsModal";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
-import { parseViewParam, defaultKpiView } from "@/app/(app)/dashboard/params";
-import { KpiViewToggle } from "@/components/kpi/project/KpiViewToggle";
+import { parseViewParam } from "@/app/(app)/dashboard/params";
 import { ProjectTeamTable, projectTeamRows, type ProjectTeamRow } from "@/components/kpi/project/ProjectTeamTable";
 import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { PersonProjectKpi, TargetItem } from "@/lib/kpi/projectQueries";
@@ -344,45 +343,6 @@ describe("parseViewParam", () => {
     expect(parseViewParam("x")).toBeUndefined();
     expect(parseViewParam(undefined)).toBeUndefined();
     expect(parseViewParam(["projects", "x"])).toBe("projects");
-  });
-});
-
-describe("defaultKpiView", () => {
-  const base = { view: undefined, month: undefined, own: true, countedZero: true, hasTargets: true } as const;
-  it("an explicit view wins", () => {
-    expect(defaultKpiView({ ...base, view: "requests" })).toBe("requests");
-    expect(defaultKpiView({ ...base, view: "projects", countedZero: false, hasTargets: false })).toBe("projects");
-  });
-  it("a chosen month means requests", () => {
-    expect(defaultKpiView({ ...base, month: "2026-09" })).toBe("requests");
-  });
-  it("projects only when own, nothing counted, has targets, and neither view nor month is set", () => {
-    expect(defaultKpiView(base)).toBe("projects");
-    expect(defaultKpiView({ ...base, own: false })).toBe("requests");
-    expect(defaultKpiView({ ...base, countedZero: false })).toBe("requests");
-    expect(defaultKpiView({ ...base, hasTargets: false })).toBe("requests");
-  });
-});
-
-describe("KpiViewToggle", () => {
-  it("links Requests (no view) and Projects (view=projects), keeping the other params", () => {
-    render(<KpiViewToggle view="projects" base="/dashboard" params={{ month: "2026-10", year: "2026", q: "3", view: "projects", junk: undefined }} />);
-    const nav = screen.getByRole("navigation", { name: "View" });
-    const req = within(nav).getByRole("link", { name: "Requests" });
-    const proj = within(nav).getByRole("link", { name: "Projects" });
-    expect(req.getAttribute("href")).toBe("/dashboard?month=2026-10&year=2026&q=3");
-    expect(proj.getAttribute("href")).toBe("/dashboard?month=2026-10&year=2026&q=3&view=projects");
-    expect(proj.getAttribute("aria-current")).toBe("page");
-    expect(req.getAttribute("aria-current")).toBeNull();
-  });
-  it("can make the Requests link explicit for pages whose default is Projects", () => {
-    render(<KpiViewToggle view="projects" base="/dashboard" params={{ month: "2026-10" }} explicitRequests />);
-    expect(screen.getByRole("link", { name: "Requests" }).getAttribute("href")).toBe("/dashboard?month=2026-10&view=requests");
-  });
-  it("links to the bare path when there is nothing to keep", () => {
-    render(<KpiViewToggle view="requests" base="/dashboard/team" params={{}} />);
-    expect(screen.getByRole("link", { name: "Requests" }).getAttribute("href")).toBe("/dashboard/team");
-    expect(screen.getByRole("link", { name: "Projects" }).getAttribute("href")).toBe("/dashboard/team?view=projects");
   });
 });
 
