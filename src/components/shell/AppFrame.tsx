@@ -3,13 +3,14 @@
 import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from "react";
 import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
-import { cn } from "@/components/ui/cn";
 import { Button } from "@/components/shadcn/button";
 import { Card } from "@/components/shadcn/card";
+import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/shadcn/sheet";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { sidebarRowClass } from "./classes";
 
 const SIDEBAR_ID = "app-sidebar";
+const DRAWER_ID = "app-drawer";
 
 function subscribeCollapsed(cb: () => void) {
   const mo = new MutationObserver(cb);
@@ -24,8 +25,13 @@ const getCollapsed = sidebarIsCollapsed;
 
 /**
  * Client frame of the signed-in app: Deep Blue sidebar (232px, collapsible to a 64px rail on desktop, remembered in
- * localStorage `ct-sidebar`), slim top bar + off-canvas drawer below 768px, skip link and `<main id="main">`.
- * The server AppShell passes in the nav, footer and workspace name (permission checks and reads stay on the server).
+ * localStorage `ct-sidebar`), slim top bar + off-canvas drawer (shadcn `Sheet` from the left) below 768px, skip link
+ * and `<main id="main">`. The server AppShell passes in the nav, footer and workspace name (permission checks and reads
+ * stay on the server).
+ *
+ * The sidebar's parts render in exactly one place: the desktop `<aside>` (CSS-hidden below 768px) while the drawer is
+ * closed, the drawer while it is open, so ids and landmarks are never doubled. The drawer is closed on the server and
+ * in the first client render, so hydration never sees it.
  */
 export function AppFrame({ nav, footer, workspace, profile, children }: {
   nav: ReactNode; footer?: ReactNode; workspace?: ReactNode;
@@ -35,109 +41,101 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, getCollapsed, () => false);
   const [open, setOpen] = useState(false);
-  const restoreFocus = useRef(false);
+  // Set when the drawer closes because the page changes (a link was followed, the window grew past 768px): focus then
+  // stays where the navigation puts it instead of going back to the menu button.
+  const leaving = useRef(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
 
-  function close(returnFocus = true) {
-    restoreFocus.current = returnFocus;
-    setOpen(false);
-  }
-
   useEffect(() => {
-    if (open) {
-      // The drawer is `visibility: hidden` until this commit and its visibility is transitioned, so focus() can be a
-      // no-op in the same tick in a real browser (QA saw focus stay on the hamburger). Try now, then again on the next
-      // frame and after the 200ms slide, stopping as soon as focus is inside the drawer.
-      const focusIn = () => {
-        const el = closeButton.current;
-        if (el && !el.closest("aside")?.contains(document.activeElement)) el.focus();
-      };
-      focusIn();
-      const raf = typeof requestAnimationFrame === "function" ? requestAnimationFrame(focusIn) : 0;
-      const late = window.setTimeout(focusIn, 220);
-      const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { restoreFocus.current = true; setOpen(false); } };
-      document.addEventListener("keydown", onKey);
-      // Growing past the mobile breakpoint turns the drawer back into the static sidebar.
-      const mq = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 768px)") : null;
-      const onWide = () => { if (mq?.matches) { restoreFocus.current = false; setOpen(false); } };
-      mq?.addEventListener?.("change", onWide);
-      return () => {
-        if (raf) cancelAnimationFrame(raf);
-        window.clearTimeout(late);
-        document.removeEventListener("keydown", onKey);
-        mq?.removeEventListener?.("change", onWide);
-      };
-    }
-    if (restoreFocus.current) {
-      restoreFocus.current = false;
-      menuButton.current?.focus();
-    }
+    if (!open) return;
+    // Growing past the mobile breakpoint turns the drawer back into the static sidebar.
+    const mq = typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 768px)") : null;
+    const onWide = () => { if (mq?.matches) { leaving.current = true; setOpen(false); } };
+    mq?.addEventListener?.("change", onWide);
+    return () => mq?.removeEventListener?.("change", onWide);
   }, [open]);
 
-  return (
+  /** Workspace tile, search, nav and footer; `drawer` adds the close button and leaves out the rail toggle. */
+  const parts = (drawer: boolean) => (
     <>
+      {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
+          chevron: a chevron here would promise a menu that does not exist. */}
+      <div className="flex-none px-3 pt-3">
+        <Card className="sb-item sb-frame flex items-center gap-2.5 p-2">
+          <LogoMark size={32} />
+          <div className="sb-label min-w-0 flex-1 leading-tight">
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
+            <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
+          </div>
+          {drawer ? (
+            <SheetClose asChild>
+              <Button ref={closeButton} variant="ghost" size="icon" aria-label="Close navigation"
+                className="text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-sidebar-ring">
+                <X aria-hidden="true" />
+              </Button>
+            </SheetClose>
+          ) : null}
+        </Card>
+      </div>
+
+      {/* Search is shown for the reference layout only: it is disabled until search exists. */}
+      <div className="sb-expanded-only flex-none px-3 pt-3">
+        <label className="relative block">
+          <span className="sr-only">Search (coming soon)</span>
+          <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-sidebar-foreground-secondary" />
+          <input type="search" disabled placeholder="Search" title="Search: coming soon"
+            className="h-9 w-full rounded-lg border border-border bg-card pr-9 pl-8 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70" />
+          <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-xs text-muted-foreground">/</kbd>
+        </label>
+      </div>
+
+      <div className="relative min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-3">{nav}</div>
+
+      {drawer ? null : (
+        <div className="flex-none px-3 pb-2">
+          <button type="button" onClick={() => setSidebarCollapsed(!collapsed)} aria-expanded={!collapsed} aria-controls={SIDEBAR_ID}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} className={sidebarRowClass}>
+            {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+            <span aria-hidden="true" className="sb-label">Collapse</span>
+          </button>
+        </div>
+      )}
+
+      {footer ? <div className="flex-none space-y-2 border-t border-sidebar-border p-3">{footer}</div> : null}
+    </>
+  );
+
+  return (
+    <Sheet open={open} onOpenChange={(o) => { leaving.current = false; setOpen(o); }}>
       <a href="#main" className="skip-link">Skip to content</a>
       <div className="flex min-h-dvh flex-1 flex-col md:flex-row">
         {/* Mobile top bar */}
         <header inert={open} className="sticky top-0 z-30 flex h-14 flex-none items-center gap-2 bg-sidebar px-2 text-sidebar-foreground md:hidden">
-          <Button ref={menuButton} variant="ghost" size="icon" onClick={() => setOpen(true)} aria-expanded={open} aria-controls={SIDEBAR_ID} aria-label="Open navigation"
-            className="size-10 text-inherit hover:bg-sidebar-hover hover:text-inherit focus-visible:outline-sidebar-ring [&_svg]:size-5">
-            <Menu aria-hidden="true" />
-          </Button>
+          <SheetTrigger asChild>
+            <Button ref={menuButton} variant="ghost" size="icon" aria-controls={DRAWER_ID} aria-label="Open navigation"
+              className="size-10 text-inherit hover:bg-sidebar-hover hover:text-inherit focus-visible:outline-sidebar-ring [&_svg]:size-5">
+              <Menu aria-hidden="true" />
+            </Button>
+          </SheetTrigger>
           <LogoMark size={24} />
           <span className="text-[15px] font-semibold">Cloworks</span>
         </header>
 
-        {open ? <div aria-hidden="true" data-testid="sidebar-backdrop" onClick={() => close()} className="fixed inset-0 z-40 bg-[var(--backdrop)] md:hidden" /> : null}
+        {/* Mobile drawer. Following a link in it closes it (no usePathname here: it would make every route dynamic). */}
+        <SheetContent id={DRAWER_ID} side="left" showClose={false} aria-describedby={undefined}
+          onOpenAutoFocus={(e) => { e.preventDefault(); closeButton.current?.focus(); }}
+          onCloseAutoFocus={(e) => { e.preventDefault(); if (!leaving.current) menuButton.current?.focus(); leaving.current = false; }}
+          onClick={(e) => { if ((e.target as HTMLElement).closest("a[href]")) { leaving.current = true; setOpen(false); } }}
+          className="w-[280px] max-w-[85vw] overflow-y-hidden border-sidebar-border bg-sidebar text-sidebar-foreground sm:w-[280px] sm:max-w-[85vw] md:hidden">
+          <SheetTitle className="sr-only">Navigation</SheetTitle>
+          {parts(true)}
+        </SheetContent>
 
-        {/* Following a link from the drawer closes it (no usePathname here: it would make every route dynamic). */}
-        <aside id={SIDEBAR_ID} aria-label="Sidebar" data-open={open || undefined}
-          onClick={(e) => { if (open && (e.target as HTMLElement).closest("a[href]")) close(false); }}
-          className={cn(
-            "app-sidebar fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
-            "transition-[transform,width,visibility] duration-200 ease-out",
-            "md:visible md:sticky md:top-0 md:z-auto md:h-dvh md:max-w-none md:flex-none md:translate-x-0",
-            open ? "visible translate-x-0 shadow-raised" : "invisible -translate-x-full",
-          )}>
-          {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
-              chevron: a chevron here would promise a menu that does not exist. */}
-          <div className="flex-none px-3 pt-3">
-            <Card className="sb-item sb-frame flex items-center gap-2.5 p-2">
-              <LogoMark size={32} />
-              <div className="sb-label min-w-0 flex-1 leading-tight">
-                <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
-                <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
-              </div>
-              <Button ref={closeButton} variant="ghost" size="icon" onClick={() => close()} aria-label="Close navigation"
-                className="text-sidebar-foreground-secondary hover:bg-sidebar-hover hover:text-sidebar-foreground focus-visible:outline-sidebar-ring md:hidden">
-                <X aria-hidden="true" />
-              </Button>
-            </Card>
-          </div>
-
-          {/* Search is shown for the reference layout only: it is disabled until search exists. */}
-          <div className="sb-expanded-only flex-none px-3 pt-3">
-            <label className="relative block">
-              <span className="sr-only">Search (coming soon)</span>
-              <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-sidebar-foreground-secondary" />
-              <input type="search" disabled placeholder="Search" title="Search: coming soon"
-                className="h-9 w-full rounded-lg border border-border bg-card pr-9 pl-8 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70" />
-              <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-xs text-muted-foreground">/</kbd>
-            </label>
-          </div>
-
-          <div className="relative min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-3">{nav}</div>
-
-          <div className="hidden flex-none px-3 pb-2 md:block">
-            <button type="button" onClick={() => setSidebarCollapsed(!collapsed)} aria-expanded={!collapsed} aria-controls={SIDEBAR_ID}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"} title={collapsed ? "Expand sidebar" : "Collapse sidebar"} className={sidebarRowClass}>
-              {collapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
-              <span aria-hidden="true" className="sb-label">Collapse</span>
-            </button>
-          </div>
-
-          {footer ? <div className="flex-none space-y-2 border-t border-sidebar-border p-3">{footer}</div> : null}
+        {/* Desktop sidebar (from 768px). Below that it is display:none and the drawer above takes its parts. */}
+        <aside id={SIDEBAR_ID} aria-label="Sidebar"
+          className="app-sidebar sticky top-0 hidden h-dvh flex-none flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out md:flex">
+          {open ? null : parts(false)}
         </aside>
 
         <main id="main" tabIndex={-1} inert={open} className="min-w-0 flex-1 px-4 py-4 outline-none md:px-6 md:py-6">
@@ -150,7 +148,6 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
           </div>
         </main>
       </div>
-    </>
+    </Sheet>
   );
 }
-
