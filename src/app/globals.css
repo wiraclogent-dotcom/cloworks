@@ -680,6 +680,12 @@
  * Route transitions (React <ViewTransition> in AppFrame): the page area crossfades and the new page rises a little.
  * The sidebar is outside the named area, so it never moves.
  */
+/* Light ↔ dark switch (useDarkMode): one slow, soft crossfade of the whole page instead of a hard cut. */
+:root[data-theme-switch]::view-transition-old(root),
+:root[data-theme-switch]::view-transition-new(root) {
+  animation-duration: 450ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
 ::view-transition-old(.page) { animation: 160ms ease-in both vt-fade-out; }
 ::view-transition-new(.page) { animation: 320ms var(--ease-out) 60ms both vt-rise-in; }
 @keyframes vt-fade-out { to { opacity: 0; } }

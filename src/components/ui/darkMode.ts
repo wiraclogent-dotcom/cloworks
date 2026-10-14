@@ -21,15 +21,29 @@ function isDark(): boolean {
 }
 
 /**
+ * Runs a theme change as a soft crossfade of the whole page (View Transitions; `data-theme-switch` on <html> slows the
+ * root fade down in globals.css). Browsers without the API, and people who ask for reduced motion, get the instant
+ * switch.
+ */
+function softly(change: () => void) {
+  const root = document.documentElement;
+  const reduce = typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce || typeof document.startViewTransition !== "function") { change(); return; }
+  root.setAttribute("data-theme-switch", "");
+  const t = document.startViewTransition(change);
+  void t.finished.finally(() => root.removeAttribute("data-theme-switch"));
+}
+
+/**
  * The current day/night state and a flip (used by the profile menu). Light and Dark only; a "system" choice made
  * earlier keeps following the OS until the person flips it. Writes localStorage `ct-theme` and `<html data-theme>`.
  */
 export function useDarkMode(): { dark: boolean; flip: () => void } {
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
-  const flip = () => {
+  const flip = () => softly(() => {
     setThemePref(dark ? "light" : "dark");
     window.dispatchEvent(new Event(CHANGE));
-  };
+  });
   return { dark, flip };
 }
 

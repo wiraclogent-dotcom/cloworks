@@ -74,6 +74,41 @@ describe("useDarkMode + ThemeSync", () => {
     expect(html().getAttribute("data-theme")).toBe("light");
   });
 
+  it("flips softly through a View Transition when the browser has one, marking <html> only while it runs", async () => {
+    let done!: () => void;
+    const finished = new Promise<void>((r) => { done = r; });
+    const start = vi.fn((cb: () => void) => { cb(); return { finished }; });
+    Object.defineProperty(document, "startViewTransition", { value: start, configurable: true });
+    try {
+      render(<Probe />);
+      fireEvent.click(sw());
+      expect(start).toHaveBeenCalledOnce();
+      expect(html().getAttribute("data-theme")).toBe("dark");
+      expect(html().hasAttribute("data-theme-switch")).toBe(true);
+      done();
+      await finished; await Promise.resolve();
+      expect(html().hasAttribute("data-theme-switch")).toBe(false);
+    } finally {
+      delete (document as { startViewTransition?: unknown }).startViewTransition;
+    }
+  });
+
+  it("switches instantly, without a View Transition, when reduced motion is asked for", () => {
+    window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+      matches: q.includes("reduced-motion"), media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+    const start = vi.fn();
+    Object.defineProperty(document, "startViewTransition", { value: start, configurable: true });
+    try {
+      render(<Probe />);
+      fireEvent.click(sw());
+      expect(start).not.toHaveBeenCalled();
+      expect(html().getAttribute("data-theme")).toBe("dark");
+    } finally {
+      delete (document as { startViewTransition?: unknown }).startViewTransition;
+    }
+  });
+
   it("a stored system choice still follows the OS (via ThemeSync), and flipping replaces it with light or dark", () => {
     mockMatchMedia(true);
     localStorage.setItem("ct-theme", "system");
