@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act, within } from "@testing-library/react";
 import { DndContext, MouseSensor, KeyboardSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { BoardCard } from "@/components/BoardCard";
 import type { RequestRow } from "@/lib/requests";
@@ -19,6 +19,53 @@ function Harness({ canMove, onStart }: { canMove: boolean; onStart: () => void }
   );
 }
 afterEach(cleanup);
+
+const two = [{ id: "fafa", name: "Fafa" }, { id: "dimas", name: "Dimas" }];
+const four = [...two, { id: "cami", name: "Cami" }, { id: "eko", name: "Eko" }];
+const renderCard = (assignees: RequestRow["assignees"]) =>
+  render(<DndContext><ul><BoardCard card={{ ...card, assignees }} canMove={false} busy={false} dragging={false} /></ul></DndContext>);
+
+describe("BoardCard shared requests", () => {
+  it("a shared card shows stacked avatars, the pair label, a Shared chip and the accent hook", () => {
+    renderCard(two);
+    const li = document.querySelector("[data-card]") as HTMLElement;
+    expect(li.hasAttribute("data-shared")).toBe(true);
+    expect(li.className).toContain("before:bg-ring");
+    const who = li.querySelector("[data-card-assignee]") as HTMLElement;
+    expect(who.getAttribute("data-card-assignee")).toBe("shared");
+    expect(who.textContent).toContain("Fafa & Dimas");
+    expect(screen.getByRole("img", { name: "Assignees: Fafa, Dimas" })).toBeTruthy();
+    expect(within(li).getByText("Shared")).toBeTruthy();
+  });
+
+  it("four assignees read 4 people with a +1 disc, and the label can shrink", () => {
+    renderCard(four);
+    const who = document.querySelector("[data-card-assignee='shared']") as HTMLElement;
+    expect(who.textContent).toContain("4 people");
+    expect(who.textContent).toContain("+1");
+    expect(screen.getByRole("img", { name: "Assignees: Fafa, Dimas, Cami, Eko" })).toBeTruthy();
+    const label = within(who).getByText("4 people");
+    expect(label.className).toContain("truncate");
+    expect(who.className).toContain("min-w-0");
+  });
+
+  it("a single-assignee card is unchanged: assigned, no chip, no accent hook", () => {
+    renderCard([{ id: "cami", name: "Cami" }]);
+    const li = document.querySelector("[data-card]") as HTMLElement;
+    expect(li.hasAttribute("data-shared")).toBe(false);
+    expect(li.querySelector("[data-card-assignee]")!.getAttribute("data-card-assignee")).toBe("assigned");
+    expect(screen.getByRole("img", { name: "Assignee: Cami" })).toBeTruthy();
+    expect(within(li).queryByText("Shared")).toBeNull();
+  });
+
+  it("an unassigned card is unchanged", () => {
+    renderCard([]);
+    const li = document.querySelector("[data-card]") as HTMLElement;
+    expect(li.hasAttribute("data-shared")).toBe(false);
+    expect(li.querySelector("[data-card-assignee]")!.getAttribute("data-card-assignee")).toBe("unassigned");
+    expect(screen.getByRole("img", { name: "Assignee: Unassigned" })).toBeTruthy();
+  });
+});
 
 describe("BoardCard", () => {
   it("renders no select / Move to… control", () => {

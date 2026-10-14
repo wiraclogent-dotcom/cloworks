@@ -31,6 +31,32 @@ function mockNarrow(narrow: boolean) {
 beforeEach(() => mockNarrow(false));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
+describe("RequestTimeline shared bars", () => {
+  const shared = () => row("1", "Banner", { assignees: [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }] });
+
+  it("a shared request shows in both lanes, each bar saying who it is shared with", () => {
+    view([shared()]);
+    const adi = within(section("Adi")).getByRole("link", { name: /shared with Bea/ });
+    const bea = within(section("Bea")).getByRole("link", { name: /shared with Adi/ });
+    expect(adi.getAttribute("data-shared")).not.toBeNull();
+    expect(bea.getAttribute("data-shared")).not.toBeNull();
+  });
+
+  it("a single-assignee bar is not shared", () => {
+    view([row("1", "Banner")]);
+    const link = within(section("Adi")).getByRole("link", { name: /Banner/ });
+    expect(link.getAttribute("data-shared")).toBeNull();
+    expect(link.getAttribute("title")).not.toMatch(/shared with/);
+  });
+
+  it("narrow list marks a shared request too", () => {
+    mockNarrow(true);
+    view([shared()]);
+    expect(within(section("Adi")).getByText(/shared with Bea/)).toBeTruthy();
+    expect(within(section("Bea")).getByText(/shared with Adi/)).toBeTruthy();
+  });
+});
+
 describe("RequestTimeline", () => {
   it("renders the range heading, week navigation and 7 day columns", () => {
     view([row("1", "Banner")]);

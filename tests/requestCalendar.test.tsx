@@ -65,6 +65,18 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 
+describe("RequestCalendar shared cards", () => {
+  it("a shared card shows stacked avatars with the Assignees name and the data-shared hook", () => {
+    view([row("1", "Banner", { assignees: [{ id: "a", name: "Fafa" }, { id: "b", name: "Dimas" }] }), row("2", "Poster")]);
+    const shared = document.querySelector("[data-card='1']") as HTMLElement;
+    const single = document.querySelector("[data-card='2']") as HTMLElement;
+    expect(shared.hasAttribute("data-shared")).toBe(true);
+    expect(within(shared).getByRole("img", { name: "Assignees: Fafa, Dimas" })).toBeTruthy();
+    expect(single.hasAttribute("data-shared")).toBe(false);
+    expect(within(single).getByRole("img", { name: "Assignee: Cami" })).toBeTruthy();
+  });
+});
+
 describe("RequestCalendar", () => {
   it("renders the month heading, Monday-first weekday headers and the month navigation links", () => {
     view([row("1", "Banner")]);

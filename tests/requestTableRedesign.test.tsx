@@ -55,6 +55,18 @@ describe("RequestTable (redesign)", () => {
     expect(b.querySelector("[data-cell='deadline']")!.textContent).toBe("—");
   });
 
+  it("shows several assignees as stacked avatars: two read 'Fafa & Dimas', three 'Fafa, Dimas +1'", () => {
+    const who = (...names: string[]) => names.map((n) => ({ id: n.toLowerCase(), name: n }));
+    table([row("a", { assignees: who("Fafa", "Dimas") }), row("b", { assignees: who("Fafa", "Dimas", "Cami") })]);
+    const [, a, b] = screen.getAllByRole("row");
+    const ca = a.querySelector("[data-cell='assignee']") as HTMLElement;
+    const cb = b.querySelector("[data-cell='assignee']") as HTMLElement;
+    expect(ca.textContent).toContain("Fafa & Dimas");
+    expect(within(ca).getByRole("img", { name: "Assignees: Fafa, Dimas" })).toBeTruthy();
+    expect(cb.textContent).toContain("Fafa, Dimas +1");
+    expect(within(cb).getByRole("img", { name: "Assignees: Fafa, Dimas, Cami" })).toBeTruthy();
+  });
+
   it("scrolls sideways inside the card and puts the footer in the same card", () => {
     table([row("a")], "deadline", "asc", <p>footer here</p>);
     const scroll = document.querySelector("[data-table-scroll]") as HTMLElement;

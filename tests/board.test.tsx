@@ -251,6 +251,13 @@ describe("Board", () => {
     await waitFor(() => expect(document.activeElement?.closest("[data-card]")?.getAttribute("data-card")).toBe("2"));
   });
 
+  it("a card with two assignees dropped on Done opens the dialog (no assignee message)", () => {
+    view([row("4", "Poster", "FIRST_LOOK", { assignees: [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }] })]);
+    drop("4", "DONE");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText("Assign someone before marking this request Done.")).toBeNull();
+  });
+
   it("does not open the dialog for an unassigned card dropped on Done: shows an inline message", () => {
     const r = [row("3", "Flyer", "FIRST_LOOK", { assignees: [] })];
     view(r);
