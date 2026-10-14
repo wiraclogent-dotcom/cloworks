@@ -5,11 +5,13 @@ import type { ProjectStage } from "@prisma/client";
 
 const setItemStage = vi.fn();
 const setItemStatus = vi.fn();
+const renameItem = vi.fn();
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 vi.mock("@/app/(app)/projects/[id]/tasks/actions", () => ({
   setItemStage: (...a: unknown[]) => setItemStage(...a),
   setItemStatus: (...a: unknown[]) => setItemStatus(...a),
+  renameItem: (...a: unknown[]) => renameItem(...a),
   setTaskDetail: vi.fn(), setTaskDate: vi.fn(), setTaskStage: vi.fn(), setTaskStatus: vi.fn(),
   setTaskFileUrl: vi.fn(), deleteTask: vi.fn(), moveTask: vi.fn(), createTaskDetail: vi.fn(),
 }));
@@ -19,6 +21,7 @@ import type { TaskRowData } from "@/app/(app)/projects/[id]/tasks/TaskRow";
 import { ProjectItemsList } from "@/components/projects/ProjectItemsList";
 import { ProjectItemRow } from "@/components/projects/ProjectItemRow";
 import { ItemHashOpener } from "@/components/projects/ItemHashOpener";
+import { NeedsAttention } from "@/components/projects/NeedsAttention";
 
 class RO { observe() {} unobserve() {} disconnect() {} }
 beforeEach(() => {
@@ -26,7 +29,7 @@ beforeEach(() => {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.releasePointerCapture = () => {};
-  setItemStage.mockReset(); setItemStatus.mockReset(); refresh.mockReset();
+  setItemStage.mockReset(); setItemStatus.mockReset(); renameItem.mockReset(); refresh.mockReset();
   window.location.hash = "";
 });
 afterEach(cleanup);
@@ -108,30 +111,78 @@ describe("ProjectItemRow", () => {
     expect(down.map((b) => b.disabled)).toEqual([false, false, true]);
   });
 
-  it("Set all calls setItemStage, refreshes, and resets the select", async () => {
+  const choose = (title: string, value: string) =>
+    fireEvent.change(screen.getByLabelText(`Set all variants of ${title}`), { target: { value } });
+  const apply = (title: string) => screen.getByRole("button", { name: `Apply to all variants of ${title}` }) as HTMLButtonElement;
+
+  it("Set all does nothing on change; Apply stays disabled until a value is chosen", () => {
+    renderRow(true);
+    expect(apply("Laundry Pods Regular 4").disabled).toBe(true);
+    choose("Laundry Pods Regular 4", "APPROVAL");
+    expect(setItemStage).not.toHaveBeenCalled();
+    expect(apply("Laundry Pods Regular 4").disabled).toBe(false);
+  });
+
+  it("Apply calls setItemStage, refreshes, resets the select and keeps focus on it", async () => {
     setItemStage.mockResolvedValue({ ok: true, changed: 3 });
     renderRow(true);
     const select = screen.getByLabelText("Set all variants of Laundry Pods Regular 4") as HTMLSelectElement;
     expect(select.value).toBe("");
-    await act(async () => { fireEvent.change(select, { target: { value: "APPROVAL" } }); });
+    choose("Laundry Pods Regular 4", "APPROVAL");
+    await act(async () => { fireEvent.click(apply("Laundry Pods Regular 4")); });
     expect(setItemStage).toHaveBeenCalledWith("p1", "Laundry Pods Regular 4", "APPROVAL");
     expect(refresh).toHaveBeenCalled();
     expect(select.value).toBe("");
+    expect(document.activeElement).toBe(select);
+    expect(apply("Laundry Pods Regular 4").disabled).toBe(true);
   });
 
-  it("Set all shows the refusal and does not refresh", async () => {
+  it("Apply shows the refusal and does not refresh", async () => {
     setItemStage.mockResolvedValue({ ok: false, code: "FORBIDDEN", message: "You are not allowed to change task stages." });
     renderRow(true);
-    await act(async () => { fireEvent.change(screen.getByLabelText("Set all variants of Laundry Pods Regular 4"), { target: { value: "APPROVAL" } }); });
+    choose("Laundry Pods Regular 4", "APPROVAL");
+    await act(async () => { fireEvent.click(apply("Laundry Pods Regular 4")); });
     expect((await screen.findByRole("alert")).textContent).toMatch(/not allowed/);
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it("status mode sets a status for the whole item", async () => {
+  it("status mode applies a status to the whole item", async () => {
     setItemStatus.mockResolvedValue({ ok: true, changed: 1 });
     render(<ProjectItemRow projectId="p1" item={podsItem} rows={pods.data} mode="status" owners={[]} canManage />);
-    await act(async () => { fireEvent.change(screen.getByLabelText("Set all variants of Laundry Pods Regular 4"), { target: { value: "DONE" } }); });
+    choose("Laundry Pods Regular 4", "DONE");
+    await act(async () => { fireEvent.click(apply("Laundry Pods Regular 4")); });
     expect(setItemStatus).toHaveBeenCalledWith("p1", "Laundry Pods Regular 4", "DONE");
+  });
+
+  it("renames the item inline: Save calls renameItem and refreshes", async () => {
+    renameItem.mockResolvedValue({ ok: true });
+    renderRow(true);
+    fireEvent.click(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+    const box = screen.getByLabelText("New name for Laundry Pods Regular 4") as HTMLInputElement;
+    expect(box.value).toBe("Laundry Pods Regular 4");
+    fireEvent.change(box, { target: { value: "  Pods Mini  " } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
+    expect(renameItem).toHaveBeenCalledWith("p1", "Laundry Pods Regular 4", "  Pods Mini  ");
+    expect(refresh).toHaveBeenCalled();
+    expect(screen.queryByLabelText("New name for Laundry Pods Regular 4")).toBeNull();
+  });
+
+  it("a refused rename shows why and keeps the editor open; Cancel closes it", async () => {
+    renameItem.mockResolvedValue({ ok: false, code: "VALIDATION", message: "Another item already has this name." });
+    renderRow(true);
+    fireEvent.click(screen.getByRole("button", { name: "Rename item Laundry Pods Regular 4" }));
+    fireEvent.change(screen.getByLabelText("New name for Laundry Pods Regular 4"), { target: { value: "Box" } });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
+    expect((await screen.findByRole("alert")).textContent).toMatch(/already has this name/);
+    expect(refresh).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("New name for Laundry Pods Regular 4")).toBeNull();
+    expect(renameItem).toHaveBeenCalledTimes(1);
+  });
+
+  it("read-only has no rename button", () => {
+    renderRow(false);
+    expect(screen.queryByRole("button", { name: /^Rename item/ })).toBeNull();
   });
 
   it("offers Add variant prefilled with the item title when managing", () => {
@@ -145,6 +196,7 @@ describe("ProjectItemRow", () => {
     renderRow(false);
     fireEvent.click(screen.getByRole("button", { name: "Laundry Pods Regular 4, 3 variants" }));
     expect(screen.queryByLabelText(/^Set all variants of/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Apply to all/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Add variant|Add item/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^Edit / })).toBeNull();
     expect(screen.queryByRole("combobox")).toBeNull();
@@ -161,7 +213,49 @@ describe("ProjectItemRow", () => {
   });
 });
 
+describe("deep links", () => {
+  it("a row opens itself on mount when the hash names it", () => {
+    window.location.hash = "#item-laundry-pods-regular-4";
+    const { container } = renderRow(false);
+    expect(container.querySelectorAll("tbody tr")).toHaveLength(3);
+    expect(window.HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ block: "start" });
+  });
+
+  it("a row for another slug stays closed when the hash names a different item", () => {
+    window.location.hash = "#item-box";
+    const { container } = renderRow(false);
+    expect(container.querySelector("tr")).toBeNull();
+  });
+
+  it("clicking a Needs attention link asks the row to open, every time", () => {
+    const seen: string[] = [];
+    const on = (e: Event) => seen.push((e as CustomEvent<{ slug: string }>).detail.slug);
+    window.addEventListener("project-item-open", on);
+    const late = make("Late", [{ sub: "A", owner: null, stage: "APPROVAL" }], dayFromNow(-3));
+    render(<NeedsAttention items={groupItems(late.inputs, "stage")} now={new Date()} />);
+    const link = screen.getByRole("link", { name: "Late" });
+    expect(link.getAttribute("href")).toBe("#item-late");
+    fireEvent.click(link);
+    fireEvent.click(link);
+    expect(seen).toEqual(["late", "late"]);
+    window.removeEventListener("project-item-open", on);
+  });
+});
+
 describe("ProjectItemsList", () => {
+  it("the second item's first variant cannot move up (within-item bounds)", () => {
+    const other = make("Box", [{ sub: "A", owner: null, stage: null }, { sub: "B", owner: null, stage: null }]);
+    const items = groupItems([...pods.inputs, ...other.inputs.map((r) => ({ ...r, position: 10 + r.position }))], "stage");
+    const rowsData = new Map([...pods.data, ...other.data].map((d) => [d.id, d]));
+    render(<ProjectItemsList projectId="p1" items={items} rowsData={rowsData} mode="stage" owners={[]} canManage />);
+    fireEvent.click(screen.getByRole("button", { name: "Box, 2 variants" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Box A" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Box B" }));
+    expect((screen.getByRole("button", { name: "Move Box A up" }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: "Move Box B up" }) as HTMLButtonElement).disabled).toBe(false);
+    expect((screen.getByRole("button", { name: "Move Box B down" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it("renders a row per item plus Add item when managing", () => {
     const other = make("Box", [{ sub: "A", owner: null, stage: null }]);
     const items = groupItems([...pods.inputs, ...other.inputs.map((r) => ({ ...r, position: 10 }))], "stage");
@@ -199,6 +293,16 @@ describe("ItemHashOpener", () => {
     window.location.hash = "#timeline";
     act(() => { window.dispatchEvent(new HashChangeEvent("hashchange")); });
     expect(seen).toEqual(["box", "pods-2"]);
+    window.removeEventListener("project-item-open", on);
+  });
+
+  it("falls back to the raw slug when the hash is not valid percent-encoding", () => {
+    const seen: string[] = [];
+    const on = (e: Event) => seen.push((e as CustomEvent<{ slug: string }>).detail.slug);
+    window.addEventListener("project-item-open", on);
+    window.location.hash = "#item-100%";
+    expect(() => render(<ItemHashOpener />)).not.toThrow();
+    expect(seen).toEqual(["100%"]);
     window.removeEventListener("project-item-open", on);
   });
 });

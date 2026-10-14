@@ -1,22 +1,10 @@
-import type { ProjectStage, ProjectStatus } from "@prisma/client";
+import type { ProjectStatus } from "@prisma/client";
 import { Card } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
 import type { ItemRowInput, ProjectItem } from "@/lib/projectItemList";
-import { PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
+import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
 import { PROJECT_STAGES, finalShare, stageCounts, statusCounts, taskMode } from "@/lib/projectProgress";
 import { PROJECT_STAGE_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER } from "@/lib/projectTasks";
-
-/** Tone of each stage in the progress bar and legend. Every stage gets its own palette entry; Final Artwork is the "done"
- *  tone and Canceled the "cancelled" one. Statuses (tracker projects) use PROJECT_STATUS_TONE; "none" is neutral. */
-export const PROJECT_STAGE_TONE: Record<ProjectStage, Tone> = {
-  NOT_STARTED: "requested",
-  FIRST_PREVIEW: "first-look",
-  MANUSCRIPT: "tag-clogent",
-  TECHNICAL_ARTWORK: "needs-motion",
-  APPROVAL: "due-soon",
-  FINAL_ARTWORK: "done",
-  CANCELLED: "cancelled",
-};
 
 type Segment = { key: string; label: string; tone: Tone; n: number };
 

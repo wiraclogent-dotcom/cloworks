@@ -122,6 +122,35 @@ export async function setTaskDetail(projectId: string, taskId: string, field: Ta
   }, unauthResult);
 }
 
+export type ItemRenameResult = { ok: true } | { ok: false; code: TaskStageCode; message: string };
+
+/**
+ * Renames a whole item: every row titled `oldTitle` in this project gets `newTitle`, and the item's KPI targets follow.
+ * Needs `project.manage`. The new name is trimmed, required and at most 200 characters, and can't be another item's name
+ * (that would merge two items). The same name is a successful no-op.
+ */
+export async function renameItem(projectId: string, oldTitle: string, newTitle: string): Promise<ItemRenameResult> {
+  return withUser<ItemRenameResult, ItemRenameResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to rename items." };
+    const title = newTitle.trim();
+    if (!title) return { ok: false, code: "VALIDATION", message: "An item name is required." };
+    if (title.length > 200) return { ok: false, code: "VALIDATION", message: "Keep names under 200 characters." };
+    const rows = await db.projectTask.findMany({ where: { projectId, title: oldTitle }, select: { id: true } });
+    if (rows.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    if (title === oldTitle) return { ok: true };
+    const clash = await db.projectTask.findFirst({ where: { projectId, title }, select: { id: true } });
+    if (clash) return { ok: false, code: "VALIDATION", message: "Another item already has this name." };
+    await db.$transaction(async (tx) => {
+      await tx.projectTask.updateMany({ where: { projectId, title: oldTitle }, data: { title } });
+      await carryTargetsOnRename(tx, projectId, oldTitle, title);
+    });
+    revalidatePath(`/projects/${projectId}/tasks`);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  }, unauthResult);
+}
+
 export type TaskStatusResult = { ok: true; status: ProjectStatus } | { ok: false; code: TaskStageCode; message: string };
 
 /** Sets one tracker task's status. Needs `project.manage`; the task must belong to this project. */
@@ -237,15 +266,20 @@ export async function createTaskDetail(projectId: string, input: NewDetailInput)
     const clash = await db.projectTask.findFirst({ where: { projectId, title, subTitle }, select: { id: true } });
     if (clash) return { ok: false, code: "VALIDATION", message: "Another detail already has this item and detail name." };
 
-    const position = existing.reduce((max, t) => Math.max(max, t.position), 0) + 1;
-    const created = await db.projectTask.create({
-      data: {
-        projectId, position, title, subTitle, ownerId, stage, status,
-        startDate: startIso ? jakartaDay(startIso) : null,
-        dueDate: dueIso ? jakartaDay(dueIso) : null,
-        fileUrl,
-      },
-      select: { id: true },
+    // A new variant of an existing item goes right after that item's last row (later rows shift down by one); a new item goes last.
+    const lastOfItem = (await db.projectTask.findMany({ where: { projectId, title }, select: { position: true } })).reduce((max, t) => Math.max(max, t.position), 0);
+    const position = lastOfItem > 0 ? lastOfItem + 1 : existing.reduce((max, t) => Math.max(max, t.position), 0) + 1;
+    const created = await db.$transaction(async (tx) => {
+      if (lastOfItem > 0) await tx.projectTask.updateMany({ where: { projectId, position: { gte: position } }, data: { position: { increment: 1 } } });
+      return tx.projectTask.create({
+        data: {
+          projectId, position, title, subTitle, ownerId, stage, status,
+          startDate: startIso ? jakartaDay(startIso) : null,
+          dueDate: dueIso ? jakartaDay(dueIso) : null,
+          fileUrl,
+        },
+        select: { id: true },
+      });
     });
     revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
@@ -269,7 +303,8 @@ export async function deleteTask(projectId: string, taskId: string): Promise<Tas
 }
 
 /**
- * Moves one row up or down by one place, swapping positions with its neighbour. Moving past either end is a
+ * Moves one row up or down within its item, swapping positions with the nearest row that has the same item
+ * title in that direction (other items keep their places). Moving past the item's first or last row is a
  * no-op that still succeeds. Positions are renumbered 1..n first, so gaps or duplicates left by imports never
  * make a move skip or stall. Needs `project.manage`.
  */
@@ -278,10 +313,12 @@ export async function moveTask(projectId: string, taskId: string, direction: "up
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to reorder details." };
     if (direction !== "up" && direction !== "down") return { ok: false, code: "VALIDATION", message: "Pick up or down." };
-    const rows = await db.projectTask.findMany({ where: { projectId }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true, position: true } });
+    const rows = await db.projectTask.findMany({ where: { projectId }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true, position: true, title: true } });
     const from = rows.findIndex((r) => r.id === taskId);
     if (from < 0) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    const to = direction === "up" ? from - 1 : from + 1;
+    // A variant only trades places with the nearest variant of its own item in that direction; at the item's edge it stays put.
+    let to = from;
+    do to += direction === "up" ? -1 : 1; while (to >= 0 && to < rows.length && rows[to].title !== rows[from].title);
     if (to < 0 || to >= rows.length) return { ok: true };
     const order = rows.map((r) => r.id);
     [order[from], order[to]] = [order[to], order[from]];

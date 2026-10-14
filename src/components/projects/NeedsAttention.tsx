@@ -1,5 +1,6 @@
 import { AvatarStack } from "@/components/ui/Avatar";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { ItemLink } from "./ItemLink";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { daysLeft } from "@/lib/daysLeft";
 import { needsAttention, type ProjectItem } from "@/lib/projectItemList";
@@ -22,7 +23,7 @@ export function NeedsAttention({ items, now, mode = "stage" }: { items: ProjectI
       <ul className="divide-y divide-border">
         {list.map(({ item }) => (
           <li key={item.slug} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 first:pt-0 last:pb-0">
-            <a href={`#item-${item.slug}`} className="min-w-0 flex-1 basis-40 truncate text-sm font-medium text-foreground hover:underline focus-visible:underline" title={item.title}>{item.title}</a>
+            <ItemLink slug={item.slug} className="min-w-0 flex-1 basis-40 truncate text-sm font-medium text-foreground hover:underline focus-visible:underline" title={item.title}>{item.title}</ItemLink>
             {item.owners.length > 0 && <AvatarStack names={item.owners} max={3} size="sm" label="Owners" />}
             <DeadlineChip daysLeft={daysLeft(item.dueDate, now)} />
             <span className="basis-full text-xs text-foreground-secondary">
