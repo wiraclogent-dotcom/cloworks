@@ -180,9 +180,16 @@ What to know:
 
 ## Design system
 
+- **shadcn first.** Generic elements (buttons, fields, dialogs, menus, popovers, tabs, badges, cards, alerts…) come
+  from shadcn/ui in `src/components/shadcn/` (add with `npx shadcn@latest add <name>`, then restyle with our tokens).
+  `src/components/ui/` holds only what shadcn lacks (domain components such as `StatusChip`, `KpiTile`,
+  `PageHeader`). Rules, component map and migration status: `src/components/ui/README.md`; plan:
+  `docs/superpowers/specs/2026-10-14-shadcn-first-design.md`.
 - **Tokens** live in `src/app/globals.css`: light under `:root` (the default, independent of the OS) and dark under
-  `:root[data-theme="dark"]`. Use the Tailwind theme classes (`bg-card`, `bg-surface-muted`, `text-foreground-secondary`,
-  `border-border`, `bg-primary`, `bg-sidebar`, ...) or `var(--token)`; never hex values in components.
+  `:root[data-theme="dark"]`. Use the shadcn token names first (`bg-background`, `bg-card`, `bg-muted`,
+  `text-muted-foreground`, `border-border`, `border-input`, `bg-primary`, `bg-sidebar`, ...), our extension tokens
+  (`text-heading`, `text-link`, `text-danger`, `shadow-card`, `data-tone`…) only where shadcn has no name, or
+  `var(--token)`; never hex values in components.
 - **Status, tag and avatar colours** come from `src/lib/palette.ts` and are mirrored by hand as `--status-<tone>-*` and
   `--avatar-<n>-*` in `globals.css`; `tests/palette.test.ts` fails if they drift, `tests/theme.test.ts` checks every
   text/background pair for WCAG contrast in both themes.
@@ -191,8 +198,8 @@ What to know:
   to `light` or `dark` before first paint; the collapsed sidebar (`ct-sidebar`) is restored the same way.
 - **Shell**: `src/components/AppShell.tsx` (server: permission checks) + `src/components/shell/*` (client: active
   route, collapse, mobile drawer).
-- **UI kit**: `src/components/ui/` (Button, Chip, StatusChip, Avatar, PageHeader, fields, RadioCards, ProgressBar,
-  KpiTile, EmptyState, Alert, table helpers, ...). Read `src/components/ui/README.md` before building a page.
+- **Before building a page** read `src/components/ui/README.md`: shadcn component first, kit component second, a new
+  documented kit component only when neither exists.
 
 ## Running tests
 
