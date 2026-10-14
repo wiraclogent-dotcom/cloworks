@@ -174,9 +174,21 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
 
     // Until Request.assigneeId is dropped it must stay on the first assignee. The repoint above moved it from the
     // duplicate to the survivor, which is only right when the survivor is also first by ASSIGNEE_ORDER.
-    for (const requestId of requestIds) {
-      const first = await tx.requestAssignee.findFirst({ where: { requestId }, orderBy: [...ASSIGNEE_ORDER], select: { userId: true } });
-      await tx.request.updateMany({ where: { id: requestId }, data: { assigneeId: first?.userId ?? null } });
+    // Set-based (a constant number of queries per distinct first assignee), as the merge transaction has a time limit.
+    if (requestIds.length > 0) {
+      const rows = await tx.requestAssignee.findMany({
+        where: { requestId: { in: requestIds } },
+        orderBy: [{ requestId: "asc" }, ...ASSIGNEE_ORDER],
+        select: { requestId: true, userId: true },
+      });
+      const firstOf = new Map<string, string>();
+      for (const r of rows) if (!firstOf.has(r.requestId)) firstOf.set(r.requestId, r.userId);
+      const byFirst = new Map<string | null, string[]>();
+      for (const requestId of requestIds) {
+        const first = firstOf.get(requestId) ?? null;
+        byFirst.set(first, [...(byFirst.get(first) ?? []), requestId]);
+      }
+      for (const [assigneeId, ids] of byFirst) await tx.request.updateMany({ where: { id: { in: ids } }, data: { assigneeId } });
     }
 
     // Comment.mentions holds user ids without a foreign key: swap the duplicate for the survivor, keeping the first
