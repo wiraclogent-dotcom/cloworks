@@ -88,7 +88,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                   <td className={cn(t.td, "text-foreground-secondary")}>{r.divisionName}</td>
                   <td className={cn(t.td, "max-w-48")}><Person name={r.requesterName} /></td>
                   <td className={cn(t.td, "max-w-48")} data-cell="assignee">
-                    {r.assigneeName ? <Person name={r.assigneeName} /> : <span className="text-foreground-secondary italic">Unassigned</span>}
+                    {r.assignees[0] ? <Person name={r.assignees[0].name} /> : <span className="text-foreground-secondary italic">Unassigned</span>}
                   </td>
                   <td className={t.td}><StatusBadge status={r.status} /></td>
                   <td className={cn(t.td, "whitespace-nowrap tabular-nums")}>{fmt.format(r.requestedAt)}</td>

@@ -50,7 +50,7 @@ function escapees(root: Element): string[] {
 
 const row = (i: number, status: RequestRow["status"]): RequestRow => ({
   id: `r${i}`, title: `Task ${i}`, status, brandName: "Clogent", divisionName: "Marketing", requesterName: "Rina Sari",
-  assigneeName: i % 2 ? "Cami" : null, requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: 3, needsMotion: true,
+  assignees: i % 2 ? [{ id: "cami", name: "Cami" }] : [], requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: 3, needsMotion: true,
 });
 
 describe("absolutely positioned content stays inside its scroll container", () => {

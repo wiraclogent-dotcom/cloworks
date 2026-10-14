@@ -9,7 +9,7 @@ import type { RequestRow } from "@/lib/requests";
 afterEach(cleanup);
 
 const row = (id: string, extra: Partial<RequestRow> = {}): RequestRow => ({
-  id, title: `Task ${id}`, status: "ON_PROGRESS", brandName: "Bubble Wash", divisionName: "Sales", requesterName: "Rina Sari", assigneeName: "Cami",
+  id, title: `Task ${id}`, status: "ON_PROGRESS", brandName: "Bubble Wash", divisionName: "Sales", requesterName: "Rina Sari", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: new Date("2026-10-10T00:00:00Z"), outputCount: 1, daysLeft: 2, needsMotion: false, ...extra,
 });
 const table = (rows: RequestRow[], sort: "deadline" | "title" = "deadline", dir: "asc" | "desc" = "asc", footer?: React.ReactNode) =>
@@ -47,7 +47,7 @@ describe("RequestTable (redesign)", () => {
   });
 
   it("shows Unassigned as muted text, and no deadline chip for finished or undated rows", () => {
-    table([row("a", { assigneeName: null, status: "DONE" }), row("b", { deadline: null, daysLeft: null })]);
+    table([row("a", { assignees: [], status: "DONE" }), row("b", { deadline: null, daysLeft: null })]);
     const [, a, b] = screen.getAllByRole("row");
     expect(a.querySelector("[data-cell='assignee']")!.textContent).toBe("Unassigned");
     expect(a.querySelector("[data-cell='assignee'] span")!.className).toMatch(/text-foreground-secondary/);

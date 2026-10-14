@@ -161,7 +161,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
 
   /** The single code path for every drop (pointer, touch, keyboard): decideDrop picks the outcome. */
   function requestMove(card: RequestRow, to: RequestStatus) {
-    const decision = decideDrop({ from: card.status, to, hasAssignee: !!card.assigneeName, canMove });
+    const decision = decideDrop({ from: card.status, to, hasAssignee: card.assignees.length > 0, canMove });
     if (decision.kind === "noop") return;
     focusCardId.current = card.id;
     switch (decision.kind) {

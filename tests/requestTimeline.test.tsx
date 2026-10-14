@@ -11,7 +11,7 @@ const PEOPLE = [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }];
 const HREFS = { prevHref: "/requests?view=timeline&week=2026-09-21", nextHref: "/requests?view=timeline&week=2026-10-05", todayHref: "/requests?view=timeline" };
 
 const row = (id: string, title: string, extra: Partial<TimelineRow> = {}): TimelineRow => ({
-  id, title, status: "ON_PROGRESS", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assigneeName: "Adi", assigneeId: "a",
+  id, title, status: "ON_PROGRESS", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "a", name: "Adi" }],
   requestedAt: new Date("2026-09-30T17:00:00Z"), deadline: new Date("2026-10-13T17:00:00Z"), outputCount: 1, daysLeft: 6,
   needsMotion: false, requestDay: "2026-10-01", deadlineDay: "2026-10-14", ...extra,
 });
@@ -56,7 +56,7 @@ describe("RequestTimeline", () => {
     expect(within(section("Bea")).getByText("0 open")).toBeTruthy();
     expect(screen.queryByRole("region", { name: /^Unassigned/ })).toBeNull();
     cleanup();
-    view([row("1", "Banner"), row("2", "Poster", { assigneeId: null, assigneeName: null })]);
+    view([row("1", "Banner"), row("2", "Poster", { assignees: [] })]);
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Adi", "Bea", "Unassigned"]);
     expect(within(section("Unassigned")).getByText("1 open")).toBeTruthy();
   });

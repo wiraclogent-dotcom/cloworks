@@ -22,7 +22,8 @@ export function cardTone(card: CalendarRow, today: string) {
 
 /** The compact card content: status icon, title (2 lines), Overdue / No deadline label, assignee avatar. */
 export function CalendarCardFace({ card, today, interactive = true, handle }: { card: CalendarRow; today: string; interactive?: boolean; handle?: React.ReactNode }) {
-  const assignee = card.assigneeName ? `Assignee: ${card.assigneeName}` : "Assignee: Unassigned";
+  const assigneeName = card.assignees[0]?.name ?? null; // Task 7 shows everyone
+  const assignee = assigneeName ? `Assignee: ${assigneeName}` : "Assignee: Unassigned";
   return (
     <>
       <div className="flex items-start gap-1">
@@ -45,7 +46,7 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
         <span className="inline-flex shrink-0 items-center gap-1">
           {handle}
           <span className="inline-flex" title={assignee} aria-label={assignee} role="img">
-            {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative className="size-5 text-[9px]" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
+            {assigneeName ? <Avatar name={assigneeName} size="sm" decorative className="size-5 text-[9px]" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
           </span>
         </span>
       </div>

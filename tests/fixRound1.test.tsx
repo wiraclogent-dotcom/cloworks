@@ -77,7 +77,7 @@ describe("D4 Team KPI table fits at ≥ 1024px", () => {
 
 describe("D8 tap targets", () => {
   it("sort header links are ≥ 32px tall, team name links ≥ 28px, small avatar initials 11px", () => {
-    render(<RequestTable rows={[{ id: "a", title: "T", status: "REQUESTED", brandName: "Zed", divisionName: "D", requesterName: "Rina", assigneeName: null,
+    render(<RequestTable rows={[{ id: "a", title: "T", status: "REQUESTED", brandName: "Zed", divisionName: "D", requesterName: "Rina", assignees: [],
       requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 0, daysLeft: null, needsMotion: false }]} sort="deadline" dir="asc" hrefFor={() => "/requests"} />);
     for (const h of screen.getAllByRole("columnheader")) expect(within(h).getByRole("link").className).toContain("min-h-8");
     cleanup();

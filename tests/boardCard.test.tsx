@@ -6,7 +6,7 @@ import { BoardCard } from "@/components/BoardCard";
 import type { RequestRow } from "@/lib/requests";
 
 const card: RequestRow = {
-  id: "c1", title: "Banner", status: "FIRST_LOOK", brandName: "BrandA", divisionName: "DivX", requesterName: "Rina", assigneeName: "Cami",
+  id: "c1", title: "Banner", status: "FIRST_LOOK", brandName: "BrandA", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: null, needsMotion: false,
 };
 

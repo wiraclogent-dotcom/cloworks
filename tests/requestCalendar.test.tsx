@@ -14,7 +14,7 @@ import type { CalendarRow } from "@/lib/requests";
 const TODAY = "2026-10-08"; // Thursday; the October grid runs Mon 28 Sep to Sun 1 Nov.
 
 const row = (id: string, title: string, extra: Partial<CalendarRow> = {}): CalendarRow => ({
-  id, title, status: "REQUESTED", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assigneeName: "Cami",
+  id, title, status: "REQUESTED", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: new Date("2026-10-13T17:00:00Z"), outputCount: 1, daysLeft: 6,
   needsMotion: false, requestDay: "2026-10-01", deadlineDay: "2026-10-14", ...extra,
 });

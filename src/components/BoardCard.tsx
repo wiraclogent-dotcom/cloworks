@@ -26,7 +26,8 @@ const DATE_FORMAT = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta",
  */
 export function CardFace({ card, interactive = true, handle }: { card: RequestRow; interactive?: boolean; handle?: React.ReactNode }) {
   const open = card.status !== "DONE" && card.status !== "CANCELLED";
-  const assignee = card.assigneeName ? `Assignee: ${card.assigneeName}` : "Assignee: Unassigned";
+  const assigneeName = card.assignees[0]?.name ?? null; // Task 7 shows everyone
+  const assignee = assigneeName ? `Assignee: ${assigneeName}` : "Assignee: Unassigned";
   const code = `REQ-${card.id.slice(-4).toUpperCase()}`;
   return (
     <>
@@ -59,9 +60,9 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
           <span className="truncate text-foreground-secondary">{card.requesterName}</span>
           <span className="sr-only">Requester: {card.requesterName}</span>
         </p>
-        <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={card.assigneeName ? "assigned" : "unassigned"}>
-          <span className="truncate text-foreground-secondary">{card.assigneeName ?? "Unassigned"}</span>
-          {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
+        <span className="inline-flex min-w-0 items-center gap-1.5" title={assignee} aria-label={assignee} role="img" data-card-assignee={assigneeName ? "assigned" : "unassigned"}>
+          <span className="truncate text-foreground-secondary">{assigneeName ?? "Unassigned"}</span>
+          {assigneeName ? <Avatar name={assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
         </span>
       </div>
     </>
