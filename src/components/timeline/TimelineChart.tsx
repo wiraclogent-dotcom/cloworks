@@ -1,6 +1,6 @@
 import { useId } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import type { TimelineRow } from "@/lib/requests";
 import { brandTone } from "@/lib/palette";
 import type { TimelineBar, TimelineDay, TimelinePerson } from "@/lib/workload";
@@ -25,14 +25,14 @@ function DayUnderlay({ days }: { days: TimelineDay[] }) {
   );
 }
 
-function Bar({ bar, row, lane }: { bar: TimelineBar; row: TimelineRow; lane: number }) {
-  const text = barText(row, bar);
+function Bar({ bar, row, lane, ownerId }: { bar: TimelineBar; row: TimelineRow; lane: number; ownerId: string | null }) {
+  const text = barText(row, bar, ownerId);
   const span = bar.endCol - bar.startCol + 1;
   const tailPct = bar.overdue ? (bar.planEndCol === null ? 100 : ((bar.endCol - bar.planEndCol) / span) * 100) : 0;
   return (
     <li className="min-w-0" style={{ gridColumn: `${bar.startCol + 1} / ${bar.endCol + 2}`, gridRow: lane + 1 }}>
       <Link href={`/requests/${row.id}`} title={text} data-bar={row.id} data-lane={lane} data-tone={brandTone(row.brandName)}
-        data-no-deadline={bar.noDeadline ? "" : undefined}
+        data-no-deadline={bar.noDeadline ? "" : undefined} data-shared={bar.shared ? "" : undefined}
         className={cn(
           "relative mx-0.5 flex h-7 items-center gap-1 overflow-hidden rounded-md border border-l-4 border-border border-l-tone-accent bg-card px-1.5 text-xs text-card-foreground shadow-card",
           "transition-[border-color] duration-150 hover:border-border-strong",
@@ -46,6 +46,7 @@ function Bar({ bar, row, lane }: { bar: TimelineBar; row: TimelineRow; lane: num
           {bar.clippedStart && <ChevronLeft data-clipped="start" strokeWidth={2} className="-ml-1 size-3.5 shrink-0 text-foreground-secondary" />}
           <span className="inline-flex shrink-0 text-foreground-secondary"><StatusIcon status={row.status} /></span>
           <span className="min-w-0 flex-1 truncate font-medium text-foreground">{row.title}</span>
+          {bar.shared && <Users data-shared-icon="" strokeWidth={1.75} className="size-3.5 shrink-0 text-foreground-secondary" />}
           {bar.noDeadline && <span className="shrink-0 text-foreground-secondary">No deadline</span>}
           {bar.overdue && <span data-overdue-label="" data-tone="overdue" className="shrink-0 font-medium text-tone-text">Overdue</span>}
           {bar.clippedEnd && <ChevronRight data-clipped="end" strokeWidth={2} className="-mr-1 size-3.5 shrink-0 text-foreground-secondary" />}
@@ -66,7 +67,7 @@ function PersonRow({ person, days, rows }: { person: TimelinePerson; days: Timel
           <ul className={cn(DAY_GRID, "relative auto-rows-[1.75rem] gap-y-1 py-2")}>
             {person.lanes.flatMap((lane, i) => lane.map((b) => {
               const row = rows.get(b.id);
-              return row ? <Bar key={b.id} bar={b} row={row} lane={i} /> : null;
+              return row ? <Bar key={`${person.key}:${b.id}`} bar={b} row={row} lane={i} ownerId={person.assigneeId} /> : null;
             }))}
           </ul>
         ) : <p className="sr-only">No open requests</p>}

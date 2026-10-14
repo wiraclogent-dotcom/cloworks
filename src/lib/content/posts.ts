@@ -25,7 +25,7 @@ function assertDrafter(user: ContentActor) {
 }
 
 async function loadPost(db: ScopedDb, id: string) {
-  const post = await db.contentPost.findFirst({ where: { id }, include: { request: { select: { assigneeId: true } } } });
+  const post = await db.contentPost.findFirst({ where: { id }, include: { request: { select: { assignees: { select: { userId: true } } } } } });
   if (!post) throw new ContentError("NOT_FOUND", "Post not found.");
   return post;
 }
@@ -132,7 +132,7 @@ export async function setPostMediaWith(db: ScopedDb, user: ContentActor, id: str
   const role: ContentMediaRole | null = isEditable(post.status) ? "MOCKUP" : post.status === "IN_PRODUCTION" || post.status === "DONE" ? "FINAL" : null;
   if (!role) throw new ContentError("LOCKED", "This post can no longer be edited.");
   if (media.some((m) => m.role !== role)) throw new ContentError("LOCKED", role === "MOCKUP" ? "Only mockups can be changed right now." : "Only final files can be changed right now.");
-  const allowed = canDraftContent(user) || (role === "FINAL" && !!post.request && post.request.assigneeId === user.id);
+  const allowed = canDraftContent(user) || (role === "FINAL" && !!post.request && post.request.assignees.some((a) => a.userId === user.id));
   if (!allowed) throw new ContentError("FORBIDDEN", "You are not allowed to change this media.");
 
   const ids = media.map((m) => m.mediaId);

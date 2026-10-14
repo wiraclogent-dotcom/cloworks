@@ -14,7 +14,7 @@ import type { CalendarRow } from "@/lib/requests";
 const TODAY = "2026-10-08"; // Thursday; the October grid runs Mon 28 Sep to Sun 1 Nov.
 
 const row = (id: string, title: string, extra: Partial<CalendarRow> = {}): CalendarRow => ({
-  id, title, status: "REQUESTED", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assigneeName: "Cami",
+  id, title, status: "REQUESTED", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: new Date("2026-10-13T17:00:00Z"), outputCount: 1, daysLeft: 6,
   needsMotion: false, requestDay: "2026-10-01", deadlineDay: "2026-10-14", ...extra,
 });
@@ -64,6 +64,18 @@ beforeEach(() => {
   HTMLDialogElement.prototype.close = function (this: HTMLDialogElement) { this.removeAttribute("open"); };
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+describe("RequestCalendar shared cards", () => {
+  it("a shared card shows stacked avatars with the Assignees name and the data-shared hook", () => {
+    view([row("1", "Banner", { assignees: [{ id: "a", name: "Fafa" }, { id: "b", name: "Dimas" }] }), row("2", "Poster")]);
+    const shared = document.querySelector("[data-card='1']") as HTMLElement;
+    const single = document.querySelector("[data-card='2']") as HTMLElement;
+    expect(shared.hasAttribute("data-shared")).toBe(true);
+    expect(within(shared).getByRole("img", { name: "Assignees: Fafa, Dimas" })).toBeTruthy();
+    expect(single.hasAttribute("data-shared")).toBe(false);
+    expect(within(single).getByRole("img", { name: "Assignee: Cami" })).toBeTruthy();
+  });
+});
 
 describe("RequestCalendar", () => {
   it("renders the month heading, Monday-first weekday headers and the month navigation links", () => {

@@ -7,7 +7,9 @@ const q = (done: number, items: number, onTimeCount: number, lateCount: number) 
 const none = () => q(0, 0, 0, 0);
 const kpi = (userId: string, quarters: [ReturnType<typeof q>, ReturnType<typeof q>, ReturnType<typeof q>, ReturnType<typeof q>]): PersonProjectKpi =>
   ({ userId, year: 2026, quarters: { 1: quarters[0], 2: quarters[1], 3: quarters[2], 4: quarters[3] }, unscheduled: [], excluded: [], otherWork: [], yearScore: null }) as unknown as PersonProjectKpi;
-const req = (userId: string, tasksDone: number, progress: number | null) => ({ userId, kpi: { tasksDone, progress } });
+/** A request row with `tasksDone` requests of its own (ids unique to the person), or the given request ids. */
+const req = (userId: string, tasksDone: number | string[], progress: number | null) =>
+  ({ userId, kpi: { doneRequestIds: Array.isArray(tasksDone) ? tasksDone : Array.from({ length: tasksDone }, (_, i) => `${userId}-${i}`), progress } });
 const cell = (cells: { key: string; label: string; value: string; hint?: string }[], key: string) => cells.find((c) => c.key === key)!;
 
 describe("shortMonthLabel", () => {
@@ -45,8 +47,13 @@ describe("teamSummaryCells", () => {
   });
   it("sums request tasks and averages target progress as before", () => {
     expect(cell(cells, "reqDone").value).toBe("7");
+    expect(cell(cells, "reqDone").hint).toBe("Each request counted once, even when several people worked on it.");
     expect(cell(cells, "reqProgress").value).toBe("75%");
     expect(cell(cells, "reqProgress").hint).toBe("Across 2 people with a target.");
+  });
+  it("counts a request shared by several people once", () => {
+    const shared = teamSummaryCells({ month: "2026-10", year: 2026, requestRows: [req("a", ["r1"], null), req("b", ["r1", "r2"], null), req("c", ["r1"], null)], projectKpis: [] });
+    expect(cell(shared, "reqDone").value).toBe("2");
   });
   it("project done is Σ done / Σ items and on time is Σ onTime / (onTime+late)", () => {
     expect(cell(cells, "projDone").value).toBe("4/6");

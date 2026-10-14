@@ -11,7 +11,7 @@ const PEOPLE = [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }];
 const HREFS = { prevHref: "/requests?view=timeline&week=2026-09-21", nextHref: "/requests?view=timeline&week=2026-10-05", todayHref: "/requests?view=timeline" };
 
 const row = (id: string, title: string, extra: Partial<TimelineRow> = {}): TimelineRow => ({
-  id, title, status: "ON_PROGRESS", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assigneeName: "Adi", assigneeId: "a",
+  id, title, status: "ON_PROGRESS", brandName: "Clogent", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "a", name: "Adi" }],
   requestedAt: new Date("2026-09-30T17:00:00Z"), deadline: new Date("2026-10-13T17:00:00Z"), outputCount: 1, daysLeft: 6,
   needsMotion: false, requestDay: "2026-10-01", deadlineDay: "2026-10-14", ...extra,
 });
@@ -30,6 +30,32 @@ function mockNarrow(narrow: boolean) {
 
 beforeEach(() => mockNarrow(false));
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+
+describe("RequestTimeline shared bars", () => {
+  const shared = () => row("1", "Banner", { assignees: [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }] });
+
+  it("a shared request shows in both lanes, each bar saying who it is shared with", () => {
+    view([shared()]);
+    const adi = within(section("Adi")).getByRole("link", { name: /shared with Bea/ });
+    const bea = within(section("Bea")).getByRole("link", { name: /shared with Adi/ });
+    expect(adi.getAttribute("data-shared")).not.toBeNull();
+    expect(bea.getAttribute("data-shared")).not.toBeNull();
+  });
+
+  it("a single-assignee bar is not shared", () => {
+    view([row("1", "Banner")]);
+    const link = within(section("Adi")).getByRole("link", { name: /Banner/ });
+    expect(link.getAttribute("data-shared")).toBeNull();
+    expect(link.getAttribute("title")).not.toMatch(/shared with/);
+  });
+
+  it("narrow list marks a shared request too", () => {
+    mockNarrow(true);
+    view([shared()]);
+    expect(within(section("Adi")).getByText(/shared with Bea/)).toBeTruthy();
+    expect(within(section("Bea")).getByText(/shared with Adi/)).toBeTruthy();
+  });
+});
 
 describe("RequestTimeline", () => {
   it("renders the range heading, week navigation and 7 day columns", () => {
@@ -56,7 +82,7 @@ describe("RequestTimeline", () => {
     expect(within(section("Bea")).getByText("0 open")).toBeTruthy();
     expect(screen.queryByRole("region", { name: /^Unassigned/ })).toBeNull();
     cleanup();
-    view([row("1", "Banner"), row("2", "Poster", { assigneeId: null, assigneeName: null })]);
+    view([row("1", "Banner"), row("2", "Poster", { assignees: [] })]);
     expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Adi", "Bea", "Unassigned"]);
     expect(within(section("Unassigned")).getByText("1 open")).toBeTruthy();
   });

@@ -58,14 +58,14 @@ export function myKpiTiles(kpi: KpiResult, basisRole: JobRole): KpiTileData[] {
 export type TeamSummary = { people: number; tasksDone: number; avgProgress: number | null; withTarget: number };
 
 /**
- * Team KPI summary from the rows already on the page: number of people, total tasks done, and the average progress
- * (mean of each person's whole percent, over people who have a measurable target; null when nobody has one).
+ * Team KPI summary from the rows already on the page: number of people, tasks done (a request several people share
+ * counts once), and the average progress (mean of each person's whole percent, over people who have a measurable target; null when nobody has one).
  */
-export function teamSummary(rows: { kpi: Pick<KpiResult, "tasksDone" | "progress"> }[]): TeamSummary {
+export function teamSummary(rows: { kpi: Pick<KpiResult, "doneRequestIds" | "progress"> }[]): TeamSummary {
   const pcts = rows.map((r) => progressPercent(r.kpi.progress)).filter((p): p is number => p !== null);
   return {
     people: rows.length,
-    tasksDone: rows.reduce((n, r) => n + r.kpi.tasksDone, 0),
+    tasksDone: new Set(rows.flatMap((r) => r.kpi.doneRequestIds)).size,
     avgProgress: pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null,
     withTarget: pcts.length,
   };

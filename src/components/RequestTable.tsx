@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from "lucide-react";
 import type { RequestRow, SortKey } from "@/lib/requests";
 import { NeedsMotionBadge, StatusBadge } from "./status";
-import { Avatar } from "./ui/Avatar";
+import { assigneeLabel } from "@/lib/assignees";
+import { Avatar, AvatarStack } from "./ui/Avatar";
 import { BrandTag } from "./ui/Chip";
 import { DeadlineChip } from "./ui/DeadlineChip";
 import { EmptyState } from "./ui/EmptyState";
@@ -31,6 +32,17 @@ function Person({ name }: { name: string }) {
     <span className="flex min-w-0 items-center gap-2">
       <Avatar name={name} size="sm" decorative />
       <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
+/** Several assignees: stacked avatars plus "A & B" for two, "A, B +N" for more. */
+function Assignees({ names }: { names: string[] }) {
+  const text = names.length === 2 ? assigneeLabel(names) : `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+  return (
+    <span className="flex min-w-0 items-center gap-2" title={`Assignees: ${names.join(", ")}`}>
+      <AvatarStack names={names} max={3} size="sm" label="Assignees" />
+      <span aria-hidden="true" className="truncate">{text}</span>
     </span>
   );
 }
@@ -88,7 +100,7 @@ export function RequestTable({ rows, sort, dir, hrefFor, footer }: {
                   <td className={cn(t.td, "text-foreground-secondary")}>{r.divisionName}</td>
                   <td className={cn(t.td, "max-w-48")}><Person name={r.requesterName} /></td>
                   <td className={cn(t.td, "max-w-48")} data-cell="assignee">
-                    {r.assigneeName ? <Person name={r.assigneeName} /> : <span className="text-foreground-secondary italic">Unassigned</span>}
+                    {r.assignees.length >= 2 ? <Assignees names={r.assignees.map((a) => a.name)} /> : r.assignees[0] ? <Person name={r.assignees[0].name} /> : <span className="text-foreground-secondary italic">Unassigned</span>}
                   </td>
                   <td className={t.td}><StatusBadge status={r.status} /></td>
                   <td className={cn(t.td, "whitespace-nowrap tabular-nums")}>{fmt.format(r.requestedAt)}</td>

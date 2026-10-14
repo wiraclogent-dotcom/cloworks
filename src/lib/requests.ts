@@ -1,4 +1,5 @@
 import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
+import { ASSIGNEE_ORDER, type AssigneeRef } from "./assignees";
 import { daysLeft } from "./daysLeft";
 import { VIDEO_TYPE_NAME, jakartaDate } from "./createRequest";
 import { isOpenStatus } from "./reschedule";
@@ -26,7 +27,8 @@ export type RequestRow = {
   brandName: string;
   divisionName: string;
   requesterName: string;
-  assigneeName: string | null;
+  /** Everyone working on it, in the order they were added (ASSIGNEE_ORDER); empty = unassigned. */
+  assignees: AssigneeRef[];
   status: RequestStatus;
   requestedAt: Date;
   deadline: Date | null;
@@ -38,13 +40,18 @@ export type RequestRow = {
   daysLeft: number | null;
 };
 
+const ASSIGNEES_SELECT = {
+  orderBy: [...ASSIGNEE_ORDER],
+  select: { user: { select: { id: true, name: true } } },
+} satisfies Prisma.Request$assigneesArgs;
+
 const ROW_SELECT = {
   id: true, title: true, status: true, requestedAt: true, deadline: true, outputCount: true, needsMotion: true,
   brand: { select: { name: true } },
   type: { select: { name: true } },
   division: { select: { name: true } },
   requester: { select: { name: true } },
-  assignee: { select: { name: true } },
+  assignees: ASSIGNEES_SELECT,
 } satisfies Prisma.RequestSelect;
 
 type DbRow = Prisma.RequestGetPayload<{ select: typeof ROW_SELECT }>;
@@ -52,7 +59,7 @@ type DbRow = Prisma.RequestGetPayload<{ select: typeof ROW_SELECT }>;
 function toRow(r: DbRow, now: Date): RequestRow {
   return {
     id: r.id, title: r.title, brandName: r.brand.name, divisionName: r.division.name,
-    requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
+    requesterName: r.requester.name, assignees: r.assignees.map((a) => ({ id: a.user.id, name: a.user.name })),
     status: r.status, requestedAt: r.requestedAt, deadline: r.deadline, outputCount: r.outputCount, needsMotion: r.needsMotion,
     isVideo: r.type.name === VIDEO_TYPE_NAME, daysLeft: daysLeft(r.deadline, now),
   };
@@ -61,7 +68,7 @@ function toRow(r: DbRow, now: Date): RequestRow {
 /** The shared filter, WITHOUT the status clause (callers add it). */
 function filterClauses(filter: RequestFilter): Prisma.RequestWhereInput[] {
   const and: Prisma.RequestWhereInput[] = [];
-  if (filter.assigneeId) and.push({ assigneeId: filter.assigneeId });
+  if (filter.assigneeId) and.push({ assignees: { some: { userId: filter.assigneeId } } });
   if (filter.brandId) and.push({ brandId: filter.brandId });
   if (filter.divisionId) and.push({ divisionId: filter.divisionId });
   if (filter.needsMotion !== undefined) and.push({ needsMotion: filter.needsMotion });
@@ -144,7 +151,7 @@ export const SORT_KEYS: readonly SortKey[] = ["title", "brand", "division", "req
 const STATUS_ORDER: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED"];
 
 /** The row fields a sort key can read. */
-export type SortFields = Pick<RequestRow, "title" | "brandName" | "divisionName" | "requesterName" | "assigneeName" | "status" | "requestedAt" | "deadline">;
+export type SortFields = Pick<RequestRow, "title" | "brandName" | "divisionName" | "requesterName" | "assignees" | "status" | "requestedAt" | "deadline">;
 
 /** Stable sort for the table (used for the text keys the database cannot collate like JS); nulls (no deadline / no assignee) always last regardless of direction. */
 export function sortRows<T extends SortFields>(rows: T[], key: SortKey, dir: "asc" | "desc"): T[] {
@@ -154,7 +161,7 @@ export function sortRows<T extends SortFields>(rows: T[], key: SortKey, dir: "as
       case "brand": return r.brandName.toLowerCase();
       case "division": return r.divisionName.toLowerCase();
       case "requester": return r.requesterName.toLowerCase();
-      case "assignee": return r.assigneeName?.toLowerCase() ?? null;
+      case "assignee": return r.assignees[0]?.name.toLowerCase() ?? null;
       case "status": return STATUS_ORDER.indexOf(r.status);
       case "requested": return r.requestedAt.getTime();
       case "deadline": return r.deadline?.getTime() ?? null;
@@ -208,12 +215,12 @@ export async function listRequestsPage(
     select: {
       id: true, title: true, status: true, requestedAt: true, deadline: true,
       brand: { select: { name: true } }, division: { select: { name: true } },
-      requester: { select: { name: true } }, assignee: { select: { name: true } },
+      requester: { select: { name: true } }, assignees: ASSIGNEES_SELECT,
     },
   });
   const sorted = sortRows(lean.map((r) => ({
     id: r.id, title: r.title, status: r.status, requestedAt: r.requestedAt, deadline: r.deadline,
-    brandName: r.brand.name, divisionName: r.division.name, requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
+    brandName: r.brand.name, divisionName: r.division.name, requesterName: r.requester.name, assignees: r.assignees.map((a) => ({ id: a.user.id, name: a.user.name })),
   })), sort, dir);
   const ids = sorted.slice(window.skip, window.skip + size).map((r) => r.id);
   const full = new Map((await db.request.findMany({ where: { id: { in: ids } }, select: ROW_SELECT })).map((r) => [r.id, r]));
@@ -259,7 +266,7 @@ export async function listCalendarRequests(
   }));
 }
 
-export type TimelineRow = CalendarRow & { assigneeId: string | null };
+export type TimelineRow = CalendarRow;
 
 /**
  * Timeline data: open requests whose bar (request day to deadline; overdue and no-deadline ones run to today)
@@ -284,11 +291,10 @@ export async function listTimelineRequests(
       ],
     },
     orderBy: [{ requestedAt: "asc" }, DEADLINE_ASC, { id: "asc" }],
-    select: { ...ROW_SELECT, assigneeId: true },
+    select: ROW_SELECT,
   });
   return rows.map((r) => ({
     ...toRow(r, now),
-    assigneeId: r.assigneeId,
     requestDay: jakartaDate(r.requestedAt),
     deadlineDay: r.deadline ? jakartaDate(r.deadline) : null,
   }));

@@ -14,16 +14,17 @@ describe("listBoardColumns / listRequestsPage", () => {
     status?: RequestStatus; requester?: string; assignee?: string | null; brand?: string; division?: string;
     deadline?: string | null; requestedAt?: string; notes?: string;
   } = {}) {
-    await db.prisma.request.create({
+    const r = await db.prisma.request.create({
       data: {
         title, notes: o.notes,
         brandId: b[o.brand ?? "a"], divisionId: d[o.division ?? "x"], typeId,
-        requesterId: u[o.requester ?? "req"], assigneeId: o.assignee ? u[o.assignee] : null,
+        requesterId: u[o.requester ?? "req"],
         status: o.status ?? "REQUESTED",
         deadline: o.deadline ? new Date(`${o.deadline}T00:00:00+07:00`) : null,
         requestedAt: new Date(o.requestedAt ?? "2026-10-01T00:00:00Z"),
       },
     });
+    if (o.assignee) await db.prisma.requestAssignee.createMany({ data: [{ requestId: r.id, userId: u[o.assignee] }] });
   }
 
   beforeAll(async () => {
@@ -176,7 +177,7 @@ describe("listBoardColumns / listRequestsPage", () => {
           const keyOf = (id: string) => {
             const r = all.find((x) => x.id === id)!;
             const k = { title: r.title.toLowerCase(), brand: r.brandName.toLowerCase(), division: r.divisionName.toLowerCase(),
-              requester: r.requesterName.toLowerCase(), assignee: r.assigneeName?.toLowerCase() ?? null, status: r.status,
+              requester: r.requesterName.toLowerCase(), assignee: r.assignees[0]?.name.toLowerCase() ?? null, status: r.status,
               requested: r.requestedAt.getTime(), deadline: r.deadline?.getTime() ?? null }[key];
             return k;
           };
@@ -187,7 +188,7 @@ describe("listBoardColumns / listRequestsPage", () => {
       it("puts nulls last in both directions for deadline and assignee across pages", async () => {
         for (const dir of ["asc", "desc"] as const) {
           const p1 = await listRequestsPage(db.prisma, {}, { sort: "assignee", dir, page: 1 });
-          expect(p1.rows[0].assigneeName).not.toBeNull();
+          expect(p1.rows[0].assignees).not.toHaveLength(0);
           const p2 = await listRequestsPage(db.prisma, {}, { sort: "deadline", dir, page: 2 });
           expect(p2.rows.at(-1)!.deadline).toBeNull();
         }

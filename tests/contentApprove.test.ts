@@ -108,6 +108,16 @@ describe("approve content post", () => {
     expect(p.approvedAt?.toISOString()).toBe(NOW.toISOString());
   });
 
+  it("approving with an assignee writes one RequestAssignee row", async () => {
+    const designer = await db.prisma.user.create({ data: { email: "adesigner@clogent.co.id", name: "adesigner", fullName: "A Designer", appRole: "CREATIVE", jobRole: "DESIGNER" } });
+    const id = await submitted();
+    const { requestId } = await approveContentPostWith(db.prisma, lead, id, input({ assigneeIds: [designer.id] }), NOW);
+    const req = await db.prisma.request.findUniqueOrThrow({ where: { id: requestId }, include: { assignees: true } });
+    expect(req.assignees.map((a) => a.userId)).toEqual([designer.id]);
+    const none = await approveContentPostWith(db.prisma, lead, await submitted(), input({ assigneeIds: [] }), NOW);
+    expect(await db.prisma.requestAssignee.count({ where: { requestId: none.requestId } })).toBe(0);
+  });
+
   it("after a cancel, a mock-up the request's attachments still use is not returned for destruction", async () => {
     const id = await submitted({ media: ["IMAGE"] });
     const [link] = await db.prisma.contentPostMedia.findMany({ where: { postId: id } });

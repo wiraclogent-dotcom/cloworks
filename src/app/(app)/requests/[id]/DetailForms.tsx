@@ -1,17 +1,20 @@
 "use client";
 
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { RequestStatus } from "@prisma/client";
-import { addAttachment, addComment, assignRequest, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
+import { addAttachment, addComment, setAssignees, removeAttachment, setIncludeKpi, setNeedsMotion } from "./actions";
 import { celebrate } from "@/lib/celebrate";
 import { moveRequest, rescheduleRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
 import { canTransition } from "@/lib/workflow";
-import { CircleAlert, Link2, MessageSquarePlus, Trash2 } from "lucide-react";
+import { CircleAlert, Link2, MessageSquarePlus, Trash2, X } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { cn, focusRing } from "@/components/ui/cn";
+import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { Switch } from "@/components/ui/Switch";
 
@@ -117,32 +120,79 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
   );
 }
 
-export function AssigneePicker({ requestId, current, options }: { requestId: string; current: string | null; options: { id: string; name: string }[] }) {
+/**
+ * Chips for the people on a request, each removable, plus a native select to add someone. Each click sends one change
+ * (add or remove one person), which the server applies to the current rows, so a stale page never undoes someone
+ * else's edit. Optimistic: the list changes at once and reverts with the server message if the change is refused.
+ * Off-team options (a current assignee who has left the team) are never offered to add: the server would refuse them. Stays mounted (local list re-syncs when the
+ * server's list changes) and moves focus to the add select after each change, so keyboard users keep their place.
+ * While a change is in flight the controls are aria-disabled, not disabled, so they keep focus; extra changes are ignored.
+ */
+export function AssigneesPicker({ requestId, current, options }: { requestId: string; current: AssigneeRef[]; options: AssigneeOption[] }) {
   const uid = useId();
   const router = useRouter();
-  const [value, setValue] = useState(current ?? "");
+  const [list, setList] = useState<AssigneeRef[]>(current);
+  const currentKey = current.map((p) => p.id).join(",");
+  const [seenKey, setSeenKey] = useState(currentKey);
+  if (currentKey !== seenKey) { setSeenKey(currentKey); setList(current); }
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  function change(next: string) {
-    const prev = value;
-    setValue(next);
+  const busy = useRef(false);
+  const wantFocus = useRef(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+  const groupRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!wantFocus.current) return;
+    wantFocus.current = false;
+    const sel = selectRef.current;
+    if (sel && !sel.disabled) sel.focus(); else groupRef.current?.focus();
+  });
+  function apply(change: { add: AssigneeRef } | { remove: AssigneeRef }) {
+    if (busy.current) return;
+    busy.current = true;
+    wantFocus.current = true;
+    const prev = list;
+    setList("add" in change ? [...list, change.add] : list.filter((p) => p.id !== change.remove.id));
     setError(null);
     start(async () => {
       try {
-        const r = await assignRequest(requestId, next || null);
-        if (r.ok) router.refresh(); else { setValue(prev); setError(r.message); }
+        const r = await setAssignees(requestId, "add" in change ? { add: [change.add.id] } : { remove: [change.remove.id] });
+        if (r.ok) router.refresh(); else { setList(prev); setError(r.message); }
       } catch {
-        setValue(prev);
-        setError("Could not change the assignee. Try again.");
+        setList(prev);
+        setError("Could not change the assignees. Try again.");
+      } finally {
+        busy.current = false;
       }
     });
   }
+  const chosen = new Set(list.map((p) => p.id));
+  const addable = options.filter((o) => !chosen.has(o.id) && !o.offTeam);
   return (
-    <div>
-      <label htmlFor={`${uid}-a`} className={labelClass}>Assignee</label>
-      <select id={`${uid}-a`} value={value} disabled={pending} onChange={(e) => change(e.target.value)} className={fieldClass({ kind: "select" })}>
-        <option value="">Unassigned</option>
-        {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+    <div ref={groupRef} tabIndex={-1} role="group" aria-labelledby={`${uid}-l`} className="outline-none">
+      <span id={`${uid}-l`} className={labelClass}>Assignees</span>
+      {list.length > 0 && (
+        <ul className="mb-2 flex flex-wrap gap-1.5">
+          {list.map((p) => (
+            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
+              <Avatar name={p.name} size="sm" decorative />
+              <span className="min-w-0 truncate">{p.name}</span>
+              <button type="button" aria-disabled={pending || undefined} aria-label={`Remove ${p.name}`} onClick={() => apply({ remove: p })}
+                className={cn("inline-flex size-5 items-center justify-center rounded-full text-foreground-secondary hover:bg-surface hover:text-foreground aria-disabled:opacity-50", focusRing)}>
+                <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <select ref={selectRef} aria-label="Add assignee" value="" disabled={addable.length === 0} aria-disabled={pending || undefined} aria-describedby={error ? `${uid}-e` : undefined}
+        onChange={(e) => {
+          const pick = addable.find((o) => o.id === e.target.value);
+          if (pick) apply({ add: { id: pick.id, name: pick.name } });
+        }}
+        className={fieldClass({ kind: "select" })}>
+        <option value="">+ Add person</option>
+        {addable.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>

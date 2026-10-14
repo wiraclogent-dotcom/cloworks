@@ -19,3 +19,7 @@ requiresPermission: dashboard.self
 - **Active workload**: open requests assigned to you. Only shown for designers.
 
 If a number shows a dash or a note, there was not enough data that month to calculate it.
+
+## Shared requests
+
+A request can have several assignees, for example a designer and a video editor. Every assignee gets the full point: when a shared request is done, it counts as one task done for each of them, with its outputs, on-time result and turnaround.

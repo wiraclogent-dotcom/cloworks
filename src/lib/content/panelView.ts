@@ -18,7 +18,7 @@ export type PostPanelView = {
     id: string; channelId: string; status: ContentStatus; kind: ContentKind; surface: ContentSurface; format: ContentFormat;
     plannedAt: string | null; publishedAt: string | null; brief: string; caption: string; typeId: string | null;
     author: { id: string; name: string }; submittedAt: string | null;
-    request: { id: string; status: RequestStatus; assigneeId: string | null } | null;
+    request: { id: string; status: RequestStatus } | null;
   };
   mockups: PanelMedia[];
   finals: PanelMedia[];
@@ -39,7 +39,7 @@ export async function loadPostPanel(
     where: { id: postId },
     include: {
       author: { select: { id: true, name: true } },
-      request: { select: { id: true, status: true, assigneeId: true } },
+      request: { select: { id: true, status: true, assignees: { where: { userId: user.id }, select: { userId: true } } } },
       media: { orderBy: { order: "asc" }, select: { role: true, order: true, media: { select: { id: true, publicId: true, type: true } } } },
       comments: { orderBy: { createdAt: "asc" }, select: { id: true, body: true, isFeedback: true, createdAt: true, author: { select: { name: true } } } },
     },
@@ -69,7 +69,8 @@ export async function loadPostPanel(
       plannedAt: post.plannedAt ? jakartaDate(post.plannedAt) : null,
       publishedAt: post.publishedAt ? jakartaDate(post.publishedAt) : null,
       brief: post.brief ?? "", caption: post.caption ?? "", typeId: post.typeId,
-      author: post.author, submittedAt: post.submittedAt?.toISOString() ?? null, request: post.request,
+      author: post.author, submittedAt: post.submittedAt?.toISOString() ?? null,
+      request: post.request ? { id: post.request.id, status: post.request.status } : null,
     },
     mockups: media("MOCKUP"),
     finals: media("FINAL"),
@@ -81,8 +82,8 @@ export async function loadPostPanel(
       approve: canApproveContent(user) && post.kind === "PLANNED" && post.status === "SUBMITTED" && !post.requestId,
       comment: true,
       delete: (post.authorId === user.id || canApproveContent(user)) && canDelete(post.status),
-      // Same rule as setPostMediaWith's FINAL branch: drafters, or the request's assignee.
-      addFinal: inProduction && (drafter || (!!post.request && post.request.assigneeId === user.id)),
+      // Same rule as setPostMediaWith's FINAL branch: drafters, or any assignee of the request.
+      addFinal: inProduction && (drafter || (!!post.request && post.request.assignees.length > 0)),
     },
     warnDate: outOfOrder(tab).has(post.id) ? suggestDate(tab, post.id) : null,
     mediaReady: cloudName !== null,

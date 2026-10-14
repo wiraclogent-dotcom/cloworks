@@ -63,7 +63,7 @@ describe("request status drives the content post", () => {
 
   it("Done stamps doneAt; reopening returns to IN_PRODUCTION", async () => {
     const { postId, requestId } = await approved();
-    await db.prisma.request.update({ where: { id: requestId }, data: { assigneeId: lead.id } });
+    await db.prisma.requestAssignee.create({ data: { requestId, userId: lead.id } });
     await move(requestId, "ON_PROGRESS", "FIRST_LOOK", "DONE");
     const done = await post(postId);
     expect(done.status).toBe("DONE");
@@ -113,7 +113,7 @@ describe("request status drives the content post", () => {
 
   it("cancelling a DONE request clears doneAt", async () => {
     const { postId, requestId } = await approved();
-    await db.prisma.request.update({ where: { id: requestId }, data: { assigneeId: lead.id } });
+    await db.prisma.requestAssignee.create({ data: { requestId, userId: lead.id } });
     await move(requestId, "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED");
     expect(await post(postId)).toMatchObject({ status: "DRAFT", requestId: null, doneAt: null });
   });
