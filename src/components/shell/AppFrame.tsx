@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition, type
 import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { Button } from "@/components/shadcn/button";
-import { Card } from "@/components/shadcn/card";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/shadcn/sheet";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { sidebarRowClass } from "./classes";
@@ -24,7 +23,7 @@ function subscribeCollapsed(cb: () => void) {
 const getCollapsed = sidebarIsCollapsed;
 
 /**
- * Client frame of the signed-in app: Deep Blue sidebar (232px, collapsible to a 64px rail on desktop, remembered in
+ * Client frame of the signed-in app: white V3 sidebar (232px, collapsible to a 64px rail on desktop, remembered in
  * localStorage `ct-sidebar`), slim top bar + off-canvas drawer (shadcn `Sheet` from the left) below 768px, skip link
  * and `<main id="main">`. The server AppShell passes in the nav, footer and workspace name (permission checks and reads
  * stay on the server).
@@ -62,7 +61,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
       {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
           chevron: a chevron here would promise a menu that does not exist. */}
       <div className="flex-none px-3 pt-3">
-        <Card className="sb-item sb-frame flex items-center gap-2.5 p-2">
+        <div className="sb-item sb-frame flex items-center gap-2.5 p-1.5">
           <LogoMark size={32} />
           <div className="sb-label min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
@@ -76,7 +75,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
               </Button>
             </SheetClose>
           ) : null}
-        </Card>
+        </div>
       </div>
 
       {/* Search is shown for the reference layout only: it is disabled until search exists. */}
@@ -85,8 +84,8 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
           <span className="sr-only">Search (coming soon)</span>
           <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-sidebar-foreground-secondary" />
           <input type="search" disabled placeholder="Search" title="Search: coming soon"
-            className="h-9 w-full rounded-lg border border-border bg-card pr-9 pl-8 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70" />
-          <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 rounded border border-border px-1.5 text-xs text-muted-foreground">/</kbd>
+            className="h-9 w-full rounded-full border-0 bg-muted pr-9 pl-8 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-70" />
+          <kbd aria-hidden="true" className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 rounded-md bg-card px-1.5 text-xs text-muted-foreground">/</kbd>
         </label>
       </div>
 

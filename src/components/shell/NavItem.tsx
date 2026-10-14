@@ -17,10 +17,10 @@ function NavLinkView({ href, label, icon, active }: Props & { active: boolean })
   return (
     <Link href={href} transitionTypes={["nav"]} aria-current={active ? "page" : undefined} title={label}
       className={cn(
-        "sb-item flex h-9 items-center gap-3 rounded-lg px-2.5 text-sm transition-colors duration-150 ease-out",
+        "sb-item flex h-9 items-center gap-3 rounded-xl px-2.5 text-sm transition-colors duration-150 ease-out",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring [&_svg]:size-[18px] [&_svg]:shrink-0",
         active
-          ? "bg-sidebar-active font-medium text-sidebar-foreground shadow-card [&_svg]:text-sidebar-foreground"
+          ? "bg-sidebar-active font-medium text-sidebar-active-foreground [&_svg]:text-sidebar-active-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-hover [&_svg]:text-sidebar-foreground-secondary hover:[&_svg]:text-sidebar-foreground",
       )}>
       {icon}
@@ -34,7 +34,7 @@ function ActiveNavLink(props: Props) {
 }
 
 /**
- * Sidebar link: 36px, 8px radius; active = white pill with a card shadow + aria-current="page".
+ * Sidebar link: 36px, 12px radius; active = solid blue pill with white text + aria-current="page".
  * The pathname is request data (cacheComponents), so the active state streams in inside Suspense; the
  * prerendered fallback is the same link without the highlight.
  */

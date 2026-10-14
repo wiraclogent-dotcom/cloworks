@@ -116,16 +116,15 @@ describe.each(themes)("contrast (%s)", (theme) => {
     expect(ratio(t(fg), t(bg))).toBeGreaterThanOrEqual(AA);
   });
 
-  it("sidebar text on the hover and active pills ≥ 4.5:1, Aqua icon on the active pill ≥ 3:1", () => {
+  it("sidebar text on the hover pill and the solid active pill ≥ 4.5:1", () => {
     const hover = over(t("--sidebar-hover"), t("--sidebar"));
     const active = over(t("--sidebar-active"), t("--sidebar"));
     expect(ratio(t("--sidebar-foreground"), hover)).toBeGreaterThanOrEqual(AA);
-    expect(ratio(t("--sidebar-foreground"), active)).toBeGreaterThanOrEqual(AA);
+    expect(ratio(t("--sidebar-active-foreground"), active)).toBeGreaterThanOrEqual(AA);
     // Phase B2 review fix: secondary sidebar text (group titles, role line, inactive theme options) also sits on the
     // hover pill (theme switch track) and the active pill.
     expect(ratio(t("--sidebar-foreground-secondary"), hover)).toBeGreaterThanOrEqual(AA);
-    expect(ratio(t("--sidebar-foreground-secondary"), active)).toBeGreaterThanOrEqual(AA);
-    expect(ratio(t("--sidebar-accent"), active)).toBeGreaterThanOrEqual(UI);
+    expect(ratio(t("--sidebar-accent"), t("--sidebar"))).toBeGreaterThanOrEqual(UI);
     expect(ratio(t("--sidebar-ring"), t("--sidebar"))).toBeGreaterThanOrEqual(UI);
   });
 

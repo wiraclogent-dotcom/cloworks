@@ -58,12 +58,13 @@
   /* Focus ring: brand Aqua darkened one step so it reaches 3:1 on the canvas (spec #11AA9F is 2.7:1). */
   --ring: #1f5eff;
 
-  /* Sidebar: a quiet rail in the canvas colour; the active link is a white pill */
+  /* Sidebar: white rail (V3); the active link is a solid blue pill with white text */
   --sidebar: #ffffff;
   --sidebar-foreground: #0a0f1f;
   --sidebar-foreground-secondary: #5b6478;
   --sidebar-hover: rgba(10, 15, 31, 0.05);
-  --sidebar-active: #eef3ff;
+  --sidebar-active: #1f5eff;
+  --sidebar-active-foreground: #ffffff;
   --sidebar-border: #e5e9f2;
   --sidebar-accent: #1f5eff;
   --sidebar-ring: #1f5eff;
@@ -185,7 +186,8 @@
   --sidebar-foreground: #eef2fa;
   --sidebar-foreground-secondary: #a3adc2;
   --sidebar-hover: rgba(255, 255, 255, 0.06);
-  --sidebar-active: #1c2a4d;
+  --sidebar-active: #2f66ff;
+  --sidebar-active-foreground: #ffffff;
   --sidebar-accent: #8fb0ff;
   --sidebar-border: #243049;
   --sidebar-ring: #8fb0ff;
@@ -329,6 +331,7 @@
   --color-sidebar-foreground-secondary: var(--sidebar-foreground-secondary);
   --color-sidebar-hover: var(--sidebar-hover);
   --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
