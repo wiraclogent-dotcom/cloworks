@@ -167,6 +167,19 @@ describe("Members page", () => {
     expect((act.approveRequest.mock.calls[0][1] as FormData).get("linkUserId")).toBe("u1");
   });
 
+  it("an Edit panel keeps what was typed when it is collapsed and opened again", async () => {
+    render(await UsersContent({}));
+    const panel = openEdit("Yosi");
+    fireEvent.change(within(panel).getByLabelText("Title"), { target: { value: "Senior designer (draft)" } });
+    const toggle = screen.getByRole("button", { name: "Edit Yosi" });
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    // Closed: still in the page (like <details>), but hidden from everyone.
+    expect(within(panel).queryByRole("button", { name: "Save changes for Yosi" })).toBeNull();
+    fireEvent.click(toggle);
+    expect((within(panel).getByLabelText("Title") as HTMLInputElement).value).toBe("Senior designer (draft)");
+  });
+
   it("Merge: review shows the summary and Merge confirms with both ids; a failed review shows the error", async () => {
     const counts = { requested: 2, assigned: 1, statusEvents: 0, deadlineEvents: 0, comments: 1, attachments: 0, kpiTargets: 0, notifications: 5, chatReads: 3, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
     act.previewMerge.mockResolvedValueOnce({ ok: false, error: "Both people have a login. Clear one login email first." });

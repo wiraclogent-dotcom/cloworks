@@ -123,7 +123,7 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                     <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-left font-medium text-link hover:underline", focusRing)}>
                       <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />Edit {u.name}
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
+                    <CollapsibleContent keepMounted className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />

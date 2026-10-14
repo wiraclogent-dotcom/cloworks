@@ -8,7 +8,8 @@ import { cn, focusRing } from "./cn";
 
 /**
  * A card with a Collapsible inside: closed by default, the heading row ("Title (n)") is the trigger (an `<h2>` holding
- * the full-width button). The body is rendered only while open (Radix Collapsible).
+ * the full-width button). The body is rendered once and only hidden while closed (`keepMounted`), so its state
+ * survives toggling and it is in the server HTML, as with the old details disclosure.
  * Open or closed is remembered per `storageKey` in localStorage; the server render is always closed and a stored
  * "open" applies after mount. Storage may be missing or blocked (private window): everything still works, just
  * unremembered.
@@ -38,7 +39,7 @@ export function CollapsibleSection({ id, storageKey, title, count, children, cla
             {`${title} (${count})`}
           </CollapsibleTrigger>
         </h2>
-        <CollapsibleContent className="border-t border-border">{children}</CollapsibleContent>
+        <CollapsibleContent keepMounted className="border-t border-border">{children}</CollapsibleContent>
       </Collapsible>
     </Card>
   );

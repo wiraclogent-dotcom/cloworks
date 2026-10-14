@@ -62,7 +62,7 @@ export async function ListsContent() {
                       <span className="sr-only"> · </span>
                       <Badge tone={chip.tone}>{chip.label}</Badge>
                     </CollapsibleTrigger>
-                    <CollapsibleContent className="border-t border-border p-3">
+                    <CollapsibleContent keepMounted className="border-t border-border p-3">
                       <TypeForm t={{ id: t.id, name: t.name, active: t.active, schemaText: JSON.stringify(t.fieldSchema, null, 2) }} />
                     </CollapsibleContent>
                   </Collapsible>

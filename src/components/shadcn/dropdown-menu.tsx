@@ -10,11 +10,12 @@ const menuSurface =
   "z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden rounded-lg border border-border bg-popover p-1 text-popover-foreground shadow-raised data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in"
 
 /**
- * One row. Radix moves focus to the row under the pointer or arrow keys (data-highlighted), so the highlight is the
- * focus indicator. A disabled item is aria-disabled with data-disabled (not the disabled attribute).
+ * One row, at least 36px tall (the touch-target rule for anything clickable). Radix moves focus to the row under the
+ * pointer or arrow keys (data-highlighted), so the highlight is the focus indicator. A disabled item is aria-disabled
+ * with data-disabled (not the disabled attribute).
  */
 const menuItem =
-  "relative flex w-full cursor-default items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm text-foreground outline-hidden select-none transition-colors duration-150 ease-out hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-55 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
+  "relative flex min-h-9 w-full cursor-default items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left text-sm text-foreground outline-hidden select-none transition-colors duration-150 ease-out hover:bg-muted focus:bg-muted data-[highlighted]:bg-muted data-[disabled]:pointer-events-none data-[disabled]:opacity-55 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground"
 
 function DropdownMenu({
   ...props

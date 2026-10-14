@@ -106,6 +106,17 @@ describe("Users page", () => {
 });
 
 describe("Lists page", () => {
+  it("a request type panel keeps what was typed when it is collapsed and opened again", async () => {
+    render(await ListsContent());
+    const toggle = screen.getByText("Video").closest("button")!;
+    fireEvent.click(toggle);
+    const panel = toggle.parentElement!;
+    fireEvent.change(within(panel).getByLabelText("Field schema (JSON array)"), { target: { value: '[{"key":"x"}]' } });
+    fireEvent.click(toggle);
+    expect(within(panel).queryByRole("button", { name: "Save type Video" })).toBeNull();
+    fireEvent.click(toggle);
+    expect((within(panel).getByLabelText("Field schema (JSON array)") as HTMLTextAreaElement).value).toBe('[{"key":"x"}]');
+  });
   it("PageHeader + switcher, three cards, unique rename buttons, type status chip", async () => {
     render(await ListsContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Brands, divisions and request types"]);

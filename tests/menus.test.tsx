@@ -64,6 +64,12 @@ describe("Menus and popovers", () => {
     await waitFor(() => expect(screen.queryByRole("menu")).toBeNull());
   });
 
+  it("menu items keep a 36px target", async () => {
+    render(<LibraryRowItem row={row} now={new Date("2026-10-10T00:00:00Z")} actions={rowActions()} />);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Actions for Alpha deck" }), { key: "Enter" });
+    for (const item of screen.getAllByRole("menuitem")) expect(item.className).toMatch(/(^|\s)min-h-9(\s|$)/);
+  });
+
   it("FilterBar's filter panel opens as a popover, Apply submits the filters, Esc closes it", async () => {
     const { container } = render(
       <FilterBar p={parseParams({ status: "DONE", motion: "yes" })} brands={[{ id: "b1", name: "Clogent" }]} divisions={[]} assignees={[]} mineHref="/requests?mine=1" clearHref="/requests" />,
@@ -120,11 +126,12 @@ describe("Menus and popovers", () => {
     expect(trigger.getAttribute("aria-expanded")).toBe("false");
     const section = container.querySelector('[data-closed-section="timeline"]')!;
     expect(section.getAttribute("data-state")).toBe("closed");
-    expect(screen.queryByText("Body text")).toBeNull();
+    // Closed: the body stays in the page (rendered once, so its state survives toggling) but hidden, like <details>.
+    expect(screen.getByText("Body text").closest("[hidden]")).not.toBeNull();
     fireEvent.click(trigger);
     expect(trigger.getAttribute("aria-expanded")).toBe("true");
     expect(section.getAttribute("data-state")).toBe("open");
-    expect(screen.getByText("Body text")).toBeTruthy();
+    expect(screen.getByText("Body text").closest("[hidden]")).toBeNull();
     expect(window.localStorage.getItem("menus-test-open")).toBe("1");
     window.localStorage.removeItem("menus-test-open");
   });

@@ -64,7 +64,7 @@ export function RequestsList({ pending, rejected, linkable }: { pending: Request
             <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
             Rejected ({rejected.length})
           </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3"><ul className="space-y-3">
+          <CollapsibleContent keepMounted className="mt-3"><ul className="space-y-3">
             {rejected.map((r) => (
               <li key={r.applicantId} aria-label={r.name} className="flex flex-wrap items-center justify-between gap-3">
                 <Who r={r} />
