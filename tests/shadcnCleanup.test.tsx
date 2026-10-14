@@ -73,7 +73,8 @@ describe("open/close animations use the app's keyframes", () => {
     it(`${f} has no tw-animate-css utilities (that package is not installed)`, () => {
       const s = src(f);
       expect(s).not.toMatch(/animate-in|animate-out|fade-in|fade-out|zoom-in|zoom-out|slide-in-from|slide-out-to/);
-      expect(s).toContain("data-[state=open]:animate-pop");
+      expect(s).toContain("data-[state=open]:animate-pop-in");
+      expect(s).not.toMatch(/data-\[state=open\]:animate-pop(?!-)/);
       expect(s).toContain("data-[state=closed]:animate-pop-out");
     });
   }
@@ -82,6 +83,8 @@ describe("open/close animations use the app's keyframes", () => {
     // @utility (not a plain class) so `data-[state=open]:animate-pop` variants are generated.
     expect(css).toMatch(/@utility animate-pop-out\s*\{/);
     expect(css).toMatch(/@utility animate-pop\s*\{/);
+    expect(css).toMatch(/@utility animate-pop-in\s*\{[^}]*0\.1[0-9]*s/);
+    expect(css).toMatch(/@keyframes pop-in/);
     expect(css).toMatch(/@keyframes pop-out/);
     // The blanket reduced-motion rule shortens every animation, so Radix Presence still unmounts on time.
     expect(css).toMatch(/prefers-reduced-motion: reduce\)\s*\{\s*\*,/);

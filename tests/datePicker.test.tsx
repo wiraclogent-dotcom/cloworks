@@ -76,6 +76,18 @@ describe("DatePicker", () => {
     expect(screen.getByRole("button", { name: /Due/ }).textContent).toContain("Pick a day");
   });
 
+  it("formats exactly like the rest of the app (tables): '22 Sep 2026', no 'Sept', no zero-padded day", async () => {
+    const { formatJakartaDate } = await import("@/lib/projects");
+    const { formatJakartaDay } = await import("@/lib/projectTasks");
+    render(<DatePicker aria-label="Due" value="2026-09-22" />);
+    const text = screen.getByRole("button", { name: /Due/ }).textContent;
+    expect(text).toBe("22 Sep 2026");
+    expect(text).toBe(formatJakartaDate(new Date("2026-09-22T00:00:00+07:00")));
+    expect(formatJakartaDay("2026-09-22")).toBe("22 Sep 2026");
+    expect(formatJakartaDay("2026-10-08")).toBe("8 Oct 2026");
+    expect(formatJakartaDay(new Date("2026-10-08T00:00:00+07:00"))).toBe("8 Oct 2026");
+  });
+
   it("looks like a field: same classes as fieldClass()", () => {
     render(<DatePicker aria-label="Due" value={null} />);
     const cls = screen.getByRole("button", { name: /Due/ }).className;
@@ -148,6 +160,29 @@ describe("DatePicker", () => {
     expect(screen.queryByRole("button", { name: "Clear Due" })).toBeNull();
     rerender(<DatePicker name="d" aria-label="Due" value="2026-10-19" />);
     expect(screen.queryByRole("button", { name: "Clear Due" })).toBeNull();
+  });
+
+  it("Clear returns focus to the trigger", () => {
+    render(<DatePicker aria-label="Due" value="2026-10-19" allowClear />);
+    fireEvent.click(screen.getByRole("button", { name: "Clear Due" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /^Due/ }));
+  });
+
+  it("names the popover dialog after the field", () => {
+    const { unmount } = render(<DatePicker aria-label="Due" value={null} />);
+    open();
+    expect(screen.getByRole("dialog", { name: "Choose Due" })).toBeTruthy();
+    unmount();
+    render(<><span id="lbl">Start date</span><DatePicker aria-labelledby="lbl" value={null} /></>);
+    fireEvent.click(screen.getByRole("button", { name: /Start date/ }));
+    expect(screen.getByRole("dialog", { name: /Start date/ })).toBeTruthy();
+  });
+
+  it("a disabled picker does not submit its hidden input", () => {
+    const { container } = render(<form><DatePicker name="d" aria-label="Due" value="2026-10-19" disabled /></form>);
+    const hidden = container.querySelector<HTMLInputElement>('input[name="d"]')!;
+    expect(hidden.disabled).toBe(true);
+    expect([...new FormData(container.querySelector("form")!).keys()]).not.toContain("d");
   });
 
   it("respects min and max", () => {

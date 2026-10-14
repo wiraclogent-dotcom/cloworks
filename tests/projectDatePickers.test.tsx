@@ -58,6 +58,16 @@ describe("AddDetailForm dates", () => {
   });
 });
 
+describe("AddDetailForm ids", () => {
+  it("do not collide when two forms exist", () => {
+    render(<><AddDetailForm projectId="p" mode="status" owners={[]} /><AddDetailForm projectId="q" mode="status" owners={[]} /></>);
+    for (const b of screen.getAllByRole("button", { name: /Add detail/ })) fireEvent.click(b);
+    const ids = [...document.querySelectorAll("button[id]")].map((b) => b.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.some((i) => i === "new-detail-start")).toBe(false);
+  });
+});
+
 describe("MilestoneList date", () => {
   it("adding a milestone picks the date with the calendar and sends YYYY-MM-DD", async () => {
     createMilestone.mockResolvedValue({ ok: true });
@@ -68,6 +78,17 @@ describe("MilestoneList date", () => {
     pickDay(screen.getByRole("button", { name: /Date for new milestone/ }), 22);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: /^Add$/ })));
     expect(createMilestone).toHaveBeenCalledWith("p", { title: "Client review", date: "2026-10-22", done: false });
+  });
+
+  it("Add stays disabled until a date is picked", async () => {
+    createMilestone.mockResolvedValue({ ok: true });
+    render(<MilestoneList projectId="p" milestones={[]} canManage />);
+    fireEvent.click(screen.getByRole("button", { name: /Add milestone/ }));
+    fireEvent.change(screen.getByLabelText("Name for new milestone"), { target: { value: "Client review" } });
+    const add = screen.getByRole("button", { name: /^Add$/ }) as HTMLButtonElement;
+    expect(add.disabled).toBe(true);
+    pickDay(screen.getByRole("button", { name: /Date for new milestone/ }), 22);
+    expect(add.disabled).toBe(false);
   });
 
   it("editing starts from the saved date", () => {

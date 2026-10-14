@@ -54,6 +54,7 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
       <PopoverContent
         align="start"
         className="w-auto p-3"
+        aria-label={`Choose ${what.toLowerCase()}`}
         onOpenAutoFocus={(e) => {
           // Land on the roving-tabindex day (the draft, else today) so the arrow keys work straight away.
           e.preventDefault();

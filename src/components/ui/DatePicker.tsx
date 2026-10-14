@@ -66,6 +66,7 @@ export function DatePicker({
   if (value !== seen) { setSeen(value); setCurrent(value); } // a new prop wins over what was picked before
   const [open, setOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const selected = current ? isoToLocal(current) : undefined;
   const display = current && selected ? formatJakartaDay(current) : null;
@@ -90,6 +91,7 @@ export function DatePicker({
               the message itself is linked through aria-describedby. */}
           {/* eslint-disable-next-line jsx-a11y/role-supports-aria-props */}
           <button
+            ref={triggerRef}
             type="button"
             id={triggerId}
             disabled={disabled}
@@ -110,6 +112,8 @@ export function DatePicker({
         <PopoverContent
           align="start"
           className="w-auto p-3"
+          aria-label={ariaLabel ? `Choose ${ariaLabel}` : undefined}
+          aria-labelledby={!ariaLabel ? labelledBy : undefined}
           onOpenAutoFocus={(e) => {
             // Land on the roving-tabindex day (selected, else today) so arrow keys work straight away.
             e.preventDefault();
@@ -135,7 +139,7 @@ export function DatePicker({
           aria-label={ariaLabel ? `Clear ${ariaLabel}` : labelledBy ? "Clear" : "Clear date"}
           aria-labelledby={!ariaLabel && labelledBy ? `${triggerId}-clear ${labelledBy}` : undefined}
           title="Clear"
-          onClick={() => pick(null)}
+          onClick={() => { pick(null); triggerRef.current?.focus(); }}
           className={cn(
             "absolute top-1/2 right-8 inline-flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-foreground-secondary transition-colors duration-150 ease-out hover:bg-surface-muted hover:text-foreground",
             focusRing,
@@ -144,7 +148,7 @@ export function DatePicker({
           <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
         </button>
       )}
-      {name && <input type="hidden" name={name} value={current ?? ""} />}
+      {name && <input type="hidden" name={name} value={current ?? ""} disabled={disabled} />}
     </div>
   );
 }

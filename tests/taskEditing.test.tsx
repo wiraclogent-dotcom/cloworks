@@ -81,6 +81,7 @@ describe("DateEdit", () => {
     render(<DateEdit projectId="p" taskId="t1" field="start" iso="2026-10-01" text="1 Oct 2026" label="Box" />);
     fireEvent.click(screen.getByRole("button", { name: /Edit start date for Box/ }));
     expect(await screen.findByRole("group", { name: "Start date for Box" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Choose start date" })).toBeTruthy();
     expect(screen.getByText("October 2026")).toBeTruthy();
     pick(2);
     pick(25);
@@ -103,6 +104,7 @@ describe("DateEdit", () => {
     render(<DateEdit projectId="p" taskId="t1" field="due" iso="2026-10-10" text="10 Oct 2026" label="Box" />);
     fireEvent.click(screen.getByRole("button", { name: /Edit due date for Box/ }));
     await screen.findByRole("group", { name: "Due date for Box" });
+    expect(screen.getByRole("dialog", { name: "Choose due date" })).toBeTruthy();
     pick(3);
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect((await screen.findByRole("alert")).textContent).toBe("Due date cannot be before the start date");

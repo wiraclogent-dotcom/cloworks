@@ -1,7 +1,7 @@
 "use client";
 
 import { safeAction } from "@/lib/safeAction";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -19,6 +19,7 @@ const EMPTY: NewDetailInput = { title: "", subTitle: "", ownerId: NONE, value: N
 export function AddDetailForm({ projectId, mode, owners }: {
   projectId: string; mode: "stage" | "status"; owners: { id: string; name: string }[];
 }) {
+  const uid = useId();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<NewDetailInput>(EMPTY);
   const [error, setError] = useState<string | null>(null);
@@ -96,13 +97,13 @@ export function AddDetailForm({ projectId, mode, owners }: {
           </Select>
         </div>
         <div className="grid gap-1.5 text-sm">
-          <label id="new-detail-start-label" htmlFor="new-detail-start">Start</label>
-          <DatePicker id="new-detail-start" aria-labelledby="new-detail-start-label" allowClear disabled={pending}
+          <label id={`${uid}-start-label`} htmlFor={`${uid}-start`}>Start</label>
+          <DatePicker id={`${uid}-start`} aria-labelledby={`${uid}-start-label`} allowClear disabled={pending}
             value={form.startDate || null} onChange={(iso) => set("startDate", iso ?? "")} />
         </div>
         <div className="grid gap-1.5 text-sm">
-          <label id="new-detail-due-label" htmlFor="new-detail-due">Due</label>
-          <DatePicker id="new-detail-due" aria-labelledby="new-detail-due-label" allowClear disabled={pending}
+          <label id={`${uid}-due-label`} htmlFor={`${uid}-due`}>Due</label>
+          <DatePicker id={`${uid}-due`} aria-labelledby={`${uid}-due-label`} allowClear disabled={pending}
             value={form.dueDate || null} onChange={(iso) => set("dueDate", iso ?? "")} />
         </div>
         <label className="grid gap-1.5 text-sm sm:col-span-2">

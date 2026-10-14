@@ -140,7 +140,7 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="sm" variant="primary" disabled={pending}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button type="submit" size="sm" variant="primary" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );
