@@ -6,6 +6,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
 import { Chip } from "@/components/ui/Chip";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { fieldClass } from "@/components/ui/Field";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
@@ -129,8 +130,8 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
       <div className="flex flex-wrap items-center gap-2">
         <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
           placeholder="e.g. Client review" aria-label={`Name for ${label}`} className={fieldClass({ size: "sm", className: "min-w-48 flex-1" })} autoFocus />
-        <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} required disabled={pending}
-          aria-label={`Date for ${label}`} className={fieldClass({ size: "sm", className: "w-40" })} />
+        <DatePicker value={form.date || null} onChange={(iso) => setForm((f) => ({ ...f, date: iso ?? "" }))} disabled={pending}
+          size="sm" aria-label={`Date for ${label}`} placeholder="Pick a date" className="w-40" />
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={form.done} onChange={(e) => setForm((f) => ({ ...f, done: e.target.checked }))} disabled={pending} />
           Done
@@ -139,7 +140,7 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       <div className="flex justify-end gap-2">
         <Button size="sm" variant="ghost" disabled={pending} onClick={onCancel}>Cancel</Button>
-        <Button type="submit" size="sm" variant="primary" disabled={pending}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button type="submit" size="sm" variant="primary" disabled={pending || !form.date}>{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );

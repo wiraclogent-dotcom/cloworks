@@ -1,10 +1,11 @@
 "use client";
 
 import { safeAction } from "@/lib/safeAction";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { fieldClass } from "@/components/ui/Field";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { PROJECT_STAGES } from "@/lib/projectProgress";
@@ -15,11 +16,17 @@ const NONE = "__none__";
 const EMPTY: NewDetailInput = { title: "", subTitle: "", ownerId: NONE, value: NONE, startDate: "", dueDate: "", fileUrl: "" };
 
 /** Add-a-row panel. Opens from a button; the stage or status list follows the project's mode. */
-export function AddDetailForm({ projectId, mode, owners }: {
+export function AddDetailForm({ projectId, mode, owners, defaultTitle = "", label = "Add detail" }: {
   projectId: string; mode: "stage" | "status"; owners: { id: string; name: string }[];
+  /** Prefills the Item name (still editable), e.g. the item a variant is being added to. */
+  defaultTitle?: string;
+  /** Text of the button that opens the form (and of its submit button). */
+  label?: string;
 }) {
+  const uid = useId();
+  const empty: NewDetailInput = { ...EMPTY, title: defaultTitle };
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<NewDetailInput>(EMPTY);
+  const [form, setForm] = useState<NewDetailInput>(empty);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -42,7 +49,7 @@ export function AddDetailForm({ projectId, mode, owners }: {
         value: form.value === NONE ? "" : form.value,
       }));
       if (r.ok) {
-        setForm(EMPTY);
+        setForm(empty);
         setOpen(false);
       } else {
         setError(r.message);
@@ -54,7 +61,7 @@ export function AddDetailForm({ projectId, mode, owners }: {
     return (
       <div className="flex justify-end">
         <Button variant="primary" icon={<Plus aria-hidden="true" />} onClick={() => { setError(null); setOpen(true); }}>
-          Add detail
+          {label}
         </Button>
       </div>
     );
@@ -63,7 +70,7 @@ export function AddDetailForm({ projectId, mode, owners }: {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>New detail</CardTitle>
+        <CardTitle>{`New ${label.replace(/^Add /, "").toLowerCase()}`}</CardTitle>
       </CardHeader>
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1.5 text-sm">
@@ -94,22 +101,24 @@ export function AddDetailForm({ projectId, mode, owners }: {
             </SelectContent>
           </Select>
         </div>
-        <label className="grid gap-1.5 text-sm">
-          Start
-          <input type="date" value={form.startDate} onChange={(e) => set("startDate", e.target.value)} disabled={pending} className={fieldClass()} />
-        </label>
-        <label className="grid gap-1.5 text-sm">
-          Due
-          <input type="date" value={form.dueDate} onChange={(e) => set("dueDate", e.target.value)} disabled={pending} className={fieldClass()} />
-        </label>
+        <div className="grid gap-1.5 text-sm">
+          <label id={`${uid}-start-label`} htmlFor={`${uid}-start`}>Start</label>
+          <DatePicker id={`${uid}-start`} aria-labelledby={`${uid}-start-label`} allowClear disabled={pending}
+            value={form.startDate || null} onChange={(iso) => set("startDate", iso ?? "")} />
+        </div>
+        <div className="grid gap-1.5 text-sm">
+          <label id={`${uid}-due-label`} htmlFor={`${uid}-due`}>Due</label>
+          <DatePicker id={`${uid}-due`} aria-labelledby={`${uid}-due-label`} allowClear disabled={pending}
+            value={form.dueDate || null} onChange={(iso) => set("dueDate", iso ?? "")} />
+        </div>
         <label className="grid gap-1.5 text-sm sm:col-span-2">
           File link
           <input type="text" inputMode="url" autoComplete="off" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://… or \\server\folder" className={fieldClass()} />
         </label>
         {error && <p role="alert" className="text-sm text-danger sm:col-span-2">{error}</p>}
         <div className="flex items-center justify-end gap-2 sm:col-span-2">
-          <Button variant="ghost" disabled={pending} onClick={() => { setForm(EMPTY); setError(null); setOpen(false); }}>Cancel</Button>
-          <Button type="submit" variant="primary" disabled={pending}>{pending ? "Adding…" : "Add detail"}</Button>
+          <Button variant="ghost" disabled={pending} onClick={() => { setForm(empty); setError(null); setOpen(false); }}>Cancel</Button>
+          <Button type="submit" variant="primary" disabled={pending}>{pending ? "Adding…" : label}</Button>
         </div>
       </form>
     </Card>

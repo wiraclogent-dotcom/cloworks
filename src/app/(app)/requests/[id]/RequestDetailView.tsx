@@ -88,7 +88,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
         breadcrumb={fullPage ? [{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: `REQ-${req.id.slice(-4).toUpperCase()}` }] : undefined} />
       <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
         {req.status === "DONE" ? <BrandArt name="celebrate" width={36} className="animate-pop size-9 object-contain" /> : null}
-        <StatusChip status={req.status} />
+        <StatusChip status={req.status} kind="request" />
         {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}
         {req.includeKpi
           ? <Chip tone="done" icon={<Target aria-hidden="true" strokeWidth={1.75} />}>Counts toward KPI</Chip>

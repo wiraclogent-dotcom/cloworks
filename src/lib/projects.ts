@@ -5,8 +5,13 @@ import { FILE_LOCATION_HINT, isFileLocation } from "./fileLocation";
 import { jakartaDate } from "./createRequest";
 import { MONTHS } from "./timeline";
 
-export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD"] as const satisfies readonly ProjectStatus[];
+export const PROJECT_STATUSES = ["NOT_STARTED", "IN_PROGRESS", "IN_REVIEW", "DONE", "ON_HOLD", "CANCELLED"] as const satisfies readonly ProjectStatus[];
 export { PROJECT_STATUS_LABEL } from "./statusLabels";
+
+/** A closed project is finished or dropped: Done or Canceled. It has no deadline to watch and leaves the active list. */
+export function isClosedProject(status: ProjectStatus): boolean {
+  return status === "DONE" || status === "CANCELLED";
+}
 
 export type ProjectInput = {
   title: string;
@@ -169,14 +174,26 @@ export function groupProjects<T extends GroupableProject>(rows: T[]): { brand: s
     .map(([brand, projects]) => ({ brand, projects: projects.sort(cmp) }));
 }
 
+/**
+ * Splits the list into the active projects (input order kept, grouped by brand later) and the two closed lists.
+ * Closed lists run by due date, latest first (no due date last), then title.
+ */
+export function splitProjects<T extends { status: ProjectStatus; title: string; dueDate: Date | null }>(rows: T[]): { active: T[]; completed: T[]; canceled: T[] } {
+  const cmp = (a: T, b: T) => (b.dueDate?.getTime() ?? -Infinity) - (a.dueDate?.getTime() ?? -Infinity) || a.title.localeCompare(b.title);
+  const sorted = (status: ProjectStatus) => rows.filter((r) => r.status === status).sort(cmp);
+  return { active: rows.filter((r) => !isClosedProject(r.status)), completed: sorted("DONE"), canceled: sorted("CANCELLED") };
+}
+
 // ---- Form submission (echoes typed values so the form can re-populate) ---------------------------------------
 
 export type ProjectFormValues = {
   title: string; subTitle: string; brandId: string; ownerId: string; status: string; startDate: string; dueDate: string; fileUrl: string;
 };
-export type ProjectFormState = {
+export type ProjectFormFailure = {
   ok: false; code: ProjectErrorCode | "UNAUTHENTICATED"; message: string; fieldErrors?: Record<string, string>; values: ProjectFormValues; nonce: string;
-} | null;
+};
+/** `null` before the first submit; `{ ok: true }` only comes from the stay-on-page save (the redirecting one never returns success). */
+export type ProjectFormState = ProjectFormFailure | { ok: true; nonce: string } | null;
 
 export function projectValuesFromForm(fd: FormData): ProjectFormValues {
   const s = (k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
@@ -186,7 +203,7 @@ export function projectValuesFromForm(fd: FormData): ProjectFormValues {
 /** Create (no id) or full-form update (id). Expected failures come back as state; unexpected ones throw. */
 export async function submitProjectWith(
   db: PrismaClient, user: Actor, fd: FormData, id?: string,
-): Promise<{ ok: true; id: string } | NonNullable<ProjectFormState>> {
+): Promise<{ ok: true; id: string } | ProjectFormFailure> {
   const values = projectValuesFromForm(fd);
   const input = { ...values, status: values.status as ProjectStatus };
   try {

@@ -615,7 +615,7 @@
 /*
  * Motion ("Playful pro", visual refresh spec 2026-10-12). CSS only, no animation library.
  * animate-rise: fade + lift on mount; set --i on siblings to stagger. animate-pop: springy scale-in.
- * animate-float: slow bob for illustrations (--float-delay to desync). reveal: rises as it scrolls into view
+ * animate-pop-in / animate-pop-out: quick entrance and exit for popovers/menus. animate-float: slow bob for illustrations (--float-delay to desync). reveal: rises as it scrolls into view
  * (scroll-driven; browsers without view timelines just show it). lift: hover lift for cards (hover-capable pointers).
  * press: tactile scale on click. Everything stops under prefers-reduced-motion (bottom of this file).
  */
@@ -632,6 +632,14 @@
   60% { opacity: 1; transform: scale(1.03); }
   100% { transform: none; }
 }
+/* Short entrance for popovers and menus (animate-pop is the playful 0.5s one). */
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.96); }
+}
+/* Exit for popovers and menus (Radix keeps the node mounted until this ends); animate-pop is the entrance. */
+@keyframes pop-out {
+  to { opacity: 0; transform: scale(0.95); }
+}
 @keyframes float {
   0%, 100% { transform: translateY(0) rotate(0deg); }
   50% { transform: translateY(-10px) rotate(-1.5deg); }
@@ -642,7 +650,10 @@
 }
 
 .animate-rise { animation: rise 0.6s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
-.animate-pop { animation: pop 0.5s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+/* @utility (not a plain class) so the variants work: data-[state=open]:animate-pop on Radix popovers and menus. */
+@utility animate-pop { animation: pop 0.5s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@utility animate-pop-in { animation: pop-in 0.15s var(--ease-out) both; }
+@utility animate-pop-out { animation: pop-out 0.12s ease-in both; }
 .animate-float { animation: float 7s ease-in-out var(--float-delay, 0s) infinite; }
 .animate-mesh { background-size: 140% 140%; animation: mesh-drift 18s ease-in-out infinite; }
 

@@ -57,3 +57,17 @@ export async function submitProject(id: string | null, _prev: ProjectFormState, 
     return r;
   }, () => ({ ok: false, code: "UNAUTHENTICATED", message: UNAUTH_MESSAGE, values: projectValuesFromForm(fd), nonce: crypto.randomUUID() }));
 }
+
+/** Same as `submitProject` for an edit, but stays on the page: the details card closes its form and refreshes. */
+export async function submitProjectInPlace(id: string, _prev: ProjectFormState, fd: FormData): Promise<ProjectFormState> {
+  return withUser<ProjectFormState, ProjectFormState>(requireUser, async (user) => {
+    const db = dbFor(user);
+    const r = await submitProjectWith(db, user, fd, id);
+    if (r.ok) {
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${id}`);
+      return { ok: true, nonce: crypto.randomUUID() };
+    }
+    return r;
+  }, () => ({ ok: false, code: "UNAUTHENTICATED", message: UNAUTH_MESSAGE, values: projectValuesFromForm(fd), nonce: crypto.randomUUID() }));
+}

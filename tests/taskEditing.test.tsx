@@ -72,17 +72,42 @@ describe("TaskRow", () => {
 });
 
 describe("DateEdit", () => {
-  it("typing a date does not save on each keystroke; Save does", async () => {
+  const pick = (day: number) => {
+    const cell = screen.getAllByRole("gridcell").filter((c) => !c.hasAttribute("data-outside")).find((c) => c.textContent === String(day))!;
+    fireEvent.click(cell.querySelector("button")!);
+  };
+  it("picking a day does not save; Save does", async () => {
     setTaskDate.mockResolvedValue({ ok: true, startDate: "2026-10-25", dueDate: null });
     render(<DateEdit projectId="p" taskId="t1" field="start" iso="2026-10-01" text="1 Oct 2026" label="Box" />);
     fireEvent.click(screen.getByRole("button", { name: /Edit start date for Box/ }));
-    const input = await screen.findByLabelText("Start date for Box");
-    fireEvent.change(input, { target: { value: "2026-10-02" } }); // the "2" of "25"
-    fireEvent.change(input, { target: { value: "2026-10-25" } });
+    expect(await screen.findByRole("group", { name: "Start date for Box" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Choose start date" })).toBeTruthy();
+    expect(screen.getByText("October 2026")).toBeTruthy();
+    pick(2);
+    pick(25);
     expect(setTaskDate).not.toHaveBeenCalled();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect(setTaskDate).toHaveBeenCalledTimes(1);
     expect(setTaskDate).toHaveBeenCalledWith("p", "t1", "start", "2026-10-25");
+  });
+  it("Save is disabled until the day changes; Clear saves an empty date", async () => {
+    setTaskDate.mockResolvedValue({ ok: true, startDate: null, dueDate: null });
+    render(<DateEdit projectId="p" taskId="t1" field="start" iso="2026-10-01" text="1 Oct 2026" label="Box" />);
+    fireEvent.click(screen.getByRole("button", { name: /Edit start date for Box/ }));
+    await screen.findByRole("group", { name: "Start date for Box" });
+    expect((screen.getByRole("button", { name: "Save" }) as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Clear" })));
+    expect(setTaskDate).toHaveBeenCalledWith("p", "t1", "start", "");
+  });
+  it("shows the server's message when the save fails", async () => {
+    setTaskDate.mockResolvedValue({ ok: false, code: "VALIDATION", message: "Due date cannot be before the start date" });
+    render(<DateEdit projectId="p" taskId="t1" field="due" iso="2026-10-10" text="10 Oct 2026" label="Box" />);
+    fireEvent.click(screen.getByRole("button", { name: /Edit due date for Box/ }));
+    await screen.findByRole("group", { name: "Due date for Box" });
+    expect(screen.getByRole("dialog", { name: "Choose due date" })).toBeTruthy();
+    pick(3);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
+    expect((await screen.findByRole("alert")).textContent).toBe("Due date cannot be before the start date");
   });
 });
 

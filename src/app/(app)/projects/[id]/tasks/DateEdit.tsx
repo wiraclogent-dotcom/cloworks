@@ -2,15 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/Button";
-import { fieldClass } from "@/components/ui/Field";
+import { Calendar } from "@/components/shadcn/calendar";
+import { isoToLocal, jakartaTodayLocal, localToIso } from "@/components/ui/DatePicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { safeAction } from "@/lib/safeAction";
 import { setTaskDate } from "./actions";
 import { formatJakartaDay } from "@/lib/projectTasks";
 
 /**
- * A start or due date. Click it to open a small floating panel with a date input; Save (or Enter) saves and closes.
- * It does not save on change: typing a date fires a change per digit ("2" of "25" is already a valid date).
+ * A start or due date. Click it to open a small floating panel with a calendar; picking a day only changes the draft,
+ * Save writes it and closes (Clear removes the date). It never saves on a pick, so a mis-click is not a write.
  * The panel floats over the table, so the row keeps its width.
  */
 export function DateEdit({ projectId, taskId, field, iso, text, label }: {
@@ -50,21 +51,28 @@ export function DateEdit({ projectId, taskId, field, iso, text, label }: {
           {display}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3">
+      <PopoverContent
+        align="start"
+        className="w-auto p-3"
+        aria-label={`Choose ${what.toLowerCase()}`}
+        onOpenAutoFocus={(e) => {
+          // Land on the roving-tabindex day (the draft, else today) so the arrow keys work straight away.
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).querySelector<HTMLElement>('button[tabindex="0"]')?.focus();
+        }}
+      >
         <div className="grid gap-3">
-          <label className="grid gap-1.5 text-xs font-medium text-foreground-secondary">
-            {what}
-            <input
-              type="date"
-              value={draft}
-              aria-label={`${what} for ${label}`}
-              disabled={pending}
-              autoFocus
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter" && draft) { e.preventDefault(); save(draft); } }}
-              className={fieldClass()}
+          <div role="group" aria-label={`${what} for ${label}`} className="grid gap-1.5">
+            <p className="text-xs font-medium text-foreground-secondary">{what}</p>
+            <Calendar
+              mode="single"
+              required
+              selected={draft ? isoToLocal(draft) : undefined}
+              defaultMonth={(draft ? isoToLocal(draft) : undefined) ?? jakartaTodayLocal()}
+              today={jakartaTodayLocal()}
+              onSelect={(d) => { if (d && !pending) setDraft(localToIso(d)); }}
             />
-          </label>
+          </div>
           <div className="flex items-center justify-between">
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => save("")}>Clear</Button>
             <div className="flex gap-1.5">

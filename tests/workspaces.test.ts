@@ -23,6 +23,9 @@ const MODELS = {
   project: { title: "hacked" },
   projectTask: { title: "hacked" },
   projectMilestone: { title: "hacked" },
+  projectTaskEvent: { at: new Date(0) },
+  projectKpiTarget: { itemTitle: "hacked" },
+  kpiRosterEntry: { included: false },
 } as const;
 type ModelKey = keyof typeof MODELS;
 const KEYS = Object.keys(MODELS) as ModelKey[];
@@ -70,11 +73,21 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   const project = await raw.project.create({ data: { ...w, code: "P1", title: `P-${tag}`, ownerId: user.id, brandId: brand.id } });
   const projectTask = await raw.projectTask.create({ data: { ...w, projectId: project.id, position: 0, title: "T" } });
   const projectMilestone = await raw.projectMilestone.create({ data: { ...w, projectId: project.id, title: "M", date: new Date() } });
+  const projectTaskEvent = await raw.projectTaskEvent.create({
+    data: { ...w, taskId: projectTask.id, kind: "STAGE", fromValue: "NOT_STARTED", toValue: "FIRST_PREVIEW", actorId: user.id },
+  });
+  const projectKpiTarget = await raw.projectKpiTarget.create({
+    data: { ...w, userId: user.id, year: 2026, projectId: project.id, itemTitle: "Item", createdById: user.id },
+  });
+  const kpiRosterEntry = await raw.kpiRosterEntry.create({
+    data: { ...w, userId: user.id, kind: "REQUESTS", included: true, updatedById: user.id },
+  });
   return {
     user: user.id, invite: invite.id, brand: brand.id, division: division.id, requestType: requestType.id,
     request: request.id, statusEvent: statusEvent.id, deadlineEvent: deadlineEvent.id, comment: comment.id,
     attachment: attachment.id, notification: notification.id, chatRead: chatRead.id, kpiTarget: kpiTarget.id, project: project.id,
     projectTask: projectTask.id, projectMilestone: projectMilestone.id,
+    projectTaskEvent: projectTaskEvent.id, projectKpiTarget: projectKpiTarget.id, kpiRosterEntry: kpiRosterEntry.id,
   };
 }
 

@@ -28,7 +28,7 @@ describe("tracker (status) progress", () => {
   });
 
   it("counts rows per status and keeps unset ones separate", () => {
-    expect(statusCounts(tracker)).toEqual({ NOT_STARTED: 0, IN_PROGRESS: 1, IN_REVIEW: 0, ON_HOLD: 0, DONE: 3, none: 1 });
+    expect(statusCounts(tracker)).toEqual({ NOT_STARTED: 0, IN_PROGRESS: 1, IN_REVIEW: 0, ON_HOLD: 0, DONE: 3, CANCELLED: 0, none: 1 });
   });
 
   it("summarises products by their Done rows", () => {

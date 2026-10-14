@@ -1,9 +1,11 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ButtonHTMLAttributes, ReactNode, Ref } from "react";
 import { cn, focusRing } from "./cn";
 
 export type IconButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label" | "children"> & {
   /** Required: the button has no visible text. Also used as the tooltip (title) unless `title` is given. */
   "aria-label": string;
+  /** React 19: refs are plain props (focus management). */
+  ref?: Ref<HTMLButtonElement>;
   icon: ReactNode;
   size?: "sm" | "md";
   variant?: "ghost" | "secondary";
