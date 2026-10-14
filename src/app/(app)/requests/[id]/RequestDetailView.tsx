@@ -16,10 +16,10 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { BrandArt } from "@/components/ui/BrandArt";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
-import { Avatar, UnassignedAvatar } from "@/components/ui/Avatar";
+import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
 import { buttonClass } from "@/components/ui/Button";
 import { cn, focusRing } from "@/components/ui/cn";
-import { AssigneePicker, AttachmentForm, CommentForm, DeadlineControl, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
+import { AssigneesPicker, AttachmentForm, CommentForm, DeadlineControl, IncludeKpiToggle, MoveControl, NeedsMotionToggle, RemoveAttachmentButton } from "./DetailForms";
 
 const day = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "Asia/Jakarta" });
 const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Jakarta" });
@@ -28,9 +28,9 @@ const stamp = new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short",
 export type RequestDetail = {
   id: string; title: string; status: RequestStatus; needsMotion: boolean; includeKpi: boolean;
   briefUrl: string | null; notes: string | null; designFolderUrl: string | null; outputCount: number;
-  requestedAt: Date; deadline: Date | null; assigneeId: string | null;
+  requestedAt: Date; deadline: Date | null;
   brand: { name: string }; division: { name: string }; type: { name: string };
-  requester: { name: string }; assignee: { name: string } | null;
+  requester: { name: string }; assignees: { user: { id: string; name: string; active: boolean } }[];
   statusEvents: { id: string; from: RequestStatus | null; to: RequestStatus; at: Date; actor: { name: string } }[];
   deadlineEvents: { id: string; from: Date | null; to: Date; at: Date; actor: { name: string } }[];
   comments: { id: string; body: string; createdAt: Date; author: { name: string } }[];
@@ -70,6 +70,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
   /** Full page: the Work › Requests › code top bar (where the profile menu sits). The side panel keeps a back link. */
   fullPage?: boolean;
 }) {
+  const people = req.assignees.map((a) => a.user);
   const open = req.status !== "DONE" && req.status !== "CANCELLED";
   const activity = [
     ...req.statusEvents.map((e) => ({ kind: "status" as const, at: e.at, e })),
@@ -89,6 +90,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
       <div className="mb-5 flex flex-wrap items-center gap-2" data-detail-chips="">
         {req.status === "DONE" ? <BrandArt name="celebrate" width={36} className="animate-pop size-9 object-contain" /> : null}
         <StatusChip status={req.status} />
+        {people.length > 0 && <AvatarStack names={people.map((p) => p.name)} size="sm" label="Assignees" />}
         {(req.needsMotion || req.type.name === VIDEO_TYPE_NAME) && <NeedsMotionChip video={req.type.name === VIDEO_TYPE_NAME} />}
         {req.includeKpi
           ? <Chip tone="done" icon={<Target aria-hidden="true" strokeWidth={1.75} />}>Counts toward KPI</Chip>
@@ -209,8 +211,8 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
               <CardTitle id="details-h">Details</CardTitle>
               <dl className="mt-2 divide-y divide-border">
                 <Row label="Requester"><Person name={req.requester.name} /></Row>
-                <Row label="Assignee">
-                  {req.assignee ? <Person name={req.assignee.name} /> : <span className="flex items-center gap-2 text-foreground-secondary"><UnassignedAvatar size="sm" decorative />Unassigned</span>}
+                <Row label={people.length > 1 ? "Assignees" : "Assignee"}>
+                  {people.length > 0 ? <span className="flex flex-col gap-1.5">{people.map((p) => <Person key={p.id} name={p.name} />)}</span> : <span className="flex items-center gap-2 text-foreground-secondary"><UnassignedAvatar size="sm" decorative />Unassigned</span>}
                 </Row>
                 <Row label="Brand"><BrandTag name={req.brand.name} /></Row>
                 <Row label="Division">{req.division.name}</Row>
@@ -235,7 +237,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <Card className="animate-rise" style={{ "--i": 5 } as CSSProperties}>
               <section aria-labelledby="actions-h" className="space-y-4">
                 <CardTitle id="actions-h">Manage</CardTitle>
-                {canPickAssignee && req.status !== "CANCELLED" && <AssigneePicker key={req.assigneeId ?? "none"} requestId={req.id} current={req.assigneeId} options={assignees} />}
+                {canPickAssignee && req.status !== "CANCELLED" && <AssigneesPicker key={people.map((p) => p.id).join(",")} requestId={req.id} current={people.map((p) => ({ id: p.id, name: p.name }))} options={assignees} />}
                 {canMove && <MoveControl key={req.status} requestId={req.id} title={req.title} status={req.status} />}
                 {canMove && isOpenStatus(req.status) && (
                   <DeadlineControl key={req.deadline?.toISOString() ?? "none"} requestId={req.id} current={req.deadline ? jakartaDate(req.deadline) : null} minDay={jakartaDate(req.requestedAt)} />

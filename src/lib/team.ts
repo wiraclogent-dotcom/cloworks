@@ -16,15 +16,18 @@ export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: 
 }
 
 /**
- * Assign-picker options: the team, plus the current assignee at the top when they are not on it (so the picker does
- * not silently show "Unassigned"), labelled with why.
+ * Assign-picker options: the team, plus every current assignee who is not on it at the top (so the picker does not
+ * silently drop them), each labelled with why.
  */
 export function assigneeOptions(
   team: { id: string; name: string }[],
-  current: { id: string; name: string; active: boolean } | null,
+  current: { id: string; name: string; active: boolean }[],
 ): { id: string; name: string }[] {
-  if (!current || team.some((t) => t.id === current.id)) return team;
-  return [{ id: current.id, name: `${current.name} (${current.active ? "not on creative team" : "inactive"})` }, ...team];
+  const onTeam = new Set(team.map((t) => t.id));
+  const offTeam = current
+    .filter((c) => !onTeam.has(c.id))
+    .map((c) => ({ id: c.id, name: `${c.name} (${c.active ? "not on creative team" : "inactive"})` }));
+  return offTeam.length ? [...offTeam, ...team] : team;
 }
 
 /**

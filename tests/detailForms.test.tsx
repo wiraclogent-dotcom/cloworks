@@ -3,21 +3,22 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/react";
 
 const addComment = vi.fn();
+const setAssignees = vi.fn();
 const setIncludeKpi = vi.fn();
 const setNeedsMotion = vi.fn();
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
   addComment: (...a: unknown[]) => addComment(...a),
-  addAttachment: vi.fn(), setAssignees: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a), setNeedsMotion: (...a: unknown[]) => setNeedsMotion(...a),
+  addAttachment: vi.fn(), setAssignees: (...a: unknown[]) => setAssignees(...a), removeAttachment: vi.fn(), setIncludeKpi: (...a: unknown[]) => setIncludeKpi(...a), setNeedsMotion: (...a: unknown[]) => setNeedsMotion(...a),
 }));
 const rescheduleRequest = vi.fn();
 vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn(), rescheduleRequest: (...a: unknown[]) => rescheduleRequest(...a) }));
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
-import { CommentForm, AssigneePicker, MoveControl, DeadlineControl, IncludeKpiToggle, NeedsMotionToggle } from "@/app/(app)/requests/[id]/DetailForms";
+import { CommentForm, AssigneesPicker, MoveControl, DeadlineControl, IncludeKpiToggle, NeedsMotionToggle } from "@/app/(app)/requests/[id]/DetailForms";
 import { splitMentions } from "@/lib/collab";
 
-beforeEach(() => { addComment.mockReset(); refresh.mockReset(); });
+beforeEach(() => { addComment.mockReset(); setAssignees.mockReset(); refresh.mockReset(); });
 afterEach(cleanup);
 
 describe("CommentForm", () => {
@@ -42,13 +43,61 @@ describe("CommentForm", () => {
   });
 });
 
-describe("pickers", () => {
-  it("assignee picker lists the options with Unassigned first", () => {
-    render(<AssigneePicker requestId="r1" current="u2" options={[{ id: "u1", name: "Ana" }, { id: "u2", name: "Bima" }]} />);
-    const sel = screen.getByLabelText("Assignee") as HTMLSelectElement;
-    expect(sel.value).toBe("u2");
-    expect(Array.from(sel.options).map((o) => o.text)).toEqual(["Unassigned", "Ana", "Bima"]);
+const OPTIONS = [{ id: "u1", name: "Ana" }, { id: "u2", name: "Fafa" }, { id: "u3", name: "Bima" }];
+const addSelect = () => screen.getByRole("combobox", { name: "Add assignee" }) as HTMLSelectElement;
+
+describe("AssigneesPicker", () => {
+  it("renders one chip per current assignee, each with a Remove button", () => {
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }, { id: "u3", name: "Bima" }]} options={OPTIONS} />);
+    expect(screen.getByRole("group", { name: "Assignees" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove Fafa" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Remove Bima" })).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /^Remove / })).toHaveLength(2);
   });
+  it("+ Add person lists only options that are not already chosen", () => {
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    expect(Array.from(addSelect().options).map((o) => o.text)).toEqual(["+ Add person", "Ana", "Bima"]);
+  });
+  it("choosing someone calls setAssignees with the previous ids plus the new one, then refreshes", async () => {
+    setAssignees.mockResolvedValue({ ok: true });
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    fireEvent.change(addSelect(), { target: { value: "u1" } });
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(setAssignees).toHaveBeenCalledWith("r1", ["u2", "u1"]);
+    expect(screen.getByRole("button", { name: "Remove Ana" })).toBeTruthy();
+  });
+  it("removing someone calls setAssignees without them", async () => {
+    setAssignees.mockResolvedValue({ ok: true });
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }, { id: "u3", name: "Bima" }]} options={OPTIONS} />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Fafa" }));
+    await waitFor(() => expect(setAssignees).toHaveBeenCalledWith("r1", ["u3"]));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(screen.queryByRole("button", { name: "Remove Fafa" })).toBeNull();
+  });
+  it("reverts and shows the server message in an alert when the change fails", async () => {
+    setAssignees.mockResolvedValue({ ok: false, code: "INVALID", message: "Ana is not on the creative team." });
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    fireEvent.change(addSelect(), { target: { value: "u1" } });
+    expect((await screen.findByRole("alert")).textContent).toMatch(/Ana is not on the creative team/);
+    expect(screen.queryByRole("button", { name: "Remove Ana" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Remove Fafa" })).toBeTruthy();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+  it("reverts with a generic message when the action throws", async () => {
+    setAssignees.mockRejectedValue(new Error("network"));
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Fafa" }));
+    expect((await screen.findByRole("alert")).textContent).toBe("Could not change the assignees. Try again.");
+    expect(screen.getByRole("button", { name: "Remove Fafa" })).toBeTruthy();
+  });
+  it("with nobody assigned it still offers the add control", () => {
+    render(<AssigneesPicker requestId="r1" current={[]} options={OPTIONS} />);
+    expect(screen.queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);
+    expect(addSelect().options).toHaveLength(4);
+  });
+});
+
+describe("pickers", () => {
   it("move control offers only legal statuses; a cancelled request can only be restored to Requested", () => {
     const { unmount } = render(<MoveControl requestId="r1" title="T" status="REQUESTED" />);
     const sel = screen.getByLabelText("Move to…") as HTMLSelectElement;

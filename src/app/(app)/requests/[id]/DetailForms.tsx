@@ -9,9 +9,12 @@ import { moveRequest, rescheduleRequest } from "../actions";
 import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
 import { canTransition } from "@/lib/workflow";
-import { CircleAlert, Link2, MessageSquarePlus, Trash2 } from "lucide-react";
+import { CircleAlert, Link2, MessageSquarePlus, Trash2, X } from "lucide-react";
 import { Alert } from "@/components/ui/Alert";
+import { Avatar } from "@/components/ui/Avatar";
 import { Button, buttonClass } from "@/components/ui/Button";
+import { cn, focusRing } from "@/components/ui/cn";
+import type { AssigneeRef } from "@/lib/assignees";
 import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
 import { Switch } from "@/components/ui/Switch";
 
@@ -117,32 +120,57 @@ export function RemoveAttachmentButton({ requestId, attachmentId, name }: { requ
   );
 }
 
-export function AssigneePicker({ requestId, current, options }: { requestId: string; current: string | null; options: { id: string; name: string }[] }) {
+/**
+ * Chips for the people on a request, each removable, plus a native select to add someone. Optimistic: the list changes
+ * at once and reverts with the server message if the change is refused.
+ */
+export function AssigneesPicker({ requestId, current, options }: { requestId: string; current: AssigneeRef[]; options: AssigneeRef[] }) {
   const uid = useId();
   const router = useRouter();
-  const [value, setValue] = useState(current ?? "");
+  const [list, setList] = useState<AssigneeRef[]>(current);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  function change(next: string) {
-    const prev = value;
-    setValue(next);
+  function apply(next: AssigneeRef[]) {
+    const prev = list;
+    setList(next);
     setError(null);
     start(async () => {
       try {
-        const r = await setAssignees(requestId, next ? [next] : []);
-        if (r.ok) router.refresh(); else { setValue(prev); setError(r.message); }
+        const r = await setAssignees(requestId, next.map((p) => p.id));
+        if (r.ok) router.refresh(); else { setList(prev); setError(r.message); }
       } catch {
-        setValue(prev);
-        setError("Could not change the assignee. Try again.");
+        setList(prev);
+        setError("Could not change the assignees. Try again.");
       }
     });
   }
+  const chosen = new Set(list.map((p) => p.id));
+  const addable = options.filter((o) => !chosen.has(o.id));
   return (
-    <div>
-      <label htmlFor={`${uid}-a`} className={labelClass}>Assignee</label>
-      <select id={`${uid}-a`} value={value} disabled={pending} onChange={(e) => change(e.target.value)} className={fieldClass({ kind: "select" })}>
-        <option value="">Unassigned</option>
-        {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
+    <div role="group" aria-labelledby={`${uid}-l`}>
+      <span id={`${uid}-l`} className={labelClass}>Assignees</span>
+      {list.length > 0 && (
+        <ul className="mb-2 flex flex-wrap gap-1.5">
+          {list.map((p) => (
+            <li key={p.id} className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-border bg-surface-muted py-0.5 pl-1 pr-0.5 text-[13px] text-foreground">
+              <Avatar name={p.name} size="sm" decorative />
+              <span className="min-w-0 truncate">{p.name}</span>
+              <button type="button" disabled={pending} aria-label={`Remove ${p.name}`} onClick={() => apply(list.filter((x) => x.id !== p.id))}
+                className={cn("inline-flex size-5 items-center justify-center rounded-full text-foreground-secondary hover:bg-surface hover:text-foreground disabled:opacity-50", focusRing)}>
+                <X aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <select aria-label="Add assignee" value="" disabled={pending || addable.length === 0} aria-describedby={error ? `${uid}-e` : undefined}
+        onChange={(e) => {
+          const pick = options.find((o) => o.id === e.target.value);
+          if (pick) apply([...list, pick]);
+        }}
+        className={fieldClass({ kind: "select" })}>
+        <option value="">+ Add person</option>
+        {addable.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>
