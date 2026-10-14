@@ -90,6 +90,53 @@ describe("AssigneesPicker", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("Could not change the assignees. Try again.");
     expect(screen.getByRole("button", { name: "Remove Fafa" })).toBeTruthy();
   });
+  it("moves focus to the add select after an add and after a remove", async () => {
+    setAssignees.mockResolvedValue({ ok: true });
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    fireEvent.change(addSelect(), { target: { value: "u1" } });
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    expect(document.activeElement).toBe(addSelect());
+    const remove = screen.getByRole("button", { name: "Remove Ana" });
+    remove.focus();
+    fireEvent.click(remove);
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(2));
+    expect(document.activeElement).toBe(addSelect());
+  });
+  it("falls back to the group when nobody is left to add", async () => {
+    setAssignees.mockResolvedValue({ ok: true });
+    const two = OPTIONS.slice(0, 2);
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={two} />);
+    fireEvent.change(addSelect(), { target: { value: "u1" } });
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(addSelect().disabled).toBe(true);
+    expect(document.activeElement).toBe(screen.getByRole("group", { name: "Assignees" }));
+  });
+  it("stays mounted and re-syncs when the server list changes, keeping a failed-change error", async () => {
+    setAssignees.mockResolvedValue({ ok: false, code: "INVALID", message: "Nope." });
+    const { rerender } = render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    const select = addSelect();
+    fireEvent.change(select, { target: { value: "u1" } });
+    await screen.findByRole("alert");
+    rerender(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }, { id: "u3", name: "Bima" }]} options={OPTIONS} />);
+    expect(addSelect()).toBe(select);
+    expect(screen.getByRole("button", { name: "Remove Bima" })).toBeTruthy();
+    expect(screen.getByRole("alert").textContent).toMatch(/Nope/);
+  });
+  it("ignores further changes while one is in flight, and keeps focus on the control", async () => {
+    let resolve!: (v: { ok: true }) => void;
+    setAssignees.mockReturnValue(new Promise((r) => { resolve = r; }));
+    render(<AssigneesPicker requestId="r1" current={[{ id: "u2", name: "Fafa" }]} options={OPTIONS} />);
+    fireEvent.change(addSelect(), { target: { value: "u1" } });
+    expect(addSelect().getAttribute("aria-disabled")).toBe("true");
+    expect(document.activeElement).toBe(addSelect());
+    fireEvent.change(addSelect(), { target: { value: "u3" } });
+    fireEvent.click(screen.getByRole("button", { name: "Remove Fafa" }));
+    expect(setAssignees).toHaveBeenCalledTimes(1);
+    resolve({ ok: true });
+    await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    fireEvent.change(addSelect(), { target: { value: "u3" } });
+    expect(setAssignees).toHaveBeenCalledTimes(2);
+  });
   it("with nobody assigned it still offers the add control", () => {
     render(<AssigneesPicker requestId="r1" current={[]} options={OPTIONS} />);
     expect(screen.queryAllByRole("button", { name: /^Remove / })).toHaveLength(0);

@@ -237,7 +237,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
             <Card className="animate-rise" style={{ "--i": 5 } as CSSProperties}>
               <section aria-labelledby="actions-h" className="space-y-4">
                 <CardTitle id="actions-h">Manage</CardTitle>
-                {canPickAssignee && req.status !== "CANCELLED" && <AssigneesPicker key={people.map((p) => p.id).join(",")} requestId={req.id} current={people.map((p) => ({ id: p.id, name: p.name }))} options={assignees} />}
+                {canPickAssignee && req.status !== "CANCELLED" && <AssigneesPicker requestId={req.id} current={people.map((p) => ({ id: p.id, name: p.name }))} options={assignees} />}
                 {canMove && <MoveControl key={req.status} requestId={req.id} title={req.title} status={req.status} />}
                 {canMove && isOpenStatus(req.status) && (
                   <DeadlineControl key={req.deadline?.toISOString() ?? "none"} requestId={req.id} current={req.deadline ? jakartaDate(req.deadline) : null} minDay={jakartaDate(req.requestedAt)} />
