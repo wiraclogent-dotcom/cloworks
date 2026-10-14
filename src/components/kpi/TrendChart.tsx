@@ -28,7 +28,8 @@ function ChartTooltip({ active, payload }: TipProps) {
  * Tasks done (Aqua bars, labelled) vs target (Deep Blue dashed line) per month, in a card. The chart is decorative for
  * assistive tech; the "View as table" data table is the accessible alternative (kept from before the redesign).
  */
-export function TrendChart({ points }: { points: TrendPoint[] }) {
+export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[]; headingLevel?: 2 | 3 }) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const data = points.map((p) => ({ ...p, short: p.label.replace(/ \d{4}$/, "") }));
   const t = tableClass({ compact: true });
   return (
@@ -36,7 +37,7 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
       <figure>
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Last {points.length} months</h2>
+            <Heading className="text-base font-semibold text-foreground">Last {points.length} months</Heading>
             <figcaption className="text-[13px] text-foreground-secondary">Tasks done vs target, last {points.length} months</figcaption>
           </div>
           <ul aria-hidden="true" className="flex items-center gap-4 text-xs text-foreground-secondary">

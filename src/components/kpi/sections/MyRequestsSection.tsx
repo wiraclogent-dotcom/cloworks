@@ -81,7 +81,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
               {target?.note ? <p className="mt-3 text-sm text-foreground-secondary">Note: {target.note}</p> : null}
             </section>
           </Card>
-          <TrendChart points={points} />
+          <TrendChart points={points} headingLevel={3} />
         </div>
       )}
     </KpiSection>

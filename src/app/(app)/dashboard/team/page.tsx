@@ -34,7 +34,7 @@ async function TeamContent({ searchParams }: { searchParams: PageProps<"/dashboa
         <Suspense fallback={<KpiSectionSkeleton title="Requests" />}>
           <TeamRequestsSection db={db} month={month} canManage={canManage} keep={keepParams(sp, ["year"])} />
         </Suspense>
-        <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} />}>
+        <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} id="projects" />}>
           <TeamProjectsSection db={db} year={year} canManage={canManage} keep={keepParams(sp, ["month"])} autoScroll={parseViewParam(sp.view) === "projects"} />
         </Suspense>
       </div>

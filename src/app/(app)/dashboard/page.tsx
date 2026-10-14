@@ -12,6 +12,7 @@ import { KpiSectionSkeleton, KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { buttonClass } from "@/components/ui/Button";
+import { kpiHref } from "@/lib/kpi/href";
 import { keepParams, parseMonthParam, parseUserParam, parseViewParam, resolveSubject } from "./params";
 
 /** Tab title: "My KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
@@ -47,12 +48,12 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
     <>
       <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
         title={own ? "My KPI" : `KPI: ${subject.name}`} description="Request and project KPIs"
-        actions={!own && canTeam ? <Link href={`/dashboard/team?month=${month}`} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null} />
+        actions={!own && canTeam ? <Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year"]) })} className={buttonClass({ variant: "ghost", size: "sm" })}><ArrowLeft aria-hidden="true" />Back to team</Link> : null} />
       <div className="space-y-8">
         <Suspense fallback={<KpiSectionSkeleton title="Requests" tiles={4} />}>
           <MyRequestsSection db={db} subject={subject} own={own} month={month} keep={keepParams(sp, ["year", "q"])} />
         </Suspense>
-        <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} />}>
+        <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} id="projects" />}>
           <MyProjectsSection db={db} subject={subject} canTeam={canTeam} year={year} quarter={quarter}
             keep={{ ...keepParams(sp, ["month"]), user: userKeep }} autoScroll={parseViewParam(sp.view) === "projects"} />
         </Suspense>

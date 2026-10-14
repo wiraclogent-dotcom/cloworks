@@ -33,7 +33,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
           {canTeam ? <Link href={`/dashboard/projects/${subject.id}?year=${year}`} className={buttonClass({ variant: "secondary", size: "sm" })}>Set targets</Link> : null}
         </div>
       ) : (
-        <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} yearSelect={false} />
+        <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} yearSelect={false} headingLevel={3} />
       )}
     </KpiSection>
   );

@@ -22,7 +22,9 @@ export function MonthPicker({ month, current, userId, action, keep }: {
 }) {
   const [year, setYear] = useState(Number(month.slice(0, 4)));
   const ref = useRef<HTMLDetailsElement>(null);
-  const href = (m: string) => kpiHref(action, { month: m, ...keep, user: userId });
+  // `month` and `user` are the picker's own: keep can add to them but never override them.
+  const rest = Object.fromEntries(Object.entries(keep ?? {}).filter(([k]) => k !== "month" && k !== "user"));
+  const href = (m: string) => kpiHref(action, { month: m, ...rest, user: userId });
   const maxYear = Number(current.slice(0, 4));
   // Month links are soft navigations on this same page, so nothing else would close the popover after a pick.
   const close = () => { if (ref.current) ref.current.open = false; };

@@ -72,8 +72,10 @@ export function TeamKpiSkeleton() {
 }
 
 /** One KPI section's fallback (Requests / Projects): the real title with a controls placeholder, a scorecard row and a table. */
-export function KpiSectionSkeleton({ title, tiles = 3 }: { title: string; tiles?: number }) {
+export function KpiSectionSkeleton({ title, tiles = 3, id }: { title: string; tiles?: number; id?: string }) {
   return (
+    // `id` keeps the section's anchor (#projects) in the page while it loads.
+    <div id={id} className={id ? "scroll-mt-4" : undefined}>
     <Busy label={`Loading ${title}…`}>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h2 className="font-display text-xl leading-7 font-semibold text-heading">{title}</h2>
@@ -86,6 +88,7 @@ export function KpiSectionSkeleton({ title, tiles = 3 }: { title: string; tiles?
       ) : null}
       <TableRowsSkeleton rows={4} cols={6} />
     </Busy>
+    </div>
   );
 }
 

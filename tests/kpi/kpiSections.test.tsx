@@ -21,8 +21,8 @@ vi.mock("@/lib/kpi/projectQueries", () => pq);
 vi.mock("@/components/kpi/project/PersonProjectKpiSection", async () => {
   const { ProjectKpiPanel } = await import("@/components/kpi/project/ProjectKpiPanel");
   return {
-    PersonProjectKpiSection: (p: { quarter: "u" | 1 | 2 | 3 | 4; canManage: boolean; hrefFor: (x: { year?: number; q?: string }) => string; yearSelect?: boolean }) =>
-      <ProjectKpiPanel kpi={pq.kpi as PersonProjectKpi} quarter={p.quarter} years={[2026, 2025]} canManage={p.canManage} hrefFor={p.hrefFor} yearSelect={p.yearSelect} />,
+    PersonProjectKpiSection: (p: { quarter: "u" | 1 | 2 | 3 | 4; canManage: boolean; hrefFor: (x: { year?: number; q?: string }) => string; yearSelect?: boolean; headingLevel?: 2 | 3 }) =>
+      <ProjectKpiPanel kpi={pq.kpi as PersonProjectKpi} quarter={p.quarter} years={[2026, 2025]} canManage={p.canManage} hrefFor={p.hrefFor} yearSelect={p.yearSelect} headingLevel={p.headingLevel} />,
   };
 });
 
@@ -32,6 +32,7 @@ import { keepParams } from "@/app/(app)/dashboard/params";
 import { kpiHref } from "@/lib/kpi/href";
 import { KpiSection } from "@/components/kpi/KpiSection";
 import { ScrollIntoViewOnMount } from "@/components/kpi/ScrollIntoViewOnMount";
+import { ProjectKpiPanel } from "@/components/kpi/project/ProjectKpiPanel";
 import { MonthPicker } from "@/components/kpi/MonthPicker";
 import { KpiSectionSkeleton } from "@/components/PageSkeletons";
 import { TeamRequestsSection } from "@/components/kpi/sections/TeamRequestsSection";
@@ -103,6 +104,37 @@ describe("ScrollIntoViewOnMount", () => {
   });
 });
 
+describe("ScrollIntoViewOnMount re-scroll", () => {
+  let cb: (() => void) | null = null;
+  const disconnect = vi.fn();
+  beforeEach(() => {
+    cb = null; disconnect.mockReset();
+    vi.stubGlobal("ResizeObserver", class { constructor(f: () => void) { cb = f; } observe() {} disconnect() { cb = null; disconnect(); } });
+    window.history.replaceState(null, "", "/dashboard?view=projects");
+  });
+  afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); document.getElementById("projects")?.remove(); window.history.replaceState(null, "", "/"); });
+  const target = () => { const el = document.createElement("div"); el.id = "projects"; el.scrollIntoView = vi.fn(); document.body.append(el); return el; };
+
+  it("scrolls again when the layout above resizes, then stops after a second", () => {
+    vi.useFakeTimers();
+    const el = target();
+    render(<ScrollIntoViewOnMount targetId="projects" />);
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(1);
+    cb!();
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(1100);
+    expect(disconnect).toHaveBeenCalled();
+  });
+  it("stops on user input", () => {
+    const el = target();
+    render(<ScrollIntoViewOnMount targetId="projects" />);
+    window.dispatchEvent(new Event("wheel"));
+    expect(disconnect).toHaveBeenCalled();
+    cb?.();
+    expect(el.scrollIntoView).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("MonthPicker keep", () => {
   it("carries the other section's params (and user) on every link", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" keep={{ year: "2025", q: "3", junk: undefined }} action="/dashboard" />);
@@ -112,7 +144,25 @@ describe("MonthPicker keep", () => {
   });
 });
 
+describe("MonthPicker keep order", () => {
+  it("keep cannot override month or user", () => {
+    render(<MonthPicker month="2026-03" current="2026-10" userId="u9" keep={{ month: "1999-01", user: "evil", year: "2025" }} action="/dashboard" />);
+    fireEvent.click(screen.getByText("March 2026").closest("summary")!);
+    expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard?month=2026-05&year=2025&user=u9");
+  });
+});
+
 describe("KpiSectionSkeleton", () => {
+  it("can carry the section anchor so #projects exists while loading", () => {
+    const { container } = render(<KpiSectionSkeleton title="Projects" id="projects" />);
+    const anchor = container.querySelector("#projects")!;
+    expect(anchor.className).toContain("scroll-mt-4");
+    expect(anchor.textContent).toContain("Projects");
+  });
+  it("has no id by default", () => {
+    const { container } = render(<KpiSectionSkeleton title="Requests" />);
+    expect(container.querySelector("[id]")).toBeNull();
+  });
   it("shows the real title and a loading status", () => {
     render(<KpiSectionSkeleton title="Projects" />);
     expect(screen.getByRole("status").textContent).toContain("Loading Projects…");
@@ -198,6 +248,11 @@ describe("MyRequestsSection", () => {
     expect(within(section).getByText("October 2026", { selector: "summary span" })).toBeTruthy();
     expect(section.querySelector("[data-kpi]")).toBeNull();
   });
+  it("the trend heading is an h3 inside the section", async () => {
+    queries.loadTargets.mockResolvedValue([{ userId: "u1", month: "2026-10", role: "DESIGNER", targetTasks: 10, note: null }]);
+    await run();
+    expect(within(screen.getByRole("region", { name: "Requests" })).getByRole("heading", { level: 3, name: "Last 6 months" })).toBeTruthy();
+  });
   it("renders the tiles when the person has a target that month, and the picker keeps year, q and user", async () => {
     queries.loadTargets.mockResolvedValue([{ userId: "u1", month: "2026-10", role: "DESIGNER", targetTasks: 10, note: null }]);
     await run({ own: false, subject: { ...subject, id: "u9" } });
@@ -227,6 +282,15 @@ describe("MyProjectsSection", () => {
   it("empty year: Set targets link for dashboard.team", async () => {
     await run({ canTeam: true });
     expect(screen.getByRole("link", { name: "Set targets" }).getAttribute("href")).toBe("/dashboard/projects/u1?year=2026");
+  });
+  it("Not scored is an h3 inside the section, and an h2 in a bare panel (person page)", async () => {
+    const item = { projectId: "p", projectTitle: "P", itemTitle: "I", state: "cancelled", dueDate: null, bucket: null, startAt: null, finishAt: null, progress: 0, onTime: null, revisions: 0, slips: 0, targetId: "t" } as unknown as PersonProjectKpi["excluded"][number];
+    pq.kpi = { ...kpi, excluded: [item] };
+    await run({ db: db(3) });
+    expect(within(screen.getByRole("region", { name: "Projects" })).getByRole("heading", { level: 3, name: "Not scored" })).toBeTruthy();
+    cleanup();
+    render(<ProjectKpiPanel kpi={pq.kpi as PersonProjectKpi} quarter={4} years={[2026]} canManage={false} hrefFor={() => "/x"} />);
+    expect(screen.getByRole("heading", { level: 2, name: "Not scored" })).toBeTruthy();
   });
   it("with targets: the panel, a single year select, quarter tabs and year links that keep month and end with #projects", async () => {
     pq.kpi = kpi;

@@ -16,7 +16,7 @@ const QUARTERS: Quarter[] = [1, 2, 3, 4];
  * change of year and/or tab, so any page (the person page, the Insights view) can host it. `manage` is the
  * manager's "Manage targets" control, shown only when `canManage`.
  */
-export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manage, yearSelect = true }: {
+export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manage, yearSelect = true, headingLevel = 2 }: {
   kpi: PersonProjectKpi;
   quarter: Quarter | "u";
   years: number[];
@@ -25,7 +25,10 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
   manage?: ReactNode;
   /** False when the host page already shows the year picker (the My KPI Projects section header). */
   yearSelect?: boolean;
+  /** Level of the "Not scored" heading: 3 when the panel sits under a section's h2. */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const unscheduled = quarter === "u";
   const q = unscheduled ? null : kpi.quarters[quarter];
   const items = unscheduled ? kpi.unscheduled : kpi.quarters[quarter].items;
@@ -65,7 +68,7 @@ export function ProjectKpiPanel({ kpi, quarter, years, canManage, hrefFor, manag
       {kpi.excluded.length > 0 ? (
         <section aria-labelledby="not-scored" className="space-y-2">
           <div>
-            <h2 id="not-scored" className="text-sm font-semibold text-foreground-secondary">Not scored</h2>
+            <Heading id="not-scored" className="text-sm font-semibold text-foreground-secondary">Not scored</Heading>
             <p className="text-xs text-foreground-secondary">Cancelled items and items removed from their project do not count.</p>
           </div>
           <TargetList items={kpi.excluded} canManage={canManage} muted />
