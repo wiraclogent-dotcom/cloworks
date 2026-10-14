@@ -139,6 +139,50 @@ export async function setTaskStatus(projectId: string, taskId: string, status: P
   }, unauthResult);
 }
 
+export type ItemBulkResult = { ok: true; changed: number } | { ok: false; code: TaskStageCode; message: string };
+
+/**
+ * Sets the stage of every variant of one item (all rows sharing `itemTitle` in this project). Needs `project.manage`.
+ * Variants whose stage is CANCELLED are skipped unless the target is CANCELLED itself; variants already at the target
+ * are skipped. Runs in one transaction and writes one STAGE event per changed variant. Returns how many changed.
+ */
+export async function setItemStage(projectId: string, itemTitle: string, stage: ProjectStage): Promise<ItemBulkResult> {
+  return withUser<ItemBulkResult, ItemBulkResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change task stages." };
+    if (!PROJECT_STAGES.includes(stage)) return { ok: false, code: "VALIDATION", message: "Pick a valid stage." };
+    const tasks = await db.projectTask.findMany({ where: { projectId, title: itemTitle }, select: { id: true, stage: true } });
+    if (tasks.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    const targets = tasks.filter((t) => t.stage !== stage && (t.stage !== "CANCELLED" || stage === "CANCELLED"));
+    await db.$transaction(async (tx) => {
+      for (const t of targets) await recordTaskChange(tx, { taskId: t.id, actorId: user.id, kind: "STAGE", from: t.stage, to: stage, data: { stage } });
+    });
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true, changed: targets.length };
+  }, unauthResult);
+}
+
+/**
+ * Sets the status of every variant of one item. Needs `project.manage`; CANCELLED is a project-only status and is not
+ * valid here. Variants already at the target are skipped. Runs in one transaction and writes one STATUS event per
+ * changed variant. Returns how many changed.
+ */
+export async function setItemStatus(projectId: string, itemTitle: string, status: ProjectStatus): Promise<ItemBulkResult> {
+  return withUser<ItemBulkResult, ItemBulkResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change status." };
+    if (!TASK_STATUS_ORDER.includes(status)) return { ok: false, code: "VALIDATION", message: "Pick a valid status." };
+    const tasks = await db.projectTask.findMany({ where: { projectId, title: itemTitle }, select: { id: true, status: true } });
+    if (tasks.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    const targets = tasks.filter((t) => t.status !== status);
+    await db.$transaction(async (tx) => {
+      for (const t of targets) await recordTaskChange(tx, { taskId: t.id, actorId: user.id, kind: "STATUS", from: t.status, to: status, data: { status } });
+    });
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true, changed: targets.length };
+  }, unauthResult);
+}
+
 export type NewDetailInput = {
   title: string; subTitle: string; ownerId: string; value: string; startDate: string; dueDate: string; fileUrl: string;
 };
