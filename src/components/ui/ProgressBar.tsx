@@ -2,7 +2,7 @@ import { Check } from "lucide-react";
 import { Progress } from "@/components/shadcn/progress";
 
 /**
- * 8px rounded track (shadcn Progress) with an Aqua fill. The bar is clamped at 100%, the text and aria-valuetext carry the real value;
+ * 8px rounded track (shadcn Progress) with a blue fill. The bar is clamped at 100%, the text and aria-valuetext carry the real value;
  * at or above 100% a check is shown. `label` is the accessible name (shown above the bar unless `hideLabel`).
  */
 export function ProgressBar({ value, max = 100, label, hideLabel = false, valueText, className }: {

@@ -29,7 +29,7 @@ function ChartTooltip({ active, payload }: TipProps) {
 }
 
 /**
- * Tasks done (Aqua bars, labelled) vs target (Deep Blue dashed line) per month, in a card. The chart is decorative for
+ * Tasks done (blue bars, labelled) vs target (ink dashed line) per month, in a card. The chart is decorative for
  * assistive tech; the "View as table" data table is the accessible alternative (kept from before the redesign).
  */
 export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[]; headingLevel?: 2 | 3 }) {

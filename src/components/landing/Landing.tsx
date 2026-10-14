@@ -15,7 +15,7 @@ const display = "font-display tracking-[-0.02em]";
 const signInLight =
   "inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-[15px] font-semibold text-heading " +
   "transition-colors hover:bg-brand-aqua-tint focus-visible:outline-white";
-/** Brand Deep Blue button (both themes); the page's main call to action. */
+/** Primary blue pill (both themes); the page's main call to action. */
 const ctaPrimary =
   "inline-flex items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground " +
   "transition-colors hover:bg-primary-hover";

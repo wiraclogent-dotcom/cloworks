@@ -33,14 +33,14 @@ describe("renderEmail", () => {
     for (const baseUrl of [undefined, "ftp://x"]) {
       const html = renderEmail(base, { baseUrl }).html;
       expect(html).not.toContain("<img");
-      expect(html).toMatch(/#09426d[\s\S]*Cloworks/);
+      expect(html).toMatch(/#1f5eff[\s\S]*Cloworks/);
     }
   });
 
   it("brand colours", () => {
     const { html } = renderEmail({ ...base, button: { label: "Go", url: "https://x.test" } }, { baseUrl: BASE });
-    for (const c of ["#09426d", "#0b7d75", "#f5f3ee"]) expect(html).toContain(c);
-    expect(html).not.toContain("#11aa9f"); // white on the brand aqua is ~2.9:1; the darker aqua keeps the button readable
+    for (const c of ["#1f5eff", "#f4f6fa", "#0a0f1f"]) expect(html).toContain(c); // V3 blue header and button, cool canvas, ink text
+    expect(html).not.toMatch(/#09426d|#0b7d75|#11aa9f/); // no old Deep Blue / Aqua
   });
 
   it("text part", () => {

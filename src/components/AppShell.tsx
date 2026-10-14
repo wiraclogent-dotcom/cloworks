@@ -59,7 +59,7 @@ export async function WorkspaceName() {
 }
 
 /**
- * Shell for authenticated pages: Deep Blue sidebar (Work / Insights / Tools). The notification bell and the profile menu
+ * Shell for authenticated pages: white V3 sidebar (Work / Insights / Tools). The notification bell and the profile menu
  * (Account settings, Help center, Dark mode, Sign out) sit at the top right of every page, the chat dock at the bottom
  * right; admin pages open from Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static

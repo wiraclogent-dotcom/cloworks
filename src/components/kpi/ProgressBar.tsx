@@ -14,7 +14,7 @@ export const PROGRESS_FILL: Record<ProgressLevel, string> = {
 /**
  * "X of Y tasks (Z%)" with a progressbar. The visual bar is clamped at 100% but the text and
  * aria-valuenow carry the real percentage. Without a target there is nothing to measure against.
- * The fill colour follows the thresholds (< 50 amber, 50–99 Aqua, ≥ 100 green + check); the text always carries the value.
+ * The fill colour follows the thresholds (< 50 amber, 50–99 blue, ≥ 100 deep blue + check); the text always carries the value.
  */
 export function ProgressBar({ done, target, progress, label }: { done: number; target: number | null; progress: number | null; label: string }) {
   if (target === null) {
