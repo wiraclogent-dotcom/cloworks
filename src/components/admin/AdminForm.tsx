@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import type { AdminFormState } from "@/lib/adminForm";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button, type ButtonProps } from "@/components/shadcn/button";
 import { Label } from "@/components/shadcn/label";
 import { cn } from "@/components/ui/cn";
@@ -21,11 +21,13 @@ export type FormCtx = {
 function Outcome({ id, state }: { id: string; state: NonNullable<AdminFormState> }) {
   const failed = !state.ok;
   return (
-    <Alert id={id} tone={failed ? "danger" : "success"} role={failed ? "alert" : "status"} className="w-full">
-      <p className="font-medium">{failed ? `Error: ${state.message}` : state.message}</p>
-      {failed && state.details && state.details.length > 1 && (
-        <ul className="mt-1 list-disc pl-5">{state.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
-      )}
+    <Alert id={id} variant={failed ? "destructive" : "success"} role={failed ? "alert" : "status"} className="w-full">
+      <AlertDescription>
+        <p className="font-medium">{failed ? `Error: ${state.message}` : state.message}</p>
+        {failed && state.details && state.details.length > 1 && (
+          <ul className="mt-1 list-disc pl-5">{state.details.map((d, i) => <li key={i}>{d}</li>)}</ul>
+        )}
+      </AlertDescription>
     </Alert>
   );
 }

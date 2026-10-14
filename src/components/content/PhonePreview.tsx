@@ -7,7 +7,7 @@ import { CircleDashed, Clapperboard, GripVertical, Grid3x3, X } from "lucide-rea
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelView, TileView } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { PostTile, TILE_ASPECT, tileLabel } from "./PostTile";
@@ -92,9 +92,9 @@ export function PhonePreview({ channel, tab, planned, published, canDraft, selec
       </nav>
       <div className="min-h-64 pt-0.5 pb-4">
         {dnd.error ? (
-          <Alert tone="danger" className="mx-2 mb-2"
-            action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" />} onClick={dnd.dismissError}>Dismiss</Button>}>
-            <p>{dnd.error}</p>
+          <Alert variant="destructive" className="mx-2 mb-2">
+            <AlertDescription><p>{dnd.error}</p></AlertDescription>
+            <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" />} onClick={dnd.dismissError}>Dismiss</Button></AlertAction>
           </Alert>
         ) : null}
         <DndContext {...dnd.dndProps}>

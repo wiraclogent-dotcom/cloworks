@@ -1,7 +1,7 @@
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { Card } from "@/components/shadcn/card";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { listCreativeTeam } from "@/lib/team";
 import { NewRequestForm } from "./NewRequestForm";
@@ -23,7 +23,7 @@ export function FormSkeleton() {
 export async function NewRequestContent() {
   const { user, db } = await requireScope();
   if (!can(user.appRole, "request.create")) {
-    return <Alert tone="danger">You are not allowed to create requests.</Alert>;
+    return <Alert variant="destructive"><AlertDescription>You are not allowed to create requests.</AlertDescription></Alert>;
   }
   const [brands, divisions, team] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),

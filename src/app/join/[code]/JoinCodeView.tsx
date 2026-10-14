@@ -7,7 +7,7 @@ import { joinWithCodeAction } from "@/app/lobby/actions";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
 import { brandSubmit } from "@/components/auth/styles";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/components/ui/cn";
 
@@ -21,7 +21,7 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
     return (
       <div>
         <h1 className={authTitleClass}>Link not working</h1>
-        <div className="mt-8"><Alert tone="warning">This link no longer works. Ask your admin for a new one.</Alert></div>
+        <div className="mt-8"><Alert variant="warning"><AlertDescription>This link no longer works. Ask your admin for a new one.</AlertDescription></Alert></div>
       </div>
     );
   }

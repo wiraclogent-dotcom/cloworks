@@ -7,7 +7,7 @@ import { Send, TriangleAlert } from "lucide-react";
 import { submitPost, updatePost } from "@/app/(app)/content/actions";
 import type { PostPatch } from "@/lib/content/posts";
 import type { PostPanelView } from "@/lib/content/panelView";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
@@ -163,7 +163,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
         <Textarea {...props("caption")} readOnly={submitting} rows={3} value={fields.caption} onChange={(e) => change("caption", e.target.value)} />
         <FieldError id={id("caption-err")}>{errors.caption}</FieldError>
       </div>
-      {message ? <Alert tone="danger">{message}</Alert> : null}
+      {message ? <Alert variant="destructive"><AlertDescription>{message}</AlertDescription></Alert> : null}
       <div className="flex flex-wrap items-center gap-3">
         <p role="status" className="text-xs text-muted-foreground">{save === "saving" ? "Saving…" : save === "saved" ? "Saved" : ""}</p>
         {can.submit ? (

@@ -9,7 +9,7 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit } from "@/components/auth/styles";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -42,7 +42,7 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
     return (
       <div>
         <h1 className={authTitleClass}>Invite expired</h1>
-        <div className="mt-8"><Alert tone="warning">This invite has expired — ask {invite?.inviterName || "your admin"} for a new one.</Alert></div>
+        <div className="mt-8"><Alert variant="warning"><AlertDescription>This invite has expired — ask {invite?.inviterName || "your admin"} for a new one.</AlertDescription></Alert></div>
       </div>
     );
   }

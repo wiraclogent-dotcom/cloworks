@@ -10,7 +10,7 @@ import { DoneDialog } from "@/components/DoneDialog";
 import { MOVE_TARGETS, STATUS_LABEL } from "@/components/status";
 import { canTransition } from "@/lib/workflow";
 import { CircleAlert, Link2, MessageSquarePlus, Trash2, X } from "lucide-react";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
@@ -264,7 +264,7 @@ export function DeadlineControl({ requestId, current, minDay }: { requestId: str
           aria-describedby={error ? `${uid}-e` : undefined} aria-invalid={!!error || undefined} />
         <Button type="submit" variant="outline" size="sm" loading={pending} disabled={!value || value === current}>{pending ? "Saving…" : "Save"}</Button>
       </div>
-      {error && <Alert tone="danger" id={`${uid}-e`} className="mt-2">{error}</Alert>}
+      {error && <Alert variant="destructive" id={`${uid}-e`} className="mt-2"><AlertDescription>{error}</AlertDescription></Alert>}
     </form>
   );
 }

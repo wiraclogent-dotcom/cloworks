@@ -12,7 +12,6 @@ import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { Alert } from "@/components/ui/Alert";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { tableClass } from "@/components/ui/table";
 import { Divider } from "@/components/ui/Divider";
@@ -207,22 +206,6 @@ describe("EmptyState", () => {
     expect(screen.getByText("No requests yet")).toBeTruthy();
     expect(screen.getByText("Create the first one.")).toBeTruthy();
     expect(screen.getByRole("link", { name: "New request" })).toBeTruthy();
-  });
-});
-
-describe("Alert", () => {
-  it("danger is an alert; others are status; text is the message only", () => {
-    render(<><Alert tone="danger">Could not save.</Alert><Alert tone="success">Saved.</Alert></>);
-    expect(screen.getByRole("alert").textContent).toBe("Could not save.");
-    expect(screen.getByRole("alert").getAttribute("data-tone")).toBe("cancelled");
-    expect(screen.getByRole("status").getAttribute("data-tone")).toBe("done");
-  });
-  it("role={null} renders static text with title and icon", () => {
-    const { container } = render(<Alert tone="warning" role={null} title="Heads up">Due soon.</Alert>);
-    expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("status")).toBeNull();
-    expect(screen.getByText("Heads up")).toBeTruthy();
-    expect(container.querySelector("svg[aria-hidden='true']")).toBeTruthy();
   });
 });
 

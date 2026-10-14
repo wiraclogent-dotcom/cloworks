@@ -3,7 +3,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { tableClass } from "@/components/ui/table";
@@ -51,7 +51,7 @@ export async function UsersContent({ tab, merged }: { tab?: string; merged?: str
     <>
       <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
         description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
-      {merged && <Alert tone="success" className="mb-4">Merged into {merged}.</Alert>}
+      {merged && <Alert variant="success" className="mb-4"><AlertDescription>Merged into {merged}.</AlertDescription></Alert>}
       <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
       <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
       {panel}

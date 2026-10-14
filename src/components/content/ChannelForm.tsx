@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createChannel, updateChannel } from "@/app/(app)/content/actions";
 import { planHref } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, type ButtonProps } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
@@ -69,8 +69,8 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
   return (
     <LibraryDialog title={channel ? "Edit channel" : "Add channel"} onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
-        {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
+        {formError ? <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert> : null}
+        {brands.length === 0 ? <Alert variant="warning" role={null}><AlertDescription>Add a brand in Admin → Lists first.</AlertDescription></Alert> : null}
         <div>
           <Label htmlFor={`${uid}-brandId`}>Brand</Label>
           <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>

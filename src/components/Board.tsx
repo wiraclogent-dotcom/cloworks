@@ -17,7 +17,7 @@ import { BoardCard, CARD_OVERLAY, CardFace } from "./BoardCard";
 import { celebrate, centreOf } from "@/lib/celebrate";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
-import { Alert } from "./ui/Alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "./ui/cn";
 
@@ -183,9 +183,9 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   return (
     <div data-page-wide="">
       {message && (
-        <Alert tone="danger" className="mb-3"
-          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
-          <p>{message}</p>
+        <Alert variant="destructive" className="mb-3">
+          <AlertDescription><p>{message}</p></AlertDescription>
+          <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button></AlertAction>
         </Alert>
       )}
       {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}

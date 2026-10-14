@@ -6,7 +6,7 @@ import { ArrowDown, ArrowUp, Pencil, Trash2 } from "lucide-react";
 import { deleteChannel, moveChannel } from "@/app/(app)/content/actions";
 import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { ChannelForm, type BrandOption } from "./ChannelForm";
@@ -34,7 +34,7 @@ function DeleteChannelDialog({ channel, current, tab, onClose }: { channel: Chan
   return (
     <LibraryDialog title={`Delete @${channel.handle}?`} onClose={onClose}>
       <p className="mb-4 text-sm text-muted-foreground">This removes the channel with every post planned or posted on it. It cannot be undone.</p>
-      {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
+      {error ? <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert> : null}
       <div className="flex justify-end gap-2">
         <Button variant="outline" onClick={onClose}>Cancel</Button>
         <Button variant="destructive" loading={pending} onClick={confirm}>Delete</Button>
@@ -75,7 +75,7 @@ export function ChannelActions({ channel, up, down, current, tab, brands }: {
         <Button variant="ghost" size="sm" icon={<ArrowDown />} disabled={!down || busy} onClick={() => down && void move(down)}>Move down</Button>
         <Button variant="ghost" size="sm" icon={<Trash2 />} onClick={() => setDialog("delete")}>Delete</Button>
       </div>
-      {error ? <Alert tone="danger" className="mt-1">{error}</Alert> : null}
+      {error ? <Alert variant="destructive" className="mt-1"><AlertDescription>{error}</AlertDescription></Alert> : null}
       {dialog === "edit" ? <ChannelForm brands={brands} channel={channel} onClose={() => setDialog(null)} /> : null}
       {dialog === "delete" ? <DeleteChannelDialog channel={channel} current={current} tab={tab} onClose={() => setDialog(null)} /> : null}
     </div>

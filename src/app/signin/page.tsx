@@ -10,7 +10,7 @@ import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { passwordSignIn } from "./actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { cn } from "@/components/ui/cn";
 import { AuthShell } from "@/components/auth/AuthShell";
@@ -32,9 +32,9 @@ const nextOf = (raw: string | string[] | undefined) => {
 function Notice({ searchParams }: { searchParams: SP }) {
   const sp = use(searchParams);
   const notice = signInErrorMessage(sp.error);
-  if (notice) return <Alert tone="danger">{notice}</Alert>;
-  if (sp.changed) return <Alert tone="success">{PASSWORD_CHANGED_MESSAGE}</Alert>;
-  return sp.linked ? <Alert tone="info">{LINKED_MESSAGE}</Alert> : null;
+  if (notice) return <Alert variant="destructive"><AlertDescription>{notice}</AlertDescription></Alert>;
+  if (sp.changed) return <Alert variant="success"><AlertDescription>{PASSWORD_CHANGED_MESSAGE}</AlertDescription></Alert>;
+  return sp.linked ? <Alert><AlertDescription>{LINKED_MESSAGE}</AlertDescription></Alert> : null;
 }
 
 /** Carries `?next=` into a form (sanitised here and again by the action). */

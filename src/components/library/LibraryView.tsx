@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Folder, Pin, Plus, Search, Settings2 } from "lucide-react";
 import { moveItem, setPinned, type LibraryActionResult } from "@/app/(app)/library/actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
@@ -131,7 +131,7 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
         ))}
       </div>
 
-      {error ? <Alert tone="danger">{error}</Alert> : null}
+      {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
       {categories.length === 0 && canManage ? (
         <EmptyState

@@ -6,7 +6,7 @@ import type { SubmitState, WorkKind } from "@/lib/submitRequest";
 import { errorSummary } from "@/lib/formErrors";
 import Link from "next/link";
 import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, UserCheck } from "lucide-react";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/shadcn/card";
 import { NativeSelect } from "@/components/shadcn/native-select";
@@ -150,7 +150,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
     <div className="@container">
     <div className="grid items-start gap-5 @3xl:grid-cols-[minmax(0,1fr)_20rem]">
     <form ref={formRef} key={nonce} action={action} className="min-w-0 space-y-5" noValidate>
-      {generic && <Alert tone="danger">{generic}</Alert>}
+      {generic && <Alert variant="destructive"><AlertDescription>{generic}</AlertDescription></Alert>}
       <Card>
         <StepTitle n={1}>What do you need?</StepTitle>
         <div className="mt-3" data-invalid={errs.workKind ? "" : undefined}>

@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronRight, Pencil } from "lucide-react";
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
@@ -209,7 +209,7 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
         <p role="status" aria-live="polite" className={note ? "px-3 pb-2.5 text-xs text-muted-foreground" : "sr-only"}>{note}</p>
       )}
 
-      {error && <div className="px-3 pb-2.5"><Alert tone="danger">{error}</Alert></div>}
+      {error && <div className="px-3 pb-2.5"><Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert></div>}
 
       {open && (
         <div id={panelId} className="border-t border-border">

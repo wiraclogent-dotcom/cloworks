@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
 import { createCategory, deleteCategory, moveCategory, updateCategory, type LibraryActionResult } from "@/app/(app)/library/actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
@@ -92,7 +92,7 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
 
   return (
     <LibraryDialog title="Manage categories" onClose={onClose} wide>
-      {error ? <Alert tone="danger" className="mb-4">{error}</Alert> : null}
+      {error ? <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert> : null}
       <ul className="space-y-2">
         {categories.map((c, i) => (
           <CategoryRow key={`${c.id}:${c.name}:${c.icon}`} cat={c} first={i === 0} last={i === categories.length - 1} pending={pending} run={run} />

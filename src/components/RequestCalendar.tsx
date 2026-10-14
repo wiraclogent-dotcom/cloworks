@@ -14,7 +14,7 @@ import { CalendarAgenda } from "./calendar/CalendarAgenda";
 import { DayCell } from "./calendar/DayCell";
 import { DayDialog } from "./calendar/DayDialog";
 import { createDayDrag } from "./calendar/dnd";
-import { Alert } from "./ui/Alert";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { EmptyState } from "./ui/EmptyState";
 import { cn } from "./ui/cn";
@@ -124,9 +124,9 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
         </nav>
       </div>
       {message && (
-        <Alert tone="danger" className="mb-3"
-          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
-          <p>{message}</p>
+        <Alert variant="destructive" className="mb-3">
+          <AlertDescription><p>{message}</p></AlertDescription>
+          <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button></AlertAction>
         </Alert>
       )}
       {rows.length === 0 ? (

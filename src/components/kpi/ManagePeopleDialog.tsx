@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
@@ -85,7 +85,7 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
           )}
         </fieldset>
 
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>

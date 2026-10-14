@@ -3,7 +3,7 @@
 import { useActionState, useEffect, useState } from "react";
 import type { AuthFormState } from "@/lib/authForm";
 import { AuthForm } from "@/components/auth/AuthForm";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -40,8 +40,8 @@ function ResendForm() {
   const left = Math.min(RESEND_AFTER_S, Math.max(0, RESEND_AFTER_S - Math.floor((now - since) / 1000)));
   return (
     <form action={run} className="space-y-3">
-      {state?.error && <Alert tone="danger">{state.error}</Alert>}
-      {state?.info && <Alert tone="success">{state.info}</Alert>}
+      {state?.error && <Alert variant="destructive"><AlertDescription>{state.error}</AlertDescription></Alert>}
+      {state?.info && <Alert variant="success"><AlertDescription>{state.info}</AlertDescription></Alert>}
       <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
         Didn&apos;t get it? Check spam, or
         <Button type="submit" variant="ghost" size="sm" loading={pending} disabled={left > 0}>

@@ -3,7 +3,7 @@
 import { useActionState, useState, useTransition } from "react";
 import { AdminForm, ConfirmAction, Labeled } from "@/components/admin/AdminForm";
 import { NativeSelect } from "@/components/shadcn/native-select";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { enumLabel } from "@/lib/adminChips";
@@ -201,7 +201,7 @@ export function MergeForm({ u, others }: { u: UserRowData; others: { id: string;
         </Labeled>
         <Button type="submit" variant="outline" loading={pending} aria-label={`Review merge for ${u.name}`}>{pending ? "Checking…" : "Review merge"}</Button>
       </form>
-      {state && !state.ok && <Alert tone="danger">Error: {state.error}</Alert>}
+      {state && !state.ok && <Alert variant="destructive"><AlertDescription>Error: {state.error}</AlertDescription></Alert>}
       {state?.ok && state.preview.into.id === intoId && (
         <ConfirmAction action={mergePerson} prefix={`${id}-confirm`} hidden={{ fromId: u.id, intoId: state.preview.into.id }}
           triggerLabel="Merge" triggerAriaLabel={`Merge ${u.name} into ${state.preview.into.name}`}

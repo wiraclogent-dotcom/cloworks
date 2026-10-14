@@ -3,7 +3,7 @@
 import { useId, useRef, useState, useTransition } from "react";
 import { Plus } from "lucide-react";
 import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)/dashboard/projects/actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Label, labelClassName } from "@/components/shadcn/label";
@@ -116,7 +116,7 @@ function Picker({ userId, name, year, projects, onClose }: {
           </fieldset>
         ) : null}
 
-        {error ? <Alert tone="danger">{error}</Alert> : null}
+        {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>Cancel</Button>

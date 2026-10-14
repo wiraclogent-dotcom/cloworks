@@ -119,7 +119,7 @@ component is gone.
 | Tabs / view switch | `Tabs` or `Toggle Group` | `ui/SegmentedControl`, Library category pills | Planned |
 | Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`details`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
 | Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
-| Inline message | `Alert` | `ui/Alert` | Planned |
+| Inline message | `Alert` + `AlertTitle`, `AlertDescription`, `AlertAction` (`variant` default/success/warning/destructive; `role` defaults to alert for destructive, status otherwise, `null` = silent; `icon` swaps or drops the icon) | `ui/Alert` (`tone`, `title`, `action` props) | Migrated |
 | Empty list / no results / error page | `Empty` | `ui/EmptyState`, ad-hoc "No … yet" paragraphs | Planned |
 | Loading placeholder / spinner | `Skeleton`, `Spinner` | `ui/Skeleton`, `LoaderCircle` spinners | Planned |
 | Person | `Avatar` | `ui/Avatar` | Planned |
@@ -155,7 +155,7 @@ shadcn part inside.
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`Alert`, `EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
+`EmptyState`, `Skeleton`, `Avatar`, `Switch`, `RadioCards`, `SegmentedControl`, `ProgressBar`,
 `CollapsibleSection`, `Modal`, `Divider`, `table.ts`. Their props are documented in the files themselves.
 
 ## Do

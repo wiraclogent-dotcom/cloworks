@@ -4,7 +4,7 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
@@ -80,7 +80,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
   return (
     <LibraryDialog title={editing ? "Edit link" : "Add link"} onClose={onClose}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        {formError ? <Alert tone="danger">{formError}</Alert> : null}
+        {formError ? <Alert variant="destructive"><AlertDescription>{formError}</AlertDescription></Alert> : null}
         <div>
           <Label htmlFor={`${uid}-title`}>Title</Label>
           <Input {...f("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} autoFocus />

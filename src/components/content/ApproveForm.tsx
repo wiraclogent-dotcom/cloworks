@@ -6,7 +6,7 @@ import { CheckCheck } from "lucide-react";
 import { approvePost } from "@/app/(app)/content/actions";
 import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
 import { parseFieldSchema, type FieldDef } from "@/lib/fieldSchema";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
@@ -101,7 +101,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
 
   return (
     <form aria-label="Approve & create request" onSubmit={submit} noValidate className="flex flex-col gap-3">
-      {message ? <Alert tone="danger">{message}</Alert> : null}
+      {message ? <Alert variant="destructive"><AlertDescription>{message}</AlertDescription></Alert> : null}
       <Row id={id("title")} label="Title" required error={errors.title}>
         <Input {...props("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
       </Row>

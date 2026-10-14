@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { connection } from "next/server";
 import { authTitleClass } from "@/components/auth/AuthShell";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { isInviteToken } from "@/lib/authForm";
 import { resetLinkUsable } from "@/lib/joinDeps";
 import { ResetForm } from "./ResetForm";
@@ -24,7 +24,7 @@ export async function ResetView({ params }: { params: Promise<{ token: string }>
     <>
       <h1 className={authTitleClass}>Link not working</h1>
       <div className="mt-8 space-y-4">
-        <Alert tone="warning">This link has expired or was already used. Ask for a new one.</Alert>
+        <Alert variant="warning"><AlertDescription>This link has expired or was already used. Ask for a new one.</AlertDescription></Alert>
         <p className="text-sm text-muted-foreground">
           <Link href="/forgot" className="font-medium text-brand-deep-blue underline-offset-4 hover:underline">Request a new link</Link>
         </p>

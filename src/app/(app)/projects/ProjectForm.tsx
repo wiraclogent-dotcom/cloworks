@@ -5,7 +5,7 @@ import { submitProject, submitProjectInPlace } from "./actions";
 import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
 import Link from "next/link";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/shadcn/card";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -78,7 +78,7 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
     {/* Outside the keyed form so the live region persists across submits and the new text is announced. */}
     <p role="status" aria-live="polite" className="sr-only">{pending ? "" : summary}</p>
     <form ref={formRef} key={nonce} action={action} className="space-y-4" noValidate>
-      {generic && <Alert tone="danger">{generic}</Alert>}
+      {generic && <Alert variant="destructive"><AlertDescription>{generic}</AlertDescription></Alert>}
       <Card className="space-y-4">
       <CardTitle>Project</CardTitle>
       <Field id="title" label="Title" required error={errs.title}>

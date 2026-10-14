@@ -6,7 +6,7 @@ import { loadLobbyState } from "@/lib/joinDeps";
 import { requireApplicantOrRedirect } from "@/lib/session";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
@@ -72,7 +72,7 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
   return (
     <Panel title="Almost there">
       <p className={lead}>You&apos;re not in a workspace yet. Ask your admin for an invite link, or paste it here.</p>
-      {notice && <Alert tone="danger">{notice}</Alert>}
+      {notice && <Alert variant="destructive"><AlertDescription>{notice}</AlertDescription></Alert>}
       <AuthForm action={joinWithCodeAction} submitLabel="Request to join" pendingLabel="Sending request…">
         <div>
           <Label htmlFor="lobby-link">Invite link</Label>

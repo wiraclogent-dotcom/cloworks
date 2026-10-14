@@ -10,7 +10,7 @@ import type { ApproveFormData } from "@/lib/content/approve";
 import type { PostPanelView } from "@/lib/content/panelView";
 import { relativeTime } from "@/lib/relativeTime";
 import { STATUS_LABEL as REQUEST_STATUS_LABEL } from "@/lib/statusLabels";
-import { Alert } from "@/components/ui/Alert";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ApproveForm } from "./ApproveForm";
@@ -135,7 +135,7 @@ export function PostPanel({ view, closeHref }: { view: PostPanelView; closeHref:
               <ExternalLink aria-hidden="true" />
             </Link>
           ) : null}
-          {message ? <Alert tone="danger">{message}</Alert> : null}
+          {message ? <Alert variant="destructive"><AlertDescription>{message}</AlertDescription></Alert> : null}
           {can.edit
             ? <PostPanelEditor view={view} />
             : <PostPanelReview view={view} onApprove={startApprove} approving={loadingApprove} />}
