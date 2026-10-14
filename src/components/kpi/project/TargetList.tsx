@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Tone } from "@/lib/palette";
 import { daysLeft } from "@/lib/daysLeft";
+import { itemSlug } from "@/lib/projectItemList";
 import type { ItemFacts } from "@/lib/kpi/projectItems";
 import type { TargetItem } from "@/lib/kpi/projectQueries";
 import { Chip } from "@/components/ui/Chip";
@@ -33,7 +34,8 @@ export function TargetRow({ item, canManage, muted = false }: { item: ItemFacts 
   return (
     <li data-state={item.state} className={cn("flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3", muted && "text-foreground-secondary")}>
       <div className="min-w-0 grow basis-60">
-        <Link href={`/projects/${item.projectId}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
+        {/* Slug of the title alone: in a project where two titles collide only the first matches, which is fine because target titles are unique per project. */}
+        <Link href={`/projects/${item.projectId}#item-${itemSlug(item.itemTitle, new Set())}`} className="text-sm font-medium break-words text-foreground hover:underline underline-offset-2">
           <span className="text-foreground-secondary">{item.projectTitle}</span> › {item.itemTitle}
         </Link>
         <p className="mt-0.5 text-xs text-foreground-secondary tabular-nums">{item.slips} {item.slips === 1 ? "slip" : "slips"} · {item.revisions} {item.revisions === 1 ? "revision" : "revisions"}</p>

@@ -181,11 +181,15 @@ describe("TargetRow", () => {
   it("links Project > Item to the project, with progress, slips and revisions", () => {
     render(<ul><TargetRow item={target()} canManage={false} /></ul>);
     const link = screen.getByRole("link", { name: /Rebrand/ });
-    expect(link.getAttribute("href")).toBe("/projects/p1");
+    expect(link.getAttribute("href")).toBe("/projects/p1#item-logo");
     expect(link.textContent).toContain("Logo");
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("40");
     expect(screen.getByText("1 slip · 2 revisions")).toBeTruthy();
     expect(document.querySelector("[data-deadline]")).toBeTruthy();
+  });
+  it("links to the item on the project page by its slug", () => {
+    render(<ul><TargetRow item={target({ itemTitle: "Laundry Pods Regular 4" })} canManage={false} /></ul>);
+    expect(screen.getByRole("link", { name: /Rebrand/ }).getAttribute("href")).toBe("/projects/p1#item-laundry-pods-regular-4");
   });
   it("pluralizes the counts: 2 slips · 1 revision, 0 slips · 0 revisions", () => {
     const { rerender } = render(<ul><TargetRow item={target({ slips: 2, revisions: 1 })} canManage={false} /></ul>);

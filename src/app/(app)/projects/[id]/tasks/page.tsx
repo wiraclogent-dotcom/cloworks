@@ -1,97 +1,10 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
-import { notFound } from "next/navigation";
-import { requireScope } from "@/lib/session";
-import { can } from "@/lib/permissions";
-import { jakartaIso } from "@/lib/projectTasks";
-import { taskMode } from "@/lib/projectProgress";
-import { TaskRow } from "./TaskRow";
-import { AddDetailForm } from "./AddDetailForm";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { tableClass } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = { title: "Project details" };
 
-export default function ProjectTasksPage({ params }: { params: Promise<{ id: string }> }) {
-  return (
-    <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-      <ProjectTasksContent params={params} />
-    </Suspense>
-  );
-}
-
-async function ProjectTasksContent({ params }: { params: Promise<{ id: string }> }) {
-  const { user, db } = await requireScope();
-  const canManage = can(user.appRole, "project.manage");
+/** The all-details table was folded into the project page's item list. Old links and bookmarks land there. */
+export default async function ProjectTasksPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const project = await db.project.findUnique({
-    where: { id },
-    include: {
-      brand: { select: { name: true } },
-      tasks: { orderBy: { position: "asc" }, include: { owner: { select: { name: true } } } },
-    },
-  });
-  if (!project) notFound();
-
-  const taskCount = project.tasks.length;
-  // Design projects set stages; tracker projects set statuses. The column shows whichever this project uses.
-  const mode = taskMode(project.tasks);
-  // Owners are designers only.
-  const owners = canManage
-    ? await db.user.findMany({ where: { active: true, jobRole: "DESIGNER" }, orderBy: { name: "asc" }, select: { id: true, name: true } })
-    : [];
-  const products = new Set(project.tasks.map((t) => t.title)).size;
-  const tbl = tableClass();
-
-  return (
-    <div>
-      <PageHeader
-        breadcrumb={[{ label: "Work" }, { label: "Projects", href: "/projects" }, { label: project.title }]}
-        title={project.title}
-        count={taskCount}
-        description={`${products} ${products === 1 ? "item" : "items"} · ${project.brand?.name ?? "No brand"} · ${project.code ?? "no code"}`}
-      />
-      {canManage && <div className="mb-4"><AddDetailForm projectId={project.id} mode={mode} owners={owners} /></div>}
-      <div className={tbl.wrapper}>
-        <table className={tbl.table}>
-          <thead className={tbl.thead}>
-            <tr>
-              {["Item", "Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
-                <th key={h} scope="col" className={tbl.th}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {project.tasks.map((t, i) => (
-              <TaskRow
-                key={t.id}
-                isFirst={i === 0}
-                isLast={i === taskCount - 1}
-                projectId={project.id}
-                canManage={canManage}
-                owners={owners}
-                mode={mode}
-                task={{
-                  id: t.id,
-                  title: t.title,
-                  subTitle: t.subTitle,
-                  ownerId: t.ownerId,
-                  ownerName: t.owner?.name ?? null,
-                  stage: t.stage,
-                  status: t.status,
-                  startIso: t.startDate ? jakartaIso(t.startDate) : null,
-                  dueIso: t.dueDate ? jakartaIso(t.dueDate) : null,
-                  dueTbc: t.dueTbc,
-                  fileName: t.fileName,
-                  fileUrl: t.fileUrl,
-                  notes: t.notes,
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+  redirect(`/projects/${id}`);
 }
