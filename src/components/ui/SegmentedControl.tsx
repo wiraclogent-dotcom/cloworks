@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
 import { cn, focusRing } from "./cn";
 
 export type Segment = {
@@ -8,7 +9,7 @@ export type Segment = {
   icon?: ReactNode;
   /** Link segment (navigation, e.g. Board / Table views). Current one gets aria-current="page". */
   href?: string;
-  /** Button segment (local state). Current one gets aria-pressed="true". Client components only. */
+  /** Button segment (local state): a shadcn ToggleGroup item, the current one aria-checked. Client components only. */
   onSelect?: () => void;
 };
 
@@ -22,8 +23,9 @@ export const SEGMENT_TRAY = "inline-flex items-center gap-1 rounded-xl bg-muted 
 export const segmentClass = (on: boolean) => cn(ITEM, on ? ON : OFF);
 
 /**
- * Segmented switch. With `href` segments it renders `<nav aria-label>` + links (works without JS);
- * otherwise a `role="group"` of buttons with aria-pressed.
+ * Segmented switch. With `href` segments it renders `<nav aria-label>` + links with `aria-current` (works without JS);
+ * otherwise a shadcn `ToggleGroup` (type single: a labelled radiogroup, the current segment `aria-checked`, arrow keys
+ * move between segments; clicking the current one keeps it).
  */
 export function SegmentedControl({ label, items, value, className }: { label: string; items: Segment[]; value: string; className?: string }) {
   const wrap = cn(SEGMENT_TRAY, className);
@@ -40,12 +42,13 @@ export function SegmentedControl({ label, items, value, className }: { label: st
     );
   }
   return (
-    <div role="group" aria-label={label} className={wrap}>
+    <ToggleGroup type="single" aria-label={label} value={value} variant="segment" size="sm" className={wrap}
+      onValueChange={(v) => items.find((i) => i.value === v)?.onSelect?.()}>
       {items.map((i) => (
-        <button key={i.value} type="button" aria-pressed={i.value === value} onClick={i.onSelect} className={segmentClass(i.value === value)}>
+        <ToggleGroupItem key={i.value} value={i.value}>
           {i.icon}{i.label}
-        </button>
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }

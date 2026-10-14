@@ -11,7 +11,7 @@ import { Badge } from "@/components/shadcn/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
-import { cn, focusRing } from "@/components/ui/cn";
+import { ToggleGroup, ToggleGroupItem } from "@/components/shadcn/toggle-group";
 import { filterRows, type LibraryRow } from "@/lib/libraryView";
 import { LibraryRowItem } from "./LibraryRow";
 import { categoryIcon } from "./categoryIcons";
@@ -30,12 +30,8 @@ export type LibraryViewProps = {
   now: Date;
 };
 
-const chipClass = (on: boolean) =>
-  cn(
-    "inline-flex h-8 items-center rounded-full border px-3 text-compact font-medium whitespace-nowrap transition-colors duration-150",
-    on ? "border-transparent bg-accent text-accent-foreground" : "border-border-strong bg-card text-foreground hover:bg-muted",
-    focusRing,
-  );
+/** Value of the "All" category pill (category ids are cuids, so it cannot collide). */
+const ALL = "__all";
 
 export function LibraryView({ rows, categories, brands, brandOptions = [], canManage, now }: LibraryViewProps) {
   const router = useRouter();
@@ -122,14 +118,13 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
           </div>
         ) : null}
       </div>
-      <div className="-mt-1 flex flex-wrap gap-2">
-        <button type="button" aria-pressed={categoryId === null} onClick={() => setCategoryId(null)} className={chipClass(categoryId === null)}>All</button>
+      <ToggleGroup type="single" aria-label="Category" variant="outline" size="sm" className="-mt-1 flex-wrap gap-2"
+        value={categoryId ?? ALL} onValueChange={(v) => setCategoryId(v === ALL ? null : v)}>
+        <ToggleGroupItem value={ALL} className="rounded-full">All</ToggleGroupItem>
         {categories.filter((c) => canManage || rows.some((r) => r.categoryId === c.id)).map((c) => (
-          <button key={c.id} type="button" aria-pressed={categoryId === c.id} onClick={() => setCategoryId(c.id)} className={chipClass(categoryId === c.id)}>
-            {c.name}
-          </button>
+          <ToggleGroupItem key={c.id} value={c.id} className="rounded-full">{c.name}</ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {error ? <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert> : null}
 

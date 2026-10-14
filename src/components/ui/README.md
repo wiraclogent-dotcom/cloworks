@@ -116,7 +116,8 @@ component is gone.
 | Menu of actions | `DropdownMenu` + `DropdownMenuTrigger` (`asChild` on a `Button`), `DropdownMenuContent` (width via `className`), `DropdownMenuItem` (36px min height; `onSelect`; `disabled` = `aria-disabled`, skipped by arrow keys; `asChild` for a `<Link>`), `DropdownMenuCheckboxItem` (`indicator={false}` when the row draws its own state), `DropdownMenuSeparator`. Arrow keys, typeahead, Esc and focus return to the trigger come from Radix | Radix `DropdownMenu` used directly (profile, bell), `role="menu"` in `LibraryRow` | Migrated |
 | Floating panel (filters, month picker, info) | `Popover` + `PopoverTrigger` + `PopoverContent` (Esc and outside click close it, focus returns to the trigger). `portal={false}` keeps the panel where it is written, for named fields that must submit with their `<form>` (FilterBar's `FilterPanel`) | `<details>` popovers in `FilterBar`, `MonthPicker` | Migrated |
 | Hint on hover/focus | `Tooltip` | `title=""` on icon buttons | Planned |
-| Tabs / view switch | `Tabs` or `Toggle Group` | `ui/SegmentedControl`, Library category pills | Planned |
+| View switch, single choice among a few options | `ToggleGroup` + `ToggleGroupItem` (`type="single"` with `aria-label`, controlled `value` + `onValueChange`: a radiogroup of radios with `aria-checked` and arrow keys; the choice is never cleared). `variant="segment"` in the muted tray, `variant="outline"` + `rounded-full` for pills; `size="sm"`. Kit `ui/SegmentedControl` composes it in button mode; its link mode stays a `<nav>` of links with `aria-current` (no JS) | `ui/SegmentedControl` buttons, Library category pills (`aria-pressed` buttons) | Migrated |
+| Tabs | `Tabs` | – | Planned |
 | Card | `Card`, `CardHeader` + `CardTitle` (h2; `as="h3"`) + `CardAction`, `CardDescription`, `CardContent`, `CardFooter`. `className="p-0"` for edge-to-edge tables; `asChild` for a `section`/`li`/`Collapsible`/`Link` card. | `ui/Card`, inline `rounded-xl border bg-card` blocks (`tests/cardUsage.test.ts` fails on a new one) | Migrated |
 | Tag, count, label pill | `Badge` (`tone` = palette entry, default neutral; `variant="count"` for numbers; icon as a child; `asChild`) | `ui/Chip`, `CountPill` | Migrated |
 | Inline message | `Alert` + `AlertTitle`, `AlertDescription`, `AlertAction` (`variant` default/success/warning/destructive; `role` defaults to alert for destructive, status otherwise, `null` = silent; `icon` swaps or drops the icon) | `ui/Alert` (`tone`, `title`, `action` props) | Migrated |
@@ -126,7 +127,7 @@ component is gone.
 | On/off, choice | `Switch`, `Checkbox`, `RadioGroup` + `RadioGroupItem` (Radix: a `role` button plus, inside a `<form>`, a hidden input that posts `name=value`; `Switch`/`Checkbox` post `on` or their `value` only while on). Kit `ui/Switch` (row label + description, `onCheckedChange`) and `ui/RadioCards` (card radios, `onChange(value)`) compose them | bare `<input type="checkbox">`, native radios, hand-built switch track | Migrated |
 | Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
 | Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open; `keepMounted` renders it once and hides it while closed, like `<details>`: use it for panels with forms, so typed input survives collapsing). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
-| Table | `Table` | `tableClass()` | Planned |
+| Table | `Table` (container = the one scroll box: max height via `containerClassName`, never another `overflow-*` wrapper or the sticky header stops sticking; card look: wrap in `<Card className="overflow-hidden p-0">`; width via `className="min-w-[…]"`), `TableHeader`, `TableBody`, `TableRow` (hairline + hover, no zebra), `TableHead` (`scope="col"`; sticky, muted 12px), `TableRowHeader` (`<th scope="row">`), `TableCell`; `numeric` on `TableHead`/`TableCell` right-aligns tabular figures; compact density `className="py-1.5"` on the cells; `TableCaption className="sr-only"`. Server-safe | `ui/table.ts` `tableClass()` | Migrated |
 | Separator | `Separator` (decorative by default; `decorative={false}` for a real separator; `orientation`) | `ui/Divider` | Migrated |
 | Date picking | `Calendar` + `Popover` (our `DatePicker`) | – | In use |
 | Toast | `Toast` (Sonner) | inline `role="status"` messages after actions | Planned (decide per flow) |
@@ -152,12 +153,12 @@ shadcn part inside.
 | `FileLocationLink` | FileLocationLink.tsx | server path + copy | Design-folder paths. |
 | `CountUp` | CountUp.tsx | animated number | KPI values. |
 | `BrandArt`, `LogoMark` | BrandArt.tsx, LogoMark.tsx | `size` | Brand illustrations and mark (decorative). |
+| `SegmentedControl` | SegmentedControl.tsx | `label`, `value`, `items: {value,label,icon?,href?,onSelect?}[]` | Board/Table and admin tabs (links: `<nav>` + `aria-current`, no JS); local switches (buttons: shadcn `ToggleGroup`). `SEGMENT_TRAY` / `segmentClass` style link segments elsewhere (FilterBar quick filters). |
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`SegmentedControl`,
-`CollapsibleSection`, `Modal`, `table.ts`. Their props are documented in the files themselves.
+`CollapsibleSection`, `Modal`. Their props are documented in the files themselves.
 
 ## Do
 

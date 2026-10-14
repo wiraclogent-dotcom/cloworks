@@ -6,7 +6,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
-import { tableClass } from "@/components/ui/table";
+import { Card } from "@/components/shadcn/card";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { cn, focusRing } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
@@ -77,24 +78,23 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
       select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
     })
     .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash })));
-  const t = tableClass({ minWidth: "min-w-[60rem]" });
 
   const view = (
     <>
-      <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
-        <table className={t.table}>
-          <caption className="sr-only">All people</caption>
-          <thead>
-            <tr>
+      <Card className="overflow-hidden p-0">
+        <Table containerClassName="max-h-[calc(100dvh-15rem)]" className="min-w-[60rem]">
+          <TableCaption className="sr-only">All people</TableCaption>
+          <TableHeader>
+            <TableRow>
               {["Name", "Job role", "App role", "Login email", "Status", "Manage"].map((h) => (
-                <th key={h} scope="col" className={t.th}>{h}</th>
+                <TableHead key={h} scope="col">{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map((u) => (
-              <tr key={u.id} className={cn(t.tr, "align-top")}>
-                <th scope="row" className={cn(t.rowHeader, "align-top")}>
+              <TableRow key={u.id} className="align-top">
+                <TableRowHeader className="align-top">
                   <div className="flex items-start gap-2.5">
                     <Avatar name={u.name} size="md" decorative className={cn(!u.active && "opacity-60")} />
                     <div className="min-w-0">
@@ -106,19 +106,19 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                       </p>
                     </div>
                   </div>
-                </th>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
-                <td className={cn(t.td, "align-top break-all")}>
+                </TableRowHeader>
+                <TableCell className="align-top"><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></TableCell>
+                <TableCell className="align-top"><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></TableCell>
+                <TableCell className="align-top break-all">
                   {u.email ?? <span className="text-muted-foreground italic">No login</span>}
                   {u.email && (
                     <p className="mt-0.5 text-xs text-muted-foreground" data-has-password={String(u.hasPassword)}>
                       {u.hasPassword ? "Password set" : "No password yet"}
                     </p>
                   )}
-                </td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
-                <td className={cn(t.td, "min-w-72 align-top")}>
+                </TableCell>
+                <TableCell className="align-top"><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></TableCell>
+                <TableCell className="min-w-72 align-top">
                   <Collapsible className="group">
                     <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-left font-medium text-link hover:underline", focusRing)}>
                       <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />Edit {u.name}
@@ -131,12 +131,12 @@ async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
                       <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name, fullName: o.fullName }))} />
                     </CollapsibleContent>
                   </Collapsible>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </>
   );
   return { users, view };

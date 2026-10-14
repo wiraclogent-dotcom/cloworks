@@ -4,12 +4,14 @@ import { Bar, CartesianGrid, ComposedChart, LabelList, Line, ResponsiveContainer
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/shadcn/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
-import { tableClass } from "@/components/ui/table";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
 import { cn, focusRing } from "@/components/ui/cn";
 
 export type TrendPoint = { month: string; label: string; tasksDone: number; target: number | null };
 
 const tick = { fill: "var(--foreground-secondary)", fontSize: 12 };
+/** Compact density for the "View as table" cells. */
+const DENSE = "py-1.5";
 
 type TipProps = { active?: boolean; payload?: readonly { payload?: TrendPoint }[] };
 
@@ -33,7 +35,6 @@ function ChartTooltip({ active, payload }: TipProps) {
 export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[]; headingLevel?: 2 | 3 }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const data = points.map((p) => ({ ...p, short: p.label.replace(/ \d{4}$/, "") }));
-  const t = tableClass({ compact: true });
   return (
     <Card>
       <figure>
@@ -67,26 +68,26 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
           <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />
           View as table
         </CollapsibleTrigger>
-        <CollapsibleContent className="relative mt-2 overflow-x-auto">
-          <table className={t.table}>
-            <caption className="sr-only">Tasks done versus target by month</caption>
-            <thead>
-              <tr>
-                <th scope="col" className={t.th}>Month</th>
-                <th scope="col" className={`${t.th} ${t.numeric}`}>Tasks done</th>
-                <th scope="col" className={`${t.th} ${t.numeric}`}>Target</th>
-              </tr>
-            </thead>
-            <tbody>
+        <CollapsibleContent className="mt-2">
+          <Table>
+            <TableCaption className="sr-only">Tasks done versus target by month</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col" className={DENSE}>Month</TableHead>
+                <TableHead scope="col" numeric className={DENSE}>Tasks done</TableHead>
+                <TableHead scope="col" numeric className={DENSE}>Target</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {points.map((p) => (
-                <tr key={p.month} className={t.tr}>
-                  <th scope="row" className={`${t.td} font-normal`}>{p.label}</th>
-                  <td className={`${t.td} ${t.numeric}`}>{p.tasksDone}</td>
-                  <td className={`${t.td} ${t.numeric}`}>{p.target ?? "—"}</td>
-                </tr>
+                <TableRow key={p.month}>
+                  <TableRowHeader className={cn(DENSE, "font-normal")}>{p.label}</TableRowHeader>
+                  <TableCell numeric className={DENSE}>{p.tasksDone}</TableCell>
+                  <TableCell numeric className={DENSE}>{p.target ?? "—"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CollapsibleContent>
       </Collapsible>
     </Card>

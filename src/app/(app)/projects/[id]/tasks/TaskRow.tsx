@@ -5,7 +5,7 @@ import { Check, Pencil } from "lucide-react";
 import { Badge } from "@/components/shadcn/badge";
 import { StatusIcon } from "@/components/ui/StatusIcon";
 import { cn } from "@/components/ui/cn";
-import { tableClass } from "@/components/ui/table";
+import { TableCell, TableRow } from "@/components/shadcn/table";
 import { PROJECT_STATUS_TONE } from "@/lib/palette";
 import { PROJECT_STAGE_LABEL, TASK_STATUS_LABEL, formatJakartaDay } from "@/lib/projectTasks";
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
@@ -19,9 +19,8 @@ import { RowActions } from "./RowActions";
 import type { TaskMode } from "@/lib/projectProgress";
 import { Button } from "@/components/shadcn/button";
 
-const tbl = tableClass();
-// Cells keep one line (the inline editors sit beside their buttons); the wrapper scrolls sideways when needed.
-const cell = (className?: string) => cn(tbl.td, "whitespace-nowrap", className);
+// Cells keep one line (the inline editors sit beside their buttons); the table container scrolls sideways when needed.
+const cell = (className?: string) => cn("whitespace-nowrap", className);
 
 export type TaskRowData = {
   id: string;
@@ -77,9 +76,9 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
   const actions = <RowActions projectId={projectId} taskId={task.id} label={label} isFirst={isFirst} isLast={isLast} />;
 
   return (
-    <tr className={cn(tbl.tr, canceled && "text-foreground-muted line-through opacity-60")} data-editing={editing || undefined}>
+    <TableRow className={cn(canceled && "text-foreground-muted line-through opacity-60")} data-editing={editing || undefined}>
       {!hideItem && (
-        <td className={cell("font-medium")}>
+        <TableCell className={cell("font-medium")}>
           <div className="flex items-center gap-2">
             {pencil}
             {editing ? (
@@ -90,9 +89,9 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
           </div>
           {nameError && <p role="alert" className="mt-1 pl-9 text-xs text-danger">{nameError}</p>}
           {editing && <div className="mt-1.5 pl-9">{actions}</div>}
-        </td>
+        </TableCell>
       )}
-      <td className={cell(hideItem ? "font-medium" : undefined)}>
+      <TableCell className={cell(hideItem ? "font-medium" : undefined)}>
         {hideItem ? (
           <>
             <div className="flex items-center gap-2">
@@ -109,13 +108,13 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
         ) : editing ? (
           <EditableName projectId={projectId} taskId={task.id} field="subTitle" value={task.subTitle ?? ""} label={label} onFail={nameFailed} />
         ) : task.subTitle ?? "—"}
-      </td>
-      <td className={cell()}>
+      </TableCell>
+      <TableCell className={cell()}>
         {editing ? (
           <OwnerSelect projectId={projectId} taskId={task.id} value={task.ownerId} owners={owners} label={label} />
         ) : task.ownerName ?? "—"}
-      </td>
-      <td className={cell()}>
+      </TableCell>
+      <TableCell className={cell()}>
         {mode === "status" ? (
           editing ? (
             <StatusSelect projectId={projectId} taskId={task.id} value={task.status} label={label} />
@@ -127,24 +126,24 @@ export function TaskRow({ projectId, canManage, task, owners, mode, isFirst, isL
         ) : task.stage ? (
           <Badge>{PROJECT_STAGE_LABEL[task.stage]}</Badge>
         ) : "—"}
-      </td>
-      <td className={cell("tabular-nums")}>
+      </TableCell>
+      <TableCell className={cell("tabular-nums")}>
         {editing ? (
           <DateEdit projectId={projectId} taskId={task.id} field="start" iso={task.startIso} text={startText} label={label} />
         ) : startText}
-      </td>
-      <td className={cell("tabular-nums")}>
+      </TableCell>
+      <TableCell className={cell("tabular-nums")}>
         {editing ? (
           <DateEdit projectId={projectId} taskId={task.id} field="due" iso={task.dueIso} text={dueText} label={label} />
         ) : dueText}
-      </td>
-      <td className={cell("text-muted-foreground")}>
+      </TableCell>
+      <TableCell className={cell("text-muted-foreground")}>
         {editing ? (
           <FileLinkEdit projectId={projectId} taskId={task.id} fileUrl={task.fileUrl} text={fileText} label={label} />
         ) : task.fileUrl ? (
           <FileLocationLink href={task.fileUrl} name={fileText} className="text-link underline-offset-2 hover:underline">{fileText}</FileLocationLink>
         ) : fileText}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

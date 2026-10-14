@@ -11,7 +11,7 @@ import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { cn } from "@/components/ui/cn";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
-import { tableClass } from "@/components/ui/table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { daysLeft } from "@/lib/daysLeft";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
 import type { ProjectItem } from "@/lib/projectItemList";
@@ -24,7 +24,6 @@ import { renameItem, setItemStage, setItemStatus } from "@/app/(app)/projects/[i
 import { ITEM_OPEN_EVENT, slugFromHash } from "./ItemHashOpener";
 import { Card } from "@/components/shadcn/card";
 
-const tbl = tableClass();
 
 function segmentOf(key: ProjectStage | ProjectStatus | "none", mode: TaskMode): { label: string; tone: Tone } {
   if (key === "none") return { label: mode === "status" ? "No status yet" : "No stage yet", tone: "tag-neutral" };
@@ -213,32 +212,30 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
 
       {open && (
         <div id={panelId} className="border-t border-border">
-          <div className={cn(tbl.wrapper, "max-w-full overflow-x-auto rounded-none border-0 shadow-none")}>
-            <table className={tbl.table}>
-              <thead className={tbl.thead}>
-                <tr>
-                  {["Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
-                    <th key={h} scope="col" className={tbl.th}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((t, i) => (
-                  <TaskRow
-                    key={t.id}
-                    hideItem
-                    isFirst={i === 0}
-                    isLast={i === rows.length - 1}
-                    projectId={projectId}
-                    canManage={canManage}
-                    owners={owners}
-                    mode={mode}
-                    task={t}
-                  />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {["Detail", "Owner", mode === "status" ? "Status" : "Stage", "Start", "Due", "File"].map((h) => (
+                  <TableHead key={h} scope="col">{h}</TableHead>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((t, i) => (
+                <TaskRow
+                  key={t.id}
+                  hideItem
+                  isFirst={i === 0}
+                  isLast={i === rows.length - 1}
+                  projectId={projectId}
+                  canManage={canManage}
+                  owners={owners}
+                  mode={mode}
+                  task={t}
+                />
+              ))}
+            </TableBody>
+          </Table>
           {canManage && (
             <div className="border-t border-border p-3">
               <AddDetailForm projectId={projectId} mode={mode} owners={owners} defaultTitle={item.title} label="Add variant" />

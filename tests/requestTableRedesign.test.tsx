@@ -67,10 +67,15 @@ describe("RequestTable (redesign)", () => {
     expect(within(cb).getByRole("img", { name: "Assignees: Fafa, Dimas, Cami" })).toBeTruthy();
   });
 
+  // The scroll box is now the shadcn Table container (it was a hand-made div[data-table-scroll]); it is the only
+  // scroller between the sticky header and the card, so the header sticks while the rows scroll.
   it("scrolls sideways inside the card and puts the footer in the same card", () => {
     table([row("a")], "deadline", "asc", <p>footer here</p>);
-    const scroll = document.querySelector("[data-table-scroll]") as HTMLElement;
+    const scroll = document.querySelector("[data-slot='table-container']") as HTMLElement;
     expect(scroll.className).toMatch(/overflow-auto/);
+    expect(scroll.className).toMatch(/max-h-\[calc\(100dvh-15rem\)\]/);
+    const th = screen.getAllByRole("columnheader")[0];
+    for (let a = th.parentElement; a && a !== scroll; a = a.parentElement) expect(a.className).not.toMatch(/overflow-/);
     expect(scroll.querySelector("table")!.className).toMatch(/min-w-\[64rem\]/);
     expect(scroll.parentElement!.contains(screen.getByText("footer here"))).toBe(true);
     expect(scroll.parentElement!.className).toMatch(/rounded-xl/);

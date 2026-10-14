@@ -44,11 +44,12 @@ describe("LibraryView", () => {
   });
   it("shows category chips for empty categories only to managers", () => {
     view();
-    expect(screen.queryByRole("button", { name: "Master Box Size" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Product Knowledge" })).toBeTruthy();
+    // Category pills are radios in the "Category" toggle group (were aria-pressed buttons).
+    expect(screen.queryByRole("radio", { name: "Master Box Size" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Product Knowledge" })).toBeTruthy();
     cleanup();
     view({ canManage: true });
-    expect(screen.getByRole("button", { name: "Master Box Size" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Master Box Size" })).toBeTruthy();
   });
   it("lists sections in category order", () => {
     view();
@@ -61,11 +62,16 @@ describe("LibraryView", () => {
     expect(screen.queryByText("Alpha deck", { selector: "a *, a" })).toBeNull();
     expect(screen.getByText("Beta sheet")).toBeTruthy();
   });
-  it("category chip filters and sets aria-pressed", () => {
+  // The category pills are a shadcn ToggleGroup (type single): a labelled radiogroup whose chosen pill is
+  // aria-checked (they were aria-pressed buttons).
+  it("category chip filters and is checked", () => {
     view();
-    const chip = screen.getByRole("button", { name: "Brand Guidelines (NG)" });
+    const group = screen.getByRole("radiogroup", { name: "Category" });
+    expect(within(group).getByRole("radio", { name: "All" }).getAttribute("aria-checked")).toBe("true");
+    const chip = within(group).getByRole("radio", { name: "Brand Guidelines (NG)" });
     fireEvent.click(chip);
-    expect(chip.getAttribute("aria-pressed")).toBe("true");
+    expect(chip.getAttribute("aria-checked")).toBe("true");
+    expect(within(group).getByRole("radio", { name: "All" }).getAttribute("aria-checked")).toBe("false");
     expect(screen.queryByText("Alpha deck")).toBeNull();
     expect(screen.getByText("Beta sheet")).toBeTruthy();
   });

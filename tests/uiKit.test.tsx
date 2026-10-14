@@ -11,7 +11,6 @@ import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
-import { tableClass } from "@/components/ui/table";
 import { cn } from "@/components/ui/cn";
 import { StatusBadge, NeedsMotionBadge } from "@/components/status";
 
@@ -41,13 +40,28 @@ describe("SegmentedControl", () => {
     expect(within(nav).getByRole("link", { name: "Table" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Board" }).getAttribute("aria-current")).toBeNull();
   });
-  it("button mode: group with aria-pressed, calls onSelect", () => {
+  it("link mode stays a nav of plain links (works without JS), not a toggle group", () => {
+    render(<SegmentedControl label="View" value="board" items={[{ value: "board", label: "Board", href: "/b" }, { value: "table", label: "Table", href: "/t" }]} />);
+    const nav = screen.getByRole("navigation", { name: "View" });
+    expect(nav.querySelector("[data-slot='toggle-group']")).toBeNull();
+    expect(within(nav).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/b", "/t"]);
+  });
+  // Button mode is a shadcn ToggleGroup (type single): Radix exposes it as a radiogroup of radios with aria-checked
+  // (it was a role=group of aria-pressed buttons). Same contract for the user: a labelled group, the current segment
+  // marked, one click picks another.
+  it("button mode: labelled radio group (ToggleGroup), current one checked, calls onSelect", () => {
     const pick = vi.fn();
-    render(<SegmentedControl label="Range" value="m" items={[{ value: "m", label: "Month", onSelect: () => {} }, { value: "y", label: "Year", onSelect: pick }]} />);
-    expect(screen.getByRole("group", { name: "Range" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Month" }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Year" }));
+    const stay = vi.fn();
+    render(<SegmentedControl label="Range" value="m" items={[{ value: "m", label: "Month", onSelect: stay }, { value: "y", label: "Year", onSelect: pick }]} />);
+    const group = screen.getByRole("radiogroup", { name: "Range" });
+    expect(group.getAttribute("data-slot")).toBe("toggle-group");
+    expect(within(group).getByRole("radio", { name: "Month" }).getAttribute("aria-checked")).toBe("true");
+    expect(within(group).getByRole("radio", { name: "Year" }).getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(within(group).getByRole("radio", { name: "Year" }));
     expect(pick).toHaveBeenCalledOnce();
+    // Clicking the current segment keeps it (a segmented choice is never empty).
+    fireEvent.click(within(group).getByRole("radio", { name: "Month" }));
+    expect(stay).not.toHaveBeenCalled();
   });
 });
 
@@ -196,17 +210,3 @@ describe("KpiTile", () => {
   });
 });
 
-describe("tableClass", () => {
-  it("sticky header, row hover, compact density", () => {
-    const t = tableClass();
-    expect(t.th).toMatch(/sticky top-0/);
-    expect(t.tr).toMatch(/hover:/);
-    expect(tableClass({ compact: true }).td).toMatch(/py-1\.5/);
-    expect(t.td).toMatch(/py-2\.5/);
-  });
-  it("renders a semantic table with the classes", () => {
-    const t = tableClass();
-    render(<div className={t.wrapper}><table className={t.table}><thead><tr><th scope="col" className={t.th}>Title</th></tr></thead><tbody><tr className={t.tr}><td className={t.td}>A</td></tr></tbody></table></div>);
-    expect(screen.getByRole("columnheader", { name: "Title" }).className).toMatch(/sticky/);
-  });
-});
