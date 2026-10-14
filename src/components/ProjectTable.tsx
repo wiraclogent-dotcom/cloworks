@@ -6,7 +6,6 @@ import { formatJakartaDate, groupProjects, isClosedProject } from "@/lib/project
 import { isHttpUrl } from "@/lib/fieldSchema";
 import { isServerPath } from "@/lib/fileLocation";
 import { FileLocationLink } from "./ui/FileLocationLink";
-import { brandTone } from "@/lib/palette";
 import { Avatar } from "./ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { DeadlineChip } from "./ui/DeadlineChip";
@@ -113,8 +112,7 @@ export function ProjectTable({ rows, canManage, now, emptyTitle = "No projects y
         const hid = `brand-${g.brand ?? "none"}`.replace(/\s+/g, "-");
         return (
           <section key={g.brand ?? "__none"} aria-labelledby={hid} className={cn(gi > 0 && "border-t border-border")}>
-            <div data-tone={g.brand ? brandTone(g.brand) : "tag-neutral"} data-group-header=""
-              className="flex items-center gap-2 border-l-4 border-tone-accent bg-muted px-4 py-2.5">
+            <div data-group-header="" className="flex items-center gap-2 bg-muted px-4 py-2.5">
               <h2 id={hid} className="text-base font-semibold text-heading">{g.brand ?? "No brand"}</h2>
               <Badge variant="count" aria-label={`${g.projects.length} ${g.projects.length === 1 ? "project" : "projects"}`} className="bg-card">{g.projects.length}</Badge>
             </div>
