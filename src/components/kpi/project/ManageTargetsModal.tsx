@@ -5,7 +5,8 @@ import { Plus } from "lucide-react";
 import { addProjectTargets, loadItemOptions, type ItemOption } from "@/app/(app)/dashboard/projects/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Label, labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 
 /**
@@ -81,7 +82,7 @@ function Picker({ userId, name, year, projects, onClose }: {
     <LibraryDialog title={`Manage targets · ${name} · ${year}`} onClose={onClose}>
       <form onSubmit={save} className="space-y-4">
         <div>
-          <label htmlFor={`${uid}-project`} className={labelClass}>Project</label>
+          <Label htmlFor={`${uid}-project`}>Project</Label>
           <select id={`${uid}-project`} value={projectId} onChange={(e) => void choose(e.target.value)} className={fieldClass({ kind: "select" })}>
             <option value="">Choose a project</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -92,7 +93,7 @@ function Picker({ userId, name, year, projects, onClose }: {
         {options && options.length === 0 ? <p className="text-sm text-muted-foreground">This project has no items yet.</p> : null}
         {options && options.length > 0 ? (
           <fieldset className="space-y-1">
-            <legend className={labelClass}>Items to add as targets for {name}</legend>
+            <legend className={labelClassName}>Items to add as targets for {name}</legend>
             <ul className="max-h-72 divide-y divide-border overflow-y-auto rounded-lg border border-border">
               {options.map((o) => {
                 const mine = o.assignedTo.some((a) => a.userId === userId);

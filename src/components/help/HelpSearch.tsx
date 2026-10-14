@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type { Article, Section } from "@/lib/help/content";
 import { searchArticles } from "@/lib/help/search";
+import { Input } from "@/components/shadcn/input";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -19,13 +20,12 @@ export function HelpSearch({ sections }: { sections: { section: Section; article
 
   return (
     <div className="space-y-4">
-      <input
+      <Input
         type="search"
         aria-label="Search help"
         placeholder="Search guides"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
       />
 
       {searching ? (

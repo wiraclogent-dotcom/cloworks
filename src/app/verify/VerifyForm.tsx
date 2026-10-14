@@ -5,7 +5,8 @@ import type { AuthFormState } from "@/lib/authForm";
 import { AuthForm } from "@/components/auth/AuthForm";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { resendAction, verifyAction } from "./actions";
 
 const RESEND_AFTER_S = 60;
@@ -17,9 +18,9 @@ export function VerifyForm({ next }: { next?: string }) {
       <AuthForm action={verifyAction} submitLabel="Verify" pendingLabel="Checking…">
         {next && <input type="hidden" name="next" value={next} />}
         <div>
-          <label htmlFor="verify-code" className={labelClass}>6-digit code</label>
-          <input id="verify-code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required
-            className={fieldClass({ className: "h-12 text-center font-mono text-2xl tracking-[0.5em]" })} />
+          <Label htmlFor="verify-code">6-digit code</Label>
+          <Input id="verify-code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} required
+            className="h-12 text-center font-mono text-2xl tracking-[0.5em]" />
         </div>
       </AuthForm>
       <ResendForm />

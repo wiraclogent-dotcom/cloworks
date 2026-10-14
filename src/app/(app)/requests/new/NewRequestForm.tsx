@@ -9,7 +9,11 @@ import { Clapperboard, Image as ImageIcon, Mail, Scissors, Send, SquareKanban, U
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { RadioCards } from "@/components/ui/RadioCards";
 
 type Opt = { id: string; name: string };
@@ -17,10 +21,10 @@ type Opt = { id: string; name: string };
 function Field({ id, label, error, required, hint, children }: { id: string; label: string; error?: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>
+      <Label htmlFor={id}>
         {label}
         {required && <span aria-hidden="true" className="text-danger"> *</span>}
-      </label>
+      </Label>
       {children}
       {hint && <p id={`${id}-hint`} className="mt-1 text-xs text-muted-foreground">{hint}</p>}
       <FieldError id={`${id}-error`}>{error}</FieldError>
@@ -94,10 +98,11 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
   const formRef = useRef<HTMLFormElement>(null);
   const errs = (state && !state.ok && state.fieldErrors) || {};
   const v = state?.values;
-  const props = (k: string, kind: "input" | "select" | "textarea" = "input") => ({
+  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs and textareas get it from <Input>/<Textarea>.
+  const props = (k: string, kind: "input" | "select" = "input") => ({
     id: k,
     name: k,
-    className: fieldClass({ kind, invalid: !!errs[k] }),
+    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errs[k] }) }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -180,7 +185,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
                   const id = i === 0 ? "assigneeIds" : `assigneeIds-${i + 1}`;
                   return (
                     <div key={i}>
-                      <label htmlFor={id} className={labelClass}>{slotLabel(i)}</label>
+                      <Label htmlFor={id}>{slotLabel(i)}</Label>
                       <select {...props("assigneeIds", "select")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
                         defaultValue={v?.assigneeIds[i] ?? ""} aria-describedby={describedBy}>
                         <option value="">{i < base ? "Unassigned" : "Choose someone"}</option>
@@ -202,14 +207,14 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <StepTitle n={3}>Describe it</StepTitle>
         <div className="mt-4 space-y-4">
           <Field id="title" label="Title" required error={errs.title}>
-            <input {...props("title")} type="text" required maxLength={200} placeholder={copy.title} defaultValue={v?.title} />
+            <Input {...props("title")} type="text" required maxLength={200} placeholder={copy.title} defaultValue={v?.title} />
           </Field>
           <Field id="briefUrl" label="Brief link" hint={copy.brief} error={errs.briefUrl}>
-            <input {...props("briefUrl")} type="url" placeholder="https://" defaultValue={v?.briefUrl}
+            <Input {...props("briefUrl")} type="url" placeholder="https://" defaultValue={v?.briefUrl}
               aria-describedby={[errs.briefUrl ? "briefUrl-error" : "", "briefUrl-hint"].filter(Boolean).join(" ")} />
           </Field>
           <Field id="notes" label="Notes" error={errs.notes}>
-            <textarea {...props("notes", "textarea")} rows={4} placeholder={copy.notes} defaultValue={v?.notes} />
+            <Textarea {...props("notes")} rows={4} placeholder={copy.notes} defaultValue={v?.notes} />
           </Field>
         </div>
       </Card>
@@ -219,7 +224,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <div className="mt-4 flex flex-wrap items-end gap-3">
           <div className="w-full sm:w-56">
             <Field id="deadline" label="Deadline" error={errs.deadline}>
-              <input {...props("deadline")} ref={deadlineRef} type="date" defaultValue={v?.deadline} />
+              <Input {...props("deadline")} ref={deadlineRef} type="date" defaultValue={v?.deadline} />
             </Field>
           </div>
           <div className="flex flex-wrap gap-2 pb-px" role="group" aria-label="Quick deadline">

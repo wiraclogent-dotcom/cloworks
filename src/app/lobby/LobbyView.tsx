@@ -8,7 +8,9 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { authTitleClass } from "@/components/auth/AuthShell";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldDescription } from "@/components/shadcn/field";
 import { joinWithCodeAction, signOutAction } from "./actions";
 import { LobbyPoll } from "./LobbyPoll";
 
@@ -73,10 +75,10 @@ export async function LobbyView({ searchParams }: { searchParams: LobbySearch })
       {notice && <Alert tone="danger">{notice}</Alert>}
       <AuthForm action={joinWithCodeAction} submitLabel="Request to join" pendingLabel="Sending request…">
         <div>
-          <label htmlFor="lobby-link" className={labelClass}>Invite link</label>
-          <input id="lobby-link" name="link" type="text" autoComplete="off" required maxLength={500} placeholder="https://…/join/…" aria-describedby="lobby-link-hint"
-            className={fieldClass({ className: "h-11" })} />
-          <p id="lobby-link-hint" className={hintClass}>The whole link, or just the code at its end.</p>
+          <Label htmlFor="lobby-link">Invite link</Label>
+          <Input id="lobby-link" name="link" type="text" autoComplete="off" required maxLength={500} placeholder="https://…/join/…" aria-describedby="lobby-link-hint"
+            className="h-11" />
+          <FieldDescription id="lobby-link-hint">The whole link, or just the code at its end.</FieldDescription>
         </div>
       </AuthForm>
     </Panel>

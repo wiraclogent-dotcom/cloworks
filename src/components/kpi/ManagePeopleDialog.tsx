@@ -6,7 +6,7 @@ import { Users } from "lucide-react";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { labelClass } from "@/components/ui/Field";
+import { labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 
 type Props = {
@@ -67,7 +67,7 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
     <LibraryDialog title={`Manage people · ${kind === "REQUESTS" ? "Requests" : "Projects"} KPI`} onClose={onClose}>
       <form onSubmit={save} className="space-y-4">
         <fieldset className="space-y-1">
-          <legend className={labelClass}>People shown on the team table</legend>
+          <legend className={labelClassName}>People shown on the team table</legend>
           <p className="mb-1.5 text-xs leading-4 text-muted-foreground">
             This only changes this table. It stays the same for every {kind === "REQUESTS" ? "month" : "year"}; requests, targets and scores are not affected.
           </p>

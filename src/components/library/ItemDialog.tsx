@@ -6,8 +6,11 @@ import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
-import { cn } from "@/components/ui/cn";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label, labelClassName } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "./LibraryDialog";
 
 export type ItemDraft = {
@@ -79,26 +82,23 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
       <form onSubmit={submit} noValidate className="space-y-4">
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         <div>
-          <label htmlFor={`${uid}-title`} className={labelClass}>Title</label>
-          <input {...f("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} autoFocus
-            className={fieldClass({ invalid: !!errors.title })} />
+          <Label htmlFor={`${uid}-title`}>Title</Label>
+          <Input {...f("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} autoFocus />
           {err("title")}
         </div>
         <div>
-          <label htmlFor={`${uid}-url`} className={labelClass}>Link</label>
-          <input {...f("url")} type="url" inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://"
-            className={fieldClass({ invalid: !!errors.url })} />
+          <Label htmlFor={`${uid}-url`}>Link</Label>
+          <Input {...f("url")} type="url" inputMode="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://" />
           {err("url")}
         </div>
         <div>
-          <label htmlFor={`${uid}-description`} className={labelClass}>Description</label>
-          <textarea {...f("description")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300}
-            className={fieldClass({ kind: "textarea", invalid: !!errors.description })} />
+          <Label htmlFor={`${uid}-description`}>Description</Label>
+          <Textarea {...f("description")} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={300} />
           {err("description")}
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label htmlFor={`${uid}-categoryId`} className={labelClass}>Category</label>
+            <Label htmlFor={`${uid}-categoryId`}>Category</Label>
             <select {...f("categoryId")} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}
               className={fieldClass({ kind: "select", invalid: !!errors.categoryId })}>
               {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -106,7 +106,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
             {err("categoryId")}
           </div>
           <div>
-            <label htmlFor={`${uid}-brandId`} className={labelClass}>Brand</label>
+            <Label htmlFor={`${uid}-brandId`}>Brand</Label>
             <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
               className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
               <option value="">No brand</option>
@@ -116,15 +116,15 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
           </div>
         </div>
         <fieldset aria-describedby={errors.files ? `${uid}-files-err` : `${uid}-files-hint`}>
-          <legend className={labelClass}>Extra files</legend>
+          <legend className={labelClassName}>Extra files</legend>
           <p id={`${uid}-files-hint`} className="mb-2 text-xs text-muted-foreground">Other versions of this link, e.g. the AI file or a mockup. Each shows as a small link on the row.</p>
           <div className="space-y-2">
             {files.map((file) => (
               <div key={file.key} className="flex items-center gap-2">
-                <input aria-label="File label" value={file.label} onChange={(e) => setFile(file.key, { label: e.target.value })} maxLength={30} placeholder="AI"
-                  className={cn(fieldClass({ invalid: !!errors.files }), "w-24 shrink-0")} />
-                <input aria-label="File link" type="url" inputMode="url" value={file.url} onChange={(e) => setFile(file.key, { url: e.target.value })} placeholder="https://"
-                  className={cn(fieldClass({ invalid: !!errors.files }), "min-w-0 flex-1")} />
+                <Input aria-label="File label" value={file.label} onChange={(e) => setFile(file.key, { label: e.target.value })} maxLength={30} placeholder="AI"
+                  aria-invalid={!!errors.files || undefined} className="w-24 shrink-0" />
+                <Input aria-label="File link" type="url" inputMode="url" value={file.url} onChange={(e) => setFile(file.key, { url: e.target.value })} placeholder="https://"
+                  aria-invalid={!!errors.files || undefined} className="min-w-0 flex-1" />
                 <Button
                   variant="ghost"
                   size="icon"

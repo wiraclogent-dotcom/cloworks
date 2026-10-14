@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, type InputHTMLAttributes } from "react";
+import { useState, type ComponentProps } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn, focusRing } from "./cn";
-import { fieldClass } from "./Field";
+import { Input } from "@/components/shadcn/input";
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type">;
+type Props = Omit<ComponentProps<typeof Input>, "type">;
 
 /**
- * Password field with a show/hide toggle inside it on the right. Takes every input prop except `type`; `className`
- * defaults to `fieldClass()` (pass the form's own control class to match its other fields). The toggle is a real
+ * Password field with a show/hide toggle inside it on the right. Takes every `Input` prop except `type` (e.g.
+ * `className="h-11"` for the sign-in height). The toggle is a real
  * `type="button"` (never submits), keyboard focusable, labelled "Show password" / "Hide password" with aria-pressed.
  */
 export function PasswordInput({ className, ...props }: Props) {
   const [shown, setShown] = useState(false);
   return (
     <div className="relative">
-      <input {...props} type={shown ? "text" : "password"} className={cn(className ?? fieldClass(), "pr-10")} />
+      <Input {...props} type={shown ? "text" : "password"} className={cn("pr-10", className)} />
       <button
         type="button"
         onClick={() => setShown((v) => !v)}

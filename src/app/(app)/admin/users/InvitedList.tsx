@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import type { AdminFormState } from "@/lib/adminForm";
-import { AdminForm, ConfirmAction, Labeled, control, type FormCtx } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction, Labeled, type FormCtx } from "@/components/admin/AdminForm";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Chip } from "@/components/ui/Chip";
@@ -13,6 +13,7 @@ import type { LinkablePerson } from "@/lib/linkPerson";
 import { enumLabel } from "@/lib/adminChips";
 import { PersonRoleFields } from "./PersonRoleFields";
 import { inviteMember, resendMemberInvite, revokeMemberInvite } from "./actions";
+import { Input } from "@/components/shadcn/input";
 
 export type InviteRow = { id: string; email: string; appRole: string; jobRole: string; invitedBy: string; linkedName: string | null; expiresOn: string; expired: boolean };
 
@@ -91,7 +92,7 @@ function InviteFields({ linkable, v, idFor, aria }: { linkable: LinkablePerson[]
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <Labeled id={idFor("email")} label="Email">
-        <input id={idFor("email")} name="email" type="email" autoComplete="off" required className={control} defaultValue={v("email")} {...aria()} />
+        <Input id={idFor("email")} name="email" type="email" autoComplete="off" required defaultValue={v("email")} {...aria()} />
       </Labeled>
       <PersonRoleFields linkable={linkable} v={v} idFor={idFor} name="userId" label="Existing person (optional)" noneLabel="New person" />
     </div>

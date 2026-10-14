@@ -11,7 +11,9 @@ import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit } from "@/components/auth/styles";
 import { Alert } from "@/components/ui/Alert";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
-import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldDescription } from "@/components/shadcn/field";
 import { acceptInviteAction } from "./actions";
 import { Button } from "@/components/shadcn/button";
 
@@ -75,15 +77,15 @@ export async function InviteView({ params }: { params: Promise<{ token: string }
               <input type="hidden" name="mode" value="password" />
               {!invite.linkedName && (
                 <div>
-                  <label htmlFor="invite-name" className={labelClass}>Your name</label>
-                  <input id="invite-name" name="name" type="text" autoComplete="name" maxLength={100} required className={fieldClass({ className: "h-11" })} />
+                  <Label htmlFor="invite-name">Your name</Label>
+                  <Input id="invite-name" name="name" type="text" autoComplete="name" maxLength={100} required className="h-11" />
                 </div>
               )}
               <div>
-                <label htmlFor="invite-password" className={labelClass}>Password</label>
+                <Label htmlFor="invite-password">Password</Label>
                 <PasswordInput id="invite-password" name="password" autoComplete="new-password" minLength={MIN_PASSWORD_LENGTH} maxLength={200} required
-                  aria-describedby="invite-password-hint" className={fieldClass({ className: "h-11" })} />
-                <p id="invite-password-hint" className={hintClass}>At least {MIN_PASSWORD_LENGTH} characters.</p>
+                  aria-describedby="invite-password-hint" className="h-11" />
+                <FieldDescription id="invite-password-hint">At least {MIN_PASSWORD_LENGTH} characters.</FieldDescription>
               </div>
               <RememberMe id="invite-remember" />
             </AuthForm>

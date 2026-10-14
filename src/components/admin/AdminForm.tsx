@@ -4,14 +4,12 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import type { AdminFormState } from "@/lib/adminForm";
 import { Alert } from "@/components/ui/Alert";
 import { Button, type ButtonProps } from "@/components/shadcn/button";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Label } from "@/components/shadcn/label";
 import { cn } from "@/components/ui/cn";
 
-/** Kit field styles for admin forms; a failed submit (aria-invalid) turns the outline red as well as the message. */
-const invalidOutline = "aria-[invalid=true]:border-danger";
-export const control = fieldClass({ className: invalidOutline });
-export const selectControl = fieldClass({ kind: "select", className: invalidOutline });
-export const textareaControl = fieldClass({ kind: "textarea", className: invalidOutline });
+/** Select style for admin forms until the shadcn select lands; a failed submit (aria-invalid) turns the outline red as well as the message. */
+export const selectControl = fieldClass({ kind: "select", className: "aria-[invalid=true]:border-danger" });
 
 export type FormCtx = {
   /** Echoed value after a failed submit, else the server-provided default. */
@@ -89,7 +87,7 @@ export function AdminForm({
 export function Labeled({ id, label, children, className }: { id: string; label: string; children: React.ReactNode; className?: string }) {
   return (
     <div className={className}>
-      <label htmlFor={id} className={labelClass}>{label}</label>
+      <Label htmlFor={id}>{label}</Label>
       {children}
     </div>
   );

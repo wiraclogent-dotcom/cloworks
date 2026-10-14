@@ -76,7 +76,7 @@ describe("Library editor", () => {
     const err = await within(d).findByText("Link must be an http(s) link");
     const input = within(d).getByLabelText("Link");
     expect(input.getAttribute("aria-invalid")).toBe("true");
-    expect(input.getAttribute("aria-describedby")).toBe(err.closest("p")!.id);
+    expect(input.getAttribute("aria-describedby")).toBe(err.closest("[data-slot=field-error]")!.id);
     expect(refresh).not.toHaveBeenCalled();
   });
 

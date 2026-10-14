@@ -10,7 +10,7 @@ import { StatusChip } from "@/components/ui/StatusChip";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { Avatar, AvatarStack, UnassignedAvatar } from "@/components/ui/Avatar";
-import { FieldError, fieldClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { KpiTile } from "@/components/ui/KpiTile";
@@ -185,21 +185,13 @@ describe("Avatar", () => {
   });
 });
 
-describe("fieldClass / FieldError", () => {
+describe("fieldClass (selects until the shadcn select)", () => {
   it("36px, input outline, focus ring; invalid swaps to the danger border", () => {
     expect(fieldClass()).toMatch(/h-9/);
     expect(fieldClass()).toMatch(/border-input/);
     expect(fieldClass()).toMatch(/focus-visible:outline-ring/);
     expect(fieldClass({ invalid: true })).toMatch(/border-danger/);
     expect(fieldClass({ kind: "textarea" })).not.toMatch(/h-9/);
-  });
-  it("FieldError renders icon + message with an id for aria-describedby, nothing when empty", () => {
-    const { container } = render(<><input aria-label="Title" aria-invalid="true" aria-describedby="t-err" className={fieldClass({ invalid: true })} /><FieldError id="t-err">Enter a title.</FieldError><FieldError id="x" /></>);
-    const msg = document.getElementById("t-err")!;
-    expect(msg.textContent).toBe("Enter a title.");
-    expect(msg.querySelector("svg[aria-hidden='true']")).toBeTruthy();
-    expect(document.getElementById("x")).toBeNull();
-    expect(container.querySelectorAll("p")).toHaveLength(1);
   });
 });
 

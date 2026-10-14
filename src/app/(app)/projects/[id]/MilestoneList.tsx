@@ -6,7 +6,7 @@ import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Chip } from "@/components/ui/Chip";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
 
@@ -144,8 +144,8 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
   return (
     <form onSubmit={submit} className="grid gap-2 rounded-lg border border-border p-3">
       <div className="flex flex-wrap items-center gap-2">
-        <input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
-          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className={fieldClass({ size: "sm", className: "min-w-48 flex-1" })} autoFocus />
+        <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} required disabled={pending}
+          placeholder="e.g. Client review" aria-label={`Name for ${label}`} className="min-w-48 flex-1" size="sm" autoFocus />
         <DatePicker value={form.date || null} onChange={(iso) => setForm((f) => ({ ...f, date: iso ?? "" }))} disabled={pending}
           size="sm" aria-label={`Date for ${label}`} placeholder="Pick a date" className="w-40" />
         <label className="flex items-center gap-1.5 text-sm">

@@ -8,7 +8,10 @@ import type { ApproveFormData, ApproveInput } from "@/lib/content/approve";
 import { parseFieldSchema, type FieldDef } from "@/lib/fieldSchema";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 
 type Values = Record<string, string | boolean>;
 
@@ -26,10 +29,10 @@ function fieldsOf(defs: FieldDef[], values: Values): Record<string, unknown> {
 function Row({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: ReactNode }) {
   return (
     <div>
-      <label htmlFor={id} className={labelClass}>
+      <Label htmlFor={id}>
         {label}
         {required ? <span aria-hidden="true" className="text-danger"> *</span> : null}
-      </label>
+      </Label>
       {children}
       <FieldError id={`${id}-err`}>{error}</FieldError>
     </div>
@@ -90,9 +93,10 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
   }
 
   const id = (k: string) => `${uid}-${k}`;
+  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs get it from <Input>.
   const props = (k: string, kind: "input" | "select" = "input") => ({
     id: id(k),
-    className: fieldClass({ kind, invalid: !!errors[k] }),
+    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errors[k] }) }),
     "aria-invalid": errors[k] ? (true as const) : undefined,
     "aria-describedby": errors[k] ? `${id(k)}-err` : undefined,
   });
@@ -101,7 +105,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
     <form aria-label="Approve & create request" onSubmit={submit} noValidate className="flex flex-col gap-3">
       {message ? <Alert tone="danger">{message}</Alert> : null}
       <Row id={id("title")} label="Title" required error={errors.title}>
-        <input {...props("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
+        <Input {...props("title")} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
       </Row>
       <div className="grid gap-3 sm:grid-cols-2">
         <Row id={id("divisionId")} label="Division" required error={errors.divisionId}>
@@ -141,7 +145,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
                 {(f.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
               </select>
             ) : (
-              <input {...props(k)} type={f.type === "url" ? "url" : "text"} value={value} onChange={(e) => set(e.target.value)} />
+              <Input {...props(k)} type={f.type === "url" ? "url" : "text"} value={value} onChange={(e) => set(e.target.value)} />
             )}
           </Row>
         );
@@ -154,10 +158,10 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
           </select>
         </Row>
         <Row id={id("deadline")} label="Deadline" error={errors.deadline}>
-          <input {...props("deadline")} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
+          <Input {...props("deadline")} type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
         </Row>
         <Row id={id("outputCount")} label="Outputs" error={errors.outputCount}>
-          <input {...props("outputCount")} type="number" min={1} step={1} inputMode="numeric" value={outputCount} onChange={(e) => setOutputCount(e.target.value)} />
+          <Input {...props("outputCount")} type="number" min={1} step={1} inputMode="numeric" value={outputCount} onChange={(e) => setOutputCount(e.target.value)} />
         </Row>
         <div className="flex items-end pb-2">
           <label className="flex items-center gap-2 text-compact font-medium text-foreground">

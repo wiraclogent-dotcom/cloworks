@@ -5,7 +5,7 @@ import type { JobRole } from "@prisma/client";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
 import { Check } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { cn } from "@/components/ui/cn";
 
 /** Inline target editor for one team row. Typed input is kept when a save fails. Saving never touches a stored note. */
@@ -37,9 +37,9 @@ export function TargetEditor({ userId, name, month, role, initial }: { userId: s
     // One line per person: [target][Save]. The status message (if any) sits under it, so rows stay short.
     <form onSubmit={save} data-target-editor="" className="flex w-full min-w-40 flex-wrap items-center gap-1.5 py-1">
       <label htmlFor={id} className="sr-only">Target tasks for {name}</label>
-      <input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
+      <Input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
         onChange={(e) => { setValue(e.target.value); setStatus(null); }}
-        className={fieldClass({ size: "sm", className: "w-20 shrink-0 tabular-nums" })} />
+        className="w-20 shrink-0 tabular-nums" size="sm" />
       <Button type="submit" variant="default" size="sm" loading={pending} aria-label={`Save target for ${name}`} title={`Save target for ${name}`}
         icon={<Check aria-hidden="true" />} className="w-8 shrink-0 px-0">
         <span className="sr-only">{pending ? "Saving…" : "Save"}</span>

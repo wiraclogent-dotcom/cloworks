@@ -8,7 +8,8 @@ import { planHref, type ContentTab } from "@/lib/content/params";
 import type { ChannelSummary } from "@/lib/content/view";
 import { Avatar } from "@/components/ui/Avatar";
 import { CountPill } from "@/components/ui/Chip";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Label } from "@/components/shadcn/label";
 import { cn, focusRing } from "@/components/ui/cn";
 import { ChannelActions, type ChannelMove } from "./ChannelActions";
 import { AddChannelButton, type BrandOption } from "./ChannelForm";
@@ -58,7 +59,7 @@ export function ChannelList({ channels, currentId, tab, canManage, brands }: {
     <>
       <div className="flex items-end gap-2 lg:hidden">
         <div className="min-w-0 flex-1">
-          <label htmlFor="content-channel" className={labelClass}>Channel</label>
+          <Label htmlFor="content-channel">Channel</Label>
           <select id="content-channel" value={currentId ?? ""} className={fieldClass({ kind: "select" })}
             onChange={(e) => router.push(planHref({ channel: e.target.value, tab }))}>
             {channels.map((c) => (

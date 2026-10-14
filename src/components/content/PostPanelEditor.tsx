@@ -9,7 +9,11 @@ import type { PostPatch } from "@/lib/content/posts";
 import type { PostPanelView } from "@/lib/content/panelView";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { MediaStrip } from "./MediaStrip";
 import { shortDay } from "./PostTile";
 
@@ -107,9 +111,10 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
   }
 
   const id = (k: string) => `${uid}-${k}`;
-  const props = (k: Key, kind: "input" | "select" | "textarea" = "input") => ({
+  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs and textareas get it from <Input>/<Textarea>.
+  const props = (k: Key, kind: "input" | "select" = "input") => ({
     id: id(k),
-    className: fieldClass({ kind, invalid: !!errors[k] }),
+    ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errors[k] }) }),
     "aria-invalid": errors[k] ? (true as const) : undefined,
     "aria-describedby": errors[k] ? id(`${k}-err`) : undefined,
   });
@@ -120,15 +125,15 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       <MediaStrip postId={post.id} role="MOCKUP" items={view.mockups} editable mediaReady={view.mediaReady} label="Media (mock-up / reference)" />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label htmlFor={id("format")} className={labelClass}>Format</label>
+          <Label htmlFor={id("format")}>Format</Label>
           <select {...props("format", "select")} disabled={submitting} value={fields.format} onChange={(e) => change("format", e.target.value as ContentFormat, true)}>
             {(Object.keys(FORMAT_LABEL) as ContentFormat[]).map((f) => <option key={f} value={f}>{FORMAT_LABEL[f]}</option>)}
           </select>
         </div>
         {!published ? (
           <div>
-            <label htmlFor={id("plannedAt")} className={labelClass}>Post date</label>
-            <input {...props("plannedAt")} readOnly={submitting} type="date" value={fields.plannedAt} onChange={(e) => change("plannedAt", e.target.value)} />
+            <Label htmlFor={id("plannedAt")}>Post date</Label>
+            <Input {...props("plannedAt")} readOnly={submitting} type="date" value={fields.plannedAt} onChange={(e) => change("plannedAt", e.target.value)} />
             <FieldError id={id("plannedAt-err")}>{errors.plannedAt}</FieldError>
           </div>
         ) : null}
@@ -142,7 +147,7 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
       ) : null}
       {!published ? (
         <div>
-          <label htmlFor={id("typeId")} className={labelClass}>Request type</label>
+          <Label htmlFor={id("typeId")}>Request type</Label>
           <select {...props("typeId", "select")} disabled={submitting} value={fields.typeId} onChange={(e) => change("typeId", e.target.value, true)}>
             <option value="">No preference</option>
             {view.types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
@@ -150,14 +155,14 @@ export function PostPanelEditor({ view }: { view: PostPanelView }) {
         </div>
       ) : null}
       <div>
-        <label htmlFor={id("brief")} className={labelClass}>Brief</label>
-        <textarea {...props("brief", "textarea")} readOnly={submitting} rows={4} value={fields.brief} onChange={(e) => change("brief", e.target.value)}
+        <Label htmlFor={id("brief")}>Brief</Label>
+        <Textarea {...props("brief")} readOnly={submitting} rows={4} value={fields.brief} onChange={(e) => change("brief", e.target.value)}
           placeholder="What should the designer make? Slides, key message, references" />
         <FieldError id={id("brief-err")}>{errors.brief}</FieldError>
       </div>
       <div>
-        <label htmlFor={id("caption")} className={labelClass}>Caption draft</label>
-        <textarea {...props("caption", "textarea")} readOnly={submitting} rows={3} value={fields.caption} onChange={(e) => change("caption", e.target.value)} />
+        <Label htmlFor={id("caption")}>Caption draft</Label>
+        <Textarea {...props("caption")} readOnly={submitting} rows={3} value={fields.caption} onChange={(e) => change("caption", e.target.value)} />
         <FieldError id={id("caption-err")}>{errors.caption}</FieldError>
       </div>
       {message ? <Alert tone="danger">{message}</Alert> : null}

@@ -4,7 +4,7 @@ import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { setTaskFileUrl } from "./actions";
 
@@ -35,7 +35,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
     return (
       <form onSubmit={save} className="grid gap-1.5">
         <div className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             inputMode="url"
             autoComplete="off"
@@ -43,7 +43,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
             onChange={(e) => setDraft(e.target.value)}
             placeholder="https://… or \\server\folder"
             aria-label={`File link for ${label}`}
-            className={fieldClass({ size: "sm", className: "min-w-56" })}
+            className="min-w-56" size="sm"
             disabled={pending}
             autoFocus
           />

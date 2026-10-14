@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CircleCheck } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
-import { FieldError, fieldClass, labelClass } from "./ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 import { FILE_LOCATION_HINT, isFileLocation } from "@/lib/fileLocation";
 
 /** Mirrors MAX_OUTPUT_COUNT in src/lib/transition.ts (kept local: that module is server-side). */
@@ -71,15 +73,15 @@ export function DoneDialog({ title, onCancel, onSubmit }: { title: string; onCan
         </div>
         <form onSubmit={submit} noValidate className="mt-5 space-y-4">
           <div>
-            <label htmlFor={`${uid}-n`} className={labelClass}>Number of outputs <span aria-hidden="true">*</span></label>
-            <input id={`${uid}-n`} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={count} onChange={(e) => setCount(e.target.value)}
-              aria-invalid={!!errors.count} aria-describedby={errors.count ? `${uid}-ne` : undefined} className={fieldClass({ invalid: !!errors.count, className: "tabular-nums" })} />
+            <Label htmlFor={`${uid}-n`}>Number of outputs <span aria-hidden="true">*</span></Label>
+            <Input id={`${uid}-n`} inputMode="numeric" pattern="[0-9]*" maxLength={4} value={count} onChange={(e) => setCount(e.target.value)}
+              aria-invalid={!!errors.count} aria-describedby={errors.count ? `${uid}-ne` : undefined} className="tabular-nums" />
             <FieldError id={`${uid}-ne`}>{errors.count}</FieldError>
           </div>
           <div>
-            <label htmlFor={`${uid}-u`} className={labelClass}>Design folder link or server path (optional)</label>
-            <input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder"
-              aria-invalid={!!errors.url} aria-describedby={errors.url ? `${uid}-ue` : undefined} className={fieldClass({ invalid: !!errors.url })} />
+            <Label htmlFor={`${uid}-u`}>Design folder link or server path (optional)</Label>
+            <Input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder"
+              aria-invalid={!!errors.url} aria-describedby={errors.url ? `${uid}-ue` : undefined} />
             <FieldError id={`${uid}-ue`}>{errors.url}</FieldError>
           </div>
           <div className="flex justify-end gap-2 pt-1">

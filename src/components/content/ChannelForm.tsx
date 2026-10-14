@@ -8,7 +8,11 @@ import type { ChannelSummary } from "@/lib/content/view";
 import { Alert } from "@/components/ui/Alert";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, type ButtonProps } from "@/components/shadcn/button";
-import { FieldError, fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label, labelClassName } from "@/components/shadcn/label";
+import { FieldDescription, FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { MediaUpload } from "@/components/media/MediaUpload";
 
@@ -68,7 +72,7 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
         {formError ? <Alert tone="danger">{formError}</Alert> : null}
         {brands.length === 0 ? <Alert tone="warning" role={null}>Add a brand in Admin → Lists first.</Alert> : null}
         <div>
-          <label htmlFor={`${uid}-brandId`} className={labelClass}>Brand</label>
+          <Label htmlFor={`${uid}-brandId`}>Brand</Label>
           <select {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}
             className={fieldClass({ kind: "select", invalid: !!errors.brandId })}>
             {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -76,26 +80,23 @@ export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[
           {err("brandId")}
         </div>
         <div>
-          <label htmlFor={`${uid}-handle`} className={labelClass}>Instagram handle</label>
-          <input {...f("handle")} value={handle} onChange={(e) => setHandle(e.target.value)} maxLength={31} autoFocus
-            placeholder="@brand" autoCapitalize="none" autoCorrect="off" spellCheck={false}
-            className={fieldClass({ invalid: !!errors.handle })} />
+          <Label htmlFor={`${uid}-handle`}>Instagram handle</Label>
+          <Input {...f("handle")} value={handle} onChange={(e) => setHandle(e.target.value)} maxLength={31} autoFocus
+            placeholder="@brand" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
           {err("handle")}
         </div>
         <div>
-          <label htmlFor={`${uid}-displayName`} className={labelClass}>Display name</label>
-          <input {...f("displayName")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60}
-            className={fieldClass({ invalid: !!errors.displayName })} />
+          <Label htmlFor={`${uid}-displayName`}>Display name</Label>
+          <Input {...f("displayName")} value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={60} />
           {err("displayName")}
         </div>
         <div>
-          <label htmlFor={`${uid}-bio`} className={labelClass}>Bio</label>
-          <textarea {...f("bio")} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={150}
-            className={fieldClass({ kind: "textarea", invalid: !!errors.bio })} />
-          {errors.bio ? err("bio") : <p className={hintClass}>Optional, up to 150 characters.</p>}
+          <Label htmlFor={`${uid}-bio`}>Bio</Label>
+          <Textarea {...f("bio")} value={bio} onChange={(e) => setBio(e.target.value)} maxLength={150} />
+          {errors.bio ? err("bio") : <FieldDescription>Optional, up to 150 characters.</FieldDescription>}
         </div>
         <div>
-          <span className={labelClass}>Avatar</span>
+          <span className={labelClassName}>Avatar</span>
           <div className="flex items-end gap-3">
             <Avatar name={displayName || handle || "?"} src={avatar.url} size="lg" decorative />
             <MediaUpload purpose="content" accept="image" onUploaded={(m) => setAvatar({ id: m.id, url: m.url })} onBusyChange={setUploading} />

@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { srcFiles } from "./helpers/srcFiles";
 import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { Label, labelClassName } from "@/components/shadcn/label";
@@ -97,5 +100,23 @@ describe("Field parts", () => {
   it("Field + FieldLabel label a control", () => {
     render(<Field><FieldLabel htmlFor="n">Name</FieldLabel><Input id="n" /></Field>);
     expect(screen.getByLabelText("Name")).toBeTruthy();
+  });
+});
+
+describe("field usage", () => {
+  const root = path.resolve(__dirname, "../src");
+  const files = srcFiles(root);
+  const read = (f: string) => readFileSync(f, "utf8");
+
+  it("labelClass, hintClass and the kit FieldError are gone", () => {
+    const users = files.filter((f) => /\b(?:labelClass|hintClass)\b/.test(read(f)) || /import[^;]*\bFieldError\b[^;]*ui\/Field"/.test(read(f)));
+    expect(users.map((f) => path.relative(root, f))).toEqual([]);
+  });
+
+  it("fieldClass only styles selects (and the shadcn Select trigger) until the native select lands", () => {
+    const users = files
+      .filter((f) => !/components\/(?:ui\/Field|shadcn\/select)\.tsx$/.test(f))
+      .filter((f) => /fieldClass\(\{[^)]*kind: "(?:input|textarea)"|fieldClass\(\)/.test(read(f)) || /<(?:input|textarea)\b[^>]*fieldClass/.test(read(f)));
+    expect(users.map((f) => path.relative(root, f))).toEqual([]);
   });
 });

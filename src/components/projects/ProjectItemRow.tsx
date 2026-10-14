@@ -10,6 +10,7 @@ import { AvatarStack } from "@/components/ui/Avatar";
 import { DeadlineChip } from "@/components/ui/DeadlineChip";
 import { cn } from "@/components/ui/cn";
 import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { tableClass } from "@/components/ui/table";
 import { daysLeft } from "@/lib/daysLeft";
 import { PROJECT_STAGE_TONE, PROJECT_STATUS_TONE, type Tone } from "@/lib/palette";
@@ -188,14 +189,14 @@ export function ProjectItemRow({ projectId, item, rows, mode, owners, canManage 
           onSubmit={(e) => { e.preventDefault(); saveName(); }}
           className="flex flex-wrap items-center gap-2 px-3 pb-2.5"
         >
-          <input
+          <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape") { setRenaming(false); setError(null); } }}
             aria-label={`New name for ${item.title}`}
             disabled={pending}
             ref={renameInputRef}
-            className={fieldClass({ size: "sm", className: "min-w-56 flex-1" })}
+            className="min-w-56 flex-1" size="sm"
           />
           <Button type="submit" size="sm" variant="default" disabled={pending || !draft.trim()}>{pending ? "Saving…" : "Save"}</Button>
           <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setRenaming(false); setError(null); }}>Cancel</Button>

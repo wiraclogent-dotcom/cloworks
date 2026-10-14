@@ -9,14 +9,17 @@ import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { FieldError, fieldClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
+import { FieldError } from "@/components/shadcn/field";
 
 type Opt = { id: string; name: string };
 
 function Field({ id, label, error, required, children }: { id: string; label: string; error?: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label id={`${id}-label`} htmlFor={id} className={labelClass}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</label>
+      <Label id={`${id}-label`} htmlFor={id}>{label}{required && <span aria-hidden="true" className="text-danger"> *</span>}</Label>
       {children}
       <FieldError id={`${id}-error`}>{error}</FieldError>
     </div>
@@ -40,8 +43,9 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
   const failed = state && !state.ok ? state : null;
   const errs = failed?.fieldErrors || {};
   const v = failed?.values ?? initial;
+  // Selects still carry their field class (and its invalid border) until they move to the shadcn select; inputs get it from <Input>.
   const props = (k: string, kind: "input" | "select" = "input") => ({
-    id: k, name: k, className: fieldClass({ kind, invalid: !!errs[k] }),
+    id: k, name: k, ...(kind === "select" && { className: fieldClass({ kind, invalid: !!errs[k] }) }),
     "aria-invalid": errs[k] ? (true as const) : undefined,
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
@@ -79,10 +83,10 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
       <Card className="space-y-4">
       <CardTitle>Project</CardTitle>
       <Field id="title" label="Title" required error={errs.title}>
-        <input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
+        <Input {...props("title")} type="text" required maxLength={200} defaultValue={v?.title} />
       </Field>
       <Field id="subTitle" label="Sub title" error={errs.subTitle}>
-        <input {...props("subTitle")} type="text" maxLength={200} defaultValue={v?.subTitle} />
+        <Input {...props("subTitle")} type="text" maxLength={200} defaultValue={v?.subTitle} />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
       <Field id="brandId" label="Brand" error={errs.brandId}>
@@ -115,7 +119,7 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
         </Field>
       </div>
       <Field id="fileUrl" label="File link" error={errs.fileUrl}>
-        <input {...props("fileUrl")} type="text" inputMode="url" autoComplete="off" placeholder="https://… or \\server\folder" maxLength={2048} defaultValue={v?.fileUrl} />
+        <Input {...props("fileUrl")} type="text" inputMode="url" autoComplete="off" placeholder="https://… or \\server\folder" maxLength={2048} defaultValue={v?.fileUrl} />
       </Field>
       </Card>
       <div className="flex flex-wrap items-center gap-2">

@@ -165,7 +165,7 @@ describe("Done dialog (restyled)", () => {
     expect(document.activeElement).toBe(count);
     fireEvent.change(count, { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
-    const err = screen.getByText(/whole number from 1 to 1000/i).closest("p")!;
+    const err = screen.getByText(/whole number from 1 to 1000/i).closest("[data-slot=field-error]")!;
     expect(count.getAttribute("aria-describedby")).toBe(err.id);
     expect(count.getAttribute("aria-invalid")).toBe("true");
     expect(err.querySelector("svg[aria-hidden]")).toBeTruthy();

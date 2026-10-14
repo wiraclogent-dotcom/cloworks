@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
-import { AdminForm, ConfirmAction, Labeled, control, selectControl } from "@/components/admin/AdminForm";
+import { AdminForm, ConfirmAction, Labeled, selectControl } from "@/components/admin/AdminForm";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { PasswordInput } from "@/components/ui/PasswordInput";
@@ -10,6 +10,7 @@ import { personLabel } from "@/lib/personLabel";
 import type { MergeFormState } from "@/lib/adminForm";
 import type { MergeCounts, MergePreview } from "@/lib/mergeUsers";
 import { addPerson, mergePerson, previewMerge, saveLoginEmail, savePassword, saveUser, setUserActive } from "./actions";
+import { Input } from "@/components/shadcn/input";
 
 const APP_ROLES = ["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const;
 const JOB_ROLES = ["DESIGNER", "SOCIAL_MEDIA", "OTHER"] as const;
@@ -26,10 +27,10 @@ export function EditUserForm({ u }: { u: UserRowData }) {
       {({ v, idFor }) => (
         <div className="grid gap-3 sm:grid-cols-2">
           <Labeled id={idFor("fullName")} label="Full name">
-            <input id={idFor("fullName")} name="fullName" className={control} defaultValue={v("fullName", u.fullName)} />
+            <Input id={idFor("fullName")} name="fullName" defaultValue={v("fullName", u.fullName)} />
           </Labeled>
           <Labeled id={idFor("title")} label="Title">
-            <input id={idFor("title")} name="title" className={control} defaultValue={v("title", u.title ?? "")} />
+            <Input id={idFor("title")} name="title" defaultValue={v("title", u.title ?? "")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
             <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", u.appRole)}>
@@ -43,7 +44,7 @@ export function EditUserForm({ u }: { u: UserRowData }) {
           </Labeled>
           <div className="sm:col-span-2">
             <Labeled id={idFor("aliases")} label="Aliases (comma separated)">
-              <input id={idFor("aliases")} name="aliases" className={control} defaultValue={v("aliases", u.aliases.join(", "))} />
+              <Input id={idFor("aliases")} name="aliases" defaultValue={v("aliases", u.aliases.join(", "))} />
             </Labeled>
           </div>
         </div>
@@ -57,7 +58,7 @@ export function LoginEmailForm({ u }: { u: UserRowData }) {
     <AdminForm action={saveLoginEmail} prefix={`email-${u.id}`} submitLabel="Save login email" submitAriaLabel={`Save login email for ${u.name}`} submitVariant="outline" hidden={{ userId: u.id }}>
       {({ v, idFor, aria }) => (
         <Labeled id={idFor("email")} label="Login email (leave empty to remove access)">
-          <input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" className={control} defaultValue={v("email", u.email ?? "")} {...aria()} />
+          <Input id={idFor("email")} name="email" type="text" inputMode="email" autoComplete="off" defaultValue={v("email", u.email ?? "")} {...aria()} />
         </Labeled>
       )}
     </AdminForm>
@@ -71,7 +72,7 @@ export function PasswordForm({ u }: { u: UserRowData }) {
     <AdminForm action={savePassword} prefix={`password-${u.id}`} submitLabel={u.hasPassword ? "Reset password" : "Set password"} submitAriaLabel={`Set password for ${u.name}`} submitVariant="outline" hidden={{ userId: u.id }}>
       {({ idFor, aria }) => (
         <Labeled id={idFor("password")} label={u.hasPassword ? "New password (signs them out everywhere)" : "Password (at least 10 characters)"}>
-          <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" minLength={10} maxLength={200} required className={control} {...aria()} />
+          <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" minLength={10} maxLength={200} required {...aria()} />
         </Labeled>
       )}
     </AdminForm>
@@ -104,16 +105,16 @@ export function AddPersonForm() {
       {({ v, idFor, aria }) => (
         <div className="grid gap-3 sm:grid-cols-2">
           <Labeled id={idFor("name")} label="Name (as used in the team)">
-            <input id={idFor("name")} name="name" required className={control} defaultValue={v("name")} {...aria()} />
+            <Input id={idFor("name")} name="name" required defaultValue={v("name")} {...aria()} />
           </Labeled>
           <Labeled id={idFor("fullName")} label="Full name">
-            <input id={idFor("fullName")} name="fullName" className={control} defaultValue={v("fullName")} />
+            <Input id={idFor("fullName")} name="fullName" defaultValue={v("fullName")} />
           </Labeled>
           <Labeled id={idFor("title")} label="Title">
-            <input id={idFor("title")} name="title" className={control} defaultValue={v("title")} />
+            <Input id={idFor("title")} name="title" defaultValue={v("title")} />
           </Labeled>
           <Labeled id={idFor("department")} label="Department">
-            <input id={idFor("department")} name="department" className={control} defaultValue={v("department")} />
+            <Input id={idFor("department")} name="department" defaultValue={v("department")} />
           </Labeled>
           <Labeled id={idFor("appRole")} label="App role">
             <select id={idFor("appRole")} name="appRole" className={selectControl} defaultValue={v("appRole", "REQUESTER")}>
@@ -127,14 +128,14 @@ export function AddPersonForm() {
           </Labeled>
           <div className="sm:col-span-2">
             <Labeled id={idFor("aliases")} label="Aliases (comma separated)">
-              <input id={idFor("aliases")} name="aliases" className={control} defaultValue={v("aliases")} />
+              <Input id={idFor("aliases")} name="aliases" defaultValue={v("aliases")} />
             </Labeled>
           </div>
           <Labeled id={idFor("email")} label="Login email (for a password)">
-            <input id={idFor("email")} name="email" type="email" autoComplete="off" className={control} defaultValue={v("email")} {...aria()} />
+            <Input id={idFor("email")} name="email" type="email" autoComplete="off" defaultValue={v("email")} {...aria()} />
           </Labeled>
           <Labeled id={idFor("password")} label="Temporary password">
-            <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" maxLength={200} className={control} {...aria()} />
+            <PasswordInput id={idFor("password")} name="password" autoComplete="new-password" maxLength={200} {...aria()} />
           </Labeled>
         </div>
       )}

@@ -7,7 +7,8 @@ import { first } from "@/lib/authForm";
 import { safeNext } from "@/lib/joinTokens";
 import { LINKED_MESSAGE, PASSWORD_CHANGED_MESSAGE, signInErrorMessage } from "@/lib/signinError";
 import { PasswordInput, RememberMe } from "@/components/ui/PasswordInput";
-import { fieldClass, labelClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Label } from "@/components/shadcn/label";
 import { passwordSignIn } from "./actions";
 import { Alert } from "@/components/ui/Alert";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -97,15 +98,15 @@ export default function SignInPage({ searchParams }: { searchParams: SP }) {
         <form action={passwordSignIn} className="space-y-4">
           <Suspense fallback={null}><NextField searchParams={searchParams} /></Suspense>
           <div>
-            <label htmlFor="signin-email" className={labelClass}>Email</label>
-            <input id="signin-email" name="email" type="email" autoComplete="username" placeholder="name@clogent.co.id" required className={fieldClass({ className: "h-11" })} />
+            <Label htmlFor="signin-email">Email</Label>
+            <Input id="signin-email" name="email" type="email" autoComplete="username" placeholder="name@clogent.co.id" required className="h-11" />
           </div>
           <div>
             <div className="mb-1.5 flex items-center justify-between">
               <label htmlFor="signin-password" className="text-compact font-medium text-foreground">Password</label>
               <Link href="/forgot" className="text-compact font-medium text-brand-deep-blue underline-offset-4 hover:underline">Forgot password?</Link>
             </div>
-            <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className={fieldClass({ className: "h-11" })} />
+            <PasswordInput id="signin-password" name="password" autoComplete="current-password" required className="h-11" />
           </div>
           <RememberMe id="signin-remember" />
           <SubmitButton variant="default" className={cn("w-full", brandSubmit)} pendingLabel="Signing in…">

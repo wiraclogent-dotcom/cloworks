@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CountPill } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { cn, focusRing } from "@/components/ui/cn";
 import { filterRows, type LibraryRow } from "@/lib/libraryView";
 import { LibraryRowItem } from "./LibraryRow";
@@ -92,13 +93,13 @@ export function LibraryView({ rows, categories, brands, brandOptions = [], canMa
         <label className="relative block">
           <span className="sr-only">Search library</span>
           <Search aria-hidden="true" strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             type="search"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             maxLength={200}
             placeholder="Search title, notes or site"
-            className={fieldClass({ className: "w-full pl-8 sm:w-64" })}
+            className="w-full pl-8 sm:w-64"
           />
         </label>
         {brands.length > 0 ? (

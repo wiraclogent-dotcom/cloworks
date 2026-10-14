@@ -6,7 +6,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DatePicker } from "@/components/ui/DatePicker";
-import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/shadcn/select";
 import { PROJECT_STAGES } from "@/lib/projectProgress";
 import { PROJECT_STAGE_LABEL, TASK_STATUS_LABEL, TASK_STATUS_ORDER } from "@/lib/projectTasks";
@@ -75,11 +75,11 @@ export function AddDetailForm({ projectId, mode, owners, defaultTitle = "", labe
       <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
         <label className="grid gap-1.5 text-sm">
           Item
-          <input value={form.title} onChange={(e) => set("title", e.target.value)} required disabled={pending} placeholder="e.g. Shoe Foam" className={fieldClass()} />
+          <Input value={form.title} onChange={(e) => set("title", e.target.value)} required disabled={pending} placeholder="e.g. Shoe Foam" />
         </label>
         <label className="grid gap-1.5 text-sm">
           Detail
-          <input value={form.subTitle} onChange={(e) => set("subTitle", e.target.value)} disabled={pending} placeholder="Optional" className={fieldClass()} />
+          <Input value={form.subTitle} onChange={(e) => set("subTitle", e.target.value)} disabled={pending} placeholder="Optional" />
         </label>
         <div className="grid gap-1.5 text-sm">
           Owner
@@ -113,7 +113,7 @@ export function AddDetailForm({ projectId, mode, owners, defaultTitle = "", labe
         </div>
         <label className="grid gap-1.5 text-sm sm:col-span-2">
           File link
-          <input type="text" inputMode="url" autoComplete="off" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://… or \\server\folder" className={fieldClass()} />
+          <Input type="text" inputMode="url" autoComplete="off" value={form.fileUrl} onChange={(e) => set("fileUrl", e.target.value)} disabled={pending} placeholder="https://… or \\server\folder" />
         </label>
         {error && <p role="alert" className="text-sm text-danger sm:col-span-2">{error}</p>}
         <div className="flex items-center justify-end gap-2 sm:col-span-2">

@@ -7,6 +7,7 @@ import { createCategory, deleteCategory, moveCategory, updateCategory, type Libr
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/shadcn/button";
 import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
 import { CATEGORY_ICON_KEYS } from "./categoryIcons";
 import { LibraryDialog } from "./LibraryDialog";
 
@@ -29,8 +30,8 @@ function CategoryRow({ cat, first, last, run, pending }: {
   const dirty = name.trim() !== cat.name || icon !== (cat.icon ?? "");
   return (
     <li className="flex flex-wrap items-center gap-2">
-      <input aria-label={`Name of ${cat.name}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
-        className={fieldClass({ className: "min-w-0 flex-1" })} />
+      <Input aria-label={`Name of ${cat.name}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+        className="min-w-0 flex-1" />
       <IconSelect label={`Icon for ${cat.name}`} value={icon} onChange={setIcon} disabled={pending} />
       <Button size="sm" variant="outline" disabled={!dirty || pending}
         onClick={() => run(updateCategory(cat.id, { name: name.trim(), icon: icon || null }))}>Save</Button>
@@ -98,8 +99,8 @@ export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; o
         ))}
       </ul>
       <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <input aria-label="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60}
-          placeholder="New category" className={fieldClass({ className: "min-w-0 flex-1" })} />
+        <Input aria-label="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60}
+          placeholder="New category" className="min-w-0 flex-1" />
         <IconSelect label="New category icon" value={newIcon} onChange={setNewIcon} disabled={pending} />
         <Button variant="default" disabled={newName.trim() === "" || pending} loading={pending} onClick={add}>Add category</Button>
       </div>

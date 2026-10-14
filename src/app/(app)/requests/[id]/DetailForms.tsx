@@ -15,7 +15,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 import type { AssigneeOption, AssigneeRef } from "@/lib/assignees";
-import { fieldClass, hintClass, labelClass } from "@/components/ui/Field";
+import { fieldClass } from "@/components/ui/Field";
+import { Input } from "@/components/shadcn/input";
+import { Textarea } from "@/components/shadcn/textarea";
+import { Label, labelClassName } from "@/components/shadcn/label";
+import { FieldDescription } from "@/components/shadcn/field";
 import { Switch } from "@/components/ui/Switch";
 
 function ErrorLine({ id, message }: { id: string; message: string | null }) {
@@ -49,9 +53,9 @@ export function CommentForm({ requestId }: { requestId: string }) {
   }
   return (
     <form onSubmit={submit} noValidate>
-      <label htmlFor={`${uid}-b`} className={labelClass}>Add a comment</label>
-      <textarea id={`${uid}-b`} value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={5000}
-        aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-e` : `${uid}-h`} className={fieldClass({ kind: "textarea", invalid: !!error })} />
+      <Label htmlFor={`${uid}-b`}>Add a comment</Label>
+      <Textarea id={`${uid}-b`} value={body} onChange={(e) => setBody(e.target.value)} rows={3} maxLength={5000}
+        aria-invalid={error ? true : undefined} aria-describedby={error ? `${uid}-e` : `${uid}-h`} />
       <ErrorLine id={`${uid}-e`} message={error} />
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
         <p id={`${uid}-h`} className="text-xs text-muted-foreground">Type @ and a name to mention a teammate.</p>
@@ -84,12 +88,12 @@ export function AttachmentForm({ requestId }: { requestId: string }) {
     <form onSubmit={submit} noValidate>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)_auto] sm:items-end">
         <div>
-          <label htmlFor={`${uid}-n`} className={labelClass}>Link name</label>
-          <input id={`${uid}-n`} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} className={fieldClass()} />
+          <Label htmlFor={`${uid}-n`}>Link name</Label>
+          <Input id={`${uid}-n`} value={name} onChange={(e) => setName(e.target.value)} maxLength={200} />
         </div>
         <div>
-          <label htmlFor={`${uid}-u`} className={labelClass}>Link address</label>
-          <input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder" className={fieldClass({ invalid: !!error })} aria-describedby={error ? `${uid}-e` : undefined} />
+          <Label htmlFor={`${uid}-u`}>Link address</Label>
+          <Input id={`${uid}-u`} type="text" inputMode="url" autoComplete="off" maxLength={2048} value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://… or \\server\folder" aria-invalid={!!error || undefined} aria-describedby={error ? `${uid}-e` : undefined} />
         </div>
         <Button type="submit" variant="outline" loading={pending} icon={<Link2 aria-hidden="true" strokeWidth={1.75} />}>{pending ? "Adding…" : "Add link"}</Button>
       </div>
@@ -169,7 +173,7 @@ export function AssigneesPicker({ requestId, current, options }: { requestId: st
   const addable = options.filter((o) => !chosen.has(o.id) && !o.offTeam);
   return (
     <div ref={groupRef} tabIndex={-1} role="group" aria-labelledby={`${uid}-l`} className="outline-none">
-      <span id={`${uid}-l`} className={labelClass}>Assignees</span>
+      <span id={`${uid}-l`} className={labelClassName}>Assignees</span>
       {list.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-1.5">
           {list.map((p) => (
@@ -221,14 +225,14 @@ export function MoveControl({ requestId, title, status }: { requestId: string; t
   }
   return (
     <div>
-      <label htmlFor={`${uid}-m`} className={labelClass}>Move to…</label>
+      <Label htmlFor={`${uid}-m`}>Move to…</Label>
       <select id={`${uid}-m`} value="" disabled={pending} aria-describedby={`${uid}-mh`}
         onChange={(e) => { const to = e.target.value as RequestStatus; if (!to) return; if (to === "DONE") setPendingDone(true); else move(to); }}
         className={fieldClass({ kind: "select" })}>
         <option value="">Choose a status</option>
         {legal.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
       </select>
-      <p id={`${uid}-mh`} className={hintClass}>{status === "CANCELLED" ? "Choose Requested to restore this request." : legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</p>
+      <FieldDescription id={`${uid}-mh`}>{status === "CANCELLED" ? "Choose Requested to restore this request." : legal.includes("CANCELLED") ? "Choose Cancelled to cancel this request." : "Only moves allowed from the current status are listed."}</FieldDescription>
       <ErrorLine id={`${uid}-e`} message={error} />
       {pendingDone && <DoneDialog title={title} onCancel={() => setPendingDone(false)} onSubmit={(d) => { setPendingDone(false); move("DONE", d); }} />}
     </div>
@@ -256,10 +260,10 @@ export function DeadlineControl({ requestId, current, minDay }: { requestId: str
   }
   return (
     <form onSubmit={save} noValidate>
-      <label htmlFor={`${uid}-d`} className={labelClass}>Change deadline</label>
+      <Label htmlFor={`${uid}-d`}>Change deadline</Label>
       <div className="flex items-center gap-2">
-        <input id={`${uid}-d`} type="date" value={value} min={minDay} disabled={pending} onChange={(e) => setValue(e.target.value)}
-          aria-describedby={error ? `${uid}-e` : undefined} className={fieldClass({ invalid: !!error })} />
+        <Input id={`${uid}-d`} type="date" value={value} min={minDay} disabled={pending} onChange={(e) => setValue(e.target.value)}
+          aria-describedby={error ? `${uid}-e` : undefined} aria-invalid={!!error || undefined} />
         <Button type="submit" variant="outline" size="sm" loading={pending} disabled={!value || value === current}>{pending ? "Saving…" : "Save"}</Button>
       </div>
       {error && <Alert tone="danger" id={`${uid}-e`} className="mt-2">{error}</Alert>}

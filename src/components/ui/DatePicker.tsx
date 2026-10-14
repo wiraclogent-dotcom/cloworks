@@ -6,7 +6,6 @@ import { Calendar } from "@/components/shadcn/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { formatJakartaDay, jakartaIso } from "@/lib/projectTasks";
 import { cn, focusRing } from "./cn";
-import { fieldClass } from "./Field";
 
 const ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 
@@ -52,7 +51,7 @@ export type DatePickerProps = {
 };
 
 /**
- * A field-looking button that opens a calendar. Looks like `fieldClass()`, shows "19 Oct 2026" (Jakarta), picking a day
+ * A field-looking button that opens a calendar. Looks like `<Input>` (tests/datePicker compares the two), shows "19 Oct 2026" (Jakarta), picking a day
  * closes the popover. Esc or an outside click closes without changing anything.
  */
 export function DatePicker({
@@ -100,8 +99,9 @@ export function DatePicker({
             aria-describedby={describedBy}
             aria-invalid={isInvalid ? true : undefined}
             className={cn(
-              fieldClass({ invalid: isInvalid, size: size === "sm" ? "sm" : "md" }),
-              "flex items-center justify-between gap-2 text-left",
+              "flex w-full items-center justify-between gap-2 rounded-lg border border-input bg-card text-left text-sm text-foreground transition-colors duration-150 ease-out hover:border-muted-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70 aria-invalid:border-danger",
+              size === "sm" ? "h-8 px-2.5" : "h-9 px-3",
+              focusRing,
               clearable && "pr-14",
             )}
           >
