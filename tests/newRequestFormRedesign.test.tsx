@@ -56,7 +56,7 @@ describe("New request form layout", () => {
     const err = document.getElementById("divisionId-error")!;
     expect(sel.getAttribute("aria-describedby")).toBe("divisionId-error");
     expect(err.querySelector("svg[aria-hidden]")).toBeTruthy();
-    expect((screen.getByRole("radio", { name: "Design + motion" }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("radio", { name: "Design + motion" }).getAttribute("aria-checked")).toBe("true");
     expect(document.activeElement).toBe(sel);
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -72,11 +72,11 @@ describe("New request form layout", () => {
 });
 
 describe("RadioCards hint", () => {
-  it("renders the hint inside the fieldset and merges it with describedBy", () => {
+  it("renders the hint under the cards and merges it with describedBy", () => {
     render(<RadioCards name="m" legend="Pick" describedBy="extra" hint="Some help" options={[{ value: "a", title: "A" }]} />);
-    const group = screen.getByRole("group", { name: "Pick" });
+    const group = screen.getByRole("radiogroup", { name: "Pick" });
     expect(group.getAttribute("aria-describedby")).toBe("extra m-help");
-    expect(within(group).getByText("Some help").id).toBe("m-help");
+    expect(screen.getByText("Some help").id).toBe("m-help");
     expect(screen.getByRole("radio", { name: "A" }).hasAttribute("aria-describedby")).toBe(false);
   });
 });

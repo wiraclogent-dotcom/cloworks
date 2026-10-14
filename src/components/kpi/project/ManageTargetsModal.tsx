@@ -8,6 +8,7 @@ import { Button } from "@/components/shadcn/button";
 import { NativeSelect } from "@/components/shadcn/native-select";
 import { Label, labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 /**
  * "Manage targets" for one person and year: pick a project, tick the items to add. Items already targeted on this
@@ -101,8 +102,8 @@ function Picker({ userId, name, year, projects, onClose }: {
                 return (
                   <li key={o.itemTitle}>
                     <label className="flex cursor-pointer items-start gap-2.5 px-3 py-2 text-sm text-foreground has-[:disabled]:cursor-not-allowed has-[:disabled]:text-muted-foreground">
-                      <input type="checkbox" className="mt-0.5 size-4 shrink-0 accent-primary" disabled={mine} checked={mine || picked.has(o.itemTitle)}
-                        onChange={() => toggle(o.itemTitle)} />
+                      <Checkbox className="mt-0.5" disabled={mine} checked={mine || picked.has(o.itemTitle)}
+                        onCheckedChange={() => toggle(o.itemTitle)} />
                       <span className="min-w-0 break-words">
                         {o.itemTitle}
                         {mine ? <span className="ml-1.5 text-xs text-muted-foreground">(already a target)</span> : null}

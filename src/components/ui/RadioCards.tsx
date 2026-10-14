@@ -1,31 +1,37 @@
-import type { ChangeEvent, ReactNode } from "react";
+import type { ReactNode } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { cn } from "./cn";
 
 export type RadioCardOption = { value: string; title: string; description?: string; icon?: ReactNode };
 
 /**
- * Radio group rendered as cards. Each card is a <label> around a real <input type="radio"> (keyboard: Tab into the
- * group, arrow keys move, Space selects; works in plain HTML forms). Use `defaultValue` (uncontrolled) or `value` + `onChange`.
+ * Radio group rendered as cards: a shadcn `RadioGroup` (role="radiogroup", named by `legend`) whose items sit inside
+ * <label> cards, so the whole card is clickable. Keyboard: Tab into the group, arrow keys move and choose.
+ * In a plain <form> the chosen card posts `name=value` (nothing until one is chosen).
+ * Use `defaultValue` (uncontrolled) or `value` + `onChange`.
  */
 export function RadioCards({ name, legend, options, value, defaultValue, onChange, required, invalid, describedBy, hint, hintId, columns = 2, className }: {
   name: string; legend: ReactNode; options: RadioCardOption[];
-  value?: string; defaultValue?: string; onChange?: (value: string, e: ChangeEvent<HTMLInputElement>) => void;
+  value?: string; defaultValue?: string; onChange?: (value: string) => void;
   required?: boolean; invalid?: boolean; describedBy?: string;
-  /** Helper text rendered inside the fieldset under the cards; linked with aria-describedby (id: `hintId`, default `${name}-help`). */
+  /** Helper text rendered under the cards; linked with aria-describedby (id: `hintId`, default `${name}-help`). */
   hint?: ReactNode; hintId?: string;
   columns?: 1 | 2 | 3; className?: string;
 }) {
   const hid = hint ? hintId ?? `${name}-help` : undefined;
   const groupDescribedBy = [describedBy, hid].filter(Boolean).join(" ") || undefined;
+  const legendId = `${name}-legend`;
   return (
-    <fieldset aria-describedby={groupDescribedBy} className={cn("min-w-0", className)}>
-      <legend className="mb-1.5 text-compact font-medium text-foreground">{legend}</legend>
-      <div className={cn("grid gap-3", columns === 1 ? "grid-cols-1" : columns === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
+    <div className={cn("min-w-0", className)}>
+      <div id={legendId} className="mb-1.5 text-compact font-medium text-foreground">{legend}</div>
+      <RadioGroup name={name} value={value} defaultValue={defaultValue} onValueChange={onChange} required={required}
+        aria-labelledby={legendId} aria-describedby={groupDescribedBy} aria-invalid={invalid || undefined}
+        className={cn(columns === 1 ? "grid-cols-1" : columns === 3 ? "sm:grid-cols-3" : "sm:grid-cols-2")}>
         {options.map((o) => (
           <label key={o.value}
             className={cn(
               "relative flex cursor-pointer items-start gap-3 rounded-xl border bg-card p-3 transition-colors duration-150 ease-out",
-              "hover:border-muted-foreground has-[:checked]:border-ring has-[:checked]:bg-accent",
+              "hover:border-muted-foreground has-[[data-state=checked]]:border-ring has-[[data-state=checked]]:bg-accent",
               "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ring",
               invalid ? "border-danger" : "border-border-strong",
             )}>
@@ -37,15 +43,12 @@ export function RadioCards({ name, legend, options, value, defaultValue, onChang
               {o.description ? <span id={`${name}-${o.value}-desc`} className="mt-0.5 block text-compact text-muted-foreground">{o.description}</span> : null}
             </span>
             {/* Named by the card title only; the description is announced as its description. */}
-            <input type="radio" name={name} value={o.value} required={required}
-              aria-labelledby={`${name}-${o.value}-title`} aria-describedby={o.description ? `${name}-${o.value}-desc` : undefined}
-              {...(value !== undefined ? { checked: value === o.value } : { defaultChecked: defaultValue === o.value })}
-              onChange={onChange ? (e) => onChange(o.value, e) : value !== undefined ? () => {} : undefined}
-              className="mt-0.5 size-4 shrink-0 cursor-pointer accent-[var(--ring)] focus-visible:outline-none" />
+            <RadioGroupItem value={o.value} className="mt-0.5 focus-visible:outline-0"
+              aria-labelledby={`${name}-${o.value}-title`} aria-describedby={o.description ? `${name}-${o.value}-desc` : undefined} />
           </label>
         ))}
-      </div>
+      </RadioGroup>
       {hint ? <p id={hid} className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
-    </fieldset>
+    </div>
   );
 }

@@ -50,7 +50,7 @@ export function InviteLinkCard({ base, joinCode, enabled, emailDomain }: { base:
           <form ref={formRef} action={run} className="min-w-56">
             <input type="hidden" name="enabled" value={String(!enabled)} />
             <Switch id="join-link-enabled" label="Link is on" description={enabled ? "Anyone with the link can request to join." : "The link shows nothing until you turn it on."}
-              checked={enabled} onChange={() => formRef.current?.requestSubmit()} />
+              checked={enabled} onCheckedChange={() => formRef.current?.requestSubmit()} />
             {state && <p role={state.ok ? "status" : "alert"} className="mt-1 text-compact font-medium text-muted-foreground">{state.ok ? state.message : `Error: ${state.message}`}</p>}
           </form>
           <ConfirmAction action={resetInviteLink} prefix="reset-link" hidden={{}} triggerLabel="Reset link"

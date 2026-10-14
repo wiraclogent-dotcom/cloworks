@@ -27,17 +27,21 @@ describe("NewRequestForm", () => {
 
   it("starts with a required 'What do you need?' choice of three cards, none picked", () => {
     render(<NewRequestForm brands={brands} divisions={divisions} />);
-    const group = screen.getByRole("group", { name: /What do you need\?/ });
-    expect(group.tagName).toBe("FIELDSET");
-    const radios = within(group).getAllByRole("radio") as HTMLInputElement[];
-    expect(radios.map((r) => [r.name, r.value])).toEqual([["workKind", "static"], ["workKind", "motion"], ["workKind", "video"]]);
-    expect(radios.map((r) => r.labels?.[0]?.textContent)).toEqual([
+    const group = screen.getByRole("radiogroup", { name: /What do you need\?/ });
+    const radios = within(group).getAllByRole("radio");
+    expect(radios.map((r) => r.getAttribute("value"))).toEqual(["static", "motion", "video"]);
+    expect(radios.map((r) => r.closest("label")?.textContent)).toEqual([
       expect.stringContaining("Static design"), expect.stringContaining("Design + motion"), expect.stringContaining("Video edit only"),
     ]);
-    expect(radios.some((r) => r.checked)).toBe(false);
+    expect(radios.some((r) => r.getAttribute("aria-checked") === "true")).toBe(false);
+    // Plain form post: nothing is sent until a card is picked, and then exactly that value.
+    const form = group.closest("form")!;
+    expect(new FormData(form).get("workKind")).toBeNull();
+    fireEvent.click(radios[1]);
+    expect(new FormData(form).getAll("workKind")).toEqual(["motion"]);
     // It comes before every other field.
-    const first = document.querySelector("form input, form select, form textarea") as HTMLInputElement;
-    expect(first.name).toBe("workKind");
+    const first = document.querySelector("form input, form select, form textarea, form button") as HTMLElement;
+    expect(first.getAttribute("role")).toBe("radio");
   });
 
   it("hints follow the picked kind", () => {
@@ -96,8 +100,8 @@ describe("NewRequestForm", () => {
     expect((screen.getByLabelText(/^Brand/) as HTMLSelectElement).value).toBe("b1");
     expect((screen.getByLabelText(/^Division/) as HTMLSelectElement).value).toBe("d1");
     expect((screen.getByLabelText("Deadline") as HTMLInputElement).value).toBe("2099-01-01");
-    expect((screen.getByRole("radio", { name: /Design \+ motion/ }) as HTMLInputElement).checked).toBe(true);
-    expect((screen.getByRole("radio", { name: /Static design/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole("radio", { name: /Design \+ motion/ }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: /Static design/ }).getAttribute("aria-checked")).toBe("false");
     expect(document.activeElement).toBe(screen.getByLabelText("Brief link"));
     const live = screen.getByRole("status");
     expect(live.getAttribute("aria-live")).toBe("polite");
@@ -110,8 +114,9 @@ describe("NewRequestForm", () => {
     await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
     expect((submit.mock.calls[0][1] as FormData).get("workKind")).toBeNull();
     await waitFor(() => expect(document.getElementById("workKind-error")!.textContent).toContain("Pick what you need"));
-    const group = screen.getByRole("group", { name: /What do you need\?/ });
+    const group = screen.getByRole("radiogroup", { name: /What do you need\?/ });
     expect(group.getAttribute("aria-describedby")).toContain("workKind-error");
+    expect(group.getAttribute("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(screen.getByRole("radio", { name: /Static design/ }));
     expect(screen.queryByRole("alert")).toBeNull();
   });

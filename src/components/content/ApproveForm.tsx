@@ -12,6 +12,7 @@ import { NativeSelect } from "@/components/shadcn/native-select";
 import { Input } from "@/components/shadcn/input";
 import { Label } from "@/components/shadcn/label";
 import { FieldError } from "@/components/shadcn/field";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Values = Record<string, string | boolean>;
 
@@ -124,7 +125,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
           return (
             <div key={f.key}>
               <label className="flex items-center gap-2 text-compact font-medium text-foreground">
-                <input type="checkbox" id={id(k)} checked={values[f.key] === true} onChange={(e) => setValues((v) => ({ ...v, [f.key]: e.target.checked }))}
+                <Checkbox id={id(k)} checked={values[f.key] === true} onCheckedChange={(c) => setValues((v) => ({ ...v, [f.key]: c === true }))}
                   aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `${id(k)}-err` : undefined} />
                 {f.label}
                 {f.required ? <span aria-hidden="true" className="text-danger"> *</span> : null}
@@ -163,7 +164,7 @@ export function ApproveForm({ form, authorName, mockupCount, onCancel, onApprove
         </Row>
         <div className="flex items-end pb-2">
           <label className="flex items-center gap-2 text-compact font-medium text-foreground">
-            <input type="checkbox" checked={needsMotion} onChange={(e) => setNeedsMotion(e.target.checked)} />
+            <Checkbox checked={needsMotion} onCheckedChange={(c) => setNeedsMotion(c === true)} />
             Needs motion
           </label>
         </div>

@@ -4,6 +4,7 @@ import { useState, type ComponentProps } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { cn, focusRing } from "./cn";
 import { Input } from "@/components/shadcn/input";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Props = Omit<ComponentProps<typeof Input>, "type">;
 
@@ -40,7 +41,7 @@ export function PasswordInput({ className, ...props }: Props) {
 export function RememberMe({ id }: { id: string }) {
   return (
     <div className="flex items-center gap-2">
-      <input id={id} name="remember" type="checkbox" value="1" className="size-4 accent-primary" />
+      <Checkbox id={id} name="remember" value="1" />
       <label htmlFor={id} className="text-sm text-foreground">Remember me</label>
     </div>
   );

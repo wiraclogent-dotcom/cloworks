@@ -5,6 +5,7 @@ import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { FieldDescription } from "@/components/shadcn/field";
 import { saveBrand, saveDivision, saveRequestType } from "./actions";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: string; name?: string }) {
   const action = kind === "brand" ? saveBrand : saveDivision;
@@ -37,7 +38,7 @@ export function TypeForm({ t }: { t?: { id: string; name: string; active: boolea
             <Input id={idFor("name")} name="name" maxLength={60} defaultValue={v("name", t?.name ?? "")} {...aria()} />
           </Labeled>
           <label className="flex min-h-9 items-center gap-2 text-sm font-medium text-foreground" htmlFor={idFor("active")}>
-            <input id={idFor("active")} name="active" type="checkbox" className="size-4 accent-primary" defaultChecked={failed ? v("active") === "on" : (t?.active ?? true)} />
+            <Checkbox id={idFor("active")} name="active" defaultChecked={failed ? v("active") === "on" : (t?.active ?? true)} />
             Active (shown on the new request form)
           </label>
           <Labeled id={idFor("fieldSchema")} label="Field schema (JSON array)">

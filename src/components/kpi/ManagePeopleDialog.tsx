@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
 import { labelClassName } from "@/components/shadcn/label";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Props = {
   kind: "REQUESTS" | "PROJECTS";
@@ -76,7 +77,7 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
               {candidates.map((c) => (
                 <li key={c.id}>
                   <label className="flex cursor-pointer items-center gap-2.5 px-3 py-2 text-sm text-foreground">
-                    <input type="checkbox" className="size-4 shrink-0 accent-primary" checked={picked.has(c.id)} onChange={() => toggle(c.id)} />
+                    <Checkbox checked={picked.has(c.id)} onCheckedChange={() => toggle(c.id)} />
                     <span className="min-w-0 break-words">{c.name}</span>
                   </label>
                 </li>

@@ -42,11 +42,13 @@ describe("sign-in page", () => {
   it("has a show-password toggle and an unchecked Remember me box posting remember=1", async () => {
     await act(async () => { render(<SignInPage searchParams={Promise.resolve({})} />); });
     expect(screen.getByRole("button", { name: "Show password" })).toBeTruthy();
-    const box = screen.getByLabelText("Remember me") as HTMLInputElement;
-    expect(box.type).toBe("checkbox");
-    expect(box.checked).toBe(false);
-    expect(box.name).toBe("remember");
-    expect(box.value).toBe("1");
-    expect(box.closest("form")?.querySelector('input[name="password"]')).toBeTruthy();
+    const box = screen.getByRole("checkbox", { name: "Remember me" });
+    expect(box.getAttribute("aria-checked")).toBe("false");
+    const form = box.closest("form")!;
+    expect(form.querySelector('input[name="password"]')).toBeTruthy();
+    // plain form post: nothing while unchecked, remember=1 once ticked
+    expect(new FormData(form).get("remember")).toBeNull();
+    fireEvent.click(box);
+    expect(new FormData(form).get("remember")).toBe("1");
   });
 });

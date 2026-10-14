@@ -292,7 +292,7 @@ export function IncludeKpiToggle({ requestId, initial }: { requestId: string; in
   }
   return (
     <div>
-      <Switch id={`${uid}-k`} label="Counts toward KPI" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+      <Switch id={`${uid}-k`} label="Counts toward KPI" checked={checked} disabled={pending} onCheckedChange={change}
         describedBy={error ? `${uid}-e` : undefined} />
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>
@@ -323,7 +323,7 @@ export function NeedsMotionToggle({ requestId, initial, canEdit }: { requestId: 
   }
   return (
     <div>
-      <Switch id={`${uid}-m`} label="Needs motion" checked={checked} disabled={pending} onChange={(e) => change(e.target.checked)}
+      <Switch id={`${uid}-m`} label="Needs motion" checked={checked} disabled={pending} onCheckedChange={change}
         describedBy={error ? `${uid}-e` : undefined} />
       <ErrorLine id={`${uid}-e`} message={error} />
     </div>

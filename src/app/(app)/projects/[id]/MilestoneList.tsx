@@ -10,6 +10,7 @@ import { Input } from "@/components/shadcn/input";
 import { formatJakartaDay } from "@/lib/projectTasks";
 import { createMilestone, deleteMilestone, updateMilestone, type MilestoneInput } from "./actions";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export type MilestoneRow = { id: string; title: string; dateIso: string; done: boolean };
 
@@ -150,7 +151,7 @@ function MilestoneForm({ initial, submitLabel, label, onSubmit, onCancel, onDone
         <DatePicker value={form.date || null} onChange={(iso) => setForm((f) => ({ ...f, date: iso ?? "" }))} disabled={pending}
           size="sm" aria-label={`Date for ${label}`} placeholder="Pick a date" className="w-40" />
         <label className="flex items-center gap-1.5 text-sm">
-          <input type="checkbox" checked={form.done} onChange={(e) => setForm((f) => ({ ...f, done: e.target.checked }))} disabled={pending} />
+          <Checkbox checked={form.done} onCheckedChange={(c) => setForm((f) => ({ ...f, done: c === true }))} disabled={pending} />
           Done
         </label>
       </div>

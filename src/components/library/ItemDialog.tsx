@@ -12,6 +12,7 @@ import { Textarea } from "@/components/shadcn/textarea";
 import { Label, labelClassName } from "@/components/shadcn/label";
 import { FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "./LibraryDialog";
+import { Checkbox } from "@/components/shadcn/checkbox";
 
 export type ItemDraft = {
   id?: string; title: string; url: string; description: string | null;
@@ -142,7 +143,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
           {err("files")}
         </fieldset>
         <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="size-4 accent-primary" />
+          <Checkbox checked={pinned} onCheckedChange={(c) => setPinned(c === true)} />
           Pinned
         </label>
         <div className="flex justify-end gap-2 pt-2">

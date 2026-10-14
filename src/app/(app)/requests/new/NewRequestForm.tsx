@@ -138,7 +138,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
   const deadlineRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     if (state?.nonce) {
-      const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"], [data-invalid] input');
+      const first = formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]:not([role="radiogroup"]), [data-invalid] [role="radio"]');
       first?.focus();
     }
   }, [state?.nonce]);

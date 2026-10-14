@@ -144,22 +144,21 @@ describe("RadioCards", () => {
     { value: "no", title: "No", description: "Static design only" },
     { value: "yes", title: "Yes, needs motion", description: "Video or animation" },
   ];
-  it("is a fieldset/legend group of real radio inputs named by their card text", () => {
+  it("is a radiogroup named by its legend, with radios named by their card title", () => {
     render(<RadioCards name="needsMotion" legend="Does this task need motion?" options={options} defaultValue="no" />);
-    expect(screen.getByRole("group", { name: "Does this task need motion?" })).toBeTruthy();
-    const no = screen.getByRole("radio", { name: /^No/ }) as HTMLInputElement;
-    const yes = screen.getByRole("radio", { name: /Yes, needs motion/ }) as HTMLInputElement;
-    expect(no.checked).toBe(true);
-    expect(yes.name).toBe("needsMotion");
+    expect(screen.getByRole("radiogroup", { name: "Does this task need motion?" })).toBeTruthy();
+    const no = screen.getByRole("radio", { name: /^No/ });
+    const yes = screen.getByRole("radio", { name: /Yes, needs motion/ });
+    expect(no.getAttribute("aria-checked")).toBe("true");
     fireEvent.click(yes);
-    expect(yes.checked).toBe(true);
-    expect(no.checked).toBe(false);
+    expect(yes.getAttribute("aria-checked")).toBe("true");
+    expect(no.getAttribute("aria-checked")).toBe("false");
   });
   it("controlled mode reports the chosen value", () => {
     const onChange = vi.fn();
     render(<RadioCards name="m" legend="Motion" options={options} value="no" onChange={onChange} />);
     fireEvent.click(screen.getByRole("radio", { name: /Yes/ }));
-    expect(onChange).toHaveBeenCalledWith("yes", expect.anything());
+    expect(onChange).toHaveBeenCalledWith("yes");
   });
 });
 

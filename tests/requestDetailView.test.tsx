@@ -165,8 +165,8 @@ describe("RequestDetailView Manage card per permission", () => {
     expect((m.getByRole("combobox", { name: "Add assignee" }) as HTMLSelectElement).value).toBe("");
     expect(m.getByLabelText("Move to…")).toBeTruthy();
     expect(m.getByText("Choose Cancelled to cancel this request.")).toBeTruthy();
-    expect((m.getByRole("switch", { name: "Counts toward KPI" }) as HTMLInputElement).checked).toBe(true);
-    expect((m.getByRole("switch", { name: "Needs motion" }) as HTMLInputElement).checked).toBe(false);
+    expect(m.getByRole("switch", { name: "Counts toward KPI" }).getAttribute("aria-checked")).toBe("true");
+    expect(m.getByRole("switch", { name: "Needs motion" }).getAttribute("aria-checked")).toBe("false");
   });
   it("hides the assignee picker on a cancelled request", () => {
     view(base({ status: "CANCELLED" }), LEAD);
@@ -175,14 +175,12 @@ describe("RequestDetailView Manage card per permission", () => {
 });
 
 describe("Switch", () => {
-  it("is a checkbox with role switch, named by its label, and the focus ring on the track", () => {
-    render(<Switch id="s" label="Counts toward KPI" checked={false} onChange={() => {}} />);
-    const sw = screen.getByRole("switch", { name: "Counts toward KPI" }) as HTMLInputElement;
-    expect(sw.type).toBe("checkbox");
-    expect(sw.checked).toBe(false);
-    const track = document.querySelector("[data-switch-track]")!;
-    expect(track.className).toMatch(/peer-focus-visible:outline-ring/);
-    expect(track.className).toMatch(/peer-checked:bg-primary/);
+  it("is a role=switch button named by its label, with the focus ring and the primary track when on", () => {
+    render(<Switch id="s" label="Counts toward KPI" checked={false} onCheckedChange={() => {}} />);
+    const sw = screen.getByRole("switch", { name: "Counts toward KPI" });
+    expect(sw.getAttribute("aria-checked")).toBe("false");
+    expect(sw.className).toMatch(/focus-visible:outline-ring/);
+    expect(sw.className).toMatch(/data-\[state=checked\]:bg-primary/);
   });
 });
 

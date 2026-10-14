@@ -123,7 +123,7 @@ component is gone.
 | Empty list / no results / error page | `Empty`, `EmptyHeader`, `EmptyMedia`, `EmptyTitle` (`asChild` for a heading), `EmptyDescription`, `EmptyContent`. Kit `ui/EmptyState` composes them (brand art, `titleAs`, `role`); `size="inline"` for a quiet one-line "No … yet" inside a card | ad-hoc "No … yet" paragraphs (the Board column placeholder stays: icon + dashed box) | Migrated |
 | Loading placeholder / spinner | `Skeleton` (size and shape from `className`: `rounded-full`, `rounded-xl`; hidden from assistive tech), `Spinner` (announced as "Loading"; `aria-hidden="true"` when a label already says it). A spinner inside a button stays the button's own `loading` icon | `ui/Skeleton` (`rounded` prop), `LoaderCircle animate-spin` | Migrated |
 | Person | `Avatar`, `AvatarImage`, `AvatarFallback` (Radix: photo once loaded, initials until then). Kit `ui/Avatar` (`Avatar`, `UnassignedAvatar`, `AvatarStack`) composes them with the name palette, workspace photos and `decorative` | `<img>` + initials spans | Migrated |
-| On/off, choice | `Switch`, `Checkbox`, `Radio Group` | `ui/Switch`, `ui/RadioCards`, bare `accent-primary` checkboxes | Planned |
+| On/off, choice | `Switch`, `Checkbox`, `RadioGroup` + `RadioGroupItem` (Radix: a `role` button plus, inside a `<form>`, a hidden input that posts `name=value`; `Switch`/`Checkbox` post `on` or their `value` only while on). Kit `ui/Switch` (row label + description, `onCheckedChange`) and `ui/RadioCards` (card radios, `onChange(value)`) compose them | bare `<input type="checkbox">`, native radios, hand-built switch track | Migrated |
 | Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
 | Collapsible block | `Collapsible` / `Accordion` | `<details>` in `CollapsibleSection`, admin lists | Planned |
 | Table | `Table` | `tableClass()` | Planned |
@@ -156,7 +156,7 @@ shadcn part inside.
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 
 Still here until migrated (see Component map, don't use in new code):
-`Switch`, `RadioCards`, `SegmentedControl`,
+`SegmentedControl`,
 `CollapsibleSection`, `Modal`, `table.ts`. Their props are documented in the files themselves.
 
 ## Do

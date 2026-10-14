@@ -74,7 +74,7 @@ describe("Members page", () => {
     expect(screen.getByText("https://cloworks.test/join/abc123")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copy" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reset link" })).toBeTruthy();
-    expect((screen.getByRole("switch") as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("true");
     expect(screen.getByText("People with @clogent.co.id can request to join")).toBeTruthy();
   });
 
@@ -84,7 +84,7 @@ describe("Members page", () => {
     render(await UsersContent({}));
     expect(screen.queryByText(/can request to join/)).toBeNull();
     expect(screen.getByText("/join/abc123")).toBeTruthy();
-    expect((screen.getByRole("switch") as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole("switch").getAttribute("aria-checked")).toBe("false");
   });
 
   it("the switch submits the opposite state; Reset link asks first", async () => {
@@ -93,7 +93,10 @@ describe("Members page", () => {
     render(await UsersContent({}));
     fireEvent.click(screen.getByRole("switch"));
     await waitFor(() => expect(act.toggleInviteLink).toHaveBeenCalledTimes(1));
-    expect((act.toggleInviteLink.mock.calls[0][1] as FormData).get("enabled")).toBe("false");
+    const posted = act.toggleInviteLink.mock.calls[0][1] as FormData;
+    expect(posted.get("enabled")).toBe("false");
+    // the unnamed switch posts nothing of its own
+    expect([...posted.keys()]).toEqual(["enabled"]);
     fireEvent.click(screen.getByRole("button", { name: "Reset link" }));
     expect(act.resetInviteLink).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /yes, reset/i }));

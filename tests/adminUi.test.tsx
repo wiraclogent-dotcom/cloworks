@@ -133,6 +133,23 @@ describe("admin forms", () => {
   });
 });
 
+describe("request type form Active checkbox", () => {
+  it("posts active=on while ticked (new types start active) and nothing when unticked", async () => {
+    act.saveRequestType.mockResolvedValue({ ok: true, message: "ok", values: {}, nonce: "a1" });
+    render(<TypeForm />);
+    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
+    await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(1));
+    expect((act.saveRequestType.mock.calls[0][1] as FormData).get("active")).toBe("on");
+    // the form remounts after a save: look the box up again
+    fireEvent.click(screen.getByRole("checkbox", { name: /^Active/ }));
+    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
+    await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(2));
+    expect((act.saveRequestType.mock.calls[1][1] as FormData).get("active")).toBeNull();
+  });
+});
+
 describe("admin pages gate", () => {
   for (const role of ["REQUESTER", "CREATIVE", "LEAD"]) {
     it(`${role} sees access denied and no query runs`, async () => {
