@@ -52,6 +52,9 @@ const KIND_COPY: Record<WorkKind | "", { title: string; brief: string; notes: st
   video: { title: "e.g. Reel edit – Bubble Wash review", brief: "Drive folder with the raw footage", notes: "Length, aspect ratio, cuts, subtitles, music", assignee: "a video editor" },
 };
 
+/** How many assignee selects a kind starts with: a designer and a video editor for Design + motion, otherwise one. */
+const baseSlots = (kind: WorkKind | ""): number => (kind === "motion" ? 2 : 1);
+
 /** Jakarta calendar date `days` from today, as YYYY-MM-DD (what the date input and the server expect). */
 function jakartaDatePlus(days: number): string {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(new Date());
@@ -99,19 +102,35 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
     "aria-describedby": errs[k] ? `${k}-error` : undefined,
   });
   // Errors with no rendered field (e.g. "form", unknown detail keys) go in the banner.
-  const rendered = new Set(["workKind", "title", "briefUrl", "notes", "brandId", "divisionId", "assigneeId", "deadline"]);
+  const rendered = new Set(["workKind", "title", "briefUrl", "notes", "brandId", "divisionId", "assigneeIds", "deadline"]);
   const orphan = Object.entries(errs).filter(([k]) => !rendered.has(k)).map(([, m]) => m);
   const hasFieldErrors = Object.keys(errs).length > 0;
   const generic = state && !state.ok ? (hasFieldErrors ? orphan.join(" ") : state.message) : "";
-  const LABELS: Record<string, string> = { workKind: "What do you need", title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", assigneeId: "Assignee", deadline: "Deadline" };
+  const LABELS: Record<string, string> = { workKind: "What do you need", title: "Title", briefUrl: "Brief link", notes: "Notes", brandId: "Brand", divisionId: "Division", assigneeIds: "Assignees", deadline: "Deadline" };
   const summary = errorSummary(Object.fromEntries(Object.entries(errs).filter(([k]) => rendered.has(k))), (k) => LABELS[k] ?? "");
 
   // React 19 resets uncontrolled fields after the action; the key remounts them with defaults from the echoed values.
   const nonce = state?.nonce ?? "initial";
   // The picked kind drives the hints; after a failed submit it follows the echoed value.
   const [kind, setKind] = useState<WorkKind | "">(v?.workKind ?? "");
+  // Assignee slots: Design + motion asks for a designer and a video editor, anything else for one person; "+ Add person" adds more.
+  const [extraSlots, setExtraSlots] = useState(0);
   const [seenNonce, setSeenNonce] = useState(nonce);
-  if (seenNonce !== nonce) { setSeenNonce(nonce); setKind(v?.workKind ?? ""); }
+  if (seenNonce !== nonce) {
+    setSeenNonce(nonce);
+    setKind(v?.workKind ?? "");
+    setExtraSlots(Math.max(0, (v?.assigneeIds.length ?? 0) - baseSlots(v?.workKind ?? "")));
+  }
+  const base = baseSlots(kind);
+  const slotCount = base + extraSlots;
+  const slotLabel = (i: number) => (kind === "motion" ? ["Designer", "Video editor"][i] : i === 0 ? "Assignee" : undefined) ?? "Another person";
+  const describedBy = [errs.assigneeIds ? "assigneeIds-error" : "", "assigneeIds-hint"].filter(Boolean).join(" ");
+  const lastSlotRef = useRef<HTMLSelectElement>(null);
+  const focusNewSlot = useRef(false);
+  const addPerson = () => { focusNewSlot.current = true; setExtraSlots((n) => n + 1); };
+  useEffect(() => {
+    if (focusNewSlot.current) { focusNewSlot.current = false; lastSlotRef.current?.focus(); }
+  }, [extraSlots]);
   const copy = KIND_COPY[kind];
   const deadlineRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -133,7 +152,7 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
         <StepTitle n={1}>What do you need?</StepTitle>
         <div className="mt-3" data-invalid={errs.workKind ? "" : undefined}>
           <RadioCards name="workKind" legend={<span className="sr-only">What do you need?</span>} columns={1} options={KIND_OPTIONS}
-            defaultValue={v?.workKind || undefined} onChange={(k) => setKind(k as WorkKind)}
+            defaultValue={v?.workKind || undefined} onChange={(k) => { setKind(k as WorkKind); setExtraSlots(0); }}
             invalid={!!errs.workKind} describedBy={errs.workKind ? "workKind-error" : undefined} />
           <FieldError id="workKind-error">{errs.workKind}</FieldError>
         </div>
@@ -155,13 +174,26 @@ export function NewRequestForm({ brands, divisions, assignees = [] }: { brands: 
             </select>
           </Field>
           <div className="sm:col-span-2">
-            <Field id="assigneeId" label="Assignee" hint="Optional. Leave it unassigned and a lead will pick someone." error={errs.assigneeId}>
-              <select {...props("assigneeId", "select")} defaultValue={v?.assigneeId ?? ""}
-                aria-describedby={[errs.assigneeId ? "assigneeId-error" : "", "assigneeId-hint"].filter(Boolean).join(" ")}>
-                <option value="">Unassigned</option>
-                {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
-            </Field>
+            <div role="group" aria-label="Assignees" aria-describedby={describedBy}>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {Array.from({ length: slotCount }, (_, i) => {
+                  const id = i === 0 ? "assigneeIds" : `assigneeIds-${i + 1}`;
+                  return (
+                    <div key={i}>
+                      <label htmlFor={id} className={labelClass}>{slotLabel(i)}</label>
+                      <select {...props("assigneeIds", "select")} id={id} ref={i === slotCount - 1 ? lastSlotRef : undefined}
+                        defaultValue={v?.assigneeIds[i] ?? ""} aria-describedby={describedBy}>
+                        <option value="">{i < base ? "Unassigned" : "Choose someone"}</option>
+                        {assignees.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+              <p id="assigneeIds-hint" className="mt-1 text-xs text-foreground-secondary">Optional. Leave it unassigned and a lead will pick someone.</p>
+              <FieldError id="assigneeIds-error">{errs.assigneeIds}</FieldError>
+              <Button type="button" variant="ghost" size="sm" className="mt-1" onClick={addPerson}>+ Add person</Button>
+            </div>
           </div>
         </div>
       </Card>

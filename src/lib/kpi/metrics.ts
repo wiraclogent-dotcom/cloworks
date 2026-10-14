@@ -4,7 +4,8 @@ import { JAKARTA_OFFSET_MS, workingDaysBetween } from "./workingDays";
 export type KpiRequest = {
   id: string;
   requesterId: string;
-  assigneeId: string | null;
+  /** Every assignee, in ASSIGNEE_ORDER; empty when unassigned. */
+  assigneeIds: string[];
   requestedAt: Date;
   deadline: Date | null;
   originalDeadline: Date | null;
@@ -16,6 +17,8 @@ export type KpiRequest = {
 
 export type KpiResult = {
   tasksDone: number;
+  /** Ids of the requests counted in `tasksDone`, so a team total can count a shared request once. */
+  doneRequestIds: string[];
   target: number | null;
   progress: number | null;
   onTimeRate: number | null;
@@ -55,11 +58,11 @@ export function computeKpi(
 ): KpiResult {
   const basisRole = target ? target.role : user.jobRole;
 
-  // DESIGNER -> user is the assignee; SOCIAL_MEDIA -> user is the requester;
+  // DESIGNER -> user is one of the assignees (each earns the full point); SOCIAL_MEDIA -> user is the requester;
   // OTHER -> nothing counts (no KPI basis). Unassigned never matches a designer.
   const isUsers = (r: KpiRequest): boolean =>
     basisRole === JobRole.DESIGNER
-      ? r.assigneeId === user.id
+      ? r.assigneeIds.includes(user.id)
       : basisRole === JobRole.SOCIAL_MEDIA
         ? r.requesterId === user.id
         : false;
@@ -105,7 +108,7 @@ export function computeKpi(
     basisRole === JobRole.DESIGNER
       ? requests.filter(
           (r) =>
-            r.assigneeId === user.id &&
+            r.assigneeIds.includes(user.id) &&
             r.status !== RequestStatus.DONE &&
             r.status !== RequestStatus.CANCELLED,
         ).length
@@ -113,6 +116,7 @@ export function computeKpi(
 
   return {
     tasksDone: done.length,
+    doneRequestIds: done.map((r) => r.id),
     target: target ? target.targetTasks : null,
     progress: target && target.targetTasks > 0 ? done.length / target.targetTasks : null,
     onTimeRate: withDeadline > 0 ? onTime / withDeadline : null,

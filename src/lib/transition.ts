@@ -37,11 +37,10 @@ export async function transitionRequestWith(
     throw new TransitionError("INVALID", `Design folder: ${FILE_LOCATION_HINT.toLowerCase()}`);
 
   const change = await db.$transaction(async (tx) => {
-    const req = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true, requesterId: true, title: true } });
+    const req = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, requesterId: true, title: true, assignees: { select: { userId: true } } } });
     if (!req) throw new TransitionError("NOT_FOUND", "Request not found");
     const from = req.status;
     if (!canTransition(from, to)) throw new TransitionError("INVALID", `Cannot move request from ${STATUS_LABEL[from]} to ${STATUS_LABEL[to]}`);
-    if (to === "DONE" && !req.assigneeId) throw new TransitionError("INVALID", NEEDS_ASSIGNEE);
 
     const data: { status: RequestStatus; outputCount?: number; designFolderUrl?: string } = { status: to };
     if (to === "DONE") {
@@ -49,18 +48,16 @@ export async function transitionRequestWith(
       if (opts.designFolderUrl !== undefined) data.designFolderUrl = opts.designFolderUrl.trim();
     }
     // Compare-and-set on the status we validated against: a concurrent transition makes this match 0 rows.
-    // For DONE the assignee is pinned too: a concurrent unassign must not produce a DONE request nobody owns.
-    const res = await tx.request.updateMany({ where: { id: requestId, status: from, ...(to === "DONE" ? { assigneeId: { not: null } } : {}) }, data });
-    if (res.count !== 1) {
-      const now = await tx.request.findUnique({ where: { id: requestId }, select: { status: true, assigneeId: true } });
-      if (to === "DONE" && now && now.status === from && !now.assigneeId) throw new TransitionError("INVALID", NEEDS_ASSIGNEE);
-      throw new TransitionError("CONFLICT", "Request status changed concurrently; reload and retry");
-    }
+    const res = await tx.request.updateMany({ where: { id: requestId, status: from }, data });
+    if (res.count !== 1) throw new TransitionError("CONFLICT", "Request status changed concurrently; reload and retry");
+    // A DONE request must have an owner. Counting after the CAS has locked the row: setAssigneesWith takes the same row
+    // lock, so a concurrent unassign either finished before this count (we see 0 and roll back) or waits until we commit.
+    if (to === "DONE" && (await tx.requestAssignee.count({ where: { requestId } })) === 0) throw new TransitionError("INVALID", NEEDS_ASSIGNEE);
     const at = new Date();
     await tx.statusEvent.create({ data: { requestId, from, to, actorId: user.id, at } });
     // A linked Content Plan post follows the request; `post` is kept for notifying its author after commit.
     const post = await syncContentPostForRequest(tx, requestId, from, to, at);
-    return { from, to, assigneeId: req.assigneeId, requesterId: req.requesterId, title: req.title, post };
+    return { from, to, assigneeIds: req.assignees.map((a) => a.userId), requesterId: req.requesterId, title: req.title, post };
   });
 
   await bestEffort(async () => {
@@ -68,7 +65,7 @@ export async function transitionRequestWith(
     // Moving to First Look is the designer sending the design for review; it gets its own wording.
     const type = change.to === "FIRST_LOOK" ? "DESIGN_SENT" : "STATUS";
     const message = buildMessage(type, actor?.name ?? "Someone", change.title, { from: change.from, to: change.to });
-    const userIds = [...new Set([change.requesterId, change.assigneeId])].filter((id): id is string => !!id && id !== user.id);
+    const userIds = [...new Set([change.requesterId, ...change.assigneeIds])].filter((id) => id !== user.id);
     await notifier({ actorId: user.id, userIds, requestId, type, message });
   });
 

@@ -223,7 +223,7 @@ describe("PostPanel", () => {
   });
 
   it("links an approved post to its request", () => {
-    show(panel({ post: { status: "APPROVED", request: { id: "r1", status: "REQUESTED", assigneeId: null } } }));
+    show(panel({ post: { status: "APPROVED", request: { id: "r1", status: "REQUESTED" } } }));
     expect(screen.getByRole("link", { name: /View request/ }).getAttribute("href")).toBe("/requests/r1");
   });
 

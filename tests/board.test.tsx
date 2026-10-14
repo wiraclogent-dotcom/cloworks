@@ -21,10 +21,10 @@ import { BOARD_STATUSES } from "@/components/status";
 import type { RequestRow } from "@/lib/requests";
 
 const row = (id: string, title: string, status: RequestRow["status"], extra: Partial<RequestRow> = {}): RequestRow => ({
-  id, title, status, brandName: "BrandA", divisionName: "DivX", requesterName: "Rina", assigneeName: "Cami",
+  id, title, status, brandName: "BrandA", divisionName: "DivX", requesterName: "Rina", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: null, needsMotion: false, ...extra,
 });
-const rows = [row("1", "Banner", "FIRST_LOOK"), row("2", "Poster", "REQUESTED", { assigneeName: null })];
+const rows = [row("1", "Banner", "FIRST_LOOK"), row("2", "Poster", "REQUESTED", { assignees: [] })];
 
 /** Builds the per-column server data the page passes in; totals default to the rows given. */
 function columns(rs: RequestRow[], totals: Partial<Record<RequestRow["status"], number>> = {}, cancelled = false): BoardColumnView[] {
@@ -251,8 +251,15 @@ describe("Board", () => {
     await waitFor(() => expect(document.activeElement?.closest("[data-card]")?.getAttribute("data-card")).toBe("2"));
   });
 
+  it("a card with two assignees dropped on Done opens the dialog (no assignee message)", () => {
+    view([row("4", "Poster", "FIRST_LOOK", { assignees: [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }] })]);
+    drop("4", "DONE");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.queryByText("Assign someone before marking this request Done.")).toBeNull();
+  });
+
   it("does not open the dialog for an unassigned card dropped on Done: shows an inline message", () => {
-    const r = [row("3", "Flyer", "FIRST_LOOK", { assigneeName: null })];
+    const r = [row("3", "Flyer", "FIRST_LOOK", { assignees: [] })];
     view(r);
     drop("3", "DONE");
     expect(screen.queryByRole("dialog")).toBeNull();
