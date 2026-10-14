@@ -141,7 +141,10 @@ describe("request type form Active checkbox", () => {
     fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
     await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(1));
     expect((act.saveRequestType.mock.calls[0][1] as FormData).get("active")).toBe("on");
-    // the form remounts after a save: look the box up again
+    // The form remounts (key = nonce) once the save resolves; its success status is rendered inside the new form, so
+    // wait for it before touching the box, or the click can land on the old, unmounting checkbox.
+    expect(await screen.findByRole("status")).toHaveProperty("textContent", "ok");
+    await waitFor(() => expect(screen.getByRole("button", { name: /add request type/i }).getAttribute("aria-busy")).not.toBe("true"));
     fireEvent.click(screen.getByRole("checkbox", { name: /^Active/ }));
     expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("false");
     fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
