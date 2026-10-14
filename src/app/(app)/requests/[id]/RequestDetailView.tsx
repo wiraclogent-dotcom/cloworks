@@ -207,7 +207,7 @@ export function RequestDetailView({ req, extra, daysLeft, userId, canAssign, can
           </Card>
         </div>
 
-        <aside className="min-w-0 space-y-5 @3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16" aria-label="Details and actions">
+        <aside className="min-w-0 space-y-5 @3xl:sticky @3xl:top-6 in-data-[slot=sheet-content]:@3xl:top-16" aria-label="Details and actions">
           <Card className="animate-rise" style={{ "--i": 4 } as CSSProperties}>
             <section aria-labelledby="details-h">
               <CardTitle id="details-h">Details</CardTitle>

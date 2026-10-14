@@ -76,7 +76,7 @@ const STEPS = (assignee: string): { icon: React.ReactNode; title: string; text: 
 /** Right-column help card (static). */
 function WhatHappensNext({ assignee }: { assignee: string }) {
   return (
-    <Card className="@3xl:sticky @3xl:top-6 in-[dialog]:@3xl:top-16">
+    <Card className="@3xl:sticky @3xl:top-6 in-data-[slot=sheet-content]:@3xl:top-16">
       <CardTitle>What happens next</CardTitle>
       <ol className="mt-3 space-y-4">
         {STEPS(assignee).map((s, i) => (
