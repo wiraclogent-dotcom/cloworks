@@ -172,8 +172,8 @@ export async function insertRequestTx(
     select: { id: true },
   });
   await tx.statusEvent.create({ data: { requestId: req.id, from: null, to: "REQUESTED", actorId: opts.actorId, at: opts.now } });
-  // Not a nested create: nested writes skip workspace scoping.
-  if (v.assigneeIds.length) await tx.requestAssignee.createMany({ data: v.assigneeIds.map((userId) => ({ requestId: req.id, userId, addedAt: opts.now })), skipDuplicates: true });
+  // Not a nested create: nested writes skip workspace scoping. addedAt steps 1 ms per row so ASSIGNEE_ORDER keeps the pick order.
+  if (v.assigneeIds.length) await tx.requestAssignee.createMany({ data: v.assigneeIds.map((userId, i) => ({ requestId: req.id, userId, addedAt: new Date(opts.now.getTime() + i) })), skipDuplicates: true });
   return { id: req.id };
 }
 

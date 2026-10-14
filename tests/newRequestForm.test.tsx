@@ -122,4 +122,83 @@ describe("NewRequestForm", () => {
     await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
     await waitFor(() => expect(screen.getByRole("alert").textContent).toContain("default request type"));
   });
+
+  describe("assignee slots", () => {
+    const people = [{ id: "u1", name: "Ayu" }, { id: "u2", name: "Bima" }, { id: "u3", name: "Citra" }];
+    const slots = () => Array.from(document.querySelectorAll<HTMLSelectElement>('select[name="assigneeIds"]'));
+    const labelsOf = () => slots().map((s) => s.labels?.[0]?.textContent);
+    const pick = (kind: RegExp) => fireEvent.click(screen.getByRole("radio", { name: kind }));
+    const renderForm = () => render(<NewRequestForm brands={brands} divisions={divisions} assignees={people} />);
+
+    it("shows one 'Assignee' select until a kind is picked, and for static and video", () => {
+      renderForm();
+      expect(labelsOf()).toEqual(["Assignee"]);
+      pick(/Static design/);
+      expect(labelsOf()).toEqual(["Assignee"]);
+      pick(/Video edit only/);
+      expect(labelsOf()).toEqual(["Assignee"]);
+    });
+
+    it("Design + motion asks for a Designer and a Video editor, both optional", () => {
+      renderForm();
+      pick(/Design \+ motion/);
+      expect(labelsOf()).toEqual(["Designer", "Video editor"]);
+      expect(slots().every((s) => !s.required && s.value === "")).toBe(true);
+      expect(new Set(slots().map((s) => s.id)).size).toBe(2);
+      expect(screen.getByLabelText("Designer")).toBe(slots()[0]);
+      expect(screen.getByLabelText("Video editor")).toBe(slots()[1]);
+    });
+
+    it("'+ Add person' adds an 'Another person' select, again and again, and focuses it", () => {
+      renderForm();
+      fireEvent.click(screen.getByRole("button", { name: "+ Add person" }));
+      expect(labelsOf()).toEqual(["Assignee", "Another person"]);
+      expect(document.activeElement).toBe(slots()[1]);
+      pick(/Design \+ motion/); // the slot count resets with the kind
+      expect(labelsOf()).toEqual(["Designer", "Video editor"]);
+      fireEvent.click(screen.getByRole("button", { name: "+ Add person" }));
+      fireEvent.click(screen.getByRole("button", { name: "+ Add person" }));
+      expect(labelsOf()).toEqual(["Designer", "Video editor", "Another person", "Another person"]);
+      expect(new Set(slots().map((s) => s.id)).size).toBe(4);
+      pick(/Static design/);
+      expect(labelsOf()).toEqual(["Assignee"]);
+    });
+
+    it("submits every picked person under assigneeIds", async () => {
+      submit.mockResolvedValue({ ok: false, message: "m", nonce: "s1", fieldErrors: { form: "x" }, values: emptyValues });
+      renderForm();
+      pick(/Design \+ motion/);
+      fireEvent.change(screen.getByLabelText("Designer"), { target: { value: "u2" } });
+      fireEvent.change(screen.getByLabelText("Video editor"), { target: { value: "u1" } });
+      await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
+      expect((submit.mock.calls[0][1] as FormData).getAll("assigneeIds")).toEqual(["u2", "u1"]);
+    });
+
+    it("shows the assigneeIds error under the group and marks every select invalid", async () => {
+      submit.mockResolvedValue({ ok: false, message: "m", nonce: "s2", fieldErrors: { assigneeIds: "Pick someone from the creative team" }, values: { ...emptyValues, workKind: "motion", assigneeIds: ["u1"] } });
+      renderForm();
+      await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
+      await waitFor(() => expect(document.getElementById("assigneeIds-error")!.textContent).toContain("Pick someone from the creative team"));
+      expect(slots().every((s) => s.getAttribute("aria-invalid") === "true" && s.getAttribute("aria-describedby")!.includes("assigneeIds-error"))).toBe(true);
+      expect(screen.getByRole("status").textContent).toBe("1 problem: Assignees: Pick someone from the creative team");
+    });
+
+    it("restores the submitted people into their slots, with extra slots for the rest", async () => {
+      submit.mockResolvedValue({ ok: false, message: "m", nonce: "s3", fieldErrors: { title: "Title is required" }, values: { ...emptyValues, workKind: "motion", assigneeIds: ["u2", "u3"] } });
+      renderForm();
+      await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
+      await waitFor(() => expect(screen.getByText("Title is required")).toBeTruthy());
+      expect(labelsOf()).toEqual(["Designer", "Video editor"]);
+      expect(slots().map((s) => s.value)).toEqual(["u2", "u3"]);
+    });
+
+    it("restores three submitted people as Designer, Video editor and Another person", async () => {
+      submit.mockResolvedValue({ ok: false, message: "m", nonce: "s4", fieldErrors: { title: "Title is required" }, values: { ...emptyValues, workKind: "motion", assigneeIds: ["u1", "u2", "u3"] } });
+      renderForm();
+      await act(async () => { fireEvent.submit(screen.getByRole("button", { name: /create request/i }).closest("form")!); });
+      await waitFor(() => expect(screen.getByText("Title is required")).toBeTruthy());
+      expect(labelsOf()).toEqual(["Designer", "Video editor", "Another person"]);
+      expect(slots().map((s) => s.value)).toEqual(["u1", "u2", "u3"]);
+    });
+  });
 });

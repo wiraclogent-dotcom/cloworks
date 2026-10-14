@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { createRequestWith, validateRequestInput, insertRequestTx, CreateRequestError, type CreateRequestInput } from "@/lib/createRequest";
 import { CREATIVE_TEAM } from "@/lib/team";
+import { ASSIGNEE_ORDER } from "@/lib/assignees";
 import { seed } from "../prisma/seedCore";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
@@ -70,6 +71,14 @@ describe("createRequestWith", () => {
     expect(r.assignees.map((x) => x.userId).sort()).toEqual([a.id, b.id].sort());
     expect(r.assignees.every((x) => x.workspaceId === db.workspaceId)).toBe(true);
     expect(r.assigneeId).toBe(a.id);
+  });
+  it("keeps the pick order: [b, a] lists b then a even when a's id sorts first", async () => {
+    const team = await db.prisma.user.findMany({ where: CREATIVE_TEAM, take: 2 });
+    const [a, b] = team.sort((x, y) => (x.id < y.id ? -1 : 1));
+    const { id } = await createRequestWith(db.prisma, user, { ...base, title: "Pick order", assigneeIds: [b.id, a.id] }, now);
+    const r = await db.prisma.request.findUniqueOrThrow({ where: { id }, include: { assignees: { orderBy: [...ASSIGNEE_ORDER] } } });
+    expect(r.assignees.map((x) => x.userId)).toEqual([b.id, a.id]);
+    expect(r.assigneeId).toBe(b.id);
   });
   it("rejects an assignee who is not on the creative team under assigneeIds", async () => {
     const [a] = await db.prisma.user.findMany({ where: CREATIVE_TEAM, take: 1 });
