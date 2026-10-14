@@ -14,8 +14,10 @@ import { DayDialog } from "@/components/calendar/DayDialog";
 import { BriefDayDialog } from "@/components/briefs/BriefDayDialog";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { RequestCalendar } from "@/components/RequestCalendar";
-import { Dialog, DialogContent, DialogTitle } from "@/components/shadcn/dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogTitle } from "@/components/shadcn/alert-dialog";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/shadcn/dialog";
+import { AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogTitle, AlertDialogTrigger } from "@/components/shadcn/alert-dialog";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/shadcn/sheet";
+import { Button } from "@/components/shadcn/button";
 import type { CalendarRow } from "@/lib/requests";
 
 beforeEach(() => {
@@ -176,6 +178,36 @@ describe("local dialogs", () => {
       const cls = titleOf(dialog).className.split(/\s+/);
       expect(cls, name).toEqual(expect.arrayContaining(["text-base", "font-semibold", "text-heading"]));
       cleanup();
+    }
+  });
+});
+
+describe("dialogs that stay mounted with a trigger", () => {
+  // The content component renders while closed too, so the opener must be taken when the dialog opens, not when the
+  // page mounts (after a client navigation focus sits on whatever link was clicked).
+  const trigger = <Button variant="outline">Open</Button>;
+  const cases: [string, "dialog" | "alertdialog", ReactNode][] = [
+    ["Dialog", "dialog", <Dialog key="d"><DialogTrigger asChild>{trigger}</DialogTrigger><DialogContent aria-describedby={undefined}><DialogTitle>Panel</DialogTitle></DialogContent></Dialog>],
+    ["Sheet", "dialog", <Sheet key="s"><SheetTrigger asChild>{trigger}</SheetTrigger><SheetContent aria-describedby={undefined}><SheetTitle>Panel</SheetTitle></SheetContent></Sheet>],
+    ["AlertDialog", "alertdialog", <AlertDialog key="a"><AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger><AlertDialogContent aria-describedby={undefined}><AlertDialogTitle>Panel</AlertDialogTitle><AlertDialogCancel>Cancel</AlertDialogCancel></AlertDialogContent></AlertDialog>],
+  ];
+
+  it.each(cases)("%s returns focus to its trigger, not to what had focus when the page mounted", async (_name, role, el) => {
+    const elsewhere = document.body.appendChild(document.createElement("button"));
+    elsewhere.textContent = "Sidebar link";
+    elsewhere.focus();
+    try {
+      render(el);
+      const open = screen.getByRole("button", { name: "Open" });
+      open.focus();
+      fireEvent.click(open);
+      const panel = await screen.findByRole(role, { name: "Panel" });
+      await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
+      fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+      await waitFor(() => expect(screen.queryByRole(role)).toBeNull());
+      await waitFor(() => expect(document.activeElement).toBe(open));
+    } finally {
+      elsewhere.remove();
     }
   });
 });

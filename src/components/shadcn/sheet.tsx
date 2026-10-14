@@ -5,7 +5,7 @@ import { XIcon } from "lucide-react"
 import { Dialog as SheetPrimitive } from "radix-ui"
 import { cn } from "@/components/ui/cn"
 import { Button } from "@/components/shadcn/button"
-import { useReturnFocus } from "@/components/shadcn/dialog"
+import { ReturnFocusProbe, useReturnFocus } from "@/components/shadcn/dialog"
 
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
@@ -76,7 +76,7 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         data-side={side}
-        onCloseAutoFocus={returnFocus}
+        onCloseAutoFocus={returnFocus.onCloseAutoFocus}
         className={cn(
           "fixed inset-y-0 z-50 flex h-dvh w-full flex-col overflow-y-auto border-border bg-background text-foreground shadow-raised outline-hidden data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in sm:w-3/4 sm:max-w-sm",
           side === "right" ? "right-0 origin-right border-l" : "left-0 origin-left border-r",
@@ -84,6 +84,7 @@ function SheetContent({
         )}
         {...props}
       >
+        <ReturnFocusProbe record={returnFocus.record} />
         {children}
         {showClose && <SheetCloseButton className="absolute top-2.5 right-2.5" />}
       </SheetPrimitive.Content>

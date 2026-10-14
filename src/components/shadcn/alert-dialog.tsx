@@ -4,7 +4,7 @@ import * as React from "react"
 import { AlertDialog as AlertDialogPrimitive } from "radix-ui"
 import { cn } from "@/components/ui/cn"
 import { Button } from "@/components/shadcn/button"
-import { useReturnFocus } from "@/components/shadcn/dialog"
+import { ReturnFocusProbe, useReturnFocus } from "@/components/shadcn/dialog"
 
 function AlertDialog({
   ...props
@@ -45,6 +45,7 @@ function AlertDialogOverlay({
 /** Centred confirm dialog (no X: the user must pick Cancel or the action; Esc cancels). */
 function AlertDialogContent({
   className,
+  children,
   onCloseAutoFocus,
   ...props
 }: React.ComponentProps<typeof AlertDialogPrimitive.Content>) {
@@ -54,13 +55,16 @@ function AlertDialogContent({
       <AlertDialogOverlay />
       <AlertDialogPrimitive.Content
         data-slot="alert-dialog-content"
-        onCloseAutoFocus={returnFocus}
+        onCloseAutoFocus={returnFocus.onCloseAutoFocus}
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border border-border bg-background p-4 text-foreground shadow-raised outline-hidden data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in sm:p-6",
           className
         )}
         {...props}
-      />
+      >
+        <ReturnFocusProbe record={returnFocus.record} />
+        {children}
+      </AlertDialogPrimitive.Content>
     </AlertDialogPortal>
   )
 }

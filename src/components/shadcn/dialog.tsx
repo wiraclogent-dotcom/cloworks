@@ -60,19 +60,38 @@ function DialogCloseButton({ className }: { className?: string }) {
 
 /**
  * Radix returns focus to a `DialogTrigger` on close, and nowhere when there is none (dialogs opened from state, route
- * modals). This remembers what had focus when the content first rendered and, unless `onCloseAutoFocus` prevents it,
- * focuses that element again on close (falling back to Radix's trigger focus when it is gone or was the body).
+ * modals). `useReturnFocus` records what had focus when the dialog opened and, unless `onCloseAutoFocus` prevents it,
+ * focuses that element again on close; when it is gone or was the body, Radix's own trigger focus applies.
+ *
+ * The record comes from `ReturnFocusProbe`, rendered inside the Radix Content: Content children render only while
+ * open (once per opening) and before anything moves focus in. Content components themselves render while closed too,
+ * and Radix skips `onOpenAutoFocus` when an `autoFocus` field already took focus, so neither can be the source.
  */
 function useReturnFocus(onCloseAutoFocus?: (event: Event) => void) {
-  const [opener] = React.useState(() =>
+  const opener = React.useRef<HTMLElement | null>(null)
+  return {
+    record: (el: HTMLElement | null) => {
+      opener.current = el
+    },
+    onCloseAutoFocus: (event: Event) => {
+      const el = opener.current
+      opener.current = null
+      onCloseAutoFocus?.(event)
+      if (event.defaultPrevented || !el || el === document.body || !el.isConnected) return
+      event.preventDefault()
+      el.focus()
+    },
+  }
+}
+
+function ReturnFocusProbe({ record }: { record: (opener: HTMLElement | null) => void }) {
+  const [active] = React.useState(() =>
     typeof document === "undefined" ? null : (document.activeElement as HTMLElement | null)
   )
-  return (event: Event) => {
-    onCloseAutoFocus?.(event)
-    if (event.defaultPrevented || !opener || opener === document.body || !opener.isConnected) return
-    event.preventDefault()
-    opener.focus()
-  }
+  // Mount only: `record` is a new function each render of the content.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  React.useEffect(() => record(active), [active])
+  return null
 }
 
 /**
@@ -96,13 +115,14 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         data-close={showClose ? "" : undefined}
-        onCloseAutoFocus={returnFocus}
+        onCloseAutoFocus={returnFocus.onCloseAutoFocus}
         className={cn(
           "group/dialog fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl border border-border bg-background p-4 text-foreground shadow-raised outline-hidden data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in sm:p-6",
           className
         )}
         {...props}
       >
+        <ReturnFocusProbe record={returnFocus.record} />
         {children}
         {showClose && <DialogCloseButton className="absolute top-2.5 right-2.5 sm:top-4 sm:right-4" />}
       </DialogPrimitive.Content>
@@ -169,5 +189,6 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
+  ReturnFocusProbe,
   useReturnFocus,
 }
