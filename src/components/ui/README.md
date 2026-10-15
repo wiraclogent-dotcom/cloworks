@@ -72,7 +72,8 @@ Run `npm run typecheck` and the tests that cover the screens you touched.
 | Non-text only (decorative icons) | `text-foreground-muted` (3:1, never for text) |
 | Button border | `border-border-strong` |
 | Primary / destructive hover | `hover:bg-primary-hover` / `hover:bg-destructive-hover` |
-| Depth | `shadow-card` (resting), `shadow-raised` (dragging, dialogs, menus, drawer) |
+| Depth | `shadow-card` (resting), `shadow-raised` (dialogs, menus, drawer) |
+| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, e.g. `board-gradient` with `public/board/gradient.jpg`, which re-points the text tokens to white) every card and its drag copy is a `LiquidGlassCard` instead; columns turn `bg-glass-column`. Glass needs content behind it |
 | Status colours | `data-tone="<tone>"` + `bg-tone-tint text-tone-text border-tone-accent` |
 | Brand | `brand-*` (landing, auth and emails only) |
 
@@ -167,6 +168,8 @@ shadcn part inside.
 | `CountUp` | CountUp.tsx | animated number | KPI values. |
 | `LogoMark` | LogoMark.tsx | `size` | Brand mark (decorative). No illustrations: empty states use an icon tile. |
 | `SegmentedControl` | SegmentedControl.tsx | `label`, `value`, `items: {value,label,icon?,href?,onSelect?}[]` | Board/Table and admin tabs (links: `<nav>` + `aria-current`, no JS); local switches (buttons: shadcn `ToggleGroup`). `SEGMENT_TRAY` / `segmentClass` style link segments elsewhere (FilterBar quick filters). |
+| `LiquidGlassCard` | LiquidGlassCard.tsx | `as`, `blurIntensity`, `shadowIntensity`, `glowIntensity`, `borderRadius`, `className` (the tint, e.g. `bg-white/8`) | 21st.dev liquid-weather-glass card: bend / face / edge layers under the content. Board cards on a picture background. |
+| `LiquidGlassFilter` | LiquidGlassFilter.tsx | – | The SVG lenses `#liquid-glass` (the `liquid-glass` utility) and `#glass-blur` (`LiquidGlassCard`); rendered once in the root layout, never elsewhere. |
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 

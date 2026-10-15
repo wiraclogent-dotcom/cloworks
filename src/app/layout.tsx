@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { LucideProvider } from "lucide-react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { LiquidGlassFilter } from "@/components/ui/LiquidGlassFilter";
 import "./globals.css";
 
 /** One family for body text and display (`font-sans`, `font-display`): Archivo, a variable font (V3 flat blue). */
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col font-sans">
         {/* Icons: 1.75 stroke everywhere (spec). */}
         <LucideProvider strokeWidth={1.75}>{children}</LucideProvider>
+        <LiquidGlassFilter />
       </body>
     </html>
   );

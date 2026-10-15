@@ -106,6 +106,17 @@
   --elevation-card: 0 1px 2px rgba(10, 15, 31, 0.04);
   --elevation-raised: 0 12px 32px -8px rgba(10, 30, 90, 0.2);
   --backdrop: rgba(10, 15, 31, 0.45);
+  /* Liquid glass (`liquid-glass` utility): a see-through card tint and the lip of the glass (dark insets on light,
+     after designali-in/liquid-glass-button), lifted like any raised surface. */
+  --glass-tint: color-mix(in srgb, var(--card) 55%, transparent);
+  /* Board columns over a picture background: a faint wash, never blurred (a blurred column would hide the board from the cards' lens). */
+  --glass-column: rgb(255 255 255 / 0.07);
+  --glass-edge:
+    0 0 6px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 3px 3px 0.5px -3px rgba(0, 0, 0, 0.9), inset -3px -3px 0.5px -3px rgba(0, 0, 0, 0.85),
+    inset 1px 1px 1px -0.5px rgba(0, 0, 0, 0.6), inset -1px -1px 1px -0.5px rgba(0, 0, 0, 0.6),
+    inset 0 0 6px 6px rgba(0, 0, 0, 0.12), inset 0 0 2px 2px rgba(0, 0, 0, 0.06),
+    0 0 12px rgba(255, 255, 255, 0.15), var(--elevation-raised);
 
   /* Status and tag chips: accent (borders, dots, column bar) | tint (chip background) | text */
   --status-requested-accent: #9aa3b5;
@@ -216,6 +227,13 @@
   --elevation-card: 0 1px 2px rgba(0, 0, 0, 0.3);
   --elevation-raised: 0 8px 24px rgba(0, 0, 0, 0.45);
   --backdrop: rgba(3, 6, 15, 0.6);
+  /* Liquid glass in the dark: the same lip drawn with white insets. */
+  --glass-edge:
+    0 0 8px rgba(0, 0, 0, 0.03), 0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 3px 3px 0.5px -3.5px rgba(255, 255, 255, 0.09), inset -3px -3px 0.5px -3.5px rgba(255, 255, 255, 0.85),
+    inset 1px 1px 1px -0.5px rgba(255, 255, 255, 0.6), inset -1px -1px 1px -0.5px rgba(255, 255, 255, 0.6),
+    inset 0 0 6px 6px rgba(255, 255, 255, 0.12), inset 0 0 2px 2px rgba(255, 255, 255, 0.06),
+    0 0 12px rgba(0, 0, 0, 0.15), var(--elevation-raised);
 
   --status-requested-accent: #8a93a6;
   --status-requested-tint: #222b3d;
@@ -313,6 +331,7 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
+  --color-glass-column: var(--glass-column);
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -626,6 +645,58 @@
 @utility animate-pop { animation: pop 0.5s var(--ease-out) both; animation-delay: calc(var(--i, 0) * 70ms); }
 @utility animate-pop-in { animation: pop-in 0.15s var(--ease-out) both; }
 @utility animate-pop-out { animation: pop-out 0.12s ease-in both; }
+
+/*
+ * Liquid glass: one element is the whole effect. The lens bends what is behind it through the SVG filter
+ * #liquid-glass (<LiquidGlassFilter>, rendered once in the root layout); the tint keeps text readable; the inset
+ * shadows draw the lip. Only Chromium bends a backdrop through an SVG filter, so WebKit and Firefox (detected with
+ * features only they have) get a plain frosted blur instead. Reduced transparency gets the solid card.
+ * Not `-moz-appearance` for Firefox: the CSS build rewrites it to `appearance`, which Chromium matches too.
+ */
+@utility liquid-glass {
+  background-color: var(--glass-tint);
+  box-shadow: var(--glass-edge);
+  backdrop-filter: url(#liquid-glass) saturate(150%);
+  @supports (font: -apple-system-body) or selector(::-moz-range-track) {
+    backdrop-filter: blur(12px) saturate(160%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--card);
+    backdrop-filter: none;
+  }
+}
+
+/*
+ * Board background "gradient" (the `background` prop of <Board>; "plain" draws nothing and keeps the muted columns):
+ * the blue-to-peach wallpaper in both themes, with the cards in white ink as in the liquid-weather-glass demo.
+ * The tokens the board, its cards and the drag overlay use are re-pointed here; each one is set itself, because a
+ * token derived at :root (e.g. --card-foreground from --foreground) would not follow a change made here.
+ */
+@utility board-gradient {
+  /* Deep-navy scrim over the picture: heaviest over its light cyan left, white glow right and peach bottom, lightest over
+     the deep blue top right. Measured: grey card text stays ≥ 4.6:1 in every column at board sizes 900–1600px wide. */
+  background:
+    radial-gradient(40% 50% at 100% 55%, rgb(6 16 52 / 0.45), rgb(6 16 52 / 0)),
+    linear-gradient(to right, rgb(6 16 52 / 0.5) 0%, rgb(6 16 52 / 0.38) 40%, rgb(6 16 52 / 0.1) 65%, rgb(6 16 52 / 0) 85%),
+    linear-gradient(to bottom, rgb(6 16 52 / 0.24) 0%, rgb(6 16 52 / 0.52) 50%, rgb(6 16 52 / 0.62) 75%, rgb(6 16 52 / 0.72) 100%),
+    url("/board/gradient.jpg") center / cover no-repeat,
+    #7fb2ff;
+  color: var(--foreground);
+  --foreground: #ffffff;
+  --card-foreground: #ffffff;
+  --muted-foreground: rgb(255 255 255 / 0.94);
+  --foreground-muted: rgb(255 255 255 / 0.72);
+  --heading: #ffffff;
+  --card: rgb(255 255 255 / 0.16);
+  --muted: rgb(255 255 255 / 0.12);
+  --accent: rgb(255 255 255 / 0.18);
+  --border: rgb(255 255 255 / 0.3);
+  --border-strong: rgb(255 255 255 / 0.45);
+  --input: rgb(255 255 255 / 0.6);
+  --link: #ffffff;
+  --ring: #ffffff;
+}
+
 .animate-float { animation: float 7s ease-in-out var(--float-delay, 0s) infinite; }
 .animate-mesh { background-size: 140% 140%; animation: mesh-drift 18s ease-in-out infinite; }
 

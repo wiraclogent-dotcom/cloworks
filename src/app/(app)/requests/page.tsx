@@ -90,7 +90,8 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
             description="Try another search or clear the filters."
             action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
-          <Board canMove={can(user.appRole, "request.transition")} columns={board.map((c): BoardColumnView => {
+          // Trial: every board shows the gradient wallpaper with glass cards until the per-user background setting lands.
+          <Board canMove={can(user.appRole, "request.transition")} background="gradient" columns={board.map((c): BoardColumnView => {
             const limit = p.more[c.status] ?? BOARD_PAGE_SIZE;
             return {
               ...c,
