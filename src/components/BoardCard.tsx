@@ -10,13 +10,18 @@ import { NeedsMotionChip } from "./ui/NeedsMotionChip";
 import { assigneeLabel } from "@/lib/assignees";
 import { Avatar, AvatarStack, UnassignedAvatar } from "./ui/Avatar";
 import { SharedChip } from "./ui/SharedChip";
+import { LiquidGlassCard } from "./ui/LiquidGlassCard";
 import { cn, focusRing } from "./ui/cn";
 
 const CARD_SHAPE = "rounded-xl border bg-card p-4 text-sm text-card-foreground";
 /** Card in its column: white, 12px radius, a whisper of a hairline and a soft shadow that deepens on hover (no movement, so drags stay put). */
 export const CARD_SURFACE = `${CARD_SHAPE} border-border/70 shadow-card transition-[box-shadow,border-color] duration-200 hover:border-border-strong hover:shadow-raised`;
-/** The drag overlay copy: same card, Aqua outline and the raised shadow. */
-export const CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
+/** The drag overlay copy: the same shape in liquid glass instead of the solid card (the board shows through, bent); the glass lip replaces the hairline. */
+export const CARD_OVERLAY = "rounded-xl border border-transparent p-4 text-sm text-card-foreground liquid-glass";
+/** Card on a picture background (and its drag copy there): a <LiquidGlassCard> with the demo's clear 8% white tint; text colours come from the board's tokens. */
+export const CARD_GLASS = "rounded-xl p-4 text-sm text-card-foreground bg-white/8";
+/** The demo's settings (shadowIntensity xs, glowIntensity none) on our 12px card radius. */
+export const GLASS_LOOK = { borderRadius: "12px", shadowIntensity: "xs", glowIntensity: "none" } as const;
 
 /** Edge mark for a shared request (the card root has `data-shared`): a 3px Aqua bar inside the left edge. `--accent` is too pale for this; `--ring` exists in light and dark. */
 export const SHARED_ACCENT = "before:absolute before:inset-y-3 before:left-0 before:w-[3px] before:rounded-full before:bg-ring";
@@ -92,17 +97,20 @@ export function CardFace({ card, interactive = true, handle }: { card: RequestRo
  * so Enter on the title link still just follows the link); it is hidden until the card is hovered or focused (always shown on touch screens).
  * Read-only users get no listeners and no handle.
  */
-export function BoardCard({ card, canMove, busy, dragging }: { card: RequestRow; canMove: boolean; busy: boolean; dragging: boolean }) {
+export function BoardCard({ card, canMove, busy, dragging, glass = false }: { card: RequestRow; canMove: boolean; busy: boolean; dragging: boolean; glass?: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: !canMove || busy });
   const shared = card.assignees.length >= 2;
-  return (
-    <li ref={setNodeRef} data-card={card.id} data-shared={shared ? "" : undefined} data-draggable={canMove ? "true" : undefined} {...(canMove ? listeners : undefined)}
-      className={cn(
-        "group/card relative", CARD_SURFACE, shared && SHARED_ACCENT,
-        "transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-px hover:border-border-strong motion-reduce:hover:translate-y-0",
-        canMove && "cursor-grab touch-manipulation active:cursor-grabbing",
-        dragging ? "opacity-40" : busy ? "opacity-60" : "",
-      )}>
+  const root = {
+    ref: setNodeRef, "data-card": card.id, "data-shared": shared ? "" : undefined, "data-draggable": canMove ? "true" : undefined,
+    ...(canMove ? listeners : undefined),
+    className: cn(
+      "group/card relative", glass ? CARD_GLASS : CARD_SURFACE, shared && SHARED_ACCENT, shared && glass && "before:z-40",
+      "transition-[transform,border-color,box-shadow] duration-150 ease-out hover:-translate-y-px hover:border-border-strong motion-reduce:hover:translate-y-0",
+      canMove && "cursor-grab touch-manipulation active:cursor-grabbing",
+      dragging ? "opacity-40" : busy ? "opacity-60" : "",
+    ),
+  };
+  const face = (
       <CardFace card={card}
         handle={canMove ? (
           <button type="button" ref={setActivatorNodeRef} {...attributes} aria-label={`Drag “${card.title}”`} disabled={busy}
@@ -114,6 +122,6 @@ export function BoardCard({ card, canMove, busy, dragging }: { card: RequestRow;
             <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-4" />
           </button>
         ) : undefined} />
-    </li>
   );
+  return glass ? <LiquidGlassCard as="li" {...GLASS_LOOK} {...root}>{face}</LiquidGlassCard> : <li {...root}>{face}</li>;
 }

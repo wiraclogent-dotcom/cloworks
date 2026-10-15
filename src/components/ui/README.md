@@ -72,7 +72,8 @@ Run `npm run typecheck` and the tests that cover the screens you touched.
 | Non-text only (decorative icons) | `text-foreground-muted` (3:1, never for text) |
 | Button border | `border-border-strong` |
 | Primary / destructive hover | `hover:bg-primary-hover` / `hover:bg-destructive-hover` |
-| Depth | `shadow-card` (resting), `shadow-raised` (dragging, dialogs, menus, drawer) |
+| Depth | `shadow-card` (resting), `shadow-raised` (dialogs, menus, drawer) |
+| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, chosen per person in the board's Background picker, src/lib/boardBackground.ts) every card and its drag copy is a `LiquidGlassCard`; the wrapper is `board-picture` (`--board-image` under `--board-veil`) plus `board-ink-light` or `board-ink-dark`, which re-point the text tokens; columns turn `bg-glass-column`. Glass needs content behind it |
 | Status colours | `data-tone="<tone>"` + `bg-tone-tint text-tone-text border-tone-accent` |
 | Brand | `brand-*` (landing, auth and emails only) |
 
@@ -130,6 +131,7 @@ added yet (add it with the CLI the first time you need it, then use it).
 | Loading placeholder / spinner | `Skeleton` (size and shape from `className`: `rounded-full`, `rounded-xl`; hidden from assistive tech), `Spinner` (announced as "Loading"; `aria-hidden="true"` when a label already says it). A spinner inside a button stays the button's own `loading` icon | `ui/Skeleton` (`rounded` prop), `LoaderCircle animate-spin` | Migrated |
 | Person | `Avatar`, `AvatarImage`, `AvatarFallback` (Radix: photo once loaded, initials until then). Kit `ui/Avatar` (`Avatar`, `UnassignedAvatar`, `AvatarStack`) composes them with the name palette, workspace photos and `decorative` | `<img>` + initials spans | Migrated |
 | On/off, choice | `Switch`, `Checkbox`, `RadioGroup` + `RadioGroupItem` (Radix: a `role` button plus, inside a `<form>`, a hidden input that posts `name=value`; `Switch`/`Checkbox` post `on` or their `value` only while on). Kit `ui/Switch` (row label + description, `onCheckedChange`) and `ui/RadioCards` (card radios, `onChange(value)`) compose them | bare `<input type="checkbox">`, native radios, hand-built switch track | Migrated |
+| Range | `Slider` (Radix; `value`/`onValueChange`, save on `onValueCommit`; `trackClassName` for a legend track, `showRange={false}` for a two-way scale, `thumbProps` for `aria-label`/`aria-valuetext`). The board background veil uses it | – | In use |
 | Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
 | Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open; `keepMounted` renders it once and hides it while closed, like `<details>`: use it for panels with forms, so typed input survives collapsing). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
 | Table | `Table` (container = the one scroll box: max height via `containerClassName`, never another `overflow-*` wrapper or the sticky header stops sticking; card look: wrap in `<Card className="overflow-hidden p-0">`; width via `className="min-w-[…]"`), `TableHeader`, `TableBody`, `TableRow` (hairline + hover, no zebra), `TableHead` (`scope="col"`; sticky, muted 12px), `TableRowHeader` (`<th scope="row">`), `TableCell`; `numeric` on `TableHead`/`TableCell` right-aligns tabular figures; compact density `className="py-1.5"` on the cells; `TableCaption className="sr-only"`. Server-safe | `ui/table.ts` `tableClass()` | Migrated |
@@ -167,6 +169,8 @@ shadcn part inside.
 | `CountUp` | CountUp.tsx | animated number | KPI values. |
 | `LogoMark` | LogoMark.tsx | `size` | Brand mark (decorative). No illustrations: empty states use an icon tile. |
 | `SegmentedControl` | SegmentedControl.tsx | `label`, `value`, `items: {value,label,icon?,href?,onSelect?}[]` | Board/Table and admin tabs (links: `<nav>` + `aria-current`, no JS); local switches (buttons: shadcn `ToggleGroup`). `SEGMENT_TRAY` / `segmentClass` style link segments elsewhere (FilterBar quick filters). |
+| `LiquidGlassCard` | LiquidGlassCard.tsx | `as`, `blurIntensity`, `shadowIntensity`, `glowIntensity`, `borderRadius`, `className` (the tint, e.g. `bg-white/8`) | 21st.dev liquid-weather-glass card: bend / face / edge layers under the content. Board cards on a picture background. |
+| `LiquidGlassFilter` | LiquidGlassFilter.tsx | – | The SVG lenses `#liquid-glass` (the `liquid-glass` utility) and `#glass-blur` (`LiquidGlassCard`); rendered once in the root layout, never elsewhere. |
 | `cn`, `focusRing` | cn.ts | – | Class merging (`tailwind-merge`: the LAST class wins on a conflict). |
 | `darkMode` helpers | darkMode.ts | – | Client-only theme helpers. |
 

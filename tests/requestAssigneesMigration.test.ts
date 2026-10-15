@@ -14,8 +14,10 @@ describe("migrations 20261014120000_request_assignees + 20261014130000_drop_requ
     db = await createTestDb({ upTo: "20261013180000_kpi_roster" });
     const r = db.raw;
     const ws = CLOGENT_WORKSPACE_ID;
-    const requester = await r.user.create({ data: { name: "Req", fullName: "Req", email: "req@clogent.co.id", workspaceId: ws } });
-    const assignee = await r.user.create({ data: { name: "Dim", fullName: "Dim", email: "dim@clogent.co.id", workspaceId: ws } });
+    // Users by SQL: the current client writes User columns that later migrations add (e.g. boardBackground).
+    const requester = { id: "u-req" };
+    const assignee = { id: "u-dim" };
+    await r.$executeRaw`INSERT INTO "User" ("id", "name", "fullName", "email", "workspaceId") VALUES (${requester.id}, 'Req', 'Req', 'req@clogent.co.id', ${ws}), (${assignee.id}, 'Dim', 'Dim', 'dim@clogent.co.id', ${ws})`;
     const brand = await r.brand.create({ data: { name: "B", workspaceId: ws } });
     const division = await r.division.create({ data: { name: "D", workspaceId: ws } });
     const type = await r.requestType.create({ data: { name: "T", workspaceId: ws } });

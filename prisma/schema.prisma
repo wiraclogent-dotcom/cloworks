@@ -112,6 +112,13 @@ model User {
   avatar              Bytes?
   avatarType          String?
   avatarUpdatedAt     DateTime?
+  /// Requests board background: a preset id from src/lib/boardBackground.ts or "custom" (the uploaded picture below).
+  boardBackground        String  @default("gradient")
+  /// The veil over that picture, -100 (white wash, dark text) .. 100 (navy wash, white text); null = the preset's default.
+  boardVeil              Int?
+  /// The person's own uploaded board picture (a Cloudinary image in the workspace's board folder).
+  boardBackgroundMediaId String?
+  boardBackgroundMedia   Media?  @relation("UserBoardBackground", fields: [boardBackgroundMediaId], references: [id], onDelete: SetNull)
 
   requested                Request[]          @relation("RequestRequester")
   assignments              RequestAssignee[]  @relation("RequestAssigneeUser")
@@ -674,6 +681,7 @@ model Media {
   uploadedBy User               @relation(fields: [uploadedById], references: [id])
   postLinks  ContentPostMedia[]
   channels   SocialChannel[]
+  boardBackgroundOf User[] @relation("UserBoardBackground")
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])

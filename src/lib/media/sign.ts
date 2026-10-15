@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import type { CloudinaryConfig } from "./config";
 import { ALLOWED_FORMATS, VIDEO_INCOMING_TRANSFORMATION } from "./config";
 
-export type MediaPurpose = "content" | "avatar";
+export type MediaPurpose = "content" | "avatar" | "board";
 
 export type SignedUpload = {
   cloudName: string; apiKey: string; timestamp: number; signature: string; folder: string; publicId: string;
