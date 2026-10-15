@@ -20,7 +20,7 @@ export async function registerMediaWith(
 ): Promise<Media> {
   // Exactly the shape signUpload issues: no "..", no extra segments, so the id cannot resolve into another workspace.
   const escaped = user.workspaceId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  if (!new RegExp(`^clowork/${escaped}/(content|avatar)/[A-Za-z0-9_-]+$`).test(input.publicId)) throw new MediaError("INVALID", "That file does not belong to this workspace.");
+  if (!new RegExp(`^clowork/${escaped}/(content|avatar|board)/[A-Za-z0-9_-]+$`).test(input.publicId)) throw new MediaError("INVALID", "That file does not belong to this workspace.");
   const existing = await db.media.findFirst({ where: { publicId: input.publicId } });
   if (existing) return existing; // double submit
   const res = await client.getResource(input.publicId, input.type);

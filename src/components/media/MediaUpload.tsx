@@ -4,6 +4,7 @@ import { useEffect, useId, useState, type ChangeEvent } from "react";
 import { Plus, RotateCw } from "lucide-react";
 import { registerUpload, requestUploadSignature } from "@/app/(app)/content/actions";
 import { IMAGE_FORMATS, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES, VIDEO_FORMATS } from "@/lib/media/config";
+import { postToCloudinary } from "@/lib/media/browserUpload";
 import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "@/components/ui/cn";
 
@@ -32,24 +33,6 @@ function checkFile(f: File, accept: Accept): { kind: Kind } | { error: string } 
   if (kind === "image" && f.size > MAX_IMAGE_BYTES) return { error: "Images must be 10 MB or smaller" };
   if (kind === "video" && f.size > MAX_VIDEO_BYTES) return { error: "Videos must be 100 MB or smaller" };
   return { kind };
-}
-
-/** POSTs the file with the signed params; resolves once Cloudinary has stored it. */
-function post(uploadUrl: string, params: Record<string, string>, file: File, onProgress: (pct: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const body = new FormData();
-    for (const [k, v] of Object.entries(params)) body.append(k, v);
-    body.append("file", file);
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", uploadUrl);
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error("upload failed"));
-    };
-    xhr.onerror = () => reject(new Error("upload failed"));
-    xhr.send(body);
-  });
 }
 
 /**
@@ -83,7 +66,7 @@ export function MediaUpload({ purpose, accept, onUploaded, onBusyChange, disable
         setError(signed.code === "NOT_CONFIGURED" ? NOT_CONFIGURED : signed.message);
         return;
       }
-      await post(signed.upload.uploadUrl, signed.upload.params, file, setProgress);
+      await postToCloudinary(signed.upload.uploadUrl, signed.upload.params, file, setProgress);
       const type = kind === "video" ? "VIDEO" : "IMAGE";
       const reg = await registerUpload(signed.upload.publicId, type);
       if (!reg.ok) {

@@ -15,6 +15,8 @@ import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { ArrowDownToLine, Ban, ChevronDown, Inbox, Table2, X } from "lucide-react";
 import { BoardCard, CARD_GLASS, CARD_OVERLAY, CardFace, GLASS_LOOK } from "./BoardCard";
 import { LiquidGlassCard } from "./ui/LiquidGlassCard";
+import { useBoardBackground } from "./board/BoardBackgroundProvider";
+import { PLAIN_BOARD, boardInk, veilColor, type BoardBackground } from "@/lib/boardBackground";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
 import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
@@ -39,9 +41,6 @@ const columnKeyboardCoordinates: KeyboardCoordinateGetter = (event, { context: {
 /** A column as the server hands it over: total, the loaded rows, and no-JS links built from the current filters. */
 export type BoardColumnView = BoardColumn & { moreHref: string | null; tableHref: string };
 type Totals = Partial<Record<RequestStatus, number>>;
-/** What the board sits on. "plain" is the page canvas with muted columns; a picture background turns the cards to glass. */
-export type BoardBackground = "plain" | "gradient";
-const BACKGROUND_CLASS: Record<Exclude<BoardBackground, "plain">, string> = { gradient: "board-gradient" };
 
 /** Quiet text-link look for the column footer (Show more / Open all in table). */
 const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-card hover:underline underline-offset-2", focusRing);
@@ -92,8 +91,14 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, glass, ch
   );
 }
 
-export function Board({ columns, canMove, background = "plain" }: { columns: BoardColumnView[]; canMove: boolean; background?: BoardBackground }) {
-  const glass = background !== "plain";
+/**
+ * `background` is what the board sits on (src/lib/boardBackground): "plain" keeps the page canvas and muted columns; a
+ * picture turns the cards to glass under the person's veil. Inside a BoardBackgroundProvider the picker's live state
+ * wins, so changes show while they are being made.
+ */
+export function Board({ columns, canMove, background = PLAIN_BOARD }: { columns: BoardColumnView[]; canMove: boolean; background?: BoardBackground }) {
+  const bg = useBoardBackground()?.background ?? background;
+  const glass = bg.id !== "plain" && !!bg.src;
   const router = useRouter();
   const initialCards = useMemo(() => columns.flatMap((c) => c.rows), [columns]);
   const initialTotals = useMemo(() => Object.fromEntries(columns.map((c) => [c.status, c.total])) as Totals, [columns]);
@@ -194,8 +199,10 @@ export function Board({ columns, canMove, background = "plain" }: { columns: Boa
       {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        {/* The background wraps the drag overlay too, so the lifted card keeps the board's light-on-dark tokens. */}
-        <div data-board-background={background} className={cn(glass && cn("rounded-3xl p-3", BACKGROUND_CLASS[background as Exclude<BoardBackground, "plain">]))}>
+        {/* The background wraps the drag overlay too, so the lifted card keeps the board's ink tokens. */}
+        <div data-board-background={bg.id} data-board-ink={glass ? boardInk(bg.veil) : undefined}
+          className={cn(glass && cn("rounded-3xl p-3 board-picture", boardInk(bg.veil) === "dark" ? "board-ink-dark" : "board-ink-light"))}
+          style={glass ? ({ "--board-image": `url(${JSON.stringify(bg.src)})`, "--board-veil": veilColor(bg.veil) } as React.CSSProperties) : undefined}>
         <div className="relative grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);

@@ -25,6 +25,11 @@ import { todayOverview } from "@/lib/todayOverview";
 import { listCreativeTeam } from "@/lib/team";
 import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./params";
 import { Button } from "@/components/shadcn/button";
+import { BoardBackgroundProvider } from "@/components/board/BoardBackgroundProvider";
+import { BoardBackgroundPicker } from "@/components/board/BoardBackgroundPicker";
+import { resolveBoardBackground } from "@/lib/boardBackground";
+import { cloudinaryConfig } from "@/lib/media/config";
+import { mediaUrl } from "@/lib/media/url";
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
 async function TodayLoader() {
@@ -46,7 +51,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   const today = jakartaDate(new Date());
   const grid = p.view === "calendar" ? buildMonthGrid(p.month, today) : null;
   const tlWindow = p.view === "timeline" ? buildWindow(p.week, today) : null;
-  const [board, tablePage, calendarRows, timelineRows, brands, divisions, assignees] = await Promise.all([
+  const [board, tablePage, calendarRows, timelineRows, brands, divisions, assignees, me] = await Promise.all([
     p.view === "board" ? listBoardColumns(db, filter, { byStatus: p.more }) : null,
     p.view === "table" ? listRequestsPage(db, filter, { sort: p.sort, dir: p.dir, page: p.page }) : null,
     grid ? listCalendarRequests(db, filter, { from: grid.from, to: grid.to, today }) : null,
@@ -54,11 +59,18 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     listCreativeTeam(db),
+    p.view === "board"
+      ? db.user.findUnique({ where: { id: user.id }, select: { boardBackground: true, boardVeil: true, boardBackgroundMedia: { select: { publicId: true, type: true } } } })
+      : null,
   ]);
+  // The person's own board background (presets, or their uploaded picture via Cloudinary).
+  const cloudName = cloudinaryConfig()?.cloudName;
+  const customSrc = me?.boardBackgroundMedia && cloudName ? mediaUrl(me.boardBackgroundMedia, "full", cloudName) : null;
+  const background = resolveBoardBackground({ id: me?.boardBackground ?? null, veil: me?.boardVeil ?? null, customSrc });
   const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false, work: false, scope: undefined }, {});
   const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine || p.work || p.scope);
   return (
-    <>
+    <BoardBackgroundProvider initial={background}>
       <PageHeader title="Requests"
         breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: VIEW_LABEL[p.view] }]}
         topBarActions={<>
@@ -76,7 +88,8 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           { value: "calendar", label: "Calendar", icon: <CalendarDays aria-hidden="true" />, href: hrefWith(p, { view: "calendar" }) },
           { value: "timeline", label: "Timeline", icon: <ChartNoAxesGantt aria-hidden="true" />, href: hrefWith(p, { view: "timeline" }) },
         ]} />
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {p.view === "board" ? <BoardBackgroundPicker customSrc={customSrc} /> : null}
           <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
             mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
             workHref={user.jobRole === "DESIGNER" ? hrefWith(p, { work: p.work ? undefined : "1", assignee: undefined }) : undefined}
@@ -90,8 +103,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
             description="Try another search or clear the filters."
             action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
-          // Trial: every board shows the gradient wallpaper with glass cards until the per-user background setting lands.
-          <Board canMove={can(user.appRole, "request.transition")} background="gradient" columns={board.map((c): BoardColumnView => {
+          <Board canMove={can(user.appRole, "request.transition")} background={background} columns={board.map((c): BoardColumnView => {
             const limit = p.more[c.status] ?? BOARD_PAGE_SIZE;
             return {
               ...c,
@@ -120,7 +132,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           prevHref={hrefWith(p, { week: shiftWeek(p.week, -1) })} nextHref={hrefWith(p, { week: shiftWeek(p.week, 1) })}
           todayHref={hrefWith(p, { week: undefined })} />
       ) : null}
-    </>
+    </BoardBackgroundProvider>
   );
 }
 

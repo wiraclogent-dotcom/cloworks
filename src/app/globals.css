@@ -667,20 +667,16 @@
 }
 
 /*
- * Board background "gradient" (the `background` prop of <Board>; "plain" draws nothing and keeps the muted columns):
- * the blue-to-peach wallpaper in both themes, with the cards in white ink as in the liquid-weather-glass demo.
- * The tokens the board, its cards and the drag overlay use are re-pointed here; each one is set itself, because a
- * token derived at :root (e.g. --card-foreground from --foreground) would not follow a change made here.
+ * Board background (the `background` prop of <Board>, chosen per person; src/lib/boardBackground.ts). "plain" draws
+ * nothing and keeps the muted columns. A picture is painted under a veil: the wrapper sets --board-image and
+ * --board-veil inline, and one of the ink utilities below re-points the tokens the board, its glass cards and the drag
+ * overlay use (each token is set itself: one derived at :root, e.g. --card-foreground, would not follow).
  */
-@utility board-gradient {
-  /* Deep-navy scrim over the picture: heaviest over its light cyan left, white glow right and peach bottom, lightest over
-     the deep blue top right. Measured: grey card text stays ≥ 4.6:1 in every column at board sizes 900–1600px wide. */
-  background:
-    radial-gradient(40% 50% at 100% 55%, rgb(6 16 52 / 0.45), rgb(6 16 52 / 0)),
-    linear-gradient(to right, rgb(6 16 52 / 0.5) 0%, rgb(6 16 52 / 0.38) 40%, rgb(6 16 52 / 0.1) 65%, rgb(6 16 52 / 0) 85%),
-    linear-gradient(to bottom, rgb(6 16 52 / 0.24) 0%, rgb(6 16 52 / 0.52) 50%, rgb(6 16 52 / 0.62) 75%, rgb(6 16 52 / 0.72) 100%),
-    url("/board/gradient.jpg") center / cover no-repeat,
-    #7fb2ff;
+@utility board-picture {
+  background: linear-gradient(var(--board-veil), var(--board-veil)), var(--board-image) center / cover no-repeat, #6b7a99;
+}
+/* Over a dark veil (or none): white text on the glass. */
+@utility board-ink-light {
   color: var(--foreground);
   --foreground: #ffffff;
   --card-foreground: #ffffff;
@@ -695,6 +691,23 @@
   --input: rgb(255 255 255 / 0.6);
   --link: #ffffff;
   --ring: #ffffff;
+}
+/* Over a light veil: dark text, in both themes (the picture stays light). */
+@utility board-ink-dark {
+  color: var(--foreground);
+  --foreground: #0a0f1f;
+  --card-foreground: #0a0f1f;
+  --muted-foreground: #283048;
+  --foreground-muted: #4a5470;
+  --heading: #0a0f1f;
+  --card: rgb(255 255 255 / 0.6);
+  --muted: rgb(255 255 255 / 0.35);
+  --accent: rgb(255 255 255 / 0.55);
+  --border: rgb(10 15 31 / 0.14);
+  --border-strong: rgb(10 15 31 / 0.28);
+  --input: #5b6478;
+  --link: #0b3fd1;
+  --ring: #0a0f1f;
 }
 
 .animate-float { animation: float 7s ease-in-out var(--float-delay, 0s) infinite; }

@@ -52,7 +52,9 @@ describe("Liquid glass", () => {
     expect(card(true)).toContain("bg-white/8");
     expect(card(true)).not.toContain("bg-card");
     expect(card(false)).toContain("bg-card");
-    expect(css).toMatch(/@utility board-gradient {[^}]*\/board\/gradient\.jpg/);
+    expect(css).toMatch(/@utility board-picture {[^}]*var\(--board-veil\)[^}]*var\(--board-image\)/);
+    expect(css).toMatch(/@utility board-ink-light {/);
+    expect(css).toMatch(/@utility board-ink-dark {/);
     expect(existsSync(path.resolve(__dirname, "../public/board/gradient.jpg"))).toBe(true);
   });
 });
