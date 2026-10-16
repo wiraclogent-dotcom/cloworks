@@ -1,8 +1,9 @@
 import { Suspense } from "react";
-import { CalendarDays, ChartColumn, FolderKanban, LayoutGrid, LibraryBig, ListChecks, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, ChartColumn, ClipboardList, FolderKanban, LayoutGrid, LibraryBig, ListChecks, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
-import { requireUserOrRedirect } from "@/lib/session";
+import { dbFor, requireUserOrRedirect } from "@/lib/session";
+import { isPlatformAdminUser } from "@/lib/platformAdmin";
 import { can } from "@/lib/permissions";
 import { ThemeSync } from "./ui/darkMode";
 import { AppFrame } from "./shell/AppFrame";
@@ -39,14 +40,20 @@ export async function BriefCalendarItem() {
   return can(appRole, "briefs.view") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
 }
 
-/** Admin links (Members, Lists) for admins only; the admin pages re-check on the server. */
+/**
+ * Admin links: Members and Lists for workspace admins, Waitlist for platform admins (PLATFORM_ADMIN_EMAILS), so a
+ * platform admin who is not a workspace admin gets the group with Waitlist only. The pages re-check on the server.
+ */
 export async function AdminNavGroup() {
-  const { appRole } = await requireUserOrRedirect();
-  if (!can(appRole, "admin.manage")) return null;
+  const user = await requireUserOrRedirect();
+  const admin = can(user.appRole, "admin.manage");
+  const platform = await isPlatformAdminUser(dbFor(user), user.id);
+  if (!admin && !platform) return null;
   return (
     <NavGroup id="nav-admin" label="Admin" divided>
-      <NavItem href="/admin/users" label="Members" icon={<Users aria-hidden="true" />} />
-      <NavItem href="/admin/lists" label="Lists" icon={<ListChecks aria-hidden="true" />} />
+      {admin ? <NavItem href="/admin/users" label="Members" icon={<Users aria-hidden="true" />} /> : null}
+      {admin ? <NavItem href="/admin/lists" label="Lists" icon={<ListChecks aria-hidden="true" />} /> : null}
+      {platform ? <NavItem href="/admin/waitlist" label="Waitlist" icon={<ClipboardList aria-hidden="true" />} /> : null}
     </NavGroup>
   );
 }
