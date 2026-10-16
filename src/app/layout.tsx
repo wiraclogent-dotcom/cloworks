@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { LucideProvider } from "lucide-react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { SITE_URL } from "@/lib/seo";
 import { LiquidGlassFilter } from "@/components/ui/LiquidGlassFilter";
 import "./globals.css";
 
@@ -9,9 +10,13 @@ import "./globals.css";
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Clowork",
   // Pages set a short `title`; the template appends the app name ("Requests · Clowork").
   title: { default: "Clowork", template: "%s · Clowork" },
   description: "Request, track and measure creative work.",
+  openGraph: { siteName: "Clowork", type: "website", locale: "en_US" },
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
