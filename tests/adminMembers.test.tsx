@@ -11,7 +11,7 @@ const act = vi.hoisted(() => ({
 }));
 vi.mock("@/app/(app)/admin/users/actions", () => act);
 const requireUser = vi.fn();
-const prismaMock = vi.hoisted(() => ({ user: { findMany: vi.fn() }, invite: { findMany: vi.fn() } }));
+const prismaMock = vi.hoisted(() => ({ user: { findMany: vi.fn(), findUnique: vi.fn(async (): Promise<{ email: string | null } | null> => null) }, invite: { findMany: vi.fn() } }));
 vi.mock("@/lib/session", () => ({
   requireUser: () => requireUser(),
   requireScope: async () => ({ user: await requireUser(), db: prismaMock }),

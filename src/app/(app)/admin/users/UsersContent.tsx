@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { cn, focusRing } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
+import { isPlatformAdminUser } from "@/lib/platformAdmin";
 import { listLinkablePeople } from "@/lib/linkPerson";
 import { loadJoinAdmin, requestBaseUrl } from "@/lib/joinDeps";
 import { InvitedList, type InviteRow } from "./InvitedList";
@@ -51,7 +52,7 @@ export async function UsersContent({ tab, merged }: { tab?: string; merged?: str
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" waitlist={await isPlatformAdminUser(db, viewer.id)} />}
         description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
       {merged && <Alert variant="success" className="mb-4"><AlertDescription>Merged into {merged}.</AlertDescription></Alert>}
       <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
