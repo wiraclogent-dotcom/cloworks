@@ -16,7 +16,7 @@ import { kpiHref } from "@/lib/kpi/href";
 import { keepParams, parseMonthParam, parseUserParam, parseViewParam, resolveSubject } from "./params";
 import { Button } from "@/components/shadcn/button";
 
-/** Tab title: "My KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "My KPI · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "My KPI" };
 
 /**

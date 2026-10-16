@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { stripInterceptionMarkers } from "@/lib/interceptedParam";
 import { PanelForId } from "./PanelForId";
 
-/** Same tab title as the full page ("Request · Cloworks"); without it the panel left just "Cloworks". */
+/** Same tab title as the full page ("Request · Clowork"); without it the panel left just "Clowork". */
 export const metadata: Metadata = { title: "Request" };
 
 export default function RequestPanel({ params: raw }: { params: Promise<{ id: string }> }) {

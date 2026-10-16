@@ -13,6 +13,13 @@ const files = srcFiles(src).filter((f) => !f.startsWith(shadcn));
  */
 const ALLOWED_ROLE_DIALOG = new Set(["components/chat/ChatDockView.tsx"]);
 
+/**
+ * The landing FAQ is static, server-rendered text where native `<details>` is the right disclosure: it works without
+ * JavaScript and keeps every answer in the HTML. That format is the landing spec's choice, not an SEO requirement. No
+ * state, so no Collapsible.
+ */
+const ALLOWED_DETAILS = new Set(["components/landing/Faq.tsx"]);
+
 describe("Overlay usage", () => {
   it("no hand-rolled dialogs", () => {
     // Dialogs, confirms and side panels are shadcn Dialog / AlertDialog / Sheet (focus trap, Esc, scroll lock,
@@ -41,7 +48,7 @@ describe("Overlay usage", () => {
       const text = readFileSync(f, "utf8");
       const hits: string[] = [];
       if (/role=\{?\s*["'`]menu(item)?["'`]/.test(text)) hits.push(`${rel}: role="menu"/"menuitem"`);
-      if (/<details[\s>/]/.test(text)) hits.push(`${rel}: <details>`);
+      if (/<details[\s>/]/.test(text) && !ALLOWED_DETAILS.has(rel)) hits.push(`${rel}: <details>`);
       return hits;
     });
     expect(found).toEqual([]);

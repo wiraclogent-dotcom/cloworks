@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { SignUpView, type SignUpSearch } from "./SignUpView";
 
-/** Tab title: "Create your account · Cloworks". */
+/** Tab title: "Create your account · Clowork". */
 export const metadata: Metadata = { title: "Create your account" };
 
 export default function SignUpPage({ searchParams }: { searchParams: SignUpSearch }) {

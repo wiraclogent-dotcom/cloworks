@@ -1,6 +1,6 @@
 import { cn } from "./cn";
 
-/** Cloworks mark (V3 flat blue): a blue tile with a white four-point star. Decorative (the product name is always next to it). */
+/** Clowork mark (V3 flat blue): a blue tile with a white four-point star. Decorative (the product name is always next to it). */
 export function LogoMark({ size = 28, className }: { size?: number; className?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true" focusable="false" className={cn("shrink-0", className)}>

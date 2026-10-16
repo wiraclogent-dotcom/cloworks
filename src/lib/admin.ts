@@ -3,6 +3,7 @@ import { can } from "./permissions";
 import { fieldSchemaSchema } from "./fieldSchema";
 import { normalizeName } from "./import/aliases";
 import { checkNewPassword, hashPassword, verifyPassword } from "./password";
+import { isPlatformAdmin } from "./platformAdmin";
 
 export type AdminErrorCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "LAST_ADMIN";
 
@@ -214,6 +215,36 @@ export async function createUser(db: Db, actor: Actor, input: NewUserInput) {
   });
 }
 
+/*
+ * Platform admins (PLATFORM_ADMIN_EMAILS) are recognised by User.email alone and can see the Clowork-wide waitlist.
+ * A workspace admin must therefore not be able to give a reserved address to a row whose password they know, nor
+ * take over the sign-in of the row that holds one. Unset PLATFORM_ADMIN_EMAILS reserves nothing.
+ */
+export const RESERVED_EMAIL_MESSAGE = "That email is reserved.";
+export const SIGN_IN_LOCKED_MESSAGE = "You can't change this person's sign-in.";
+
+/** FORBIDDEN unless `email` is an ordinary address or the actor is a platform admin themselves (read from the db). */
+export async function assertMayBindEmail(db: Pick<Tx, "user">, actor: Actor, email: string) {
+  if (!isPlatformAdmin(email)) return;
+  const me = await db.user.findUnique({ where: { id: actor.id }, select: { email: true } });
+  if (!isPlatformAdmin(me?.email)) throw new AdminError("FORBIDDEN", RESERVED_EMAIL_MESSAGE);
+}
+
+/**
+ * Add person's check, run before the person is created: the actor may bind `email`, and a reserved address never gets
+ * a password typed by someone else (its owner sets one with Forgot password).
+ */
+export async function assertMayAddLogin(db: Pick<Tx, "user">, actor: Actor, email: string, withPassword: boolean) {
+  await assertMayBindEmail(db, actor, email);
+  if (withPassword && isPlatformAdmin(email))
+    throw new AdminError("FORBIDDEN", "That email is reserved, so leave the password empty. They set their own with Forgot password.");
+}
+
+/** FORBIDDEN when the target row signs in with a platform-admin address and is not the actor's own row. */
+function assertMayManageSignIn(actor: Actor, target: { id: string; email: string | null }) {
+  if (isPlatformAdmin(target.email) && target.id !== actor.id) throw new AdminError("FORBIDDEN", SIGN_IN_LOCKED_MESSAGE);
+}
+
 /** Binds (or clears) the login email in one transaction; refuses to leave no admin who can sign in. */
 export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, email: string | null) {
   assertAdmin(actor);
@@ -223,6 +254,8 @@ export async function setUserLoginEmail(db: Db, actor: Actor, userId: string, em
       await lockRoster(tx);
       const user = await tx.user.findUnique({ where: { id: userId } });
       if (!user) throw new AdminError("NOT_FOUND", "User not found");
+      assertMayManageSignIn(actor, user);
+      if (next) await assertMayBindEmail(tx, actor, next);
       const capableBefore = user.appRole === "ADMIN" && user.active ? await countSignInCapableAdmins(tx) : 0;
       if (next) {
         const clash = await tx.user.findFirst({ where: { id: { not: userId }, email: { equals: next, mode: "insensitive" } }, select: { name: true } });
@@ -243,8 +276,9 @@ export async function setUserPassword(db: Db, actor: Actor, userId: string, pass
   assertAdmin(actor);
   const problem = checkNewPassword(password);
   if (problem) throw new AdminError("VALIDATION", problem);
-  const user = await db.user.findUnique({ where: { id: userId }, select: { email: true } });
+  const user = await db.user.findUnique({ where: { id: userId }, select: { id: true, email: true } });
   if (!user) throw new AdminError("NOT_FOUND", "User not found");
+  assertMayManageSignIn(actor, user);
   if (!user.email) throw new AdminError("VALIDATION", "Set their login email first.");
   await db.user.update({
     where: { id: userId },

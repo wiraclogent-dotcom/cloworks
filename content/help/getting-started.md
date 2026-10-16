@@ -4,7 +4,7 @@ section: Getting started
 order: 1
 ---
 
-Cloworks tracks creative requests from the moment someone asks for a piece of work until it is done.
+Clowork tracks creative requests from the moment someone asks for a piece of work until it is done.
 
 ## What you will find
 

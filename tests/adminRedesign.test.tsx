@@ -12,7 +12,7 @@ vi.mock("@/lib/joinDeps", () => ({
 }));
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
-  user: { findMany: vi.fn() },
+  user: { findMany: vi.fn(), findUnique: vi.fn(async (): Promise<{ email: string | null } | null> => null) },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
 // Pages read through the workspace-scoped client that requireScope hands them.

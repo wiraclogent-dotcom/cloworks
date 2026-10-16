@@ -64,6 +64,7 @@ describe("routeDecision: who may open which path", () => {
     "/lobby": { anonymous: false, applicant: true, member: "/requests" },
     "/lobby/enter": { anonymous: false, applicant: true, member: "/requests" },
     "/verify": { anonymous: true, applicant: true, member: "/requests" },
+    "/opengraph-image": { anonymous: true, applicant: true, member: true },
     "/requests": { anonymous: false, applicant: "/lobby", member: true },
     "/admin/users": { anonymous: false, applicant: "/lobby", member: true },
   };

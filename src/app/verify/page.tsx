@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { VerifyView, type VerifySearch } from "./VerifyView";
 
-/** Tab title: "Check your email · Cloworks". */
+/** Tab title: "Check your email · Clowork". */
 export const metadata: Metadata = { title: "Check your email" };
 
 /**

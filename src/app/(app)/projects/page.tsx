@@ -5,7 +5,7 @@ import { can } from "@/lib/permissions";
 import { ProjectsView } from "@/components/ProjectsView";
 import { ProjectsSkeleton } from "@/components/PageSkeletons";
 
-/** Tab title: "Projects · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Projects · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Projects" };
 
 async function ProjectsContent() {

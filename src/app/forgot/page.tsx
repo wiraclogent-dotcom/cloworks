@@ -3,7 +3,7 @@ import Link from "next/link";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { ForgotForm } from "./ForgotForm";
 
-/** Tab title: "Reset your password · Cloworks". */
+/** Tab title: "Reset your password · Clowork". */
 export const metadata: Metadata = { title: "Reset your password" };
 
 export default function ForgotPage() {

@@ -661,6 +661,33 @@ model PasswordReset {
   @@index([email])
 }
 
+enum WaitlistTeamSize {
+  SIZE_1_5
+  SIZE_6_15
+  SIZE_16_50
+  SIZE_50_PLUS
+}
+
+enum WaitlistStatus {
+  NEW
+  CONTACTED
+}
+
+/// A team outside any workspace asking for access from the landing page. Only platform admins see these.
+model WaitlistEntry {
+  id          String           @id @default(cuid())
+  /// Lowercased, trimmed work email; one entry per address.
+  email       String           @unique
+  /// Team or company name as typed (trimmed, at most 120 characters).
+  team        String
+  teamSize    WaitlistTeamSize
+  status      WaitlistStatus   @default(NEW)
+  contactedAt DateTime?
+  createdAt   DateTime         @default(now())
+
+  @@index([createdAt])
+}
+
 enum MediaType {
   IMAGE
   VIDEO

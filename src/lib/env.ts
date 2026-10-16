@@ -1,3 +1,5 @@
+import { platformAdminEmails } from "@/lib/platformAdmin";
+
 type Env = Record<string, string | undefined>;
 export type EnvReport = { errors: string[]; warnings: string[] };
 
@@ -32,6 +34,7 @@ export function validateEnv(env: Env = process.env): EnvReport {
   if (!set(env.RESEND_API_KEY) || !set(env.EMAIL_FROM)) warnings.push("RESEND_API_KEY and/or EMAIL_FROM is not set: no email notifications will be sent.");
   if (!set(env.APP_BASE_URL)) warnings.push("APP_BASE_URL is not set: links in notification emails will be missing.");
   if (!set(env.CLOUDINARY_CLOUD_NAME) || !set(env.CLOUDINARY_API_KEY) || !set(env.CLOUDINARY_API_SECRET)) warnings.push("CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY and/or CLOUDINARY_API_SECRET is not set: image and video uploads are disabled.");
+  if (platformAdminEmails(env).length === 0) warnings.push("PLATFORM_ADMIN_EMAILS is not set: nobody can see the waitlist and no waitlist emails are sent.");
   return { errors, warnings };
 }
 

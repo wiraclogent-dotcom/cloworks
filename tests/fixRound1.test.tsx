@@ -106,7 +106,7 @@ describe("D8 tap targets", () => {
 
 describe("D11 per-page titles", () => {
   it("root template + static page titles", () => {
-    expect(rootMeta.title).toEqual({ default: "Cloworks", template: "%s · Cloworks" });
+    expect(rootMeta.title).toEqual({ default: "Clowork", template: "%s · Clowork" });
     expect([requestsMeta, newRequestMeta, detailMeta, kpiMeta, teamMeta, projectsMeta, usersMeta, listsMeta, signinMeta].map((m) => m.title)).toEqual(
       ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Members", "Admin · Lists", "Sign in"]);
   });

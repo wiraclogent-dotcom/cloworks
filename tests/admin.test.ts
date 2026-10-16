@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from "vitest";
 import type { AppRole } from "@prisma/client";
 import {
-  AdminError, updateUser, createUser, setUserLoginEmail,
+  AdminError, updateUser, createUser, setUserLoginEmail, setUserPassword, assertMayAddLogin,
   createBrand, renameBrand, createDivision, renameDivision, upsertRequestType,
 } from "@/lib/admin";
 import { loadActiveUser, requireUserWith } from "@/lib/session-core";
@@ -200,6 +200,88 @@ describe("setUserLoginEmail", () => {
   });
   it("NOT_FOUND", async () => {
     expect(await code(setUserLoginEmail(db.prisma, admin, "nope", "a@gmail.com"))).toBe("NOT_FOUND");
+  });
+});
+
+describe("platform-admin addresses are reserved (PLATFORM_ADMIN_EMAILS)", () => {
+  const BOSS = "boss@clowork.test";
+  const OTHER_BOSS = "other.boss@clowork.test";
+  const PW = "another-password-1";
+  const asActor = (u: { id: string }) => ({ id: u.id, appRole: "ADMIN" as AppRole, workspaceId: "clogent" });
+  const emailOf = async (id: string) => (await db.prisma.user.findUnique({ where: { id } }))?.email;
+  const hashOf = async (id: string) => (await db.prisma.user.findUnique({ where: { id } }))?.passwordHash ?? null;
+  let boss: { id: string };
+  beforeEach(async () => {
+    vi.stubEnv("PLATFORM_ADMIN_EMAILS", ` ${BOSS.toUpperCase()} , ${OTHER_BOSS}`);
+    // The platform admin is a workspace admin too; clear any earlier test's row holding the address first.
+    await db.raw.user.updateMany({ where: { email: { in: [BOSS, OTHER_BOSS] } }, data: { email: null } });
+    boss = await mk({ appRole: "ADMIN", email: BOSS });
+  });
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("a workspace admin cannot bind a reserved address (any case) to someone, nor to themselves", async () => {
+    const u = await mk({ email: null });
+    for (const e of [OTHER_BOSS, " Other.Boss@Clowork.TEST "])
+      await expect(setUserLoginEmail(db.prisma, admin, u.id, e)).rejects.toMatchObject({ code: "FORBIDDEN", message: "That email is reserved." });
+    expect(await emailOf(u.id)).toBeNull();
+    const before = await emailOf(admin.id);
+    expect(await code(setUserLoginEmail(db.prisma, admin, admin.id, OTHER_BOSS))).toBe("FORBIDDEN");
+    expect(await emailOf(admin.id)).toBe(before);
+  });
+
+  it("a workspace admin cannot change, clear or set the password of a platform admin's row", async () => {
+    const hash = await hashOf(boss.id);
+    await expect(setUserLoginEmail(db.prisma, admin, boss.id, "mine@gmail.com")).rejects.toMatchObject({ code: "FORBIDDEN", message: "You can't change this person's sign-in." });
+    expect(await code(setUserLoginEmail(db.prisma, admin, boss.id, null))).toBe("FORBIDDEN");
+    expect(await emailOf(boss.id)).toBe(BOSS);
+    await expect(setUserPassword(db.prisma, admin, boss.id, PW)).rejects.toMatchObject({ code: "FORBIDDEN", message: "You can't change this person's sign-in." });
+    expect(await hashOf(boss.id)).toBe(hash);
+  });
+
+  it("another platform admin cannot take over a platform admin's row either, but may bind a reserved address", async () => {
+    const other = await mk({ appRole: "ADMIN", email: null });
+    expect(await code(setUserPassword(db.prisma, asActor(boss), other.id, PW))).toBe("VALIDATION"); // no email yet
+    await setUserLoginEmail(db.prisma, asActor(boss), other.id, OTHER_BOSS);
+    expect(await emailOf(other.id)).toBe(OTHER_BOSS);
+    expect(await code(setUserPassword(db.prisma, asActor(boss), other.id, PW))).toBe("FORBIDDEN");
+    expect(await code(setUserLoginEmail(db.prisma, asActor(boss), other.id, "elsewhere@gmail.com"))).toBe("FORBIDDEN");
+  });
+
+  it("a platform admin can still set their own password and change their own email", async () => {
+    await setUserPassword(db.prisma, asActor(boss), boss.id, PW);
+    expect(await hashOf(boss.id)).toBeTruthy();
+    await setUserLoginEmail(db.prisma, asActor(boss), boss.id, " Boss@Clowork.test ");
+    expect(await emailOf(boss.id)).toBe(BOSS);
+    await setUserLoginEmail(db.prisma, asActor(boss), boss.id, "boss.personal@gmail.com");
+    expect(await emailOf(boss.id)).toBe("boss.personal@gmail.com");
+  });
+
+  it("ordinary addresses and rows are unaffected", async () => {
+    const u = await mk({ email: null });
+    await setUserLoginEmail(db.prisma, admin, u.id, "plain.person@gmail.com");
+    await setUserPassword(db.prisma, admin, u.id, PW);
+    expect(await emailOf(u.id)).toBe("plain.person@gmail.com");
+    expect(await hashOf(u.id)).toBeTruthy();
+    await assertMayAddLogin(db.prisma, admin, "plain.person2@gmail.com", true);
+  });
+
+  it("assertMayAddLogin (Add person): a reserved address needs a platform-admin actor and never takes a typed password", async () => {
+    expect(await code(assertMayAddLogin(db.prisma, admin, OTHER_BOSS, false))).toBe("FORBIDDEN");
+    expect(await code(assertMayAddLogin(db.prisma, asActor(boss), OTHER_BOSS, false))).toBe("OK");
+    expect(await code(assertMayAddLogin(db.prisma, asActor(boss), OTHER_BOSS, true))).toBe("FORBIDDEN");
+  });
+
+  it("with PLATFORM_ADMIN_EMAILS unset nothing is reserved", async () => {
+    vi.stubEnv("PLATFORM_ADMIN_EMAILS", undefined);
+    await setUserPassword(db.prisma, admin, boss.id, PW);
+    await setUserLoginEmail(db.prisma, admin, boss.id, "was.boss@gmail.com");
+    expect(await emailOf(boss.id)).toBe("was.boss@gmail.com");
+    const u = await mk({ email: null });
+    await setUserLoginEmail(db.prisma, admin, u.id, OTHER_BOSS);
+    expect(await emailOf(u.id)).toBe(OTHER_BOSS);
+    expect(await code(assertMayAddLogin(db.prisma, admin, BOSS, true))).toBe("OK");
   });
 });
 

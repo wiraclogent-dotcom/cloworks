@@ -4,14 +4,14 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { HelpContent } from "./HelpContent";
 
-/** Tab title: "Help · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Help · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Help" };
 
 /** The per-user list streams in a Suspense boundary (cacheComponents), like the other app pages. */
 export default function HelpPage() {
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Help center" }]} title="Help" description="Short guides for the parts of Cloworks you can use." />
+      <PageHeader breadcrumb={[{ label: "Help center" }]} title="Help" description="Short guides for the parts of Clowork you can use." />
       <Suspense fallback={<HelpSkeleton />}>
         <HelpContent />
       </Suspense>

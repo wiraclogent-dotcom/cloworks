@@ -11,7 +11,7 @@ import { KpiSectionSkeleton, SummarySkeleton, TeamKpiSkeleton } from "@/componen
 import { PageHeader } from "@/components/ui/PageHeader";
 import { keepParams, parseMonthParam, parseViewParam } from "../params";
 
-/** Tab title: "Team KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Team KPI · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Team KPI" };
 
 /**

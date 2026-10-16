@@ -56,7 +56,7 @@ export function renderEmail(c: EmailContent, opts: { baseUrl?: string } = {}): R
     ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 18px;"><tr><td bgcolor="#1f5eff" style="background:#1f5eff;border-radius:999px;"><a href="${e(button.url)}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">${e(button.label)}</a></td></tr></table>`
     : "";
   const note = c.note ? `<p style="margin:0;font-size:13px;line-height:1.5;color:#5b6478;">${e(c.note)}</p>` : "";
-  const footer = [e(HELP), host ? `Cloworks &middot; ${e(host)}` : ""].filter(Boolean).join("<br>");
+  const footer = [e(HELP), host ? `Clowork &middot; ${e(host)}` : ""].filter(Boolean).join("<br>");
 
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${e(c.heading)}</title></head>
@@ -64,7 +64,7 @@ export function renderEmail(c: EmailContent, opts: { baseUrl?: string } = {}): R
 <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;color:#f4f6fa;">${e(c.preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f4f6fa" style="background:#f4f6fa;"><tr><td align="center" style="padding:24px 12px;font-family:${FONT};">
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;">
-<tr><td bgcolor="#1f5eff" style="background:#1f5eff;padding:18px 24px;border-radius:12px 12px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${logo}<td style="font-size:18px;font-weight:700;color:#ffffff;font-family:${FONT};">Cloworks</td></tr></table></td></tr>
+<tr><td bgcolor="#1f5eff" style="background:#1f5eff;padding:18px 24px;border-radius:12px 12px 0 0;"><table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${logo}<td style="font-size:18px;font-weight:700;color:#ffffff;font-family:${FONT};">Clowork</td></tr></table></td></tr>
 <tr><td bgcolor="#ffffff" style="background:#ffffff;padding:28px 24px;border-radius:0 0 12px 12px;font-family:${FONT};">
 <h1 style="margin:0 0 16px;font-size:20px;line-height:1.3;color:#0a0f1f;">${e(c.heading)}</h1>${paras}${code}${btn}${note}
 </td></tr>
@@ -76,6 +76,6 @@ export function renderEmail(c: EmailContent, opts: { baseUrl?: string } = {}): R
   if (button) parts.push("", `${c.button!.label}: ${button.url}`);
   if (c.note) parts.push("", c.note);
   parts.push("", "--", HELP);
-  if (host) parts.push(`Cloworks · ${host}`);
+  if (host) parts.push(`Clowork · ${host}`);
   return { html, text: parts.join("\n") + "\n" };
 }

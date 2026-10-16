@@ -107,6 +107,7 @@ export function setSidebarCollapsed(collapsed: boolean): void {
 
 /**
  * Inlined, blocking, in <head> of the root layout: runs before first paint so there is no theme or sidebar flash.
- * Must stay dependency-free ES5 and must never throw.
+ * Must stay dependency-free ES5 and must never throw. The landing page ("/") is light only (its <LightOnly> keeps it so
+ * after client-side navigation and hands the person's choice back on the way out).
  */
-export const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=window.localStorage,t=s.getItem("${THEME_KEY}"),r="light";if(t==="dark")r="dark";else if(t==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)r="dark";d.setAttribute("data-theme",r);d.style.colorScheme=r;var b=s.getItem("${SIDEBAR_KEY}");if(b==="collapsed"||b==="expanded")d.setAttribute("data-sidebar",b);}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var d=document.documentElement,s=window.localStorage,t=s.getItem("${THEME_KEY}"),r="light";if(location.pathname==="/")t="light";if(t==="dark")r="dark";else if(t==="system"&&window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)r="dark";d.setAttribute("data-theme",r);d.style.colorScheme=r;var b=s.getItem("${SIDEBAR_KEY}");if(b==="collapsed"||b==="expanded")d.setAttribute("data-sidebar",b);}catch(e){}})();`;

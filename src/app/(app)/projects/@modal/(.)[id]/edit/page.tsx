@@ -4,7 +4,7 @@ import { Modal } from "@/components/ui/Modal";
 import { FormSkeleton } from "@/components/PageSkeletons";
 import { EditProjectContent } from "../../../ProjectFormContent";
 
-/** Tab title: "Edit project · Cloworks" (root layout template). */
+/** Tab title: "Edit project · Clowork" (root layout template). */
 export const metadata: Metadata = { title: "Edit project" };
 
 export default function EditProjectModal({ params }: { params: Promise<{ id: string }> }) {

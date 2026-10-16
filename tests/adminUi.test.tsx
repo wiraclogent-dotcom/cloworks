@@ -25,7 +25,7 @@ vi.mock("@/lib/joinDeps", () => ({
 }));
 const requireUser = vi.fn();
 const prismaMock = vi.hoisted(() => ({
-  user: { findMany: vi.fn() },
+  user: { findMany: vi.fn(), findUnique: vi.fn(async (): Promise<{ email: string | null } | null> => null) },
   brand: { findMany: vi.fn() }, division: { findMany: vi.fn() }, requestType: { findMany: vi.fn() },
 }));
 // Pages read through the workspace-scoped client that requireScope hands them.
@@ -176,6 +176,29 @@ describe("admin pages gate", () => {
     expect(screen.getByText("rina@gmail.com")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Allowed emails" })).toBeNull();
     expect(screen.queryByRole("heading", { name: "Add person" })).toBeNull(); // moved to its own page
+  });
+
+  it("shows the Waitlist tab to a platform admin only", async () => {
+    requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
+    prismaMock.user.findMany.mockResolvedValue([]);
+    prismaMock.brand.findMany.mockResolvedValue([]);
+    prismaMock.division.findMany.mockResolvedValue([]);
+    prismaMock.requestType.findMany.mockResolvedValue([]);
+    process.env.PLATFORM_ADMIN_EMAILS = "boss@clogent.co.id";
+    try {
+      for (const C of [UsersContent, ListsContent]) {
+        prismaMock.user.findUnique.mockResolvedValueOnce({ email: "boss@clogent.co.id" });
+        const { unmount } = render(await C());
+        expect(screen.getByRole("link", { name: "Waitlist" }).getAttribute("href")).toBe("/admin/waitlist");
+        unmount();
+        prismaMock.user.findUnique.mockResolvedValueOnce({ email: "someone@else.co" });
+        const again = render(await C());
+        expect(screen.queryByRole("link", { name: "Waitlist" })).toBeNull();
+        again.unmount();
+      }
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
   });
 
   it("shows whether a password is set but never loads or renders the hash", async () => {

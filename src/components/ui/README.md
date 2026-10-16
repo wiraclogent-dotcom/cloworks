@@ -72,7 +72,7 @@ Run `npm run typecheck` and the tests that cover the screens you touched.
 | Button border | `border-border-strong` |
 | Primary / destructive hover | `hover:bg-primary-hover` / `hover:bg-destructive-hover` |
 | Depth | `shadow-card` (resting), `shadow-raised` (dialogs, menus, drawer) |
-| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, chosen per person in the board's Background picker, src/lib/boardBackground.ts) every card and its drag copy is a `LiquidGlassCard`; the wrapper is `board-picture` (`--board-image` under `--board-veil`) plus `board-ink-light` or `board-ink-dark`, which re-point the text tokens; columns turn `bg-glass-column`. Glass needs content behind it |
+| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, chosen per person in the board's Background picker, src/lib/boardBackground.ts) every card and its drag copy is a `LiquidGlassCard`; the wrapper is `board-picture` (`--board-image` under `--board-veil`) plus `board-ink-light` or `board-ink-dark`, which re-point the text tokens; columns turn `bg-glass-column`. The landing page (light only, `<LightOnly>`) puts its hero, How it works and closing CTA on the same pairing via `glassBand()` (bright Prism and Mist under a white veil, `board-ink-dark`), and uses only the three whites in `GLASS` (src/components/landing/glassBand.ts) for its frosted elements. Glass needs content behind it |
 | Status colours | `data-tone="<tone>"` + `bg-tone-tint text-tone-text border-tone-accent` |
 | Brand | `brand-*` (landing, auth and emails only) |
 
@@ -132,7 +132,7 @@ added yet (add it with the CLI the first time you need it, then use it).
 | On/off, choice | `Switch`, `Checkbox`, `RadioGroup` + `RadioGroupItem` (Radix: a `role` button plus, inside a `<form>`, a hidden input that posts `name=value`; `Switch`/`Checkbox` post `on` or their `value` only while on). Kit `ui/Switch` (row label + description, `onCheckedChange`) and `ui/RadioCards` (card radios, `onChange(value)`) compose them | bare `<input type="checkbox">`, native radios, hand-built switch track | Migrated |
 | Range | `Slider` (Radix; `value`/`onValueChange`, save on `onValueCommit`; `trackClassName` for a legend track, `showRange={false}` for a two-way scale, `thumbProps` for `aria-label`/`aria-valuetext`). The board background veil uses it | – | In use |
 | Progress | `Progress` (`value`/`max`, fill colour on `indicatorClassName`). Kit `ui/ProgressBar` and `kpi/ProgressBar` compose it with label, value text and the over-100% check | hand-built `role="progressbar"` divs | Migrated |
-| Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open; `keepMounted` renders it once and hides it while closed, like `<details>`: use it for panels with forms, so typed input survives collapsing). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
+| Collapsible block | `Collapsible` + `CollapsibleTrigger` (a button: `aria-expanded`; rotate a chevron with `group-data-[state=open]:` and `group` on the root) + `CollapsibleContent` (rendered only while open; `keepMounted` renders it once and hides it while closed, like `<details>`: use it for panels with forms, so typed input survives collapsing). Usable from server components. Kit `ui/CollapsibleSection` (card, heading row as trigger, remembered open state) composes it; `tests/overlayUsage.test.ts` fails on a new `<details>` (the one exception is the landing FAQ, `landing/Faq.tsx`, static text that works without JS) or hand-made `role="menu"` | `<details>` in `CollapsibleSection`, admin lists, KPI "View as table" / "Other work" | Migrated |
 | Table | `Table` (container = the one scroll box: max height via `containerClassName`, never another `overflow-*` wrapper or the sticky header stops sticking; card look: wrap in `<Card className="overflow-hidden p-0">`; width via `className="min-w-[…]"`), `TableHeader`, `TableBody`, `TableRow` (hairline + hover, no zebra), `TableHead` (`scope="col"`; sticky, muted 12px), `TableRowHeader` (`<th scope="row">`), `TableCell`; `numeric` on `TableHead`/`TableCell` right-aligns tabular figures; compact density `className="py-1.5"` on the cells; `TableCaption className="sr-only"`. Server-safe | `ui/table.ts` `tableClass()` | Migrated |
 | Separator | `Separator` (decorative by default; `decorative={false}` for a real separator; `orientation`) | `ui/Divider` | Migrated |
 | Date picking | `Calendar` + `Popover` (kit `DatePicker`) | – | In use |
@@ -186,7 +186,7 @@ Helpers without a row: `photoDirectory.ts` (workspace photos for `Avatar`, fille
 
 ## Don't
 
-- No hand-rolled dialogs, menus, popovers or disclosures (`<dialog>` copies, `role="menu"` by hand, `<details>`):
+- No hand-rolled dialogs, menus, popovers or disclosures (`<dialog>` copies, `role="menu"` by hand, `<details>`; the landing FAQ in `landing/Faq.tsx` is the one allowed `<details>`):
   use `Dialog`, `DropdownMenu`, `Popover`, `Collapsible`.
 - No card, field or button rebuilt from raw classes in a page (`rounded-xl border bg-card…`, local `iconBtn`
   constants): use the component.
@@ -194,7 +194,7 @@ Helpers without a row: `photoDirectory.ts` (workspace photos for `Avatar`, fille
 - No hex, `text-white`, `bg-black` or Tailwind palette colours (`red-600`…) in components. Tokens already switch with
   the theme, so `dark:` is rarely needed (if you must, it follows `data-theme`, not the OS).
 - No gradients, glass, heavy shadows (`shadow-lg`/`shadow-xl`) or animation beyond 120–180 ms hover/focus
-  transitions.
+  transitions. Exceptions: the picture board (above) and the landing page's fractal-glass bands.
 - Do not render another `<main>`: the shell owns `<main id="main">`; pages render a `<div>`.
 - Do not add per-user data reads to the shell or layouts outside a `<Suspense>` boundary (cacheComponents).
 - Hydration: in a client component, never derive props or markup from `window`, `localStorage`, `matchMedia`,

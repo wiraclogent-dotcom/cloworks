@@ -7,7 +7,7 @@ import { LibraryView } from "@/components/library/LibraryView";
 import { ProjectsSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-/** Tab title: "Library · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Library · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Library" };
 
 async function LibraryContent() {

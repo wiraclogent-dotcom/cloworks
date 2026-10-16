@@ -2,6 +2,7 @@ import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
+import { isPlatformAdminUser } from "@/lib/platformAdmin";
 import { ChevronRight } from "lucide-react";
 import { cn, focusRing } from "@/components/ui/cn";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -23,7 +24,7 @@ export async function ListsContent() {
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" />}
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" waitlist={await isPlatformAdminUser(db, viewer.id)} />}
         description="Nothing here can be deleted; deactivate a request type to hide it from the new request form." />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

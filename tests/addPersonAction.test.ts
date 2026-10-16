@@ -59,6 +59,21 @@ describe("addPerson with email and password", () => {
     expect(r).toMatchObject({ ok: false, code: "CONFLICT" });
     expect(await db.prisma.user.count({ where: { name: "Dupe" } })).toBe(0);
   });
+  it("a reserved platform-admin address is refused before anything is created (with or without a password)", async () => {
+    vi.stubEnv("PLATFORM_ADMIN_EMAILS", "boss@clowork.test");
+    try {
+      for (const password of ["", "temporary-pass-1"]) {
+        const r = await addPerson(null, fd({ name: "Usurper", email: "Boss@Clowork.test", password }));
+        expect(r).toMatchObject({ ok: false, code: "FORBIDDEN", message: "That email is reserved." });
+        expect(r?.values.password ?? "").toBe("");
+        expect(await db.prisma.user.count({ where: { name: "Usurper" } })).toBe(0);
+      }
+      // Ordinary addresses still work while the variable is set.
+      expect(await addPerson(null, fd({ name: "Normal", email: "normal@clogent.co.id", password: "temporary-pass-1" }))).toMatchObject({ ok: true });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
   it("a later-step failure keeps the person and says so, with punctuation", async () => {
     failPassword.on = true;
     try {

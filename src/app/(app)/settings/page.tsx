@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { SettingsContent } from "./SettingsContent";
 
-/** Tab title: "Settings · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Settings · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Settings" };
 
 /** The per-user content streams in a Suspense boundary (cacheComponents), like the other app pages. */

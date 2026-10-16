@@ -29,7 +29,7 @@ export async function JoinCodeView({ params }: { params: Promise<{ code: string 
   const here = `/join/${code}`;
   return (
     <div>
-      <h1 className={authTitleClass}>Join <strong>{join.workspaceName}</strong> on Cloworks</h1>
+      <h1 className={authTitleClass}>Join <strong>{join.workspaceName}</strong> on Clowork</h1>
       {visitor.kind === "member" ? (
         <>
           <p className={lead}>You&apos;re already in {join.workspaceName}.</p>
