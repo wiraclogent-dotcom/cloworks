@@ -25,14 +25,43 @@ table") for the rest, and the Done column lists the newest requests first. The t
 
 ## Stack
 
-Next.js 16 (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS 4, Auth.js v5 (JWT sessions; Google and
-Microsoft Entra ID), Prisma 6 with PostgreSQL, Zod, Recharts, dnd-kit, Vitest with an embedded Postgres for tests.
+Next.js 16 (App Router, `proxy.ts`), React 19, TypeScript, Tailwind CSS 4, Auth.js v5 (JWT sessions; email and
+password, Google, Microsoft Entra ID), Prisma 6 with PostgreSQL, shadcn/ui, Zod, Recharts, dnd-kit, Vitest with an
+embedded Postgres for tests, and the `e2e` runner for browser tests.
 
 ## Prerequisites
 
-- Node.js 22+ (developed on 24.21.0)
-- npm
-- No Docker or system Postgres needed for local work: `npm run db:dev` starts an embedded Postgres.
+### Required
+
+- **Node.js 22+** (developed on 24.21.0) with the npm it ships with.
+- **Git.**
+- **openssl** to generate `AUTH_SECRET` (preinstalled on macOS and Linux).
+- No Docker or system Postgres: `npm run db:dev` starts an embedded Postgres, and the tests start their own.
+
+Everything else (Next.js, Prisma, Vitest, the e2e runner, shadcn) is an npm dependency installed by `npm install`.
+
+### Optional tools
+
+| Tool | Needed for |
+| --- | --- |
+| [GitHub CLI](https://cli.github.com) (`gh`) | Opening and merging pull requests from the terminal. |
+| [Vercel CLI](https://vercel.com/docs/cli) (`npm i -g vercel`) | Production deploys (see [Deployment notes](#deployment-notes)). |
+| VS Code extensions: ESLint, Tailwind CSS IntelliSense, Prisma | Lint errors, class name completion and schema highlighting in the editor. |
+| [Claude Code](https://claude.com/claude-code) | Optional AI assistant. See [Working with Claude Code](#working-with-claude-code). |
+
+### Accounts and services
+
+None of these are needed to run the app locally. Production uses them; ask the maintainer for access.
+
+| Service | Used for | Without it |
+| --- | --- | --- |
+| Vercel | Hosting (functions pinned to `sin1` in `vercel.json`). | Run anywhere Node and Postgres run. |
+| Neon Postgres (via the Vercel Marketplace) | Production database. | Any PostgreSQL works. |
+| Resend (sending domain verified) | Sign-up codes, invites and notification emails. | No email is sent; in-app notifications still work. |
+| Cloudinary | Media uploads in Content Plan. | Uploads are disabled. |
+| Google OAuth client | "Continue with Google". | Email and password sign-in only. |
+| Microsoft Entra app registration | Microsoft sign-in (not set up in production yet). | Microsoft sign-in stays off. |
+| Anthropic API key | AI-driven e2e tests (`npm run test:e2e:agent`) only. | Those tests are skipped. |
 
 ## Local setup
 
@@ -50,6 +79,41 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 
 `npm run db:migrate` (`prisma migrate dev`) is for creating new migrations while developing the schema.
 
+To sign in with a password locally, give the seeded admin one: `npm run set-password -- wira.budi@clogent.co.id`.
+
+## Repository layout
+
+| Path | What lives there |
+| --- | --- |
+| `src/app/` | Next.js routes. `(app)/` holds the signed-in pages (requests, projects, dashboard, content, library, chat, admin, settings, help). |
+| `src/components/shadcn/` | shadcn/ui components restyled with our tokens. Use these first. |
+| `src/components/ui/` | Our kit components for what shadcn lacks. Read its `README.md` before building UI. |
+| `src/components/<feature>/` | Feature components (board, briefs, kpi, content, chat, notifications, ...). |
+| `src/lib/` | Server logic: auth, permissions, queries, server actions, KPI maths, email. |
+| `src/proxy.ts` | Request proxy (Next.js 16's replacement for `middleware.ts`). |
+| `prisma/` | `schema.prisma`, migrations and the idempotent seed. |
+| `content/help/` | Help center articles (Markdown), shown at `/help`. |
+| `tests/` | Vitest unit and database tests; `tests/e2e/` holds the browser tests. |
+| `scripts/` | Scripts behind the `npm run` commands (embedded Postgres, imports, seeding, set-password). |
+| `AGENTS.md` | Notes for AI coding assistants. `next dev` rewrites its first block; keep it committed. |
+
+## Branches and local-only files
+
+- **`main`** is the only long-lived branch and the GitHub default. Work on a `feat/...` or `fix/...` branch, merge it
+  into `main` through a pull request, then delete the branch.
+- Run `npm run build` before pushing changes to routes: `cacheComponents` is on (`next.config.ts`), and its prerender
+  errors only show up in a production build, not in `next dev` or the tests.
+- These stay on each developer's machine and are listed in `.gitignore`:
+
+  | Path | What it is |
+  | --- | --- |
+  | `.env` | Your secrets. Start from `.env.example`. |
+  | `.pgdata/` | Data of the embedded dev database. |
+  | `data/` | Business data exports (sheets). Never commit them. |
+  | `*.local.*` | Personal helper scripts, for example the maintainer's production deploy and sync scripts. Ask the maintainer if you need one. |
+  | `.e2e/` output | Results, logs and videos of e2e runs. |
+  | `.claude/`, `docs/superpowers/`, `.archify/` | Working files of AI tools (Claude Code settings, plans and specs, diagrams). |
+
 ## Environment variables
 
 | Variable | Purpose | Required |
@@ -63,7 +127,16 @@ to look around without them, see [Manual QA without OAuth](#manual-qa-without-oa
 | `AUTH_MICROSOFT_ENTRA_ID_TENANT_ID` | Your tenant id. Entra sign-in is denied unless the token's `tid` equals it. | Yes, to use Microsoft sign-in |
 | `RESEND_API_KEY` | Resend API key for emails (sign-up codes, invites, notifications). Empty means no email is sent (notification rows are still stored). | Yes in production (sign-up codes and invites need it) |
 | `EMAIL_FROM` | Sender, e.g. `Cloworks <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | Yes in production |
-| `APP_BASE_URL` | Public origin used for links in emails, e.g. `https://cloworks.vercel.app`. In production, emails carry no links without it (request headers are never trusted for this). | Yes in production |
+| `APP_BASE_URL` | Public origin used for links in emails, e.g. `https://clowork.my.id`. In production, emails carry no links without it (request headers are never trusted for this). | Yes in production |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary account for Content Plan media uploads (values are on the Cloudinary dashboard). Empty disables uploads. | No |
+
+Only for the e2e tests:
+
+| Variable | Purpose |
+| --- | --- |
+| `LOCAL_QA_EMAIL`, `LOCAL_QA_PASSWORD` | A local account the e2e tests sign in with (localhost only, never sent to a deployed site). |
+| `ANTHROPIC_API_KEY` | Model for the AI-driven steps in `tests/e2e/agent`. |
+| `APP_URL` | Target URL; defaults to `http://localhost:3000`. `scripts/e2e-preview.sh` sets it for a Vercel preview. |
 
 Never commit `.env`; `.gitignore` already excludes it.
 
@@ -171,7 +244,8 @@ What to know:
   forward (never back, never out of Cancelled), the designer is filled only when nobody is assigned in the app, and
   links, deadline, output count, Include KPI and the SocMed flags/platform/published link take the sheet's value when
   it has one. Notes, title, requester, brand and division are never changed. The dry-run lists every update first.
-  For production, run `bash scripts/sync-sheet-prod.local.sh "<workbook>.xlsx"` (dry-run, then asks before writing).
+  For production the maintainer uses a local helper script (`scripts/sync-sheet-prod.local.sh`, not in the repo)
+  that runs the same dry-run, then asks before writing.
 - **Re-running is safe.** Already imported rows are detected by an import key and not inserted again; Dimas rows with the same file
   name and date get a counter. Caveat: correcting a requester name in the sheet after import and re-running creates a
   duplicate of that row. Run `npm run db:seed` first so names and aliases (for example Irshyad to Irsyad) resolve.
@@ -211,6 +285,26 @@ npm run build       # production build
 Database tests start a throwaway embedded Postgres per test file and apply the real migrations, so no Docker or
 local Postgres is required. `tests/lifecycle.test.ts` exercises the whole flow (submit, assign, work, done,
 notifications, KPI, permission denials) through the real code paths with the seeded roster.
+
+Browser tests (with `npm run db:dev` running and `LOCAL_QA_*` set in `.env`; the dev server starts by itself):
+
+```bash
+npm run test:e2e          # read-only smoke tests
+npm run test:e2e:flows    # flows that write data (local database only)
+npm run test:e2e:agent    # AI-driven checks, needs ANTHROPIC_API_KEY
+bash scripts/e2e-preview.sh <preview-url>   # smoke tests against a Vercel preview
+```
+
+## Working with Claude Code
+
+Claude Code is optional: nothing in the build, the tests or production depends on it, and no plugin has to be
+installed. If you use it:
+
+- It reads `AGENTS.md` automatically (Next.js 16 differs from older versions; UI follows the shadcn-first rule).
+- Plugins and skills are installed per machine in Claude Code (`/plugin` in a `claude` terminal), not in this repo.
+  The original work used general-purpose workflow plugins (for example `superpowers` for brainstorming, plans and
+  code review); install them only if you want the same workflow.
+- Their working files (plans, specs, reports) go to `docs/superpowers/`, which is ignored by git.
 
 ## Manual QA without OAuth
 
@@ -268,9 +362,8 @@ order:
 
 ## Known limitations
 
-- Attachments and design folders are **links**, not file uploads.
-- Notifications are **email only** in V1: there is no in-app inbox or bell yet. Notification rows are stored so an inbox
-  can be added later, and emails are sent only when `RESEND_API_KEY` and `EMAIL_FROM` are configured. No chat integrations.
-- There is no automated browser end-to-end suite; the lifecycle is covered by a database-backed integration test and
-  UI parts by component tests. Browser flows (sign-in, drag and drop persistence) are checked manually.
+- Request attachments and design folders are **links**, not file uploads. Only Content Plan uploads media
+  (Cloudinary).
+- Emails are sent only when `RESEND_API_KEY` and `EMAIL_FROM` are configured; without them notifications appear in
+  the app only.
 - Imported history has synthetic completion dates (see KPI caveat).
