@@ -20,21 +20,29 @@ function PopoverContent({
   className,
   align = "center",
   sideOffset = 4,
+  portal = true,
   ...props
-}: React.ComponentProps<typeof PopoverPrimitive.Content>) {
+}: React.ComponentProps<typeof PopoverPrimitive.Content> & {
+  /**
+   * false renders the panel where it is written instead of in a portal at the end of <body>: a panel of named fields
+   * must stay inside its <form> to be submitted with it (FilterBar).
+   */
+  portal?: boolean
+}) {
+  const Wrap = portal ? PopoverPrimitive.Portal : React.Fragment
   return (
-    <PopoverPrimitive.Portal>
+    <Wrap>
       <PopoverPrimitive.Content
         data-slot="popover-content"
         align={align}
         sideOffset={sideOffset}
         className={cn(
-          "z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+          "z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-lg border border-border bg-popover p-4 text-popover-foreground shadow-raised outline-hidden data-[state=closed]:animate-pop-out data-[state=open]:animate-pop-in",
           className
         )}
         {...props}
       />
-    </PopoverPrimitive.Portal>
+    </Wrap>
   )
 }
 
@@ -54,7 +62,7 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
+function PopoverTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="popover-title"

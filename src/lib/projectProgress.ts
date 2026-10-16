@@ -32,6 +32,7 @@ export function isTaskDone(t: Pick<TaskLike, "stage" | "status">, mode: TaskMode
 export function statusCounts(tasks: Pick<TaskLike, "status">[]): Record<ProjectStatus | "none", number> {
   const out = { none: 0 } as Record<ProjectStatus | "none", number>;
   for (const st of TASK_STATUS_ORDER) out[st] = 0;
+  out.CANCELLED = 0; // project-level only: tasks can't be set to it, the key just keeps the record total
   for (const t of tasks) out[t.status ?? "none"]++;
   return out;
 }

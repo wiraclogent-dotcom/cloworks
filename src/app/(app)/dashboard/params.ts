@@ -21,3 +21,24 @@ export function parseUserParam(raw: RawParam): string | undefined {
 export function resolveSubject(viewer: { id: string; appRole: AppRole }, userParam: string | undefined): string {
   return userParam && can(viewer.appRole, "dashboard.team") ? userParam : viewer.id;
 }
+
+/** Person KPI pages: team viewers may open anyone's; everyone else only their own, and only with dashboard.self. */
+export function canViewPersonKpi(viewer: { id: string; appRole: AppRole }, userId: string | undefined): boolean {
+  return can(viewer.appRole, "dashboard.team") || (userId !== undefined && userId === viewer.id && can(viewer.appRole, "dashboard.self"));
+}
+
+/** Legacy `view=projects|requests`. The KPI pages show both sections now; `view=projects` only scrolls to Projects. */
+export function parseViewParam(raw: RawParam): "requests" | "projects" | undefined {
+  const v = first(raw);
+  return v === "projects" || v === "requests" ? v : undefined;
+}
+
+/** The first value of each named param that is present, so a picker's links can carry the other section's state. */
+export function keepParams(sp: Record<string, RawParam>, keys: string[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const k of keys) {
+    const v = first(sp[k]);
+    if (v) out[k] = v;
+  }
+  return out;
+}

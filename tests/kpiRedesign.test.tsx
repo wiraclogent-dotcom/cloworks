@@ -14,8 +14,8 @@ import { AccessDenied } from "@/components/AccessDenied";
 
 afterEach(cleanup);
 
-const kpi = { tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 1234, activeWorkload: 2 };
-const empty = { tasksDone: 0, target: null, progress: null, onTimeRate: null, avgTurnaroundDays: null, revisionRounds: 0, totalOutputs: 0, activeWorkload: 4 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 1234, activeWorkload: 2 };
+const empty = { doneRequestIds: [], tasksDone: 0, target: null, progress: null, onTimeRate: null, avgTurnaroundDays: null, revisionRounds: 0, totalOutputs: 0, activeWorkload: 4 };
 
 describe("My KPI tiles", () => {
   it("formats every value like before (percent, days, counts with separators)", () => {
@@ -69,13 +69,20 @@ describe("progress thresholds", () => {
 describe("Team summary", () => {
   it("counts people, sums tasks and averages the whole percent over people with a target", () => {
     expect(teamSummary([
-      { kpi: { tasksDone: 3, progress: 0.06 } },
-      { kpi: { tasksDone: 10, progress: 0.5 } },
-      { kpi: { tasksDone: 7, progress: null } },
+      { kpi: { progress: 0.06, doneRequestIds: ["a", "b", "c"] } },
+      { kpi: { progress: 0.5, doneRequestIds: ["d", "e", "f", "g", "h", "i", "j", "k", "l", "m"] } },
+      { kpi: { progress: null, doneRequestIds: ["n", "o", "p", "q", "r", "s", "t"] } },
     ])).toEqual({ people: 3, tasksDone: 20, avgProgress: 28, withTarget: 2 });
   });
+  it("a request shared by several people is counted once", () => {
+    expect(teamSummary([
+      { kpi: { progress: null, doneRequestIds: ["r1"] } },
+      { kpi: { progress: null, doneRequestIds: ["r1"] } },
+      { kpi: { progress: null, doneRequestIds: ["r1", "r2"] } },
+    ]).tasksDone).toBe(2);
+  });
   it("no targets → null average; no rows → zeros", () => {
-    expect(teamSummary([{ kpi: { tasksDone: 2, progress: null } }]).avgProgress).toBeNull();
+    expect(teamSummary([{ kpi: { progress: null, doneRequestIds: ["a", "b"] } }]).avgProgress).toBeNull();
     expect(teamSummary([])).toEqual({ people: 0, tasksDone: 0, avgProgress: null, withTarget: 0 });
   });
 });
@@ -89,7 +96,7 @@ describe("Team table", () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit />);
     const table = screen.getByRole("table", { name: "KPI per person for the selected month" });
     expect(within(table).getAllByRole("columnheader").map((h) => h.textContent)).toEqual(
-      ["Name", "Tasks done", "Target", "Progress", "On-time", "Turnaround (days)", "Workload", "Set target"]);
+      ["Person", "Tasks done", "Target", "Progress", "On-time", "Turnaround (days)", "Workload", "Set target"]);
     const fadli = screen.getByRole("rowheader", { name: /Fadli/ });
     expect(fadli.querySelector('[aria-hidden="true"]')!.textContent).toBe("FA");
     expect(within(fadli).getByText("Designer").getAttribute("data-tone")).toBe("tag-neutral");
@@ -110,20 +117,34 @@ describe("Trend chart card", () => {
     render(<TrendChart points={[{ month: "2026-09", label: "September 2026", tasksDone: 4, target: 50 }, { month: "2026-10", label: "October 2026", tasksDone: 7, target: null }]} />);
     expect(screen.getByRole("heading", { level: 2, name: "Last 2 months" })).toBeTruthy();
     expect(screen.getByText("Tasks done vs target, last 2 months").tagName).toBe("FIGCAPTION");
-    expect(screen.getByText("View as table").closest("summary")).not.toBeNull();
-    expect(screen.getByRole("table", { name: "Tasks done versus target by month", hidden: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "View as table" }));
+    expect(screen.getByRole("table", { name: "Tasks done versus target by month" })).toBeTruthy();
   });
 });
 
 describe("month picker, skeletons, access denied", () => {
+  // Regression: month links are soft navigations on the same page, so the popover stayed open over the new month.
+  it("choosing a month (or This month) closes the picker", () => {
+    render(<MonthPicker month="2026-03" current="2026-10" action="/dashboard" />);
+    const trigger = screen.getByRole("button", { name: "Month: March 2026" });
+    for (const name of ["May 2026", "This month"]) {
+      fireEvent.click(trigger);
+      expect(trigger.getAttribute("aria-expanded")).toBe("true");
+      const link = screen.getByRole("link", { name });
+      link.addEventListener("click", (e) => e.preventDefault()); // no real navigation in jsdom
+      fireEvent.click(link);
+      expect(trigger.getAttribute("aria-expanded")).toBe("false");
+    }
+  });
+
   it("month picker: design-system popover of month links that keep user=", () => {
     render(<MonthPicker month="2026-03" current="2026-10" userId="u9" action="/dashboard" />);
-    const trigger = screen.getByText("March 2026").closest("summary")!;
+    const trigger = screen.getByText("March 2026").closest("button")!;
     expect(trigger.getAttribute("aria-label")).toBe("Month: March 2026");
     expect(document.querySelector('input[type="month"]')).toBeNull();
     expect(screen.queryByRole("button", { name: "Show" })).toBeNull();
     fireEvent.click(trigger);
-    const panel = screen.getByRole("group", { name: "Choose a month" });
+    const panel = screen.getByRole("dialog", { name: "Choose a month" });
     expect(within(panel).getByText("2026")).toBeTruthy();
     const mar = within(panel).getByRole("link", { name: "March 2026" });
     expect(mar.getAttribute("href")).toBe("/dashboard?month=2026-03&user=u9");
@@ -139,7 +160,7 @@ describe("month picker, skeletons, access denied", () => {
   });
   it("month picker without a user links to the month alone", () => {
     render(<MonthPicker month="2026-10" current="2026-10" action="/dashboard/team" />);
-    fireEvent.click(screen.getByText("October 2026").closest("summary")!);
+    fireEvent.click(screen.getByText("October 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "January 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-01");
   });
   it("KPI fallbacks are skeletons with a loading status", () => {

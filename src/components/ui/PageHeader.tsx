@@ -6,7 +6,7 @@ import { cn } from "./cn";
 export type Crumb = { label: string; href?: string };
 
 /**
- * The one page header: renders the page `<h1>` (28px/600, ink), an optional count pill and description,
+ * The one page header: renders the page `<h1>` (28px/700 display face, rises in on arrival), an optional count pill and description,
  * an optional view switcher (e.g. <SegmentedControl>) and the page's actions on the right (primary action last).
  */
 export function PageHeader({ title, count, description, switcher, actions, breadcrumb, topBarActions, className }: {
@@ -19,10 +19,10 @@ export function PageHeader({ title, count, description, switcher, actions, bread
   return (
     <>
       {breadcrumb ? (
-        // min-h-12 + pr-12: the app layout pins the profile menu (36px) in this row's top-right corner (AppFrame).
-        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-12 pb-3">
+        // min-h-12 + pr-24: the app layout pins the bell and the profile menu (36 + 8 + 36px) in this row's top-right corner (AppFrame).
+        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-24 pb-3">
           <nav aria-label="Breadcrumb">
-            <ol className="flex flex-wrap items-center gap-1.5 text-[13px] text-foreground-secondary">
+            <ol className="flex flex-wrap items-center gap-1.5 text-compact text-muted-foreground">
               {breadcrumb.map((c, i) => (
                 <li key={`${i}-${c.label}`} className="flex items-center gap-1.5">
                   {i > 0 ? <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-3.5 text-foreground-muted" /> : null}
@@ -43,12 +43,12 @@ export function PageHeader({ title, count, description, switcher, actions, bread
           10rem, so a switcher can no longer squeeze it to a few pixels (QA D2/D7). */}
       <div data-page-title="" className="min-w-0 grow basis-full sm:min-w-[10rem] sm:basis-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-[28px] leading-9 font-semibold tracking-tight text-heading">{title}</h1>
+          <h1 className="animate-rise font-display text-[28px] leading-9 font-bold tracking-[-0.02em] text-heading">{title}</h1>
           {count !== undefined ? (
-            <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-foreground-secondary tabular-nums">{count}</span>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">{count}</span>
           ) : null}
         </div>
-        {description ? <p className="mt-1 text-sm text-foreground-secondary">{description}</p> : null}
+        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {switcher || actions ? (
         <div data-page-actions="" className="flex flex-wrap items-center gap-2">

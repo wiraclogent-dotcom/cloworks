@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { Skeleton } from "@/components/shadcn/skeleton";
 import { ArticleContent } from "./ArticleContent";
 
 /**
@@ -11,9 +11,11 @@ export const metadata: Metadata = { title: "Help" };
 
 export default function ArticlePage({ params }: { params: Promise<{ slug: string }> }) {
   return (
-    <Suspense fallback={<ArticleSkeleton />}>
-      <ArticleContent params={params} />
-    </Suspense>
+    <div>
+      <Suspense fallback={<ArticleSkeleton />}>
+        <ArticleContent params={params} />
+      </Suspense>
+    </div>
   );
 }
 
@@ -22,7 +24,7 @@ function ArticleSkeleton() {
     <div role="status" aria-busy="true" className="space-y-4">
       <span className="sr-only">Loading…</span>
       <Skeleton className="h-8 w-64" />
-      <Skeleton className="h-64 w-full" rounded="xl" />
+      <Skeleton className="h-64 w-full rounded-xl" />
     </div>
   );
 }

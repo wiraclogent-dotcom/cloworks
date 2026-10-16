@@ -5,7 +5,8 @@ const EDGES: Partial<Record<RequestStatus, readonly RequestStatus[]>> = {
   ON_PROGRESS: ["REQUESTED", "FIRST_LOOK", "CANCELLED"],
   FIRST_LOOK: ["DONE", "ON_PROGRESS", "CANCELLED"],
   DONE: ["ON_PROGRESS", "CANCELLED"],
-  CANCELLED: [],
+  // Restore: a request cancelled by mistake goes back to Requested.
+  CANCELLED: ["REQUESTED"],
 };
 
 export function canTransition(from: RequestStatus, to: RequestStatus): boolean {

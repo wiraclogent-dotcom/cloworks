@@ -42,7 +42,7 @@ describe("ProgressBar", () => {
   });
 });
 
-const kpi = { tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 50, progress: 0.06, onTimeRate: 0.5, avgTurnaroundDays: 1.5, revisionRounds: 0, totalOutputs: 6, activeWorkload: 2 };
 const rows: TeamRow[] = [{ userId: "u1", name: "Fadli", role: "DESIGNER", kpi }];
 
 describe("TeamTable editor", () => {
@@ -105,11 +105,14 @@ describe("TrendChart", () => {
       { month: "2026-10", label: "October 2026", tasksDone: 7, target: null },
     ];
     render(<TrendChart points={points} />);
-    const table = screen.getByRole("table", { hidden: true });
-    expect(within(table).getByRole("columnheader", { name: "Tasks done", hidden: true })).toBeTruthy();
-    const cells = within(table).getAllByRole("row", { hidden: true }).map((r) => r.textContent);
+    // Collapsed under "View as table" (a Collapsible: the table renders once opened).
+    const toggle = screen.getByRole("button", { name: "View as table" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+    const table = screen.getByRole("table", { name: "Tasks done versus target by month" });
+    expect(within(table).getByRole("columnheader", { name: "Tasks done" })).toBeTruthy();
+    const cells = within(table).getAllByRole("row").map((r) => r.textContent);
     expect(cells).toContain("September 2026450");
     expect(cells).toContain("October 20267—");
-    expect(screen.getByText("View as table")).toBeTruthy();
   });
 });

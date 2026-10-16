@@ -9,11 +9,14 @@ afterEach(cleanup);
 describe("error boundary", () => {
   it("shows a generic message (never the error text), a Try again button and a sign-in link", () => {
     const reset = vi.fn();
-    render(<AppError error={new Error("secret db detail")} reset={reset} />);
+    const retry = vi.fn();
+    render(<AppError error={new Error("secret db detail")} reset={reset} retry={retry} />);
     expect(screen.getByRole("alert").textContent).toContain("Something went wrong. Try again, or sign in again.");
     expect(document.body.textContent).not.toContain("secret db detail");
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(reset).toHaveBeenCalledTimes(1);
+    // retry() re-fetches the segment; reset() only re-renders the same failed result, so the button looked dead.
+    expect(retry).toHaveBeenCalledTimes(1);
+    expect(reset).not.toHaveBeenCalled();
     expect(screen.getByRole("link", { name: /sign in again/i }).getAttribute("href")).toBe("/signin");
   });
 });

@@ -1,6 +1,10 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { FormSkeleton, NewRequestContent } from "../../new/NewRequestContent";
+
+/** Tab title: "New request · Cloworks" (root layout template). */
+export const metadata: Metadata = { title: "New request" };
 
 /**
  * Static match, so it wins over `(.)[id]` (which would otherwise treat "new" as a request id and 404).
@@ -9,7 +13,7 @@ import { FormSkeleton, NewRequestContent } from "../../new/NewRequestContent";
 export default function NewRequestPanel() {
   return (
     <Modal side="right" title="New request">
-      <p className="mb-4 text-sm text-foreground-secondary">Tell the creative team what you need. Fields marked * are required.</p>
+      <p className="mb-4 text-sm text-muted-foreground">Tell the creative team what you need. Fields marked * are required.</p>
       <Suspense fallback={<FormSkeleton />}><NewRequestContent /></Suspense>
     </Modal>
   );

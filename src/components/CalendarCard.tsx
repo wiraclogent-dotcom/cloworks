@@ -6,7 +6,7 @@ import { GripVertical } from "lucide-react";
 import type { CalendarRow } from "@/lib/requests";
 import { brandTone } from "@/lib/palette";
 import { STATUS_LABEL, StatusIcon } from "./status";
-import { Avatar, UnassignedAvatar } from "./ui/Avatar";
+import { Avatar, AvatarStack, UnassignedAvatar } from "./ui/Avatar";
 import { cn, focusRing } from "./ui/cn";
 
 const CARD_SHAPE = "rounded-lg border border-l-4 border-l-tone-accent bg-card p-1.5 text-xs text-card-foreground";
@@ -22,11 +22,13 @@ export function cardTone(card: CalendarRow, today: string) {
 
 /** The compact card content: status icon, title (2 lines), Overdue / No deadline label, assignee avatar. */
 export function CalendarCardFace({ card, today, interactive = true, handle }: { card: CalendarRow; today: string; interactive?: boolean; handle?: React.ReactNode }) {
-  const assignee = card.assigneeName ? `Assignee: ${card.assigneeName}` : "Assignee: Unassigned";
+  const names = card.assignees.map((a) => a.name);
+  const assigneeName = names[0] ?? null;
+  const assignee = assigneeName ? `Assignee: ${assigneeName}` : "Assignee: Unassigned";
   return (
     <>
       <div className="flex items-start gap-1">
-        <span className="mt-0.5 inline-flex shrink-0 text-foreground-secondary" title={STATUS_LABEL[card.status]}>
+        <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground" title={STATUS_LABEL[card.status]}>
           <StatusIcon status={card.status} />
           <span className="sr-only">{`Status: ${STATUS_LABEL[card.status]}. `}</span>
         </span>
@@ -35,16 +37,24 @@ export function CalendarCardFace({ card, today, interactive = true, handle }: { 
             <Link href={`/requests/${card.id}`} draggable={false} className={cn("rounded-sm underline-offset-2 hover:underline", focusRing)}>{card.title}</Link>
           ) : card.title}
         </p>
-        {handle}
-      </div>
-      <div className="mt-1 flex items-center justify-between gap-1">
+        </div>
+      <div className="mt-0.5 flex items-center justify-between gap-1">
         {isOverdue(card, today) ? (
-          <span className="rounded-md bg-tone-tint px-1.5 py-px font-medium text-tone-text">Overdue</span>
+          <span className="rounded px-1 text-xs leading-4 font-medium bg-tone-tint text-tone-text">Overdue</span>
         ) : card.deadlineDay === null ? (
-          <span className="text-foreground-secondary">No deadline</span>
+          <span className="text-xs leading-4 text-muted-foreground">No deadline</span>
         ) : <span />}
-        <span className="inline-flex shrink-0" title={assignee} aria-label={assignee} role="img">
-          {card.assigneeName ? <Avatar name={card.assigneeName} size="sm" decorative /> : <UnassignedAvatar size="sm" decorative />}
+        <span className="inline-flex shrink-0 items-center gap-1">
+          {handle}
+          {names.length >= 2 ? (
+            <span className="inline-flex" title={`Assignees: ${names.join(", ")}`}>
+              <AvatarStack names={names} max={2} size="sm" label="Assignees" className="[&>span]:size-5 [&>span]:text-xs" />
+            </span>
+          ) : (
+            <span className="inline-flex" title={assignee} aria-label={assignee} role="img">
+              {assigneeName ? <Avatar name={assigneeName} size="sm" decorative className="size-5 text-xs" /> : <UnassignedAvatar size="sm" decorative className="size-5" />}
+            </span>
+          )}
         </span>
       </div>
     </>
@@ -58,7 +68,7 @@ function cardClass(card: CalendarRow) {
 /** A card without dragging: read-only users, the "+N more" dialog and the narrow agenda. */
 export function StaticCalendarCard({ card, today }: { card: CalendarRow; today: string }) {
   return (
-    <li data-card={card.id} data-tone={cardTone(card, today)} className={cardClass(card)}>
+    <li data-card={card.id} data-tone={cardTone(card, today)} data-shared={card.assignees.length >= 2 ? "" : undefined} className={cardClass(card)}>
       <CalendarCardFace card={card} today={today} />
     </li>
   );
@@ -71,7 +81,7 @@ export function StaticCalendarCard({ card, today }: { card: CalendarRow; today: 
 export function DraggableCalendarCard({ card, today, busy, locked, dragging }: { card: CalendarRow; today: string; busy: boolean; locked: boolean; dragging: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: busy || locked });
   return (
-    <li ref={setNodeRef} data-card={card.id} data-tone={cardTone(card, today)} data-draggable="true" {...listeners}
+    <li ref={setNodeRef} data-card={card.id} data-tone={cardTone(card, today)} data-shared={card.assignees.length >= 2 ? "" : undefined} data-draggable="true" {...listeners}
       className={cn(
         "group/card", cardClass(card), "cursor-grab touch-manipulation transition-[border-color,opacity] duration-150 hover:border-border-strong active:cursor-grabbing",
         dragging ? "opacity-40" : busy ? "opacity-60" : "",
@@ -80,11 +90,11 @@ export function DraggableCalendarCard({ card, today, busy, locked, dragging }: {
         handle={
           <button type="button" ref={setActivatorNodeRef} {...attributes} aria-label={`Drag “${card.title}”`} disabled={busy}
             className={cn(
-              "-mt-0.5 -mr-0.5 inline-flex size-5 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-foreground-secondary transition-opacity duration-150",
-              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-surface-muted",
+              "inline-flex size-4 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-opacity duration-150",
+              "opacity-0 group-hover/card:opacity-100 group-focus-within/card:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-muted",
               focusRing,
             )}>
-            <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-3.5" />
+            <GripVertical aria-hidden="true" strokeWidth={1.75} className="size-3" />
           </button>
         } />
     </li>

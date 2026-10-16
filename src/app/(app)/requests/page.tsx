@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
@@ -14,10 +14,9 @@ import { RequestTable } from "@/components/RequestTable";
 import { FilterBar } from "@/components/FilterBar";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { buttonClass } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BoardSkeleton, CalendarSkeleton, TableSkeleton, TimelineSkeleton } from "@/components/RequestSkeletons";
-import { Bell, CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
+import { CalendarDays, ChartNoAxesGantt, Plus, SearchX, SquareKanban, Table2 } from "lucide-react";
 import { AvatarStack } from "@/components/ui/Avatar";
 import { buildMonthGrid, shiftMonth } from "@/lib/calendar";
 import { buildWindow, shiftWeek } from "@/lib/workload";
@@ -25,16 +24,19 @@ import { jakartaDate } from "@/lib/createRequest";
 import { todayOverview } from "@/lib/todayOverview";
 import { listCreativeTeam } from "@/lib/team";
 import { hrefWith, parseParams, parseView, toFilter, type ViewParams } from "./params";
+import { Button } from "@/components/shadcn/button";
+import { BoardBackgroundProvider } from "@/components/board/BoardBackgroundProvider";
+import { BoardBackgroundPicker } from "@/components/board/BoardBackgroundPicker";
+import { resolveBoardBackground } from "@/lib/boardBackground";
+import { cloudinaryConfig } from "@/lib/media/config";
+import { mediaUrl } from "@/lib/media/url";
 
 /** Today's counts and the welcome card: its own Suspense boundary, so the board is not held up by it. */
 async function TodayLoader() {
   const { user, db } = await requireScope();
   const now = new Date();
-  const [me, overview] = await Promise.all([
-    db.user.findUnique({ where: { id: user.id }, select: { name: true } }),
-    todayOverview(db, now),
-  ]);
-  return <TodayOverview name={me?.name ?? ""} now={now} overview={overview} />;
+  const overview = await todayOverview(db, now);
+  return <TodayOverview name={user.name} now={now} overview={overview} />;
 }
 
 /** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */
@@ -49,7 +51,7 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
   const today = jakartaDate(new Date());
   const grid = p.view === "calendar" ? buildMonthGrid(p.month, today) : null;
   const tlWindow = p.view === "timeline" ? buildWindow(p.week, today) : null;
-  const [board, tablePage, calendarRows, timelineRows, brands, divisions, assignees] = await Promise.all([
+  const [board, tablePage, calendarRows, timelineRows, brands, divisions, assignees, me] = await Promise.all([
     p.view === "board" ? listBoardColumns(db, filter, { byStatus: p.more }) : null,
     p.view === "table" ? listRequestsPage(db, filter, { sort: p.sort, dir: p.dir, page: p.page }) : null,
     grid ? listCalendarRequests(db, filter, { from: grid.from, to: grid.to, today }) : null,
@@ -57,20 +59,26 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
     db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
     listCreativeTeam(db),
+    p.view === "board"
+      ? db.user.findUnique({ where: { id: user.id }, select: { boardBackground: true, boardVeil: true, boardBackgroundMedia: { select: { publicId: true, type: true } } } })
+      : null,
   ]);
-  const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false }, {});
-  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine);
+  // The person's own board background (presets, or their uploaded picture via Cloudinary).
+  const cloudName = cloudinaryConfig()?.cloudName;
+  const customSrc = me?.boardBackgroundMedia && cloudName ? mediaUrl(me.boardBackgroundMedia, "full", cloudName) : null;
+  const background = resolveBoardBackground({ id: me?.boardBackground ?? null, veil: me?.boardVeil ?? null, customSrc });
+  const clearHref = hrefWith({ ...p, status: undefined, assigneeId: undefined, brandId: undefined, divisionId: undefined, q: undefined, motion: undefined, mine: false, work: false, scope: undefined }, {});
+  const filtered = !!(p.status || p.assigneeId || p.brandId || p.divisionId || p.q || p.motion || p.mine || p.work || p.scope);
   return (
-    <>
+    <BoardBackgroundProvider initial={background}>
       <PageHeader title="Requests"
         breadcrumb={[{ label: "Work" }, { label: "Requests", href: "/requests" }, { label: VIEW_LABEL[p.view] }]}
         topBarActions={<>
           <AvatarStack names={assignees.map((a) => a.name)} max={4} size="sm" label="Team" />
-          <ComingSoon label="Notifications" icon={<Bell aria-hidden="true" />} />
         </>}
-        actions={<Link href="/requests/new" className={buttonClass({ variant: "primary" })}><Plus aria-hidden="true" />New request</Link>} />
+        actions={<Button asChild variant="default"><Link href="/requests/new"><Plus aria-hidden="true" />New request</Link></Button>} />
       {p.view === "board" ? (
-        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-surface-muted" />}><TodayLoader /></Suspense>
+        <Suspense fallback={<div aria-hidden="true" className="mb-4 h-28 rounded-xl bg-muted" />}><TodayLoader /></Suspense>
       ) : null}
       {/* One toolbar row: the view switcher, then the filters (they wrap under it on narrow screens). */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
@@ -80,9 +88,12 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           { value: "calendar", label: "Calendar", icon: <CalendarDays aria-hidden="true" />, href: hrefWith(p, { view: "calendar" }) },
           { value: "timeline", label: "Timeline", icon: <ChartNoAxesGantt aria-hidden="true" />, href: hrefWith(p, { view: "timeline" }) },
         ]} />
-        <div className="ml-auto">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+          {p.view === "board" ? <BoardBackgroundPicker customSrc={customSrc} /> : null}
           <FilterBar p={p} brands={brands} divisions={divisions} assignees={assignees}
             mineHref={hrefWith(p, { mine: p.mine ? undefined : "1" })}
+            workHref={user.jobRole === "DESIGNER" ? hrefWith(p, { work: p.work ? undefined : "1", assignee: undefined }) : undefined}
+            scopeClearHref={p.scope ? hrefWith(p, { scope: undefined }) : undefined}
             clearHref={clearHref} />
         </div>
       </div>
@@ -90,9 +101,9 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
         board.every((c) => c.total === 0) && filtered ? (
           <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title="No requests match these filters."
             description="Try another search or clear the filters."
-            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
-          <Board canMove={can(user.appRole, "request.transition")} columns={board.map((c): BoardColumnView => {
+          <Board canMove={can(user.appRole, "request.transition")} background={background} columns={board.map((c): BoardColumnView => {
             const limit = p.more[c.status] ?? BOARD_PAGE_SIZE;
             return {
               ...c,
@@ -104,10 +115,12 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           })} />
         )
       ) : tablePage ? (
-        <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
-          hrefFor={(key, dir) => hrefWith(p, { sort: key === "deadline" ? undefined : key, dir: dir === "desc" ? "desc" : undefined })}
-          footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
-            hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />} />
+        <div>
+          <RequestTable rows={tablePage.rows} sort={p.sort} dir={p.dir}
+            hrefFor={(key, dir) => hrefWith(p, { sort: key, dir })}
+            footer={<Pagination text={rangeText(tablePage.window, tablePage.total)} page={tablePage.window.page} pageCount={tablePage.window.pageCount}
+              hrefFor={(n) => hrefWith(p, { page: n > 1 ? String(n) : undefined })} />} />
+        </div>
       ) : calendarRows ? (
         <RequestCalendar rows={calendarRows} month={p.month} today={today} canMove={can(user.appRole, "request.transition")}
           filtered={filtered} clearHref={clearHref}
@@ -119,21 +132,11 @@ async function RequestsContent({ searchParams }: { searchParams: PageProps<"/req
           prevHref={hrefWith(p, { week: shiftWeek(p.week, -1) })} nextHref={hrefWith(p, { week: shiftWeek(p.week, 1) })}
           todayHref={hrefWith(p, { week: undefined })} />
       ) : null}
-    </>
+    </BoardBackgroundProvider>
   );
 }
 
 const VIEW_LABEL: Record<ViewParams["view"], string> = { board: "Board", table: "Table", calendar: "Calendar", timeline: "Timeline" };
-
-/** Top-bar icon button for a feature that does not exist yet: visible, labelled, and disabled (no fake action). */
-function ComingSoon({ label, icon }: { label: string; icon: ReactNode }) {
-  return (
-    <button type="button" disabled aria-label={`${label} (coming soon)`} title={`${label}: coming soon`}
-      className="inline-flex size-9 items-center justify-center rounded-lg border border-border bg-surface text-foreground-secondary disabled:cursor-not-allowed disabled:opacity-60 [&_svg]:size-4">
-      {icon}
-    </button>
-  );
-}
 
 /** Fallback that matches the requested view: the board skeleton until the params resolve, then board, table, calendar or timeline. */
 async function ViewSkeleton({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {

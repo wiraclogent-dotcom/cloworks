@@ -4,9 +4,10 @@ import { act } from "react";
 import { render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
-vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
+vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
+vi.mock("next/font/google", () => ({ Bricolage_Grotesque: () => ({ variable: "font-display" }) }));
 import SignInPage from "@/app/signin/page";
-import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE } from "@/lib/signinError";
+import { signInErrorMessage, CREDENTIALS_MESSAGE, DENIED_MESSAGE, FAILED_MESSAGE, PASSWORD_CHANGED_MESSAGE, LINKED_MESSAGE } from "@/lib/signinError";
 
 afterEach(() => {
   cleanup();
@@ -25,8 +26,8 @@ describe("signInErrorMessage", () => {
 });
 
 describe("SignInPage", () => {
-  const show = async (error?: string, changed?: string) => {
-    await act(async () => { render(<SignInPage searchParams={Promise.resolve({ error, changed })} />); });
+  const show = async (error?: string, changed?: string, linked?: string) => {
+    await act(async () => { render(<SignInPage searchParams={Promise.resolve({ error, changed, linked })} />); });
   };
   it("renders an alert for a refused login", async () => {
     await show("AccessDenied");
@@ -51,8 +52,14 @@ describe("SignInPage", () => {
     vi.stubEnv("AUTH_GOOGLE_ID", "");
     vi.stubEnv("AUTH_MICROSOFT_ENTRA_ID_ID", "eid");
     await show(undefined);
-    expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /continue with google/i })).toBeNull();
+    // Microsoft's button is hidden until its sign-in is set up, even with its env vars present.
+    expect(screen.queryByRole("button", { name: /continue with/i })).toBeNull();
+    cleanup();
+    vi.stubEnv("AUTH_GOOGLE_ID", "gid");
+    await show(undefined);
+    expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /continue with microsoft/i })).toBeNull();
   });
   it("explains a refused password sign-in, and confirms a password change", async () => {
     await show("CredentialsSignin");
@@ -60,5 +67,12 @@ describe("SignInPage", () => {
     cleanup();
     await show(undefined, "1");
     expect((await screen.findByRole("status")).textContent).toBe(PASSWORD_CHANGED_MESSAGE);
+  });
+  it("tells a linked applicant they are in and to sign in again (info tone)", async () => {
+    await show(undefined, undefined, "1");
+    const note = await screen.findByRole("status");
+    expect(note.textContent).toBe("You're in. Sign in again to continue.");
+    expect(note.textContent).toBe(LINKED_MESSAGE);
+    expect(note.getAttribute("data-tone")).toBe("in-progress");
   });
 });

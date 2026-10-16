@@ -1,20 +1,30 @@
 import * as React from "react"
-import { cn } from "@/components/ui/cn"
+import { cn, focusRing } from "@/components/ui/cn"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+/** The field look every single-line control shares (Input, NativeSelect, the Select trigger), so they cannot drift. */
+function inputClass(size: "default" | "sm" = "default") {
+  return cn(
+    "block w-full min-w-0 rounded-lg border border-input bg-card text-sm text-foreground placeholder:text-placeholder transition-colors duration-150 ease-out hover:border-muted-foreground disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-70 aria-invalid:border-danger",
+    size === "sm" ? "h-8 px-2.5" : "h-9 px-3",
+    focusRing
+  )
+}
+
+/** Text field: 36px (`size="sm"` 32px), 8px radius, 3:1 outline. Error state comes from `aria-invalid`. */
+function Input({
+  className,
+  type,
+  size = "default",
+  ...props
+}: Omit<React.ComponentProps<"input">, "size"> & { size?: "default" | "sm" }) {
   return (
     <input
       type={type}
       data-slot="input"
-      className={cn(
-        "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",
-        "focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50",
-        "aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40",
-        className
-      )}
+      className={cn(inputClass(size), className)}
       {...props}
     />
   )
 }
 
-export { Input }
+export { Input, inputClass }

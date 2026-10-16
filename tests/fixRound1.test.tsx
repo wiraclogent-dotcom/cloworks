@@ -7,9 +7,9 @@ import { render, screen, cleanup, within, fireEvent } from "@testing-library/rea
 vi.mock("@/app/(app)/dashboard/targets/actions", () => ({ setTarget: vi.fn() }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/requests" }));
 vi.mock("@/lib/auth", () => ({ signIn: vi.fn() }));
-vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn() }));
+vi.mock("@/app/signin/actions", () => ({ passwordSignIn: vi.fn(), googleSignIn: vi.fn() }));
 vi.mock("@/lib/db", () => ({ prisma: {} }));
-vi.mock("next/font/google", () => ({ Inter: () => ({ variable: "font-inter" }) }));
+vi.mock("next/font/google", () => ({ Archivo: () => ({ variable: "font-archivo" }) }));
 vi.mock("@/lib/session", () => ({ requireUserOrRedirect: vi.fn(), requireUser: vi.fn() }));
 
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -46,7 +46,7 @@ describe("D2/D7 PageHeader wraps on narrow screens", () => {
   });
 });
 
-const kpi = { tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1.2, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 };
+const kpi = { doneRequestIds: ["r1", "r2", "r3"], tasksDone: 3, target: 5, progress: 0.6, onTimeRate: 1, avgTurnaroundDays: 1.2, revisionRounds: 0, totalOutputs: 3, activeWorkload: 1 };
 const rows: TeamRow[] = [{ userId: "u1", name: "Fadli", role: "DESIGNER", kpi }, { userId: "u2", name: "Sari", role: "SOCIAL_MEDIA", kpi }];
 
 describe("D4 Team KPI table fits at ≥ 1024px", () => {
@@ -77,27 +77,29 @@ describe("D4 Team KPI table fits at ≥ 1024px", () => {
 
 describe("D8 tap targets", () => {
   it("sort header links are ≥ 32px tall, team name links ≥ 28px, small avatar initials 11px", () => {
-    render(<RequestTable rows={[{ id: "a", title: "T", status: "REQUESTED", brandName: "Zed", divisionName: "D", requesterName: "Rina", assigneeName: null,
+    render(<RequestTable rows={[{ id: "a", title: "T", status: "REQUESTED", brandName: "Zed", divisionName: "D", requesterName: "Rina", assignees: [],
       requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 0, daysLeft: null, needsMotion: false }]} sort="deadline" dir="asc" hrefFor={() => "/requests"} />);
     for (const h of screen.getAllByRole("columnheader")) expect(within(h).getByRole("link").className).toContain("min-h-8");
     cleanup();
     render(<TeamTable rows={rows} month="2026-10" canEdit={false} />);
     expect(screen.getByRole("link", { name: "Fadli" }).className).toContain("min-h-7");
     cleanup();
+    render(<TeamTable rows={rows} month="2026-10" canEdit={false} canOpen={false} />);
+    expect(screen.queryByRole("link", { name: "Fadli" })).toBeNull();
+    expect(screen.getByText("Fadli")).toBeTruthy();
+    cleanup();
     const { container } = render(<Avatar name="Rina Sari" size="sm" />);
     expect(container.firstElementChild!.className).toContain("text-[11px]");
     expect(container.firstElementChild!.className).not.toMatch(/text-\[(9|10)px\]/);
   });
-  it("mobile drawer: focus moves in even when the first focus() is a no-op (hidden until the transition starts)", () => {
-    vi.useFakeTimers();
-    const real = HTMLElement.prototype.focus;
-    let blocked = true;
-    vi.spyOn(HTMLElement.prototype, "focus").mockImplementation(function (this: HTMLElement) { if (!blocked) real.call(this); });
+  // The drawer used to be the <aside>, `visibility: hidden` until its slide transition started, so the first focus()
+  // could be a no-op and needed timed retries. It is a shadcn Sheet now: mounted visible when it opens, so focus lands
+  // at once (also checked in a real browser at 375px: on the close button 50ms after Enter on the menu button).
+  it("mobile drawer: focus moves in at once (the drawer is never visibility-hidden while open)", () => {
     render(<AppFrame nav={null} footer={null}><p>x</p></AppFrame>);
     fireEvent.click(screen.getByRole("button", { name: "Open navigation" }));
-    expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Close navigation" }));
-    blocked = false;
-    act(() => { vi.advanceTimersByTime(250); });
+    const drawer = screen.getByRole("dialog", { name: "Navigation" });
+    expect(drawer.className).not.toMatch(/(^|\s)invisible(\s|$)|visibility/);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Close navigation" }));
   });
 });
@@ -106,19 +108,20 @@ describe("D11 per-page titles", () => {
   it("root template + static page titles", () => {
     expect(rootMeta.title).toEqual({ default: "Cloworks", template: "%s · Cloworks" });
     expect([requestsMeta, newRequestMeta, detailMeta, kpiMeta, teamMeta, projectsMeta, usersMeta, listsMeta, signinMeta].map((m) => m.title)).toEqual(
-      ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Users", "Admin · Lists", "Sign in"]);
+      ["Requests", "New request", "Request", "My KPI", "Team KPI", "Projects", "Admin · Members", "Admin · Lists", "Sign in"]);
   });
 });
 
-describe("D10 sign-in brand band", () => {
-  it("Deep Blue band with the logo, name and tagline above the unchanged form card", async () => {
+describe("D10 sign-in brand panel", () => {
+  it("flat blue V3 panel with product cards and no illustration, next to the form and a link home", async () => {
     await act(async () => { render(<SignInPage searchParams={Promise.resolve({})} />); });
-    const band = document.querySelector("[data-brand-band]")!;
-    expect(band.className).toContain("bg-sidebar");
-    expect(band.className).toContain("border-brand-aqua");
-    expect(band.textContent).toContain("Cloworks");
+    const panel = document.querySelector("[data-brand-panel]")!;
+    expect(panel.innerHTML).toContain("var(--brand-deep-blue)");
+    expect(panel.querySelector("img")).toBeNull();
+    expect(panel.textContent).toContain("Every creative request, from brief to done.");
+    expect(screen.getByRole("link", { name: "Back to home" }).getAttribute("href")).toBe("/");
     expect(screen.getByRole("heading", { level: 1, name: "Sign in" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /continue with google/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /continue with microsoft/i })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /continue with microsoft/i })).toBeNull(); // hidden until set up
   });
 });

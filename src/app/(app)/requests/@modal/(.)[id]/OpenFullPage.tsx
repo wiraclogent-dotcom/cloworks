@@ -6,7 +6,7 @@ export function OpenFullPage({ params, icon }: { params: Promise<{ id: string }>
   const { id } = use(params);
   return (
     <a href={`/requests/${id}`} title="Open full page" aria-label="Open full page"
-      className={cn("inline-flex size-9 items-center justify-center rounded-lg text-foreground-secondary hover:bg-surface-muted hover:text-foreground [&_svg]:size-[18px]", focusRing)}>
+      className={cn("inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground [&_svg]:size-[18px]", focusRing)}>
       {icon}
     </a>
   );

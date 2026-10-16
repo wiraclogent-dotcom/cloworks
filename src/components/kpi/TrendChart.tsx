@@ -2,12 +2,16 @@
 
 import { Bar, CartesianGrid, ComposedChart, LabelList, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ChevronRight } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-import { tableClass } from "@/components/ui/table";
+import { Card } from "@/components/shadcn/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
+import { cn, focusRing } from "@/components/ui/cn";
 
 export type TrendPoint = { month: string; label: string; tasksDone: number; target: number | null };
 
 const tick = { fill: "var(--foreground-secondary)", fontSize: 12 };
+/** Compact density for the "View as table" cells. */
+const DENSE = "py-1.5";
 
 type TipProps = { active?: boolean; payload?: readonly { payload?: TrendPoint }[] };
 
@@ -16,7 +20,7 @@ function ChartTooltip({ active, payload }: TipProps) {
   const p = active ? payload?.[0]?.payload : undefined;
   if (!p) return null;
   return (
-    <div className="rounded-lg border border-border bg-card px-3 py-2 text-[13px] text-card-foreground shadow-raised">
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 text-compact text-card-foreground shadow-raised">
       <p className="mb-1 font-semibold">{p.label}</p>
       <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="size-2.5 rounded-sm bg-chart-done" />Tasks done: {p.tasksDone}</p>
       <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="h-0.5 w-2.5 rounded-full bg-chart-target" />Target: {p.target ?? "—"}</p>
@@ -25,21 +29,21 @@ function ChartTooltip({ active, payload }: TipProps) {
 }
 
 /**
- * Tasks done (Aqua bars, labelled) vs target (Deep Blue dashed line) per month, in a card. The chart is decorative for
+ * Tasks done (blue bars, labelled) vs target (ink dashed line) per month, in a card. The chart is decorative for
  * assistive tech; the "View as table" data table is the accessible alternative (kept from before the redesign).
  */
-export function TrendChart({ points }: { points: TrendPoint[] }) {
+export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[]; headingLevel?: 2 | 3 }) {
+  const Heading = headingLevel === 3 ? "h3" : "h2";
   const data = points.map((p) => ({ ...p, short: p.label.replace(/ \d{4}$/, "") }));
-  const t = tableClass({ compact: true });
   return (
     <Card>
       <figure>
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-foreground">Last {points.length} months</h2>
-            <figcaption className="text-[13px] text-foreground-secondary">Tasks done vs target, last {points.length} months</figcaption>
+            <Heading className="text-base font-semibold text-foreground">Last {points.length} months</Heading>
+            <figcaption className="text-compact text-muted-foreground">Tasks done vs target, last {points.length} months</figcaption>
           </div>
-          <ul aria-hidden="true" className="flex items-center gap-4 text-xs text-foreground-secondary">
+          <ul aria-hidden="true" className="flex items-center gap-4 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-done" />Tasks done</li>
             <li className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded-full bg-chart-target" />Target</li>
           </ul>
@@ -59,33 +63,33 @@ export function TrendChart({ points }: { points: TrendPoint[] }) {
           </ResponsiveContainer>
         </div>
       </figure>
-      <details className="group mt-3 border-t border-border pt-3">
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 rounded-md text-[13px] font-medium text-link [&::-webkit-details-marker]:hidden">
-          <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />
+      <Collapsible className="group mt-3 border-t border-border pt-3">
+        <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-compact font-medium text-link", focusRing)}>
+          <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />
           View as table
-        </summary>
-        <div className="relative mt-2 overflow-x-auto">
-          <table className={t.table}>
-            <caption className="sr-only">Tasks done versus target by month</caption>
-            <thead>
-              <tr>
-                <th scope="col" className={t.th}>Month</th>
-                <th scope="col" className={`${t.th} ${t.numeric}`}>Tasks done</th>
-                <th scope="col" className={`${t.th} ${t.numeric}`}>Target</th>
-              </tr>
-            </thead>
-            <tbody>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="mt-2">
+          <Table>
+            <TableCaption className="sr-only">Tasks done versus target by month</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead scope="col" className={DENSE}>Month</TableHead>
+                <TableHead scope="col" numeric className={DENSE}>Tasks done</TableHead>
+                <TableHead scope="col" numeric className={DENSE}>Target</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {points.map((p) => (
-                <tr key={p.month} className={t.tr}>
-                  <th scope="row" className={`${t.td} font-normal`}>{p.label}</th>
-                  <td className={`${t.td} ${t.numeric}`}>{p.tasksDone}</td>
-                  <td className={`${t.td} ${t.numeric}`}>{p.target ?? "—"}</td>
-                </tr>
+                <TableRow key={p.month}>
+                  <TableRowHeader className={cn(DENSE, "font-normal")}>{p.label}</TableRowHeader>
+                  <TableCell numeric className={DENSE}>{p.tasksDone}</TableCell>
+                  <TableCell numeric className={DENSE}>{p.target ?? "—"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </details>
+            </TableBody>
+          </Table>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 }

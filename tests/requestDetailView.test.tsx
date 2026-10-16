@@ -3,7 +3,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 
 vi.mock("@/app/(app)/requests/[id]/actions", () => ({
-  addComment: vi.fn(), addAttachment: vi.fn(), assignRequest: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: vi.fn(), setNeedsMotion: vi.fn(),
+  addComment: vi.fn(), addAttachment: vi.fn(), setAssignees: vi.fn(), removeAttachment: vi.fn(), setIncludeKpi: vi.fn(), setNeedsMotion: vi.fn(),
 }));
 vi.mock("@/app/(app)/requests/actions", () => ({ moveRequest: vi.fn(), rescheduleRequest: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -16,9 +16,9 @@ afterEach(cleanup);
 const base = (extra: Partial<RequestDetail> = {}): RequestDetail => ({
   id: "r1", title: "Launch poster", status: "ON_PROGRESS", needsMotion: false, includeKpi: true,
   briefUrl: "https://docs.example.com/brief", notes: "Line one\nLine two", designFolderUrl: null, outputCount: 3,
-  requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: new Date("2026-10-09T00:00:00Z"), assigneeId: "u2",
+  requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: new Date("2026-10-09T00:00:00Z"),
   brand: { name: "Clogent" }, division: { name: "Marketing" }, type: { name: "General Design" },
-  requester: { name: "Rina Sari" }, assignee: { name: "Cami Putri" },
+  requester: { name: "Rina Sari" }, assignees: [{ user: { id: "u2", name: "Cami Putri", active: true } }],
   deadlineEvents: [],
   statusEvents: [
     { id: "e1", from: null, to: "REQUESTED", at: new Date("2026-10-01T03:00:00Z"), actor: { name: "Rina Sari" } },
@@ -83,7 +83,7 @@ describe("RequestDetailView sections", () => {
     expect(d.getByText("2 days left").getAttribute("data-deadline")).toBe("due-soon");
     expect(d.queryByText("Outputs")).toBeNull();
     cleanup();
-    view(base({ status: "DONE", assignee: null, assigneeId: null, designFolderUrl: "https://drive.example.com/f" }), LEAD, -1);
+    view(base({ status: "DONE", assignees: [], designFolderUrl: "https://drive.example.com/f" }), LEAD, -1);
     const d2 = within(card("Details"));
     expect(d2.getByText("Outputs")).toBeTruthy();
     expect(d2.queryByText(/Overdue/)).toBeNull();
@@ -123,6 +123,27 @@ describe("RequestDetailView sections", () => {
   });
 });
 
+describe("RequestDetailView several assignees", () => {
+  const two = () => base({ assignees: [{ user: { id: "u2", name: "Cami Putri", active: true } }, { user: { id: "u3", name: "Fafa Nur", active: true } }] });
+  it("shows a stack of avatars in the header chips and every name in Details", () => {
+    view(two(), CREATIVE);
+    const chips = document.querySelector("[data-detail-chips]") as HTMLElement;
+    expect(within(chips).getByRole("img", { name: "Assignees: Cami Putri, Fafa Nur" })).toBeTruthy();
+    const d = within(card("Details"));
+    expect(d.getByText("Cami Putri")).toBeTruthy();
+    expect(d.getByText("Fafa Nur")).toBeTruthy();
+  });
+  it("viewers who cannot assign see the names and no remove buttons or add control", () => {
+    view(two(), CREATIVE);
+    expect(screen.queryByRole("button", { name: /^Remove (Cami|Fafa)/ })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Add assignee" })).toBeNull();
+  });
+  it("shows no stack when nobody is assigned", () => {
+    view(base({ assignees: [] }), CREATIVE);
+    expect(screen.queryByRole("img", { name: /^Assignees/ })).toBeNull();
+  });
+});
+
 describe("RequestDetailView Manage card per permission", () => {
   it("requesters see no Manage card", () => {
     view(base(), REQUESTER);
@@ -134,33 +155,32 @@ describe("RequestDetailView Manage card per permission", () => {
     view(base(), CREATIVE);
     const m = within(card("Manage"));
     expect(m.getByLabelText("Move to…")).toBeTruthy();
-    expect(m.queryByLabelText("Assignee")).toBeNull();
+    expect(m.queryByRole("group", { name: "Assignees" })).toBeNull();
     expect(m.queryByRole("switch")).toBeNull();
   });
   it("leads get the assignee picker, Move to… and both switches", () => {
     view(base(), LEAD);
     const m = within(card("Manage"));
-    expect((m.getByLabelText("Assignee") as HTMLSelectElement).value).toBe("u2");
+    expect(m.getByRole("button", { name: "Remove Cami Putri" })).toBeTruthy();
+    expect((m.getByRole("combobox", { name: "Add assignee" }) as HTMLSelectElement).value).toBe("");
     expect(m.getByLabelText("Move to…")).toBeTruthy();
     expect(m.getByText("Choose Cancelled to cancel this request.")).toBeTruthy();
-    expect((m.getByRole("switch", { name: "Counts toward KPI" }) as HTMLInputElement).checked).toBe(true);
-    expect((m.getByRole("switch", { name: "Needs motion" }) as HTMLInputElement).checked).toBe(false);
+    expect(m.getByRole("switch", { name: "Counts toward KPI" }).getAttribute("aria-checked")).toBe("true");
+    expect(m.getByRole("switch", { name: "Needs motion" }).getAttribute("aria-checked")).toBe("false");
   });
   it("hides the assignee picker on a cancelled request", () => {
     view(base({ status: "CANCELLED" }), LEAD);
-    expect(within(card("Manage")).queryByLabelText("Assignee")).toBeNull();
+    expect(within(card("Manage")).queryByRole("group", { name: "Assignees" })).toBeNull();
   });
 });
 
 describe("Switch", () => {
-  it("is a checkbox with role switch, named by its label, and the focus ring on the track", () => {
-    render(<Switch id="s" label="Counts toward KPI" checked={false} onChange={() => {}} />);
-    const sw = screen.getByRole("switch", { name: "Counts toward KPI" }) as HTMLInputElement;
-    expect(sw.type).toBe("checkbox");
-    expect(sw.checked).toBe(false);
-    const track = document.querySelector("[data-switch-track]")!;
-    expect(track.className).toMatch(/peer-focus-visible:outline-ring/);
-    expect(track.className).toMatch(/peer-checked:bg-primary/);
+  it("is a role=switch button named by its label, with the focus ring and the primary track when on", () => {
+    render(<Switch id="s" label="Counts toward KPI" checked={false} onCheckedChange={() => {}} />);
+    const sw = screen.getByRole("switch", { name: "Counts toward KPI" });
+    expect(sw.getAttribute("aria-checked")).toBe("false");
+    expect(sw.className).toMatch(/focus-visible:outline-ring/);
+    expect(sw.className).toMatch(/data-\[state=checked\]:bg-primary/);
   });
 });
 

@@ -1,7 +1,9 @@
 import type { Prisma, PrismaClient, RequestStatus } from "@prisma/client";
+import { ASSIGNEE_ORDER, type AssigneeRef } from "./assignees";
 import { daysLeft } from "./daysLeft";
-import { jakartaDate } from "./createRequest";
+import { VIDEO_TYPE_NAME, jakartaDate } from "./createRequest";
 import { isOpenStatus } from "./reschedule";
+import { scopeWhere, type OverviewScope } from "./todayOverview";
 import { BOARD_MAX_PER_COLUMN, BOARD_PAGE_SIZE, TABLE_PAGE_SIZE, pageWindow, type PageWindow } from "./paging";
 
 export type RequestFilter = {
@@ -12,7 +14,11 @@ export type RequestFilter = {
   q?: string;
   /** true = only tasks that need motion, false = only those that do not, undefined = any. */
   needsMotion?: boolean;
+  /** "My requests": only requests this user filed. */
   mine?: { userId: string };
+  /** A summary tile's list (Open / Due today / Overdue / Done today), evaluated at `now`. */
+  scope?: OverviewScope;
+  now?: Date;
 };
 
 export type RequestRow = {
@@ -21,22 +27,31 @@ export type RequestRow = {
   brandName: string;
   divisionName: string;
   requesterName: string;
-  assigneeName: string | null;
+  /** Everyone working on it, in the order they were added (ASSIGNEE_ORDER); empty = unassigned. */
+  assignees: AssigneeRef[];
   status: RequestStatus;
   requestedAt: Date;
   deadline: Date | null;
   outputCount: number;
   needsMotion: boolean;
+  /** Filed as a Video request (the Motion Support type): its chip says "Video" instead of "Needs motion". */
+  isVideo?: boolean;
   /** Jakarta-calendar days to the deadline (negative = overdue), null without a deadline. */
   daysLeft: number | null;
 };
 
+const ASSIGNEES_SELECT = {
+  orderBy: [...ASSIGNEE_ORDER],
+  select: { user: { select: { id: true, name: true } } },
+} satisfies Prisma.Request$assigneesArgs;
+
 const ROW_SELECT = {
   id: true, title: true, status: true, requestedAt: true, deadline: true, outputCount: true, needsMotion: true,
   brand: { select: { name: true } },
+  type: { select: { name: true } },
   division: { select: { name: true } },
   requester: { select: { name: true } },
-  assignee: { select: { name: true } },
+  assignees: ASSIGNEES_SELECT,
 } satisfies Prisma.RequestSelect;
 
 type DbRow = Prisma.RequestGetPayload<{ select: typeof ROW_SELECT }>;
@@ -44,22 +59,23 @@ type DbRow = Prisma.RequestGetPayload<{ select: typeof ROW_SELECT }>;
 function toRow(r: DbRow, now: Date): RequestRow {
   return {
     id: r.id, title: r.title, brandName: r.brand.name, divisionName: r.division.name,
-    requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
+    requesterName: r.requester.name, assignees: r.assignees.map((a) => ({ id: a.user.id, name: a.user.name })),
     status: r.status, requestedAt: r.requestedAt, deadline: r.deadline, outputCount: r.outputCount, needsMotion: r.needsMotion,
-    daysLeft: daysLeft(r.deadline, now),
+    isVideo: r.type.name === VIDEO_TYPE_NAME, daysLeft: daysLeft(r.deadline, now),
   };
 }
 
 /** The shared filter, WITHOUT the status clause (callers add it). */
 function filterClauses(filter: RequestFilter): Prisma.RequestWhereInput[] {
   const and: Prisma.RequestWhereInput[] = [];
-  if (filter.assigneeId) and.push({ assigneeId: filter.assigneeId });
+  if (filter.assigneeId) and.push({ assignees: { some: { userId: filter.assigneeId } } });
   if (filter.brandId) and.push({ brandId: filter.brandId });
   if (filter.divisionId) and.push({ divisionId: filter.divisionId });
   if (filter.needsMotion !== undefined) and.push({ needsMotion: filter.needsMotion });
   const q = filter.q?.trim();
   if (q) and.push({ OR: [{ title: { contains: q, mode: "insensitive" } }, { notes: { contains: q, mode: "insensitive" } }] });
-  if (filter.mine) and.push({ OR: [{ requesterId: filter.mine.userId }, { assigneeId: filter.mine.userId }] });
+  if (filter.mine) and.push({ requesterId: filter.mine.userId });
+  if (filter.scope) and.push(scopeWhere(filter.scope, filter.now));
   return and;
 }
 
@@ -91,7 +107,7 @@ const BOARD_COLUMN_ORDER: readonly RequestStatus[] = ["REQUESTED", "ON_PROGRESS"
 /**
  * Board data: per column the TOTAL matching the filters plus only the first `limit` rows (never the whole table).
  * Active columns: deadline asc (nulls last), then requestedAt desc. DONE and CANCELLED: newest request first.
- * One grouped count + one bounded query per non-empty column. A status filter keeps the four columns and
+ * One grouped count plus one bounded query per column, all in parallel. A status filter keeps the four columns and
  * empties the others; CANCELLED gets a fifth column only when it is the status filter.
  */
 export async function listBoardColumns(
@@ -102,26 +118,32 @@ export async function listBoardColumns(
 ): Promise<BoardColumn[]> {
   const statuses: RequestStatus[] = filter.status === "CANCELLED" ? [...BOARD_COLUMN_ORDER, "CANCELLED"] : [...BOARD_COLUMN_ORDER];
   const clauses = filterClauses(filter);
-  const grouped = await db.request.groupBy({
-    by: ["status"],
-    where: { AND: clauses },
-    _count: { _all: true },
-    orderBy: { status: "asc" },
-  });
+  // The grouped count and the column queries run together (one round trip, not two): a column whose count turns
+  // out to be 0 simply returns no rows.
+  const [grouped, columnRows] = await Promise.all([
+    db.request.groupBy({
+      by: ["status"],
+      where: { AND: clauses },
+      _count: { _all: true },
+      orderBy: { status: "asc" },
+    }),
+    Promise.all(statuses.map((status) => {
+      if (filter.status && filter.status !== status) return [];
+      const take = Math.min(BOARD_MAX_PER_COLUMN, Math.max(1, limits.byStatus?.[status] ?? limits.limit ?? BOARD_PAGE_SIZE));
+      const terminal = status === "DONE" || status === "CANCELLED";
+      return db.request.findMany({
+        where: { AND: [{ status }, ...clauses] },
+        orderBy: terminal ? [{ requestedAt: "desc" }, { id: "asc" }] : [DEADLINE_ASC, { requestedAt: "desc" }, { id: "asc" }],
+        take,
+        select: ROW_SELECT,
+      });
+    })),
+  ]);
   const counts = new Map(grouped.map((g) => [g.status, g._count._all]));
-  return Promise.all(statuses.map(async (status): Promise<BoardColumn> => {
+  return statuses.map((status, i): BoardColumn => {
     const total = filter.status && filter.status !== status ? 0 : counts.get(status) ?? 0;
-    const take = Math.min(BOARD_MAX_PER_COLUMN, Math.max(1, limits.byStatus?.[status] ?? limits.limit ?? BOARD_PAGE_SIZE));
-    if (total === 0) return { status, total, rows: [] };
-    const terminal = status === "DONE" || status === "CANCELLED";
-    const rows = await db.request.findMany({
-      where: { AND: [{ status }, ...clauses] },
-      orderBy: terminal ? [{ requestedAt: "desc" }, { id: "asc" }] : [DEADLINE_ASC, { requestedAt: "desc" }, { id: "asc" }],
-      take,
-      select: ROW_SELECT,
-    });
-    return { status, total, rows: rows.map((r) => toRow(r, now)) };
-  }));
+    return { status, total, rows: total === 0 ? [] : columnRows[i].map((r) => toRow(r, now)) };
+  });
 }
 
 export type SortKey = "title" | "brand" | "division" | "requester" | "assignee" | "status" | "requested" | "deadline";
@@ -129,7 +151,7 @@ export const SORT_KEYS: readonly SortKey[] = ["title", "brand", "division", "req
 const STATUS_ORDER: RequestStatus[] = ["REQUESTED", "ON_PROGRESS", "FIRST_LOOK", "DONE", "CANCELLED"];
 
 /** The row fields a sort key can read. */
-export type SortFields = Pick<RequestRow, "title" | "brandName" | "divisionName" | "requesterName" | "assigneeName" | "status" | "requestedAt" | "deadline">;
+export type SortFields = Pick<RequestRow, "title" | "brandName" | "divisionName" | "requesterName" | "assignees" | "status" | "requestedAt" | "deadline">;
 
 /** Stable sort for the table (used for the text keys the database cannot collate like JS); nulls (no deadline / no assignee) always last regardless of direction. */
 export function sortRows<T extends SortFields>(rows: T[], key: SortKey, dir: "asc" | "desc"): T[] {
@@ -139,7 +161,7 @@ export function sortRows<T extends SortFields>(rows: T[], key: SortKey, dir: "as
       case "brand": return r.brandName.toLowerCase();
       case "division": return r.divisionName.toLowerCase();
       case "requester": return r.requesterName.toLowerCase();
-      case "assignee": return r.assigneeName?.toLowerCase() ?? null;
+      case "assignee": return r.assignees[0]?.name.toLowerCase() ?? null;
       case "status": return STATUS_ORDER.indexOf(r.status);
       case "requested": return r.requestedAt.getTime();
       case "deadline": return r.deadline?.getTime() ?? null;
@@ -193,12 +215,12 @@ export async function listRequestsPage(
     select: {
       id: true, title: true, status: true, requestedAt: true, deadline: true,
       brand: { select: { name: true } }, division: { select: { name: true } },
-      requester: { select: { name: true } }, assignee: { select: { name: true } },
+      requester: { select: { name: true } }, assignees: ASSIGNEES_SELECT,
     },
   });
   const sorted = sortRows(lean.map((r) => ({
     id: r.id, title: r.title, status: r.status, requestedAt: r.requestedAt, deadline: r.deadline,
-    brandName: r.brand.name, divisionName: r.division.name, requesterName: r.requester.name, assigneeName: r.assignee?.name ?? null,
+    brandName: r.brand.name, divisionName: r.division.name, requesterName: r.requester.name, assignees: r.assignees.map((a) => ({ id: a.user.id, name: a.user.name })),
   })), sort, dir);
   const ids = sorted.slice(window.skip, window.skip + size).map((r) => r.id);
   const full = new Map((await db.request.findMany({ where: { id: { in: ids } }, select: ROW_SELECT })).map((r) => [r.id, r]));
@@ -244,7 +266,7 @@ export async function listCalendarRequests(
   }));
 }
 
-export type TimelineRow = CalendarRow & { assigneeId: string | null };
+export type TimelineRow = CalendarRow;
 
 /**
  * Timeline data: open requests whose bar (request day to deadline; overdue and no-deadline ones run to today)
@@ -269,11 +291,10 @@ export async function listTimelineRequests(
       ],
     },
     orderBy: [{ requestedAt: "asc" }, DEADLINE_ASC, { id: "asc" }],
-    select: { ...ROW_SELECT, assigneeId: true },
+    select: ROW_SELECT,
   });
   return rows.map((r) => ({
     ...toRow(r, now),
-    assigneeId: r.assigneeId,
     requestDay: jakartaDate(r.requestedAt),
     deadlineDay: r.deadline ? jakartaDate(r.deadline) : null,
   }));

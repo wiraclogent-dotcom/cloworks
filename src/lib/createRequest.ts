@@ -1,7 +1,8 @@
 import { z } from "zod";
-import type { AppRole, PrismaClient } from "@prisma/client";
+import type { AppRole, Prisma, PrismaClient } from "@prisma/client";
 import { can } from "./permissions";
 import { isHttpUrl, parseFieldSchema, validateFields } from "./fieldSchema";
+import { CREATIVE_TEAM } from "./team";
 
 export type CreateRequestInput = {
   title: string;
@@ -16,9 +17,13 @@ export type CreateRequestInput = {
   fields?: Record<string, unknown>;
   /** The task also needs motion/video work. Default false. */
   needsMotion?: boolean;
+  /** Optional designers to assign straight away (each must be on the creative team). Omitted/empty = unassigned. */
+  assigneeIds?: string[];
 };
 
 export const DEFAULT_TYPE_NAME = "General Design";
+/** The type "Video" requests are filed under (the form's third "What do you need?" card). */
+export const VIDEO_TYPE_NAME = "Motion Support";
 
 export class CreateRequestError extends Error {
   constructor(
@@ -73,14 +78,26 @@ function fail(fieldErrors: Record<string, string>): never {
   throw new CreateRequestError("VALIDATION", Object.values(fieldErrors)[0] ?? "Invalid request", fieldErrors);
 }
 
-export async function createRequestWith(
-  db: PrismaClient,
-  user: { id: string; appRole: AppRole },
-  input: CreateRequestInput,
-  now = new Date(),
-): Promise<{ id: string }> {
-  if (!can(user.appRole, "request.create")) throw new CreateRequestError("FORBIDDEN", "You are not allowed to create requests");
+/** The validated values of a request, ready to insert (see `validateRequestInput`). */
+export type ValidRequest = {
+  title: string;
+  briefUrl: string | undefined;
+  notes: string | undefined;
+  brandId: string;
+  divisionId: string;
+  typeId: string;
+  /** Deduped, in the order given. */
+  assigneeIds: string[];
+  deadline: Date | null;
+  needsMotion: boolean;
+  fields: Record<string, unknown>;
+};
 
+/** A client or an interactive-transaction client (what `db.$transaction(async (tx) => …)` hands you). */
+type DbOrTx = PrismaClient | Prisma.TransactionClient;
+
+/** Everything `createRequestWith` checks except the permission: zod, lookups, field schema, deadline. Throws `CreateRequestError("VALIDATION")`. */
+export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput, now: Date): Promise<ValidRequest> {
   // Collect every independent error in one pass (field-keyed) so the form can show them together.
   const errs: Record<string, string> = {};
   const parsed = inputSchema.safeParse(input);
@@ -93,11 +110,14 @@ export async function createRequestWith(
   const idOf = (k: "brandId" | "divisionId" | "typeId") => (typeof input[k] === "string" && input[k] ? input[k] : null);
   const [brandId, divisionId, typeId] = [idOf("brandId"), idOf("divisionId"), idOf("typeId")];
   const useDefault = input.typeId === undefined;
-  const [brand, division, type] = await Promise.all([
+  const assigneeIds = [...new Set((Array.isArray(input.assigneeIds) ? input.assigneeIds : []).filter((x): x is string => typeof x === "string" && x !== ""))];
+  const [brand, division, type, team] = await Promise.all([
     brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
     divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
     useDefault ? db.requestType.findFirst({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
+    assigneeIds.length ? db.user.findMany({ where: { id: { in: assigneeIds }, ...CREATIVE_TEAM }, select: { id: true } }) : null,
   ]);
+  if (assigneeIds.length && team?.length !== assigneeIds.length) errs.assigneeIds ??= "Pick someone from the creative team";
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
   if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;
@@ -111,30 +131,58 @@ export async function createRequestWith(
     else for (const [k, m] of Object.entries(fr.errors)) errs[`fields.${k}`] ??= m;
   }
   if (Object.keys(errs).length || !raw || !type) return fail(errs);
-  const v = raw;
+  return {
+    title: raw.title,
+    briefUrl: raw.briefUrl,
+    notes: raw.notes,
+    brandId: raw.brandId,
+    divisionId: raw.divisionId,
+    typeId: type.id,
+    assigneeIds,
+    deadline: raw.deadline ? new Date(`${raw.deadline}T00:00:00+07:00`) : null,
+    needsMotion: raw.needsMotion,
+    fields,
+  };
+}
 
-  return db.$transaction(async (tx) => {
-    const req = await tx.request.create({
-      data: {
-        title: v.title,
-        briefUrl: v.briefUrl,
-        notes: v.notes,
-        brandId: v.brandId,
-        divisionId: v.divisionId,
-        typeId: type.id,
-        requesterId: user.id,
-        assigneeId: null,
-        requestedAt: now,
-        deadline: v.deadline ? new Date(`${v.deadline}T00:00:00+07:00`) : null,
-        status: "REQUESTED",
-        outputCount: 1,
-        includeKpi: true,
-        needsMotion: v.needsMotion,
-        fields: fields as object,
-      },
-      select: { id: true },
-    });
-    await tx.statusEvent.create({ data: { requestId: req.id, from: null, to: "REQUESTED", actorId: user.id, at: now } });
-    return { id: req.id };
+/** Inserts the request, its first StatusEvent and its assignees. `actorId` is who filed it; `requesterId` who it is for. */
+export async function insertRequestTx(
+  tx: Prisma.TransactionClient,
+  v: ValidRequest,
+  opts: { requesterId: string; actorId: string; outputCount?: number; now: Date },
+): Promise<{ id: string }> {
+  const req = await tx.request.create({
+    data: {
+      title: v.title,
+      briefUrl: v.briefUrl,
+      notes: v.notes,
+      brandId: v.brandId,
+      divisionId: v.divisionId,
+      typeId: v.typeId,
+      requesterId: opts.requesterId,
+      requestedAt: opts.now,
+      deadline: v.deadline,
+      status: "REQUESTED",
+      outputCount: opts.outputCount ?? 1,
+      includeKpi: true,
+      needsMotion: v.needsMotion,
+      fields: v.fields as object,
+    },
+    select: { id: true },
   });
+  await tx.statusEvent.create({ data: { requestId: req.id, from: null, to: "REQUESTED", actorId: opts.actorId, at: opts.now } });
+  // Not a nested create: nested writes skip workspace scoping. addedAt steps 1 ms per row so ASSIGNEE_ORDER keeps the pick order.
+  if (v.assigneeIds.length) await tx.requestAssignee.createMany({ data: v.assigneeIds.map((userId, i) => ({ requestId: req.id, userId, addedAt: new Date(opts.now.getTime() + i) })), skipDuplicates: true });
+  return { id: req.id };
+}
+
+export async function createRequestWith(
+  db: PrismaClient,
+  user: { id: string; appRole: AppRole },
+  input: CreateRequestInput,
+  now = new Date(),
+): Promise<{ id: string }> {
+  if (!can(user.appRole, "request.create")) throw new CreateRequestError("FORBIDDEN", "You are not allowed to create requests");
+  const v = await validateRequestInput(db, input, now);
+  return db.$transaction((tx) => insertRequestTx(tx, v, { requesterId: user.id, actorId: user.id, now }));
 }

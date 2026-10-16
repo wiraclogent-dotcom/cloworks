@@ -6,21 +6,27 @@ const ACTIONS: Action[] = [
   "request.assign",
   "request.transition",
   "dashboard.team",
+  "dashboard.teamView",
   "dashboard.self",
+  "briefs.view",
   "project.manage",
   "admin.manage",
+  "library.manage",
 ];
 
 const EXPECTED = {
-  REQUESTER: ["request.create", "dashboard.self"],
-  CREATIVE: ["request.create", "request.transition", "dashboard.self", "project.manage"],
+  REQUESTER: ["request.create", "dashboard.self", "dashboard.teamView", "briefs.view"],
+  CREATIVE: ["request.create", "request.transition", "dashboard.self", "dashboard.teamView", "briefs.view", "project.manage"],
   LEAD: [
     "request.create",
+    "dashboard.teamView",
+    "briefs.view",
     "request.transition",
     "dashboard.self",
     "project.manage",
     "request.assign",
     "dashboard.team",
+    "library.manage",
   ],
   ADMIN: ACTIONS,
 } as const;

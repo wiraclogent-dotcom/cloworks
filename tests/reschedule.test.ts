@@ -16,6 +16,12 @@ describe("rescheduleRequestWith", () => {
 
   const mk = (data: Record<string, unknown> = {}) =>
     db.prisma.request.create({ data: { title: "Banner", ...ref, requesterId: reqUserId, status: "ON_PROGRESS", requestedAt: new Date("2026-10-01T03:00:00Z"), deadline: at("2026-10-10"), ...data } as never });
+  /** A request with `assignees` rows (written like the app does, as separate rows; the legacy column is not touched). */
+  const mkWith = async (assignees: string[], data: Record<string, unknown> = {}) => {
+    const q = await mk(data);
+    if (assignees.length) await db.prisma.requestAssignee.createMany({ data: assignees.map((userId) => ({ requestId: q.id, userId })) });
+    return q;
+  };
   const run = (id: string, day: string, user: object = creative) => rescheduleRequestWith(async () => user as never, db.prisma, id, day, notifier);
 
   beforeAll(async () => {
@@ -61,7 +67,7 @@ describe("rescheduleRequestWith", () => {
   });
 
   it("same day is a no-op", async () => {
-    const q = await mk({ assigneeId: creative.id });
+    const q = await mkWith([creative.id]);
     calls.length = 0;
     expect(await run(q.id, "2026-10-10")).toEqual({ ok: true });
     expect(await db.prisma.deadlineEvent.count({ where: { requestId: q.id } })).toBe(0);
@@ -95,16 +101,25 @@ describe("rescheduleRequestWith", () => {
 
   it("notifies assignee and requester but never the actor", async () => {
     const other = await db.prisma.user.create({ data: { email: "o@clogent.co.id", name: "O", fullName: "O", appRole: "CREATIVE" } });
-    const q = await mk({ assigneeId: other.id });
+    const q = await mkWith([other.id]);
     calls.length = 0;
     await run(q.id, "2026-10-15");
     expect(calls).toHaveLength(1);
     expect(calls[0]).toMatchObject({ type: "DEADLINE", actorId: creative.id, requestId: q.id });
     expect([...calls[0].userIds].sort()).toEqual([other.id, reqUserId].sort());
     expect(calls[0].userIds).not.toContain(creative.id);
-    const q2 = await mk({ assigneeId: creative.id });
+    const q2 = await mkWith([creative.id]);
     calls.length = 0;
     await run(q2.id, "2026-10-15");
     expect(calls[0].userIds).toEqual([reqUserId]);
+  });
+  it("notifies the requester and every assignee once each, never the actor", async () => {
+    const a = await db.prisma.user.create({ data: { email: "a1@clogent.co.id", name: "A1", fullName: "A1", appRole: "CREATIVE" } });
+    const b = await db.prisma.user.create({ data: { email: "b1@clogent.co.id", name: "B1", fullName: "B1", appRole: "CREATIVE" } });
+    const q = await mkWith([a.id, b.id, creative.id]);
+    calls.length = 0;
+    await run(q.id, "2026-10-15");
+    expect(calls).toHaveLength(1);
+    expect([...calls[0].userIds].sort()).toEqual([a.id, b.id, reqUserId].sort());
   });
 });

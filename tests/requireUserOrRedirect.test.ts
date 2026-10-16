@@ -5,15 +5,14 @@ vi.mock("next/navigation", () => ({ redirect: (u: string) => redirect(u) }));
 const authFn = vi.fn();
 vi.mock("@/lib/auth", () => ({ auth: () => authFn() }));
 const findUnique = vi.fn();
-const findFirst = vi.fn();
-vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique: (...a: unknown[]) => findUnique(...a) }, allowedEmail: { findFirst: (...a: unknown[]) => findFirst(...a) } }, scopedDb: (w: string) => ({ scopedTo: w }) }));
+vi.mock("@/lib/db", () => ({ prisma: { user: { findUnique: (...a: unknown[]) => findUnique(...a) } }, scopedDb: (w: string) => ({ scopedTo: w }) }));
 
 import { requireUserOrRedirect, requireUser, requireUserForPasswordChange, requireScope, dbFor } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { UnauthenticatedError } from "@/lib/session-core";
 
 const row = { id: "u1", active: true, email: "fadli@clogent.co.id", appRole: "CREATIVE", jobRole: "DESIGNER", passwordVersion: 0, workspaceId: "clogent", mustChangePassword: false };
-beforeEach(() => { redirect.mockClear(); authFn.mockReset(); findUnique.mockReset(); findFirst.mockReset(); });
+beforeEach(() => { redirect.mockClear(); authFn.mockReset(); findUnique.mockReset(); });
 
 describe("requireUserOrRedirect", () => {
   it("redirects to /signin when there is no session", async () => {
@@ -35,6 +34,12 @@ describe("requireUserOrRedirect", () => {
     authFn.mockResolvedValue({ user: { id: "u1", loginEmail: "fadli@clogent.co.id" } });
     findUnique.mockResolvedValue(row);
     expect(await requireUserOrRedirect()).toEqual({ id: "u1", appRole: "CREATIVE", jobRole: "DESIGNER", workspaceId: "clogent", mustChangePassword: false });
+    expect(redirect).not.toHaveBeenCalled();
+  });
+  it("returns an active user on an outside email domain (no allow-list)", async () => {
+    authFn.mockResolvedValue({ user: { id: "u1", loginEmail: "fadli@gmail.com" } });
+    findUnique.mockResolvedValue({ ...row, email: "fadli@gmail.com" });
+    expect((await requireUserOrRedirect()).id).toBe("u1");
     expect(redirect).not.toHaveBeenCalled();
   });
   it("redirects to /change-password when the password change is required", async () => {
@@ -62,7 +67,7 @@ describe("withUser", () => {
     expect(r).toEqual({ ok: false, custom: true });
   });
   it("runs fn for a valid user and lets fn's own errors through", async () => {
-    const u = { id: "u", appRole: "ADMIN" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false };
+    const u = { id: "u", name: "U", appRole: "ADMIN" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false };
     expect(await withUser(async () => u, async (x) => x.id)).toBe("u");
     await expect(withUser(async () => u, async () => { throw new Error("boom"); })).rejects.toThrow("boom");
   });
@@ -91,6 +96,14 @@ describe("password-change flag", () => {
     await expect(requireScope()).rejects.toThrow("NEXT_REDIRECT:/change-password");
   });
   it("dbFor scopes to the user's workspace", () => {
-    expect(dbFor({ id: "u", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w2", mustChangePassword: false })).toEqual({ scopedTo: "w2" });
+    expect(dbFor({ id: "u", name: "U", appRole: "ADMIN", jobRole: "OTHER", workspaceId: "w2", mustChangePassword: false })).toEqual({ scopedTo: "w2" });
+  });
+});
+
+describe("requireApplicantOrRedirect", () => {
+  it("sends a member session (e.g. an applicant upgraded on this read) through /lobby/enter, which writes the cookie", async () => {
+    const { requireApplicantOrRedirect } = await import("@/lib/session");
+    authFn.mockResolvedValue({ user: { id: "u1", loginEmail: "fadli@clogent.co.id" } });
+    await expect(requireApplicantOrRedirect()).rejects.toThrow("NEXT_REDIRECT:/lobby/enter");
   });
 });

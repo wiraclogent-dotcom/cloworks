@@ -1,0 +1,109 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowDown, ArrowUp, Trash2 } from "lucide-react";
+import { createCategory, deleteCategory, moveCategory, updateCategory, type LibraryActionResult } from "@/app/(app)/library/actions";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
+import { NativeSelect } from "@/components/shadcn/native-select";
+import { Input } from "@/components/shadcn/input";
+import { CATEGORY_ICON_KEYS } from "./categoryIcons";
+import { LibraryDialog } from "./LibraryDialog";
+
+type Cat = { id: string; name: string; icon: string | null };
+
+function IconSelect({ label, value, onChange, disabled }: { label: string; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  return (
+    <NativeSelect aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)} className="w-28">
+      <option value="">Default</option>
+      {CATEGORY_ICON_KEYS.map((k) => <option key={k} value={k}>{k}</option>)}
+    </NativeSelect>
+  );
+}
+
+function CategoryRow({ cat, first, last, run, pending }: {
+  cat: Cat; first: boolean; last: boolean; pending: boolean; run: (p: Promise<LibraryActionResult>) => Promise<boolean>;
+}) {
+  const [name, setName] = useState(cat.name);
+  const [icon, setIcon] = useState(cat.icon ?? "");
+  const dirty = name.trim() !== cat.name || icon !== (cat.icon ?? "");
+  return (
+    <li className="flex flex-wrap items-center gap-2">
+      <Input aria-label={`Name of ${cat.name}`} value={name} onChange={(e) => setName(e.target.value)} maxLength={60}
+        className="min-w-0 flex-1" />
+      <IconSelect label={`Icon for ${cat.name}`} value={icon} onChange={setIcon} disabled={pending} />
+      <Button size="sm" variant="outline" disabled={!dirty || pending}
+        onClick={() => run(updateCategory(cat.id, { name: name.trim(), icon: icon || null }))}>Save</Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${cat.name} up`}
+        disabled={first || pending}
+        onClick={() => run(moveCategory(cat.id, "up"))}
+        title={`Move ${cat.name} up`}
+      >
+        <ArrowUp />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Move ${cat.name} down`}
+        disabled={last || pending}
+        onClick={() => run(moveCategory(cat.id, "down"))}
+        title={`Move ${cat.name} down`}
+      >
+        <ArrowDown />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Delete ${cat.name}`}
+        disabled={pending}
+        onClick={() => run(deleteCategory(cat.id))}
+        title={`Delete ${cat.name}`}
+      >
+        <Trash2 />
+      </Button>
+    </li>
+  );
+}
+
+export function CategoriesDialog({ categories, onClose }: { categories: Cat[]; onClose: () => void }) {
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [newIcon, setNewIcon] = useState("");
+
+  const [pending, setPending] = useState(false);
+
+  async function run(p: Promise<LibraryActionResult>): Promise<boolean> {
+    setPending(true);
+    setError(null);
+    let r: LibraryActionResult;
+    try { r = await p; } catch { setError("Something went wrong. Try again."); return false; } finally { setPending(false); }
+    if (!r.ok) { setError(r.fieldErrors ? Object.values(r.fieldErrors)[0] ?? r.message : r.message); return false; }
+    router.refresh();
+    return true;
+  }
+  async function add() {
+    if (await run(createCategory({ name: newName.trim(), icon: newIcon || null }))) { setNewName(""); setNewIcon(""); }
+  }
+
+  return (
+    <LibraryDialog title="Manage categories" onClose={onClose} wide>
+      {error ? <Alert variant="destructive" className="mb-4"><AlertDescription>{error}</AlertDescription></Alert> : null}
+      <ul className="space-y-2">
+        {categories.map((c, i) => (
+          <CategoryRow key={`${c.id}:${c.name}:${c.icon}`} cat={c} first={i === 0} last={i === categories.length - 1} pending={pending} run={run} />
+        ))}
+      </ul>
+      <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-border pt-4">
+        <Input aria-label="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={60}
+          placeholder="New category" className="min-w-0 flex-1" />
+        <IconSelect label="New category icon" value={newIcon} onChange={setNewIcon} disabled={pending} />
+        <Button variant="default" disabled={newName.trim() === "" || pending} loading={pending} onClick={add}>Add category</Button>
+      </div>
+    </LibraryDialog>
+  );
+}

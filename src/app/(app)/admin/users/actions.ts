@@ -1,12 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
-import { withUser } from "@/lib/actionUser";
-import { AdminError, addAllowedEmail, createUser, normalizeEmail, removeAllowedEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { UNAUTH_MESSAGE, withUser } from "@/lib/actionUser";
+import { AdminError, createUser, normalizeEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { mergePreview, mergeUsers } from "@/lib/mergeUsers";
+import { createInvite, resendInvite, revokeInvite } from "@/lib/invites";
+import { approveFor, rejectFor, requestBaseUrl, resetLinkFor, setLinkEnabledFor, undoRejectFor } from "@/lib/joinDeps";
+import { createMailerFromEnv } from "@/lib/mailer";
 import { checkNewPassword } from "@/lib/password";
-import { adminResult, adminUnauth, splitList, type AdminFormState } from "@/lib/adminForm";
+import { adminResult, adminUnauth, splitList, type AdminFormState, type MergeFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
 const done = (r: NonNullable<AdminFormState>) => {
@@ -128,26 +133,112 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
   }, () => scrub(adminUnauth(fd)));
 }
 
-export async function addAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+// Members: invites (workspace-scoped) and join requests / the join link (global tables, through joinDeps).
+
+const inviteDeps = async () => ({ mailer: createMailerFromEnv(), baseUrl: await requestBaseUrl() });
+
+export async function inviteMember(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
     const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await addAllowedEmail(db, actor, s(fd, "email"), s(fd, "note"));
-        return "Email allowed.";
+        const { mailer, baseUrl } = await inviteDeps();
+        const email = s(fd, "email").trim();
+        await createInvite(db, actor, mailer, { email, appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole, userId: s(fd, "userId") || undefined }, baseUrl);
+        return `Invite sent to ${normalizeEmail(email)}.`;
       }),
     );
   }, () => adminUnauth(fd));
 }
 
-export async function removeAllowed(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+export async function resendMemberInvite(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
   return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
     const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
-        await removeAllowedEmail(db, actor, s(fd, "email"));
-        return "Removed. Anyone relying on it loses access on their next request.";
+        const { mailer, baseUrl } = await inviteDeps();
+        await resendInvite(db, actor, mailer, s(fd, "inviteId"), baseUrl);
+        return "Invite sent again with a new link.";
       }),
     );
   }, () => adminUnauth(fd));
+}
+
+export async function revokeMemberInvite(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
+    return done(
+      await adminResult(fd, async () => {
+        await revokeInvite(db, actor, s(fd, "inviteId"));
+        return "Invite revoked. Its link no longer works.";
+      }),
+    );
+  }, () => adminUnauth(fd));
+}
+
+export async function approveRequest(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    return done(
+      await adminResult(fd, async () => {
+        const { mailer, baseUrl } = await inviteDeps();
+        const r = await approveFor(actor, mailer, s(fd, "applicantId"), { appRole: s(fd, "appRole") as AppRole, jobRole: s(fd, "jobRole") as JobRole }, baseUrl, s(fd, "linkUserId") || undefined);
+        return r.linked ? `Approved as ${r.name}. They sign in once more to continue.` : "Approved. They can sign in now.";
+      }),
+    );
+  }, () => adminUnauth(fd));
+}
+
+export async function rejectRequest(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    return done(await adminResult(fd, async () => { await rejectFor(actor, s(fd, "applicantId")); return "Request rejected."; }));
+  }, () => adminUnauth(fd));
+}
+
+export async function undoRejectRequest(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    return done(await adminResult(fd, async () => { await undoRejectFor(actor, s(fd, "applicantId")); return "Back in requests."; }));
+  }, () => adminUnauth(fd));
+}
+
+export async function resetInviteLink(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    return done(await adminResult(fd, async () => { await resetLinkFor(actor); return "New link created. The old one no longer works."; }));
+  }, () => adminUnauth(fd));
+}
+
+export async function toggleInviteLink(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const enabled = s(fd, "enabled") === "true";
+    return done(await adminResult(fd, async () => { await setLinkEnabledFor(actor, enabled); return enabled ? "Join link turned on." : "Join link turned off."; }));
+  }, () => adminUnauth(fd));
+}
+
+/** Merge step 1: what merging `fromId` into `intoId` would move. Writes nothing; failures are data for the form. */
+export async function previewMerge(_prev: MergeFormState, fd: FormData): Promise<MergeFormState> {
+  return withUser<NonNullable<MergeFormState>, NonNullable<MergeFormState>>(requireUser, async (actor) => {
+    try {
+      return { ok: true, preview: await mergePreview(dbFor(actor), actor, s(fd, "fromId"), s(fd, "intoId")) };
+    } catch (e) {
+      if (e instanceof AdminError) return { ok: false, error: e.message };
+      throw e;
+    }
+  }, () => ({ ok: false, error: UNAUTH_MESSAGE }));
+}
+
+/** Merge step 2: moves the duplicate's history onto the survivor and removes the duplicate. */
+export async function mergePerson(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  let survivor: string | null = null;
+  const result = await withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
+    return done(
+      await adminResult(fd, async () => {
+        const { intoName } = await mergeUsers(db, actor, s(fd, "fromId"), s(fd, "intoId"));
+        survivor = intoName;
+        return `Merged into ${intoName}.`;
+      }),
+    );
+  }, () => adminUnauth(fd));
+  // The duplicate's row is gone, so its own success message would never be seen: show it on the page instead.
+  if (survivor !== null) redirect(`/admin/users?merged=${encodeURIComponent(survivor)}`);
+  return result;
 }

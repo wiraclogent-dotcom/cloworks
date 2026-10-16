@@ -1,24 +1,36 @@
 import type { ReactNode } from "react";
+import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/shadcn/empty";
 import { cn } from "./cn";
 
 /**
- * Empty list / no results: icon, one-line headline, one sentence, optional action (e.g. a buttonClass link).
- * `titleAs` makes the headline a real heading when the state replaces a whole page (403, not found: `h1`);
- * `role` announces it (e.g. "alert" for access denied).
+ * Empty list / no results: an icon in a flat tile, one-line headline, one sentence, optional action (e.g. a
+ * `<Button asChild>` link), on the shadcn `Empty` parts. `titleAs` makes the headline a real heading when the state replaces a
+ * whole page (403, not found: `h1`); `role` announces it (e.g. "alert" for access denied).
+ *
+ * `size="inline"` is a quiet one-line "nothing here yet" for inside a card or a section: no border, no media, left
+ * aligned, the title only (description, action and children are ignored). It has no vertical padding; pass margins
+ * in `className` (`mb-4`, `mt-2`) to match the spacing the line replaces.
  */
-export function EmptyState({ icon, title, description, action, titleAs: Title = "p", role, className, children }: {
+export function EmptyState({ icon, title, description, action, titleAs: Title = "p", role, size = "page", className, children }: {
   icon?: ReactNode; title: string; description?: ReactNode; action?: ReactNode;
-  titleAs?: "p" | "h1" | "h2" | "h3"; role?: "alert" | "status"; className?: string; children?: ReactNode;
+  titleAs?: "p" | "h1" | "h2" | "h3"; role?: "alert" | "status"; size?: "page" | "inline"; className?: string; children?: ReactNode;
 }) {
+  if (size === "inline") {
+    return (
+      <Empty role={role} className={cn("items-start justify-start rounded-none border-0 bg-transparent px-0 py-0 text-left", className)}>
+        <EmptyTitle asChild className="text-sm font-normal tracking-normal text-muted-foreground"><Title>{title}</Title></EmptyTitle>
+      </Empty>
+    );
+  }
   return (
-    <div role={role} className={cn("flex flex-col items-center rounded-xl border border-dashed border-border-strong bg-surface px-6 py-10 text-center", className)}>
-      {icon ? (
-        <span aria-hidden="true" className="mb-3 flex size-10 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary [&_svg]:size-5">{icon}</span>
-      ) : null}
-      <Title className={cn("text-base font-semibold text-foreground", Title === "h1" && "text-heading")}>{title}</Title>
-      {description ? <p className="mt-1 max-w-md text-sm text-foreground-secondary">{description}</p> : null}
+    <Empty role={role} className={className}>
+      <EmptyHeader>
+        {icon ? <EmptyMedia variant="icon" aria-hidden="true">{icon}</EmptyMedia> : null}
+        <EmptyTitle asChild className={cn("font-display", Title === "h1" && "text-heading")}><Title>{title}</Title></EmptyTitle>
+        {description ? <EmptyDescription>{description}</EmptyDescription> : null}
+      </EmptyHeader>
       {children}
-      {action ? <div className="mt-4 flex flex-wrap items-center justify-center gap-2">{action}</div> : null}
-    </div>
+      {action ? <EmptyContent>{action}</EmptyContent> : null}
+    </Empty>
   );
 }

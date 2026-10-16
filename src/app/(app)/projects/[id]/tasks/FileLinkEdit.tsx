@@ -1,9 +1,11 @@
 "use client";
 
+import { safeAction } from "@/lib/safeAction";
 import { useState, useTransition } from "react";
 import { Pencil, Plus } from "lucide-react";
 import { Button } from "@/components/shadcn/button";
 import { Input } from "@/components/shadcn/input";
+import { FileLocationLink } from "@/components/ui/FileLocationLink";
 import { setTaskFileUrl } from "./actions";
 
 /** File cell for one variant: the link (or plain name), with an inline editor that saves on submit. */
@@ -18,7 +20,7 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
     e.preventDefault();
     setError(null);
     startTransition(async () => {
-      const r = await setTaskFileUrl(projectId, taskId, draft);
+      const r = await safeAction(() => setTaskFileUrl(projectId, taskId, draft));
       if (r.ok) {
         setUrl(r.fileUrl);
         setDraft(r.fileUrl ?? "");
@@ -34,19 +36,21 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
       <form onSubmit={save} className="grid gap-1.5">
         <div className="flex items-center gap-2">
           <Input
-            type="url"
+            type="text"
+            inputMode="url"
+            autoComplete="off"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="https://"
+            placeholder="https://… or \\server\folder"
             aria-label={`File link for ${label}`}
-            className="h-8 min-w-56"
+            className="min-w-56" size="sm"
             disabled={pending}
             autoFocus
           />
-          <Button type="submit" size="sm" disabled={pending}>Save</Button>
-          <Button type="button" size="sm" variant="ghost" disabled={pending} onClick={() => { setDraft(url ?? ""); setError(null); setEditing(false); }}>Cancel</Button>
+          <Button type="submit" size="sm" variant="default" disabled={pending}>Save</Button>
+          <Button size="sm" variant="ghost" disabled={pending} onClick={() => { setDraft(url ?? ""); setError(null); setEditing(false); }}>Cancel</Button>
         </div>
-        <p className="text-xs text-foreground-secondary">Leave empty to remove the link.</p>
+        <p className="text-xs text-muted-foreground">Leave empty to remove the link.</p>
         {error && <p role="alert" className="text-xs text-danger">{error}</p>}
       </form>
     );
@@ -54,14 +58,20 @@ export function FileLinkEdit({ projectId, taskId, fileUrl, text, label }: { proj
 
   return (
     <div className="flex items-center gap-2">
-      <Button type="button" size="icon" variant="ghost" className="size-7 shrink-0" title={url ? "Edit file link" : "Add file link"}
-        aria-label={`${url ? "Edit" : "Add"} file link for ${label}`} onClick={() => { setDraft(url ?? ""); setError(null); setEditing(true); }}>
-        {url ? <Pencil aria-hidden="true" className="size-3.5" /> : <Plus aria-hidden="true" className="size-3.5" />}
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        className="size-7 [&_svg]:size-3.5"
+        title={url ? "Edit file link" : "Add file link"}
+        aria-label={`${url ? "Edit" : "Add"} file link for ${label}`}
+        onClick={() => { setDraft(url ?? ""); setError(null); setEditing(true); }}
+      >
+        {url ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}
       </Button>
       {url ? (
-        <a href={url} target="_blank" rel="noopener noreferrer" className="text-link underline-offset-2 hover:underline">{text}</a>
+        <FileLocationLink href={url} name={text} className="text-link underline-offset-2 hover:underline">{text}</FileLocationLink>
       ) : (
-        <span className="text-foreground-secondary">{text}</span>
+        <span className="text-muted-foreground">{text}</span>
       )}
       {error && <span role="alert" className="text-xs text-danger">{error}</span>}
     </div>

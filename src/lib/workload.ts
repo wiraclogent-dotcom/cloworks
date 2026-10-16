@@ -1,12 +1,13 @@
+import type { AssigneeRef } from "./assignees";
 import { jakartaDate } from "./createRequest";
 import { DAY_MS, fmt, utc, weekdayOf } from "./calendar";
 
 /** Pure, client-safe layout for the request Timeline (workload per person). Days are `YYYY-MM-DD` Jakarta dates. */
 
-export const TIMELINE_DAYS = 14;
+export const TIMELINE_DAYS = 7;
 
 export type TimelineDay = { day: string; weekday: number; isToday: boolean; /** Sunday: the team works Monday to Saturday. */ isDayOff: boolean };
-export type TimelineItem = { id: string; assigneeId: string | null; assigneeName: string | null; requestDay: string; deadlineDay: string | null };
+export type TimelineItem = { id: string; assignees: AssigneeRef[]; requestDay: string; deadlineDay: string | null };
 export type TimelineBar = {
   id: string;
   /** Window columns 0..13, inclusive. */
@@ -15,6 +16,8 @@ export type TimelineBar = {
   planEndCol: number | null;
   clippedStart: boolean; clippedEnd: boolean;
   overdue: boolean; noDeadline: boolean;
+  /** Two or more people work on it: the same bar shows in each of their lanes. */
+  shared: boolean;
 };
 export type TimelinePerson = { key: string; assigneeId: string | null; name: string; count: number; lanes: TimelineBar[][] };
 
@@ -60,8 +63,8 @@ export function barSpan(item: Pick<TimelineItem, "requestDay" | "deadlineDay">, 
 
 /**
  * One entry per person: the given people (sorted by name, empty ones included) plus assignees that only appear in
- * the items, and "Unassigned" last when it has bars. With `assigneeId` only that person. Overlapping bars are
- * packed greedily into lanes.
+ * the items, and "Unassigned" last when it has bars. A request with several assignees has a bar in each of their
+ * lanes (and counts once in each). With `assigneeId` only that person. Overlapping bars are packed greedily into lanes.
  */
 export function layoutRows(
   items: TimelineItem[],
@@ -79,15 +82,19 @@ export function layoutRows(
     const s = diffDays(window.from, span.start);
     const e = diffDays(window.from, span.end);
     const p = span.overdue && span.planEnd! >= window.from ? diffDays(window.from, span.planEnd!) : null;
+    const who = [...new Map(it.assignees.map((a) => [a.id, a])).values()];
     const bar: TimelineBar = {
       id: it.id, startCol: Math.max(0, s), endCol: Math.min(last, e), planEndCol: p,
       clippedStart: s < 0, clippedEnd: e > last, overdue: span.overdue, noDeadline: span.noDeadline,
+      shared: who.length >= 2,
     };
-    const key = it.assigneeId ?? "unassigned";
-    if (it.assigneeId && !names.has(it.assigneeId)) names.set(it.assigneeId, it.assigneeName ?? "Unknown");
-    const list = bars.get(key);
-    if (list) list.push(bar);
-    else bars.set(key, [bar]);
+    for (const a of who.length ? who : [null]) {
+      const key = a?.id ?? "unassigned";
+      if (a && !names.has(a.id)) names.set(a.id, a.name || "Unknown");
+      const list = bars.get(key);
+      if (list) list.push({ ...bar });
+      else bars.set(key, [{ ...bar }]);
+    }
   }
 
   const keys = opts.assigneeId ? [opts.assigneeId] : [...names.keys()];

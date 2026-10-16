@@ -31,6 +31,8 @@ export type ImportRecord = {
   deadline: Date | null;
   status: "REQUESTED" | "ON_PROGRESS" | "FIRST_LOOK" | "DONE";
   outputCount: number;
+  /** False when Jumlah Output was blank/invalid and outputCount is the default 1 (sync then leaves the app's value alone). */
+  outputSet?: boolean;
   includeKpi: boolean;
   designFolderUrl: string | null;
   fields: Record<string, unknown> & { importKey: string; importSource: ImportSource };
@@ -286,7 +288,7 @@ export function parseRequestRows(
     records.push({
       source, row, title: clip(task, 200), briefUrl, notes, brandId, divisionId,
       typeName: source === "socmed" ? "Social Media" : "General Design",
-      requesterId, assigneeId, requestedAt, deadline, status: finalStatus, outputCount, includeKpi, designFolderUrl, fields,
+      requesterId, assigneeId, requestedAt, deadline, status: finalStatus, outputCount, outputSet: out >= 1, includeKpi, designFolderUrl, fields,
     });
     if (report.samples.length < 3)
       report.samples.push({ row, requestRaw: get(r, "requestDate"), requestIso: jakartaIso(requestedAt), deadlineRaw: dlText, deadlineIso: deadline ? jakartaIso(deadline) : null });

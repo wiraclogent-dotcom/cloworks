@@ -22,7 +22,7 @@ import type { RequestRow } from "@/lib/requests";
 afterEach(cleanup);
 
 const row = (extra: Partial<RequestRow> = {}): RequestRow => ({
-  id: "c1", title: "Banner", status: "REQUESTED", brandName: "Clogent", divisionName: "Marketing", requesterName: "Rina Sari", assigneeName: "Cami",
+  id: "c1", title: "Banner", status: "REQUESTED", brandName: "Clogent", divisionName: "Marketing", requesterName: "Rina Sari", assignees: [{ id: "cami", name: "Cami" }],
   requestedAt: new Date("2026-10-01T00:00:00Z"), deadline: null, outputCount: 1, daysLeft: 5, needsMotion: false, ...extra,
 });
 const card = (extra: Partial<RequestRow> = {}, canMove = false) =>
@@ -66,13 +66,13 @@ describe("board card chips", () => {
   });
 
   it("shows the assignee avatar with an accessible name, or the unassigned avatar", () => {
-    card({ assigneeName: "Cami Putri" });
+    card({ assignees: [{ id: "cami", name: "Cami Putri" }] });
     const a = screen.getByRole("img", { name: "Assignee: Cami Putri" });
     expect(a.getAttribute("title")).toBe("Assignee: Cami Putri");
     expect(a.getAttribute("data-card-assignee")).toBe("assigned");
-    expect(a.textContent).toBe("CP");
+    expect(a.textContent).toContain("CP"); // name shown, then the initials avatar
     cleanup();
-    card({ assigneeName: null });
+    card({ assignees: [] });
     const u = screen.getByRole("img", { name: "Assignee: Unassigned" });
     expect(u.getAttribute("data-card-assignee")).toBe("unassigned");
     expect(u.querySelector("svg")).toBeTruthy();
@@ -107,13 +107,13 @@ function columns(rs: RequestRow[]): BoardColumnView[] {
 }
 
 describe("board columns", () => {
-  it("each column header carries its status tone (accent bar + tint) and a count pill", () => {
+  it("each column is a muted panel whose header icon carries its status tone, with a count pill (V3)", () => {
     render(<Board columns={columns([row()])} canMove={false} />);
     const tones = BOARD_STATUSES.map((s) => screen.getByRole("region", { name: new RegExp(`^${s === "ON_PROGRESS" ? "On progress" : s === "FIRST_LOOK" ? "First look" : s === "DONE" ? "Done" : "Requested"}`) }).getAttribute("data-tone"));
     expect(tones).toEqual(["requested", "in-progress", "first-look", "done"]);
     const header = document.querySelector("#col-REQUESTED") as HTMLElement;
-    expect(header.className).toMatch(/rounded-full/);
-    expect(header.className).toMatch(/bg-tone-tint/);
+    expect(header.className).toMatch(/\[&_svg\]:text-tone-accent/);
+    expect(header.closest("section")!.className).toMatch(/bg-muted/);
     expect(header.querySelector("svg[aria-hidden]")).toBeTruthy();
   });
 
@@ -142,20 +142,31 @@ describe("board columns", () => {
 });
 
 describe("Done dialog (restyled)", () => {
+  // Esc over the request side panel closing only this dialog (not the panel too) is in tests/dialogs.test.tsx.
+  it("Escape cancels this dialog and claims the key", () => {
+    const onCancel = vi.fn();
+    render(<DoneDialog title="Poster" onCancel={onCancel} onSubmit={() => {}} />);
+    const notCanceled = fireEvent.keyDown(screen.getByLabelText(/Number of outputs/), { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+    expect(notCanceled).toBe(false); // preventDefault was called
+  });
+
   it("keeps the labelled modal, kit fields and buttons, and inline errors with an icon", () => {
-    render(<DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} />);
+    render(<><button type="button">Board card</button><DoneDialog title="Poster" onCancel={() => {}} onSubmit={() => {}} /></>);
     const dialog = screen.getByRole("dialog", { name: "Mark as done" });
-    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    expect(dialog.getAttribute("aria-describedby")).toBe(screen.getByText(/is finished\. Tell us what was delivered\./).id);
+    // Modal: the page behind is hidden from assistive tech (Radix sets aria-hidden on it) and dimmed by the backdrop.
+    expect(screen.queryByRole("button", { name: "Board card" })).toBeNull();
     expect(dialog.className).toMatch(/rounded-xl/);
     expect(dialog.className).toMatch(/shadow-raised/);
-    expect(dialog.parentElement!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
-    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-surface-muted/);
+    expect(document.querySelector("[data-slot=dialog-overlay]")!.className).toMatch(/bg-\[var\(--backdrop\)\]/);
+    expect(screen.getByRole("button", { name: "Cancel" }).className).toMatch(/hover:bg-muted/);
     expect(screen.getByRole("button", { name: "Mark as done" }).className).toMatch(/bg-primary/);
     const count = screen.getByLabelText(/Number of outputs/);
     expect(document.activeElement).toBe(count);
     fireEvent.change(count, { target: { value: "0" } });
     fireEvent.click(screen.getByRole("button", { name: "Mark as done" }));
-    const err = screen.getByText(/whole number from 1 to 1000/i).closest("p")!;
+    const err = screen.getByText(/whole number from 1 to 1000/i).closest("[data-slot=field-error]")!;
     expect(count.getAttribute("aria-describedby")).toBe(err.id);
     expect(count.getAttribute("aria-invalid")).toBe("true");
     expect(err.querySelector("svg[aria-hidden]")).toBeTruthy();
@@ -166,18 +177,23 @@ describe("Done dialog (restyled)", () => {
 describe("filter pills", () => {
   it("renders pill fields, Apply as the primary button and Clear filters as a ghost link; active filters are tinted", () => {
     render(<FilterBar p={parseParams({ motion: "yes", status: "DONE" })} brands={[]} divisions={[]} assignees={[]} mineHref="/m" clearHref="/c" />);
+    fireEvent.click(screen.getByRole("button", { name: /^Filters/ }));
     const motion = screen.getByLabelText("Motion");
     expect(motion.className).toMatch(/rounded-full/);
     expect(motion.className).toMatch(/bg-accent/);
-    expect(motion.className).not.toMatch(/bg-surface\b/);
+    expect(motion.className).not.toMatch(/bg-card\b/);
     const brand = screen.getByLabelText("Brand");
-    expect(brand.className).toMatch(/bg-surface/);
+    expect(brand.className).toMatch(/bg-card/);
     expect(brand.className).not.toMatch(/bg-accent/);
     expect(screen.getByLabelText("Status").className).toMatch(/bg-accent/);
     expect(screen.getByRole("button", { name: "Apply" }).className).toMatch(/bg-primary/);
     const clear = screen.getByRole("link", { name: "Clear filters" });
     expect(clear.getAttribute("href")).toBe("/c");
     expect(clear.className).not.toMatch(/bg-primary/);
-    expect(screen.getByRole("link", { name: "My requests" }).className).toMatch(/rounded-full/);
+    // The toolbar row matches the view switcher: My requests is a segment in a muted tray, search and Filters share that surface.
+    const mine = screen.getByRole("link", { name: "My requests" });
+    expect(mine.className).toMatch(/rounded-lg/);
+    expect(mine.parentElement!.className).toMatch(/bg-muted/);
+    expect(screen.getByRole("searchbox").className).toMatch(/rounded-xl.*bg-muted|bg-muted.*rounded-xl/);
   });
 });

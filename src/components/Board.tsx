@@ -13,11 +13,14 @@ import { decideDrop } from "@/lib/boardDrop";
 import { BOARD_DND_ID, SCREEN_READER_INSTRUCTIONS, buildAnnouncements } from "@/lib/boardA11y";
 import { REQUEST_STATUS_TONE } from "@/lib/palette";
 import { ArrowDownToLine, Ban, ChevronDown, Inbox, Table2, X } from "lucide-react";
-import { BoardCard, CARD_OVERLAY, CardFace } from "./BoardCard";
+import { BoardCard, CARD_GLASS, CARD_OVERLAY, CardFace, GLASS_LOOK } from "./BoardCard";
+import { LiquidGlassCard } from "./ui/LiquidGlassCard";
+import { useBoardBackground } from "./board/BoardBackgroundProvider";
+import { PLAIN_BOARD, boardInk, veilColor, type BoardBackground } from "@/lib/boardBackground";
 import { DoneDialog, type DoneDetails } from "./DoneDialog";
 import { STATUS_LABEL, StatusIcon } from "./status";
-import { Alert } from "./ui/Alert";
-import { Button } from "./ui/Button";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "./ui/cn";
 
 /** Arrow Left/Right jumps the lifted card to the neighbouring column instead of nudging it 25px. */
@@ -40,10 +43,10 @@ export type BoardColumnView = BoardColumn & { moreHref: string | null; tableHref
 type Totals = Partial<Record<RequestStatus, number>>;
 
 /** Quiet text-link look for the column footer (Show more / Open all in table). */
-const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-surface hover:underline underline-offset-2", focusRing);
+const FOOTER_LINK = cn("inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-medium text-link hover:bg-card hover:underline underline-offset-2", focusRing);
 
-function Column({ status, total, shown, dragFrom, moreHref, tableHref, children }: {
-  status: RequestStatus; total: number; shown: number; dragFrom: RequestStatus | null; moreHref: string | null; tableHref: string; children: React.ReactNode;
+function Column({ status, total, shown, dragFrom, moreHref, tableHref, glass, children }: {
+  status: RequestStatus; total: number; shown: number; dragFrom: RequestStatus | null; moreHref: string | null; tableHref: string; glass: boolean; children: React.ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   const id = `col-${status}`;
@@ -54,16 +57,16 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
     <section ref={setNodeRef} role="region" aria-labelledby={id} data-tone={REQUEST_STATUS_TONE[status]}
       data-drop={legal ? (isOver ? "over" : "valid") : dragging ? "invalid" : undefined}
       className={cn(
-        "board-column flex min-w-0 flex-col rounded-2xl p-1 outline-2 -outline-offset-2 transition-[outline-color,opacity] duration-150",
-        legal && isOver ? "bg-accent" : "bg-transparent",
+        "board-column flex min-w-0 flex-col rounded-2xl p-2 outline-2 -outline-offset-2 transition-[outline-color,opacity,background-color] duration-150",
+        legal && isOver ? "bg-accent" : glass ? "bg-glass-column" : "bg-muted",
         legal ? (isOver ? "outline-ring outline-solid" : "outline-ring outline-dashed") : "outline-transparent",
         dragging && !legal && "opacity-60",
       )}>
       <h2 id={id} data-column-header=""
-        className="mb-3 flex flex-none items-center gap-2 rounded-full bg-tone-tint px-3 py-1.5 text-[13px] font-semibold text-tone-text">
+        className="mb-2 flex flex-none items-center gap-2 px-2 py-1.5 text-sm font-semibold text-foreground [&_svg]:text-tone-accent">
         <StatusIcon status={status} />
         {STATUS_LABEL[status]}
-        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-surface px-2 py-0.5 text-xs leading-4 font-medium text-foreground-secondary tabular-nums shadow-card">{total}</span>
+        <span className="ml-auto inline-flex min-w-6 items-center justify-center rounded-full bg-card px-2 py-0.5 text-xs leading-4 font-semibold text-foreground tabular-nums">{total}</span>
       </h2>
       {dragging && (
         <p className="mb-2 flex flex-none items-center gap-1.5 px-1 text-xs font-medium text-foreground">
@@ -74,7 +77,7 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
         {children}
       </div>
       {total > 0 && (
-        <div className="mt-1 flex-none border-t border-border px-1 pt-2 text-xs text-foreground-secondary">
+        <div className="mt-1 flex-none border-t border-border px-1 pt-2 text-xs text-muted-foreground">
           <p className="tabular-nums">Showing {shown} of {total}</p>
           {remaining > 0 && (
             <p className="mt-1 -ml-1.5 flex flex-wrap gap-x-1 gap-y-1">
@@ -88,7 +91,14 @@ function Column({ status, total, shown, dragFrom, moreHref, tableHref, children 
   );
 }
 
-export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMove: boolean }) {
+/**
+ * `background` is what the board sits on (src/lib/boardBackground): "plain" keeps the page canvas and muted columns; a
+ * picture turns the cards to glass under the person's veil. Inside a BoardBackgroundProvider the picker's live state
+ * wins, so changes show while they are being made.
+ */
+export function Board({ columns, canMove, background = PLAIN_BOARD }: { columns: BoardColumnView[]; canMove: boolean; background?: BoardBackground }) {
+  const bg = useBoardBackground()?.background ?? background;
+  const glass = bg.id !== "plain" && !!bg.src;
   const router = useRouter();
   const initialCards = useMemo(() => columns.flatMap((c) => c.rows), [columns]);
   const initialTotals = useMemo(() => Object.fromEntries(columns.map((c) => [c.status, c.total])) as Totals, [columns]);
@@ -159,7 +169,7 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
 
   /** The single code path for every drop (pointer, touch, keyboard): decideDrop picks the outcome. */
   function requestMove(card: RequestRow, to: RequestStatus) {
-    const decision = decideDrop({ from: card.status, to, hasAssignee: !!card.assigneeName, canMove });
+    const decision = decideDrop({ from: card.status, to, hasAssignee: card.assignees.length > 0, canMove });
     if (decision.kind === "noop") return;
     focusCardId.current = card.id;
     switch (decision.kind) {
@@ -179,30 +189,34 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
   }
 
   return (
-    <div data-page-wide="">
+    <div>
       {message && (
-        <Alert tone="danger" className="mb-3"
-          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
-          <p>{message}</p>
+        <Alert variant="destructive" className="mb-3">
+          <AlertDescription><p>{message}</p></AlertDescription>
+          <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button></AlertAction>
         </Alert>
       )}
-      {!canMove && <p className="mb-3 text-sm text-foreground-secondary">You can view the board. Only creative team members can move requests.</p>}
+      {!canMove && <p className="mb-3 text-sm text-muted-foreground">You can view the board. Only creative team members can move requests.</p>}
       <DndContext id={BOARD_DND_ID} sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={() => setActiveId(null)}
         accessibility={{ announcements, screenReaderInstructions: { draggable: SCREEN_READER_INSTRUCTIONS } }}>
-        <div className="relative grid gap-4 overflow-x-auto rounded-2xl bg-[var(--board-canvas)] bg-[image:radial-gradient(var(--board-dot)_1px,transparent_1px)] p-3 pb-4 [background-size:18px_18px]" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
+        {/* The background wraps the drag overlay too, so the lifted card keeps the board's ink tokens. */}
+        <div data-board-background={bg.id} data-board-ink={glass ? boardInk(bg.veil) : undefined}
+          className={cn(glass && cn("rounded-3xl p-3 board-picture", boardInk(bg.veil) === "dark" ? "board-ink-dark" : "board-ink-light"))}
+          style={glass ? ({ "--board-image": `url(${JSON.stringify(bg.src)})`, "--board-veil": veilColor(bg.veil) } as React.CSSProperties) : undefined}>
+        <div className="relative grid gap-3 overflow-x-auto pb-4" style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(15rem, 1fr))` }}>
           {columns.map((col) => {
             const inCol = cards.filter((c) => c.status === col.status);
             return (
               <Column key={col.status} status={col.status} total={totals[col.status] ?? 0} shown={inCol.length}
-                dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref}>
+                dragFrom={activeCard?.status ?? null} moreHref={col.moreHref} tableHref={col.tableHref} glass={glass}>
                 {inCol.length === 0 ? (
-                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong bg-surface/60 px-3 py-6 text-center text-[13px] text-foreground-secondary">
+                  <div className="flex flex-col items-center gap-1.5 rounded-xl border border-dashed border-border-strong px-3 py-6 text-center text-compact text-muted-foreground">
                     <Inbox aria-hidden="true" strokeWidth={1.75} className="size-5" />
                     <p>No requests here</p>
                   </div>
                 ) : (
                   <ul className="space-y-3">
-                    {inCol.map((c) => <BoardCard key={c.id} card={c} canMove={canMove} busy={busyId === c.id} dragging={activeId === c.id} />)}
+                    {inCol.map((c) => <BoardCard key={c.id} card={c} canMove={canMove} busy={busyId === c.id} dragging={activeId === c.id} glass={glass} />)}
                   </ul>
                 )}
               </Column>
@@ -212,11 +226,18 @@ export function Board({ columns, canMove }: { columns: BoardColumnView[]; canMov
         {/* Rendered in a portal-like fixed layer so the dragged card is never clipped by the scrolling columns. */}
         <DragOverlay>
           {activeCard ? (
-            <div aria-hidden="true" data-drag-overlay="" className={cn(CARD_OVERLAY, "cursor-grabbing rotate-3 motion-reduce:rotate-0")}>
-              <CardFace card={activeCard} interactive={false} />
-            </div>
+            glass ? (
+              <LiquidGlassCard aria-hidden="true" data-drag-overlay="" {...GLASS_LOOK} className={cn(CARD_GLASS, "cursor-grabbing rotate-3 motion-reduce:rotate-0")}>
+                <CardFace card={activeCard} interactive={false} />
+              </LiquidGlassCard>
+            ) : (
+              <div aria-hidden="true" data-drag-overlay="" className={cn(CARD_OVERLAY, "cursor-grabbing rotate-3 motion-reduce:rotate-0")}>
+                <CardFace card={activeCard} interactive={false} />
+              </div>
+            )
           ) : null}
         </DragOverlay>
+        </div>
       </DndContext>
       {pendingDone && (
         <DoneDialog title={pendingDone.title} onCancel={() => setPendingDone(null)}

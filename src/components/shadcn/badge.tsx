@@ -1,22 +1,18 @@
 import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/components/ui/cn"
+import { cva } from "class-variance-authority"
 import { Slot } from "radix-ui"
+import { cn } from "@/components/ui/cn"
+import type { Tone } from "@/lib/palette"
 
 const badgeVariants = cva(
-  "inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
+  "inline-flex max-w-full items-center gap-1 px-2 py-0.5 text-xs leading-4 font-medium whitespace-nowrap [&_svg]:size-3.5 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a&]:hover:bg-primary/90",
-        secondary:
-          "bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a&]:hover:bg-destructive/90",
-        outline:
-          "border-border text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        ghost: "[a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 [a&]:hover:underline",
+        // Tinted by a palette entry (`data-tone`, globals.css). Text + tint pairs are AA in both themes (tests/theme.test.ts).
+        default: "rounded-md bg-tone-tint text-tone-text",
+        // Counts (column totals, page counts): full radius, muted, tabular numbers.
+        count: "min-w-6 justify-center rounded-full bg-muted text-muted-foreground tabular-nums",
       },
     },
     defaultVariants: {
@@ -25,19 +21,30 @@ const badgeVariants = cva(
   }
 )
 
+/**
+ * 12px/500 label on a tinted background, 6px radius (replaces the kit's Chip). `tone` is a palette entry
+ * (src/lib/palette.ts), default neutral tag; put a decorative icon before the text as a child (sized 14px; the
+ * meaning must also be in the text). `variant="count"` is the pill for numbers and takes no tone. `asChild` puts the
+ * badge on the child element (our addition; shadcn's has it too). Server component.
+ */
 function Badge({
   className,
   variant = "default",
+  tone,
   asChild = false,
   ...props
-}: React.ComponentProps<"span"> &
-  VariantProps<typeof badgeVariants> & { asChild?: boolean }) {
+}: React.ComponentProps<"span"> & {
+  tone?: Tone
+  variant?: "default" | "count"
+  asChild?: boolean
+}) {
   const Comp = asChild ? Slot.Root : "span"
 
   return (
     <Comp
       data-slot="badge"
       data-variant={variant}
+      data-tone={variant === "default" ? (tone ?? "tag-neutral") : undefined}
       className={cn(badgeVariants({ variant }), className)}
       {...props}
     />

@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { PrismaClient } from "@prisma/client";
 import { makeScoped, scopedDb } from "@/lib/db";
-import { addAllowedEmail, createBrand, renameBrand, type Actor } from "@/lib/admin";
+import { createBrand, renameBrand, type Actor } from "@/lib/admin";
 import { resolveSignIn } from "@/lib/signin";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 // Every scoped model, by Prisma client key, with a harmless field change for update tests.
 const MODELS = {
   user: { name: "hacked" },
-  allowedEmail: { note: "hacked" },
+  invite: { email: "hacked@example.com" },
   brand: { name: "hacked" },
   division: { name: "hacked" },
   requestType: { name: "hacked" },
@@ -19,9 +19,13 @@ const MODELS = {
   attachment: { name: "hacked" },
   kpiTarget: { note: "hacked" },
   notification: { message: "hacked" },
+  chatRead: { lastReadAt: new Date(0) },
   project: { title: "hacked" },
   projectTask: { title: "hacked" },
   projectMilestone: { title: "hacked" },
+  projectTaskEvent: { at: new Date(0) },
+  projectKpiTarget: { itemTitle: "hacked" },
+  kpiRosterEntry: { included: false },
 } as const;
 type ModelKey = keyof typeof MODELS;
 const KEYS = Object.keys(MODELS) as ModelKey[];
@@ -50,7 +54,9 @@ let other: Record<ModelKey, string>;
 async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): Promise<Record<ModelKey, string>> {
   const w = { workspaceId };
   const user = await raw.user.create({ data: { ...w, name: `U-${tag}`, fullName: `User ${tag}`, email: `u-${tag}@example.com` } });
-  const allowedEmail = await raw.allowedEmail.create({ data: { ...w, email: "shared@example.com" } });
+  const invite = await raw.invite.create({
+    data: { ...w, email: "shared@example.com", appRole: "REQUESTER", jobRole: "OTHER", tokenHash: `hash-${tag}`, invitedById: user.id, expiresAt: new Date(Date.now() + 86_400_000) },
+  });
   const brand = await raw.brand.create({ data: { ...w, name: "Main" } });
   const division = await raw.division.create({ data: { ...w, name: "Ops" } });
   const requestType = await raw.requestType.create({ data: { ...w, name: "Design" } });
@@ -62,15 +68,26 @@ async function buildRows(raw: PrismaClient, workspaceId: string, tag: string): P
   const comment = await raw.comment.create({ data: { ...w, requestId: request.id, authorId: user.id, body: "hi" } });
   const attachment = await raw.attachment.create({ data: { ...w, requestId: request.id, uploaderId: user.id, name: "f", url: "https://x/f" } });
   const notification = await raw.notification.create({ data: { ...w, userId: user.id, requestId: request.id, type: "t", message: "m" } });
+  const chatRead = await raw.chatRead.create({ data: { ...w, userId: user.id, requestId: request.id, lastReadAt: new Date() } });
   const kpiTarget = await raw.kpiTarget.create({ data: { ...w, userId: user.id, month: "2026-10", role: "DESIGNER", targetTasks: 5 } });
   const project = await raw.project.create({ data: { ...w, code: "P1", title: `P-${tag}`, ownerId: user.id, brandId: brand.id } });
   const projectTask = await raw.projectTask.create({ data: { ...w, projectId: project.id, position: 0, title: "T" } });
   const projectMilestone = await raw.projectMilestone.create({ data: { ...w, projectId: project.id, title: "M", date: new Date() } });
+  const projectTaskEvent = await raw.projectTaskEvent.create({
+    data: { ...w, taskId: projectTask.id, kind: "STAGE", fromValue: "NOT_STARTED", toValue: "FIRST_PREVIEW", actorId: user.id },
+  });
+  const projectKpiTarget = await raw.projectKpiTarget.create({
+    data: { ...w, userId: user.id, year: 2026, projectId: project.id, itemTitle: "Item", createdById: user.id },
+  });
+  const kpiRosterEntry = await raw.kpiRosterEntry.create({
+    data: { ...w, userId: user.id, kind: "REQUESTS", included: true, updatedById: user.id },
+  });
   return {
-    user: user.id, allowedEmail: allowedEmail.id, brand: brand.id, division: division.id, requestType: requestType.id,
+    user: user.id, invite: invite.id, brand: brand.id, division: division.id, requestType: requestType.id,
     request: request.id, statusEvent: statusEvent.id, deadlineEvent: deadlineEvent.id, comment: comment.id,
-    attachment: attachment.id, notification: notification.id, kpiTarget: kpiTarget.id, project: project.id,
+    attachment: attachment.id, notification: notification.id, chatRead: chatRead.id, kpiTarget: kpiTarget.id, project: project.id,
     projectTask: projectTask.id, projectMilestone: projectMilestone.id,
+    projectTaskEvent: projectTaskEvent.id, projectKpiTarget: projectKpiTarget.id, kpiRosterEntry: kpiRosterEntry.id,
   };
 }
 
@@ -172,20 +189,8 @@ describe("app cores through the scoped client", () => {
     expect(await db.raw.brand.count({ where: { name: "Main" } })).toBe(2);
   });
 
-  it("addAllowedEmail writes to the actor's workspace and lists only its rows", async () => {
-    const s = makeScoped(db.raw, "clogent");
-    await addAllowedEmail(s, admin(), "guest@partner.com", "guest");
-    // The actor's workspace is used even through the raw client.
-    expect(await addAllowedEmail(db.raw, admin(), "raw@partner.com")).toMatchObject({ workspaceId: "clogent" });
-    const listed = await s.allowedEmail.findMany();
-    expect(listed.every((r) => r.workspaceId === "clogent")).toBe(true);
-    expect(listed.map((r) => r.email)).toEqual(expect.arrayContaining(["shared@example.com", "guest@partner.com", "raw@partner.com"]));
-    expect(listed.map((r) => r.id)).not.toContain(other.allowedEmail);
-  });
-
-  it("first OAuth sign-in creates the user in the Clogent workspace", async () => {
-    const r = await resolveSignIn(db.raw, { email: "newcomer@clogent.co.id", name: "Newcomer" });
-    expect(r).toMatchObject({ ok: true, created: true });
-    if (r.ok) expect(r.user.workspaceId).toBe("clogent");
+  it("first OAuth sign-in on the Clogent email domain creates no User (it becomes an applicant)", async () => {
+    expect(await resolveSignIn(db.raw, { email: "newcomer@clogent.co.id", name: "Newcomer" })).toEqual({ ok: false, reason: "not-found" });
+    expect(await db.raw.user.count({ where: { email: "newcomer@clogent.co.id" } })).toBe(0);
   });
 });

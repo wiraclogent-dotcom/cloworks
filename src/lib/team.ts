@@ -1,11 +1,12 @@
 import type { JobRole, PrismaClient } from "@prisma/client";
+import type { AssigneeOption } from "./assignees";
 
 /**
  * The creative team: active designers (job role DESIGNER) who use the tracker as creative, lead or admin. Other
  * leads (e.g. social media) are not on the team even though they can work requests. Sorted by name.
  */
 /** Who is on the creative team; shared by every team list so they all agree. */
-const CREATIVE_TEAM = { active: true, jobRole: "DESIGNER", appRole: { not: "REQUESTER" } } as const;
+export const CREATIVE_TEAM = { active: true, jobRole: "DESIGNER", appRole: { not: "REQUESTER" } } as const;
 
 export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: string; name: string }[]> {
   return db.user.findMany({
@@ -16,15 +17,18 @@ export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: 
 }
 
 /**
- * Assign-picker options: the team, plus the current assignee at the top when they are not on it (so the picker does
- * not silently show "Unassigned"), labelled with why.
+ * Assign-picker options: the team, plus every current assignee who is not on it at the top, labelled with why and
+ * flagged `offTeam` (the picker never offers those to add: the server would refuse them).
  */
 export function assigneeOptions(
   team: { id: string; name: string }[],
-  current: { id: string; name: string; active: boolean } | null,
-): { id: string; name: string }[] {
-  if (!current || team.some((t) => t.id === current.id)) return team;
-  return [{ id: current.id, name: `${current.name} (${current.active ? "not on creative team" : "inactive"})` }, ...team];
+  current: { id: string; name: string; active: boolean }[],
+): AssigneeOption[] {
+  const onTeam = new Set(team.map((t) => t.id));
+  const offTeam = current
+    .filter((c) => !onTeam.has(c.id))
+    .map((c) => ({ id: c.id, name: `${c.name} (${c.active ? "not on creative team" : "inactive"})`, offTeam: true as const }));
+  return offTeam.length ? [...offTeam, ...team] : team;
 }
 
 /**

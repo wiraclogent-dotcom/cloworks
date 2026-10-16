@@ -97,7 +97,7 @@ describe("devSession token round-trip (real DB)", () => {
     const refreshed = await refreshJwt(db.prisma, token as { uid?: string; loginEmail?: string });
     expect(refreshed).not.toBeNull();
     const me = await requireUserWith(async () => ({ user: { id: token!.uid as string, loginEmail: token!.loginEmail as string } }), db.prisma);
-    expect(me).toEqual({ id: wira.id, appRole: "ADMIN", jobRole: "DESIGNER", workspaceId: "clogent", mustChangePassword: false });
+    expect(me).toEqual({ id: wira.id, name: wira.name, appRole: "ADMIN", jobRole: "DESIGNER", workspaceId: "clogent", mustChangePassword: false });
 
     // wrong salt / secret do not decode
     await expect(decode({ token: jwt, secret: GOOD.AUTH_SECRET, salt: "other" })).rejects.toThrow();

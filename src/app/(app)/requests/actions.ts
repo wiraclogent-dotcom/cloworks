@@ -4,7 +4,6 @@ import type { RequestStatus } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, UNAUTH_MESSAGE, unauthResult } from "@/lib/actionUser";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { rescheduleRequestWith, type RescheduleResult } from "@/lib/reschedule";
 import { extractValues, submitRequestWith, type SubmitState } from "@/lib/submitRequest";
 import { moveRequestWith, type MoveResult } from "@/lib/transition-action";
@@ -19,17 +18,14 @@ export async function moveRequest(
 }
 
 /** Calendar drag / detail-page deadline change. Expected failures return as data. */
+// No revalidatePath: both callers (calendar drag, detail form) call router.refresh() on success, and revalidating
+// here as well made Next render the page twice per change.
 export async function rescheduleRequest(requestId: string, day: string): Promise<RescheduleResult> {
-  const r = await withUser<RescheduleResult, RescheduleResult>(
+  return withUser<RescheduleResult, RescheduleResult>(
     requireUser,
     (user) => rescheduleRequestWith(async () => user, dbFor(user), requestId, day),
     unauthResult,
   );
-  if (r.ok) {
-    revalidatePath("/requests");
-    revalidatePath(`/requests/${requestId}`);
-  }
-  return r;
 }
 
 export type { SubmitState } from "@/lib/submitRequest";

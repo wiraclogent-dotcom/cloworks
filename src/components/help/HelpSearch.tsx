@@ -1,10 +1,12 @@
 "use client";
+import { SearchX } from "lucide-react";
 
 import Link from "next/link";
 import { useState } from "react";
 import type { Article, Section } from "@/lib/help/content";
 import { searchArticles } from "@/lib/help/search";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Input } from "@/components/shadcn/input";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 /**
@@ -19,25 +21,24 @@ export function HelpSearch({ sections }: { sections: { section: Section; article
 
   return (
     <div className="space-y-4">
-      <input
+      <Input
         type="search"
         aria-label="Search help"
         placeholder="Search guides"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground"
       />
 
       {searching ? (
         matches.length === 0 ? (
-          <EmptyState title={`No guides match ‘${query.trim()}’`} />
+          <EmptyState icon={<SearchX />} title={`No guides match ‘${query.trim()}’`} />
         ) : (
           <Card>
             <ul className="divide-y divide-border">
               {matches.map((a) => (
                 <li key={a.slug} className="py-2">
                   <Link href={`/help/${a.slug}`} className="font-medium text-foreground hover:underline">{a.title}</Link>
-                  <span className="ml-2 text-sm text-foreground-secondary">{a.section}</span>
+                  <span className="ml-2 text-sm text-muted-foreground">{a.section}</span>
                 </li>
               ))}
             </ul>

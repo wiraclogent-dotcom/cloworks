@@ -1,33 +1,28 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "@/components/ui/cn"
+import { LoaderCircle } from "lucide-react"
 import { Slot } from "radix-ui"
+import { cn, focusRing } from "@/components/ui/cn"
 
-const buttonVariants = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+const buttonStyles = cva(
+  "inline-flex shrink-0 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap select-none transition-colors duration-150 ease-out disabled:cursor-not-allowed disabled:opacity-55 aria-disabled:cursor-not-allowed aria-disabled:opacity-55 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 " +
+    focusRing,
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40",
-        outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
-        secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        default: "bg-primary text-primary-foreground hover:bg-primary-hover",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive-hover",
+        outline: "border border-border-strong bg-card text-foreground hover:border-primary hover:bg-card",
+        secondary: "bg-muted text-foreground hover:bg-muted/80",
+        ghost: "text-muted-foreground hover:bg-muted hover:text-foreground",
+        link: "text-link underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2 has-[>svg]:px-3",
-        xs: "h-6 gap-1 rounded-md px-2 text-xs has-[>svg]:px-1.5 [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 gap-1.5 rounded-md px-3 has-[>svg]:px-2.5",
-        lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
-        icon: "size-9",
-        "icon-xs": "size-6 rounded-md [&_svg:not([class*='size-'])]:size-3",
-        "icon-sm": "size-8",
-        "icon-lg": "size-10",
+        default: "h-9 px-4 text-sm",
+        // 32px visual, 36px hit area (a transparent ::after extends it 2px up and down).
+        sm: "relative h-8 px-3 text-compact after:absolute after:inset-x-0 after:-inset-y-0.5 after:content-['']",
+        icon: "size-9 [&_svg]:size-[18px]",
+        "icon-sm": "relative size-8 after:absolute after:-inset-0.5 after:content-[''] [&_svg]:size-[18px]",
       },
     },
     defaultVariants: {
@@ -37,27 +32,64 @@ const buttonVariants = cva(
   }
 )
 
+/** Button classes for anything that should look like a button (`summary`, `label`); `className` wins on conflicts. */
+function buttonVariants(options?: Parameters<typeof buttonStyles>[0]): string {
+  return cn(buttonStyles(options))
+}
+
+type ButtonProps = React.ComponentProps<"button"> &
+  VariantProps<typeof buttonStyles> & {
+    asChild?: boolean
+    /** Shows a spinner, sets aria-busy and disables the button. Keep the label (e.g. "Saving…"). */
+    loading?: boolean
+    /** Icon before the label (lucide icon element; sized automatically). */
+    icon?: React.ReactNode
+    /** Icon after the label. */
+    iconRight?: React.ReactNode
+  }
+
+/**
+ * `type` defaults to "button" (pass type="submit" inside forms). Always pass an explicit `variant`: tests/buttonUsage
+ * enforces it, because the default is the primary look. With `asChild` the child (e.g. a `<Link>`) is the element, so
+ * put icons inside it; `loading`, `icon` and `iconRight` apply to real buttons only.
+ */
 function Button({
   className,
   variant = "default",
   size = "default",
   asChild = false,
+  loading = false,
+  icon,
+  iconRight,
+  type = "button",
+  disabled,
+  children,
   ...props
-}: React.ComponentProps<"button"> &
-  VariantProps<typeof buttonVariants> & {
-    asChild?: boolean
-  }) {
-  const Comp = asChild ? Slot.Root : "button"
-
+}: ButtonProps) {
+  if (asChild) {
+    return (
+      <Slot.Root data-slot="button" data-variant={variant} data-size={size} className={buttonVariants({ variant, size, className })} {...props}>
+        {children}
+      </Slot.Root>
+    )
+  }
   return (
-    <Comp
+    <button
       data-slot="button"
       data-variant={variant}
       data-size={size}
-      className={cn(buttonVariants({ variant, size, className }))}
+      type={type}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      className={buttonVariants({ variant, size, className })}
       {...props}
-    />
+    >
+      {loading ? <LoaderCircle aria-hidden="true" strokeWidth={1.75} className="animate-spin" /> : icon}
+      {children}
+      {iconRight}
+    </button>
   )
 }
 
 export { Button, buttonVariants }
+export type { ButtonProps }

@@ -17,6 +17,7 @@ const ALLOWED: [RequestStatus, RequestStatus][] = [
   ["ON_PROGRESS", "CANCELLED"],
   ["FIRST_LOOK", "CANCELLED"],
   ["DONE", "CANCELLED"],
+  ["CANCELLED", "REQUESTED"],
 ];
 
 describe("canTransition", () => {
@@ -59,17 +60,18 @@ describe("transitionRequestWith", () => {
   });
 
   async function mk(status: RequestStatus, assigned = true) {
-    return db.prisma.request.create({
+    const r = await db.prisma.request.create({
       data: {
         title: `r${++seq}`,
         brandId,
         divisionId,
         typeId,
         requesterId: requester.id,
-        assigneeId: assigned ? creative.id : null,
         status,
       },
     });
+    if (assigned) await db.prisma.requestAssignee.create({ data: { requestId: r.id, userId: creative.id } });
+    return r;
   }
   const events = (id: string) => db.prisma.statusEvent.findMany({ where: { requestId: id } });
   const status = async (id: string) => (await db.prisma.request.findUniqueOrThrow({ where: { id } })).status;
@@ -143,7 +145,7 @@ describe("transitionRequestWith", () => {
                     if (rp !== "findUnique") return v.bind(rt);
                     return async (...a: unknown[]) => {
                       const out = await v.apply(rt, a);
-                      if (!done) { done = true; await base.request.update({ where: { id: r.id }, data: { assigneeId: null } }); }
+                      if (!done) { done = true; await base.requestAssignee.deleteMany({ where: { requestId: r.id } }); }
                       return out;
                     };
                   },
@@ -157,7 +159,6 @@ describe("transitionRequestWith", () => {
     await expect(transitionRequestWith(racy, creative, r.id, "DONE", { outputCount: 1 })).rejects.toMatchObject({ code: "INVALID", message: expect.stringMatching(/needs an assignee/) });
     const got = await base.request.findUniqueOrThrow({ where: { id: r.id } });
     expect(got.status).toBe("FIRST_LOOK");
-    expect(got.assigneeId).toBeNull();
     expect(await events(r.id)).toHaveLength(0);
   });
 
@@ -198,7 +199,7 @@ describe("runTransitionAction (action wrapper core)", () => {
     await expect(runTransitionAction(getUser, {} as never, "x", "ON_PROGRESS")).rejects.toThrow("Unauthenticated");
   });
   it("forbidden role rejects before touching db", async () => {
-    const getUser = async () => ({ id: "u", appRole: "REQUESTER" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false });
+    const getUser = async () => ({ id: "u", name: "U", appRole: "REQUESTER" as const, jobRole: "OTHER" as const, workspaceId: "clogent", mustChangePassword: false });
     await expect(runTransitionAction(getUser, {} as never, "x", "ON_PROGRESS")).rejects.toThrow(/forbidden/i);
   });
 });

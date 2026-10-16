@@ -1,17 +1,28 @@
-"use client"
-
 import * as React from "react"
 import { cn } from "@/components/ui/cn"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+/**
+ * Monday-style table: hairlines, no zebra, row hover, sticky header, 13px text. Server-safe (no "use client").
+ *
+ * The container (`data-slot="table-container"`) is THE scroll box in both directions: the header sticks to its top,
+ * so give it a max height for long tables (`containerClassName="max-h-[calc(100dvh-15rem)]"`) and never wrap the
+ * table in a second `overflow-*` element (the inner one would become the sticky ancestor and the header would scroll
+ * away). For the card look put it in `<Card className="overflow-hidden p-0">`. Width: `className="min-w-[64rem]"`.
+ * Compact density: `className="py-1.5"` on the cells.
+ */
+function Table({
+  className,
+  containerClassName,
+  ...props
+}: React.ComponentProps<"table"> & { containerClassName?: string }) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto"
+      className={cn("relative w-full overflow-auto", containerClassName)}
     >
       <table
         data-slot="table"
-        className={cn("w-full caption-bottom text-sm", className)}
+        className={cn("w-full border-collapse text-left text-compact text-foreground", className)}
         {...props}
       />
     </div>
@@ -19,44 +30,30 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-  return (
-    <thead
-      data-slot="table-header"
-      className={cn("[&_tr]:border-b", className)}
-      {...props}
-    />
-  )
+  return <thead data-slot="table-header" className={className} {...props} />
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
-  return (
-    <tbody
-      data-slot="table-body"
-      className={cn("[&_tr:last-child]:border-0", className)}
-      {...props}
-    />
-  )
+  return <tbody data-slot="table-body" className={className} {...props} />
 }
 
 function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   return (
     <tfoot
       data-slot="table-footer"
-      className={cn(
-        "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-        className
-      )}
+      className={cn("border-t border-border bg-muted font-medium", className)}
       {...props}
     />
   )
 }
 
+/** Hairline between rows (none above the first), tint on hover. */
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b transition-colors hover:bg-muted/50 has-aria-expanded:bg-muted/50 data-[state=selected]:bg-muted",
+        "border-t border-border transition-colors duration-150 ease-out first:border-t-0 hover:bg-muted/60 data-[state=selected]:bg-muted",
         className
       )}
       {...props}
@@ -64,12 +61,23 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   )
 }
 
-function TableHead({ className, ...props }: React.ComponentProps<"th">) {
+const PAD = "px-3 py-2.5"
+/** Right-aligned tabular figures for count and score columns (our addition). */
+const NUMERIC = "text-right tabular-nums"
+
+/** Column header: sticks to the top of the table container, muted 12px semibold on the muted fill. Pass `scope="col"`. */
+function TableHead({
+  className,
+  numeric = false,
+  ...props
+}: React.ComponentProps<"th"> & { numeric?: boolean }) {
   return (
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "sticky top-0 z-10 border-b border-border bg-muted text-xs font-semibold whitespace-nowrap text-muted-foreground",
+        PAD,
+        numeric && NUMERIC,
         className
       )}
       {...props}
@@ -77,14 +85,27 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   )
 }
 
-function TableCell({ className, ...props }: React.ComponentProps<"td">) {
+/** The row's title cell: a `<th scope="row">` in body text weight 500 (our addition; shadcn has none). */
+function TableRowHeader({ className, ...props }: React.ComponentProps<"th">) {
+  return (
+    <th
+      data-slot="table-row-header"
+      scope="row"
+      className={cn("text-left align-middle font-medium", PAD, className)}
+      {...props}
+    />
+  )
+}
+
+function TableCell({
+  className,
+  numeric = false,
+  ...props
+}: React.ComponentProps<"td"> & { numeric?: boolean }) {
   return (
     <td
       data-slot="table-cell"
-      className={cn(
-        "p-2 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-        className
-      )}
+      className={cn("align-middle", PAD, numeric && NUMERIC, className)}
       {...props}
     />
   )
@@ -97,7 +118,7 @@ function TableCaption({
   return (
     <caption
       data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
+      className={cn("mt-4 text-compact text-muted-foreground", className)}
       {...props}
     />
   )
@@ -109,6 +130,7 @@ export {
   TableBody,
   TableFooter,
   TableHead,
+  TableRowHeader,
   TableRow,
   TableCell,
   TableCaption,

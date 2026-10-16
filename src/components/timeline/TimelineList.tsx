@@ -3,32 +3,38 @@ import Link from "next/link";
 import type { TimelineRow } from "@/lib/requests";
 import { shortDay, type TimelinePerson } from "@/lib/workload";
 import { STATUS_LABEL, StatusIcon } from "../status";
+import { Users } from "lucide-react";
 import { cn, focusRing } from "../ui/cn";
 import { PersonHeading } from "./PersonHeading";
+import { Card } from "@/components/shadcn/card";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+const sharedWith = (row: TimelineRow, ownerId: string | null) => row.assignees.filter((a) => a.id !== ownerId).map((a) => a.name).join(", ");
 
 function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string, TimelineRow> }) {
   const headingId = useId();
   const bars = person.lanes.flat().sort((a, b) => a.startCol - b.startCol || a.endCol - b.endCol);
   return (
-    <section aria-labelledby={headingId} className="rounded-xl border border-border bg-card p-3 shadow-card">
+    <Card asChild className="p-3"><section aria-labelledby={headingId}>
       <PersonHeading person={person} headingId={headingId} />
       {bars.length === 0 ? (
-        <p className="mt-2 text-sm text-foreground-secondary">No open requests</p>
+        <EmptyState size="inline" title="No open requests" className="mt-2" />
       ) : (
         <ul className="mt-2 divide-y divide-border">
           {bars.map((b) => {
             const row = rows.get(b.id);
             if (!row) return null;
             return (
-              <li key={b.id} className="flex items-start gap-2 py-2 text-sm">
-                <span className="mt-0.5 inline-flex shrink-0 text-foreground-secondary" title={STATUS_LABEL[row.status]}>
+              <li key={`${person.key}:${b.id}`} className="flex items-start gap-2 py-2 text-sm">
+                <span className="mt-0.5 inline-flex shrink-0 text-muted-foreground" title={STATUS_LABEL[row.status]}>
                   <StatusIcon status={row.status} />
                   <span className="sr-only">{`Status: ${STATUS_LABEL[row.status]}. `}</span>
                 </span>
                 <div className="min-w-0 flex-1">
                   <Link href={`/requests/${row.id}`} className={cn("font-medium break-words text-foreground underline-offset-2 hover:underline", focusRing)}>{row.title}</Link>
-                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-foreground-secondary">
+                  <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
                     <span className="tabular-nums">{`${shortDay(row.requestDay)} → ${row.deadlineDay ? shortDay(row.deadlineDay) : "no deadline"}`}</span>
+                    {b.shared && <span data-shared="" className="inline-flex items-center gap-1"><Users aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />{`shared with ${sharedWith(row, person.assigneeId)}`}</span>}
                     {b.overdue && <span data-tone="overdue" className="rounded-md bg-tone-tint px-1.5 py-px font-medium text-tone-text">Overdue</span>}
                   </p>
                 </div>
@@ -37,7 +43,7 @@ function PersonList({ person, rows }: { person: TimelinePerson; rows: Map<string
           })}
         </ul>
       )}
-    </section>
+    </section></Card>
   );
 }
 

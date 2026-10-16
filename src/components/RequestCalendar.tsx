@@ -14,8 +14,8 @@ import { CalendarAgenda } from "./calendar/CalendarAgenda";
 import { DayCell } from "./calendar/DayCell";
 import { DayDialog } from "./calendar/DayDialog";
 import { createDayDrag } from "./calendar/dnd";
-import { Alert } from "./ui/Alert";
-import { Button, buttonClass } from "./ui/Button";
+import { Alert, AlertAction, AlertDescription } from "@/components/shadcn/alert";
+import { Button } from "@/components/shadcn/button";
 import { EmptyState } from "./ui/EmptyState";
 import { cn } from "./ui/cn";
 import { useNarrow } from "./useNarrow";
@@ -113,45 +113,44 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
   }
   function onDragCancel() { drag.stop(); setActiveId(null); }
 
-  const navLink = cn(buttonClass({ variant: "ghost", size: "sm" }), "px-2");
   return (
-    <div data-page-wide="">
+    <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h2 className="text-base font-semibold text-heading">{monthName(month, { month: "long", year: "numeric" })}</h2>
         <nav aria-label="Month" className="ml-auto flex items-center gap-1">
-          <Link href={prevHref} aria-label="Previous month" title="Previous month" className={navLink}><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
-          <Link href={nextHref} aria-label="Next month" title="Next month" className={navLink}><ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
-          <Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>
+          <Button asChild variant="ghost" size="sm" className="px-2"><Link href={prevHref} aria-label="Previous month" title="Previous month"><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link></Button>
+          <Button asChild variant="ghost" size="sm" className="px-2"><Link href={nextHref} aria-label="Next month" title="Next month"><ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link></Button>
+          <Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>
         </nav>
       </div>
       {message && (
-        <Alert tone="danger" className="mb-3"
-          action={<Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button>}>
-          <p>{message}</p>
+        <Alert variant="destructive" className="mb-3">
+          <AlertDescription><p>{message}</p></AlertDescription>
+          <AlertAction><Button variant="ghost" size="sm" icon={<X aria-hidden="true" strokeWidth={1.75} />} onClick={() => setMessage(null)}>Dismiss</Button></AlertAction>
         </Alert>
       )}
       {rows.length === 0 ? (
         filtered ? (
           <EmptyState icon={<SearchX aria-hidden="true" strokeWidth={1.75} />} title={`No requests match these filters in ${monthName(month, { month: "long" })}`}
             description="Try another search, another month, or clear the filters."
-            action={<Link href={clearHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Clear filters</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={clearHref}>Clear filters</Link></Button>} />
         ) : (
           <EmptyState icon={<CalendarDays />} title={`Nothing due in ${monthName(month, { month: "long" })}`}
             description="Open requests with a deadline this month show up here."
-            action={<Link href={todayHref} className={buttonClass({ variant: "secondary", size: "sm" })}>Today</Link>} />
+            action={<Button asChild variant="outline" size="sm"><Link href={todayHref}>Today</Link></Button>} />
         )
       ) : narrow ? (
         <CalendarAgenda byDay={byDay} today={today} />
       ) : (
         <>
           {canMove
-            ? <p className="mb-3 text-sm text-foreground-secondary">Drag a card to another day to change its deadline.</p>
-            : <p className="mb-3 text-sm text-foreground-secondary">You can view the calendar. Only creative team members can change deadlines.</p>}
+            ? <p className="mb-3 text-sm text-muted-foreground">Drag a card to another day to change its deadline.</p>
+            : <p className="mb-3 text-sm text-muted-foreground">You can view the calendar. Only creative team members can change deadlines.</p>}
           <DndContext id={CALENDAR_DND_ID} sensors={sensors} collisionDetection={drag.collisionDetection}
             onDragStart={onDragStart} onDragEnd={onDragEnd} onDragCancel={onDragCancel}
             accessibility={{ announcements, screenReaderInstructions: { draggable: CALENDAR_SR_INSTRUCTIONS } }}>
             <div aria-hidden="true" className="mb-1 grid grid-cols-7 gap-1">
-              {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-foreground-secondary">{w}</div>)}
+              {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-muted-foreground">{w}</div>)}
             </div>
             <div className="space-y-1">
               {grid.weeks.map((week) => (

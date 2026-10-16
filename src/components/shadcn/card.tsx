@@ -1,12 +1,25 @@
 import * as React from "react"
+import { Slot } from "radix-ui"
 import { cn } from "@/components/ui/cn"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * White surface, 12px radius, hairline border, soft shadow, 16px padding.
+ * Edge-to-edge tables pass `className="p-0"` (and `overflow-hidden` to clip the corners).
+ * `asChild` puts the surface on the child instead of a `div`, for a card that must be a `section`, `li`, `details`
+ * or `Link` (our addition; shadcn's Card has none). Put size/spacing overrides on `<Card className>`, not on the
+ * child: Radix joins the two class lists without resolving conflicts.
+ */
+function Card({
+  asChild = false,
+  className,
+  ...props
+}: React.ComponentProps<"div"> & { asChild?: boolean }) {
+  const Comp = asChild ? Slot.Root : "div"
   return (
-    <div
+    <Comp
       data-slot="card"
       className={cn(
-        "flex flex-col gap-6 rounded-xl border bg-card py-6 text-card-foreground shadow-sm",
+        "rounded-xl border border-border bg-card p-4 text-card-foreground shadow-card",
         className
       )}
       {...props}
@@ -14,32 +27,44 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
+/**
+ * Title row of a card: everything except `CardAction` (title, description) stacks on the left; a `CardAction` sits
+ * on the right. Unlike shadcn's two-column grid this is `flex-wrap`, so on a narrow screen the actions drop below the
+ * title instead of squeezing it.
+ */
+function CardHeader({ className, children, ...props }: React.ComponentProps<"div">) {
+  const parts = React.Children.toArray(children)
+  const isAction = (part: React.ReactNode) => React.isValidElement(part) && part.type === CardAction
   return (
     <div
       data-slot="card-header"
-      className={cn(
-        "@container/card-header grid auto-rows-min grid-rows-[auto_auto] items-start gap-2 px-6 has-data-[slot=card-action]:grid-cols-[1fr_auto] [.border-b]:pb-6",
-        className
-      )}
+      className={cn("mb-3 flex flex-wrap items-start justify-between gap-2", className)}
       {...props}
-    />
+    >
+      <div className="min-w-0">{parts.filter((part) => !isAction(part))}</div>
+      {parts.filter(isAction)}
+    </div>
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+/** Section title inside a card: 16px/600. A real heading: h2 by default, `as="h3"` when nested deeper. */
+function CardTitle({
+  as: Tag = "h2",
+  className,
+  ...props
+}: React.ComponentProps<"h2"> & { as?: "h2" | "h3" | "h4" }) {
   return (
-    <div
+    <Tag
       data-slot="card-title"
-      className={cn("leading-none font-semibold", className)}
+      className={cn("text-base font-semibold text-heading", className)}
       {...props}
     />
   )
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
+function CardDescription({ className, ...props }: React.ComponentProps<"p">) {
   return (
-    <div
+    <p
       data-slot="card-description"
       className={cn("text-sm text-muted-foreground", className)}
       {...props}
@@ -47,34 +72,27 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
+/** The right-hand group of a `CardHeader` (buttons, a count). */
 function CardAction({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
-      )}
+      className={cn("flex items-center gap-2", className)}
       {...props}
     />
   )
 }
 
+/** The card already pads itself, so the body adds nothing; it is the slot to hang a ref or a `p-0` override on. */
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-content"
-      className={cn("px-6", className)}
-      {...props}
-    />
-  )
+  return <div data-slot="card-content" className={cn(className)} {...props} />
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-footer"
-      className={cn("flex items-center px-6 [.border-t]:pt-6", className)}
+      className={cn("mt-3 flex items-center gap-2", className)}
       {...props}
     />
   )

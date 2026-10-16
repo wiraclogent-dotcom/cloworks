@@ -1,15 +1,15 @@
 /**
- * Status, tag and avatar palette (UI redesign spec 2026-10-08). Pure TS, no React.
+ * Status, tag and avatar palette (V3 flat blue: stages in blue shades, warnings keep red/amber). Pure TS, no React.
  *
  * Single source of truth for the chip colours: `src/app/globals.css` writes the same values by hand as
  * `--status-<tone>-accent|tint|text` (light under `:root`, dark under `:root[data-theme="dark"]`), and
  * `tests/palette.test.ts` fails if the two ever drift apart. Components never use these hexes directly:
  * they set `data-tone="<tone>"` and use the `--tone-*` variables (see globals.css), or the CSS variables.
  *
- * Dark tints are the accent at 22% over the dark surface `#14263A`, flattened to an opaque hex so the
- * contrast tests can measure them; dark text uses the 100/200 stop of the same hue.
+ * Dark tints are the accent mixed into the dark surface `#121A2E`, flattened to an opaque hex so the contrast
+ * tests can measure them; dark text uses a pale stop of the same hue.
  */
-import type { ProjectStatus, RequestStatus } from "@prisma/client";
+import type { ProjectStage, ProjectStatus, RequestStatus } from "@prisma/client";
 
 export type Swatch = { accent: string; tint: string; text: string };
 export type ThemedSwatch = { light: Swatch; dark: Swatch };
@@ -31,28 +31,28 @@ export type Tone = (typeof TONES)[number];
 
 export const PALETTE: Record<Tone, ThemedSwatch> = {
   requested: {
-    light: { accent: "#7A8CA5", tint: "#EAEFF5", text: "#2B3A4D" },
-    dark: { accent: "#7A8CA5", tint: "#2A3C52", text: "#D3DCE8" },
+    light: { accent: "#9AA3B5", tint: "#F1F3F7", text: "#3B4458" },
+    dark: { accent: "#8A93A6", tint: "#222B3D", text: "#D3DAE6" },
   },
   "in-progress": {
-    light: { accent: "#2F7FC1", tint: "#E3EEF9", text: "#0C447C" },
-    dark: { accent: "#2F7FC1", tint: "#1A3A58", text: "#B5D4F4" },
+    light: { accent: "#1F5EFF", tint: "#E8EEFF", text: "#0B3FD1" },
+    dark: { accent: "#2F66FF", tint: "#172A5C", text: "#BFD0FF" },
   },
   "first-look": {
-    light: { accent: "#7F77DD", tint: "#EEEDFE", text: "#3C3489" },
-    dark: { accent: "#7F77DD", tint: "#2C385E", text: "#CECBF6" },
+    light: { accent: "#38A3F5", tint: "#E6F4FF", text: "#0B5A99" },
+    dark: { accent: "#38A3F5", tint: "#12324F", text: "#B8E0FF" },
   },
   done: {
-    light: { accent: "#11AA9F", tint: "#DDF4F1", text: "#085041" },
-    dark: { accent: "#11AA9F", tint: "#134350", text: "#9FE1CB" },
+    light: { accent: "#0B2A8F", tint: "#DDE3F5", text: "#0B2A8F" },
+    dark: { accent: "#8FB0FF", tint: "#1E2A4F", text: "#DCE6FF" },
   },
   cancelled: {
     light: { accent: "#E24B4A", tint: "#FCEBEB", text: "#791F1F" },
     dark: { accent: "#E24B4A", tint: "#412E3E", text: "#F7C1C1" },
   },
   "needs-motion": {
-    light: { accent: "#D85A30", tint: "#FAECE7", text: "#712B13" },
-    dark: { accent: "#D85A30", tint: "#3F3138", text: "#F5C4B3" },
+    light: { accent: "#6D5BFF", tint: "#F0EEFF", text: "#4130B8" },
+    dark: { accent: "#8B7BFF", tint: "#2A2559", text: "#D6D0FF" },
   },
   "due-soon": {
     light: { accent: "#BA7517", tint: "#FAEEDA", text: "#633806" },
@@ -63,16 +63,16 @@ export const PALETTE: Record<Tone, ThemedSwatch> = {
     dark: { accent: "#E24B4A", tint: "#412E3E", text: "#F7C1C1" },
   },
   "tag-clogent": {
-    light: { accent: "#378ADD", tint: "#E6F1FB", text: "#0C447C" },
-    dark: { accent: "#378ADD", tint: "#1C3C5E", text: "#B5D4F4" },
+    light: { accent: "#1F5EFF", tint: "#EEF3FF", text: "#0B3FD1" },
+    dark: { accent: "#2F66FF", tint: "#172A5C", text: "#BFD0FF" },
   },
   "tag-bubble-wash": {
-    light: { accent: "#1D9E75", tint: "#E1F5EE", text: "#085041" },
-    dark: { accent: "#1D9E75", tint: "#164047", text: "#9FE1CB" },
+    light: { accent: "#0E9BB8", tint: "#E3F6FA", text: "#075A6E" },
+    dark: { accent: "#22B5D3", tint: "#10394A", text: "#A8E8F5" },
   },
   "tag-neutral": {
-    light: { accent: "#8190A3", tint: "#F1F4F8", text: "#3A4A5E" },
-    dark: { accent: "#7D93A9", tint: "#2C3D51", text: "#D3DCE8" },
+    light: { accent: "#8A93A6", tint: "#F1F3F7", text: "#3B4458" },
+    dark: { accent: "#7D879E", tint: "#252E40", text: "#D3DAE6" },
   },
 };
 
@@ -90,6 +90,19 @@ export const PROJECT_STATUS_TONE: Record<ProjectStatus, Tone> = {
   IN_REVIEW: "first-look",
   DONE: "done",
   ON_HOLD: "due-soon",
+  CANCELLED: "cancelled",
+};
+
+/** Tone of each stage in the progress bar and legend. Every stage gets its own palette entry; Final Artwork is the "done"
+ *  tone and Canceled the "cancelled" one. Statuses (tracker projects) use PROJECT_STATUS_TONE; "none" is neutral. */
+export const PROJECT_STAGE_TONE: Record<ProjectStage, Tone> = {
+  NOT_STARTED: "requested",
+  FIRST_PREVIEW: "first-look",
+  MANUSCRIPT: "tag-clogent",
+  TECHNICAL_ARTWORK: "needs-motion",
+  APPROVAL: "due-soon",
+  FINAL_ARTWORK: "done",
+  CANCELLED: "cancelled",
 };
 
 /** Brand name to tag tone; unknown brands get the neutral tag. Case/whitespace-insensitive. */
@@ -112,7 +125,7 @@ export const AVATAR_PAIRS: { light: { tint: string; text: string }; dark: { tint
   { light: { tint: "#EAEFF5", text: "#2B3A4D" }, dark: { tint: "#314358", text: "#D3DCE8" } },
 ];
 
-function normalizeName(name: string): string {
+export function normalizeName(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, " ");
 }
 

@@ -3,10 +3,12 @@ import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
 import { ChevronRight } from "lucide-react";
+import { cn, focusRing } from "@/components/ui/cn";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Chip } from "@/components/ui/Chip";
+import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { Badge } from "@/components/shadcn/badge";
 import { activeChip } from "@/lib/adminChips";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { NameForm, TypeForm } from "./ListForms";
 
 export async function ListsContent() {
@@ -45,7 +47,7 @@ export async function ListsContent() {
         </Card>
       </div>
 
-      <Card className="mt-4">
+      <Card className="mt-5">
         <section aria-labelledby="types-h">
           <CardHeader><CardTitle id="types-h">Request types</CardTitle></CardHeader>
           <ul className="mb-6 space-y-2">
@@ -53,23 +55,23 @@ export async function ListsContent() {
               const chip = activeChip(t.active);
               return (
                 <li key={t.id} className="rounded-lg border border-border">
-                  <details className="group">
-                    <summary className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 font-medium text-foreground hover:bg-surface-muted">
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-foreground-secondary transition-transform duration-150 group-open:rotate-90" />
+                  <Collapsible className="group">
+                    <CollapsibleTrigger className={cn("flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2.5 text-left font-medium text-foreground hover:bg-muted", focusRing)}>
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
                       {t.name}
                       <span className="sr-only"> · </span>
-                      <Chip tone={chip.tone}>{chip.label}</Chip>
-                    </summary>
-                    <div className="border-t border-border p-3">
+                      <Badge tone={chip.tone}>{chip.label}</Badge>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent keepMounted className="border-t border-border p-3">
                       <TypeForm t={{ id: t.id, name: t.name, active: t.active, schemaText: JSON.stringify(t.fieldSchema, null, 2) }} />
-                    </div>
-                  </details>
+                    </CollapsibleContent>
+                  </Collapsible>
                 </li>
               );
             })}
           </ul>
           <div className="border-t border-border pt-4">
-            <h3 className="mb-3 text-[15px] font-semibold text-foreground">Add request type</h3>
+            <h3 className="mb-3 text-base font-semibold text-foreground">Add request type</h3>
             <TypeForm />
           </div>
         </section>

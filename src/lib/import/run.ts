@@ -5,6 +5,7 @@ import { readMasterWorkbook, type MasterWorkbook } from "./readWorkbook";
 import { parseMaster } from "./parseMaster";
 import { readCsv } from "./csv";
 import { applyImport } from "./applyImport";
+import { applySync, planSync, type SyncPlan } from "./syncExisting";
 import { DONE_CAVEAT, parseRequestRows, type ImportRecord, type ParseReport } from "./parseRequests";
 
 export const DUPLICATE_NOTE =
@@ -36,11 +37,22 @@ export function formatReport(rep: ParseReport, already?: number): string[] {
   return out;
 }
 
+export function formatSyncPlan(plan: SyncPlan): string[] {
+  const out = [`\n== already imported, changed in the sheet since ==`, `to update:   ${plan.updates.length}`, `unchanged:   ${plan.unchanged}`];
+  for (const u of plan.updates) out.push(`  ${u.source} line ${u.row}: ${u.title}`, ...u.changes.map((c) => `      ${c}`));
+  if (plan.statusKept.length) {
+    out.push(`status kept (the app is further along or Cancelled; never moved back): ${plan.statusKept.length}`);
+    for (const k of plan.statusKept) out.push(`  ${k.source} line ${k.row}: ${k.title} (app ${k.app}, sheet ${k.sheet})`);
+  }
+  return out;
+}
+
 export type RunDeps = {
   apply?: typeof applyImport;
   readFile?: (p: string) => string;
   exists?: (p: string) => boolean;
   readWorkbook?: (p: string) => Promise<MasterWorkbook>;
+  sync?: typeof applySync;
   log?: (line: string) => void;
 };
 
@@ -93,11 +105,14 @@ export async function runImport(db: PrismaClient, workspaceId: string, args: Cli
   for (const rep of reports) {
     for (const l of formatReport(rep, records.filter((r) => r.source === rep.source && keys.has(r.fields.importKey)).length)) log(l);
   }
+  const plan = await planSync(db, workspaceId, records, new Map(users.map((u) => [u.id, u.name])));
+  for (const l of formatSyncPlan(plan)) log(l);
   log(`\nNOTE: ${DONE_CAVEAT}`);
   log(`NOTE: ${DUPLICATE_NOTE}`);
 
   if (!args.apply) return null;
+  const updated = await (deps.sync ?? applySync)(db, plan);
   const res = await apply(db, workspaceId, records);
-  log(`\nApplied: inserted ${res.inserted}, already imported ${JSON.stringify(res.alreadyImported)}`);
-  return res;
+  log(`\nApplied: inserted ${res.inserted}, updated ${updated}, already imported ${JSON.stringify(res.alreadyImported)}`);
+  return { ...res, updated };
 }

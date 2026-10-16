@@ -29,8 +29,8 @@ describe("palette ↔ globals.css (single source)", () => {
     for (const tone of TONES) expect(css).toContain(`[data-tone="${tone}"] { --tone-accent: var(--status-${tone}-accent);`);
   });
   it("light values are the spec's", () => {
-    expect(PALETTE.requested.light).toEqual({ accent: "#7A8CA5", tint: "#EAEFF5", text: "#2B3A4D" });
-    expect(PALETTE.done.light).toEqual({ accent: "#11AA9F", tint: "#DDF4F1", text: "#085041" });
+    expect(PALETTE.requested.light).toEqual({ accent: "#9AA3B5", tint: "#F1F3F7", text: "#3B4458" });
+    expect(PALETTE.done.light).toEqual({ accent: "#0B2A8F", tint: "#DDE3F5", text: "#0B2A8F" });
     expect(PALETTE["due-soon"].light).toEqual({ accent: "#BA7517", tint: "#FAEEDA", text: "#633806" });
   });
 });
@@ -38,7 +38,8 @@ describe("palette ↔ globals.css (single source)", () => {
 describe("status tones", () => {
   it("map every request and project status", () => {
     expect(REQUEST_STATUS_TONE).toEqual({ REQUESTED: "requested", ON_PROGRESS: "in-progress", FIRST_LOOK: "first-look", DONE: "done", CANCELLED: "cancelled" });
-    expect(Object.keys(PROJECT_STATUS_TONE).sort()).toEqual(["DONE", "IN_PROGRESS", "IN_REVIEW", "NOT_STARTED", "ON_HOLD"]);
+    expect(Object.keys(PROJECT_STATUS_TONE).sort()).toEqual(["CANCELLED", "DONE", "IN_PROGRESS", "IN_REVIEW", "NOT_STARTED", "ON_HOLD"]);
+    expect(PROJECT_STATUS_TONE.CANCELLED).toBe("cancelled");
   });
   it("brand tags: Clogent and Bubble Wash get their colours, others neutral", () => {
     expect(brandTone("Clogent")).toBe("tag-clogent");

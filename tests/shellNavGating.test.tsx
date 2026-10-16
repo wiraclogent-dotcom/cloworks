@@ -23,24 +23,27 @@ async function renderGated(r: AppRole) {
 }
 
 describe("role-gated sidebar items (same can() checks as the pages)", () => {
-  it.each(["REQUESTER", "CREATIVE"] as const)("%s sees neither Team KPI nor Brief Calendar", async (r) => {
-    await renderGated(r);
-    expect(screen.queryByRole("link", { name: "Team KPI" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "Brief Calendar" })).toBeNull();
-  });
-
-  it.each(["LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
+  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("%s sees Brief Calendar", async (r) => {
     await renderGated(r);
     expect(screen.getByRole("link", { name: "Brief Calendar" }).getAttribute("href")).toBe("/dashboard/briefs");
   });
 
-  it.each(["LEAD", "ADMIN"] as const)("%s sees Team KPI", async (r) => {
+  it.each(["REQUESTER", "CREATIVE", "LEAD", "ADMIN"] as const)("%s sees Team KPI", async (r) => {
     await renderGated(r);
     expect(screen.getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
   });
 
-  it("there is no Admin group in the sidebar any more (admins reach it from Settings)", () => {
-    expect("AdminGroup" in Shell).toBe(false);
+  it.each(["REQUESTER", "CREATIVE", "LEAD"] as const)("%s does not see the Admin group", async (r) => {
+    role = r;
+    const { container } = render(<nav aria-label="Main">{await Shell.AdminNavGroup()}</nav>);
+    expect(container.textContent).toBe("");
+  });
+
+  it("admins see the Admin group with Members and Lists", async () => {
+    role = "ADMIN";
+    render(<nav aria-label="Main">{await Shell.AdminNavGroup()}</nav>);
+    expect(screen.getByRole("link", { name: "Members" }).getAttribute("href")).toBe("/admin/users");
+    expect(screen.getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
   });
 });
 

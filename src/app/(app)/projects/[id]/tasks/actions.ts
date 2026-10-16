@@ -5,7 +5,9 @@ import type { ProjectStage, ProjectStatus } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser, unauthResult } from "@/lib/actionUser";
 import { can } from "@/lib/permissions";
+import { FILE_LOCATION_HINT } from "@/lib/fileLocation";
 import { PROJECT_STAGES, taskMode } from "@/lib/projectProgress";
+import { carryTargetsOnRename, recordTaskChange } from "@/lib/projectTaskEvents";
 import { TASK_STATUS_ORDER, cleanFileUrl, cleanTaskDate, dateOrderError, jakartaDay, jakartaIso } from "@/lib/projectTasks";
 
 export type TaskStageCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "UNAUTHENTICATED";
@@ -17,10 +19,9 @@ export async function setTaskStage(projectId: string, taskId: string, stage: Pro
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change task stages." };
     if (!PROJECT_STAGES.includes(stage)) return { ok: false, code: "VALIDATION", message: "Pick a valid stage." };
-    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
+    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, stage: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    await db.projectTask.update({ where: { id: taskId }, data: { stage } });
-    revalidatePath(`/projects/${projectId}/tasks`);
+    await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STAGE", from: task.stage, to: stage, data: { stage } }));
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, stage };
   }, unauthResult);
@@ -34,11 +35,11 @@ export async function setTaskFileUrl(projectId: string, taskId: string, url: str
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change file links." };
     const fileUrl = cleanFileUrl(url);
-    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: "Use a full link that starts with https://." };
+    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: FILE_LOCATION_HINT };
     const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
     await db.projectTask.update({ where: { id: taskId }, data: { fileUrl } });
-    revalidatePath(`/projects/${projectId}/tasks`);
+    revalidatePath(`/projects/${projectId}`);
     return { ok: true, fileUrl };
   }, unauthResult);
 }
@@ -58,11 +59,15 @@ export async function setTaskDate(projectId: string, taskId: string, field: "sta
     const dueDate = field === "due" ? (iso ? jakartaDay(iso) : null) : task.dueDate;
     if (startDate && dueDate && dueDate < startDate) return { ok: false, code: "VALIDATION", message: "The due date can't be before the start date." };
     // Setting a real due date replaces a TBC; clearing the due date leaves it blank.
-    await db.projectTask.update({
-      where: { id: taskId },
-      data: { startDate, dueDate, ...(field === "due" && dueDate ? { dueTbc: false } : {}) },
-    });
-    revalidatePath(`/projects/${projectId}/tasks`);
+    const data = { startDate, dueDate, ...(field === "due" && dueDate ? { dueTbc: false } : {}) };
+    if (field === "due") {
+      await db.$transaction((tx) => recordTaskChange(tx, {
+        taskId, actorId: user.id, kind: "DUE",
+        from: task.dueDate ? jakartaIso(task.dueDate) : null, to: dueDate ? jakartaIso(dueDate) : null, data,
+      }));
+    } else {
+      await db.projectTask.update({ where: { id: taskId }, data });
+    }
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, startDate: startDate ? jakartaIso(startDate) : null, dueDate: dueDate ? jakartaIso(dueDate) : null };
   }, unauthResult);
@@ -100,9 +105,43 @@ export async function setTaskDetail(projectId: string, taskId: string, field: Ta
         select: { id: true },
       });
       if (clash) return { ok: false, code: "VALIDATION", message: "Another detail already has this item and detail name." };
-      await db.projectTask.update({ where: { id: taskId }, data: field === "title" ? { title } : { subTitle } });
+      if (field === "title") {
+        await db.$transaction(async (tx) => {
+          await tx.projectTask.update({ where: { id: taskId }, data: { title } });
+          await carryTargetsOnRename(tx, projectId, task.title, title);
+        });
+      } else {
+        await db.projectTask.update({ where: { id: taskId }, data: { subTitle } });
+      }
     }
-    revalidatePath(`/projects/${projectId}/tasks`);
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true };
+  }, unauthResult);
+}
+
+export type ItemRenameResult = { ok: true } | { ok: false; code: TaskStageCode; message: string };
+
+/**
+ * Renames a whole item: every row titled `oldTitle` in this project gets `newTitle`, and the item's KPI targets follow.
+ * Needs `project.manage`. The new name is trimmed, required and at most 200 characters, and can't be another item's name
+ * (that would merge two items). The same name is a successful no-op.
+ */
+export async function renameItem(projectId: string, oldTitle: string, newTitle: string): Promise<ItemRenameResult> {
+  return withUser<ItemRenameResult, ItemRenameResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to rename items." };
+    const title = newTitle.trim();
+    if (!title) return { ok: false, code: "VALIDATION", message: "An item name is required." };
+    if (title.length > 200) return { ok: false, code: "VALIDATION", message: "Keep names under 200 characters." };
+    const rows = await db.projectTask.findMany({ where: { projectId, title: oldTitle }, select: { id: true } });
+    if (rows.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    if (title === oldTitle) return { ok: true };
+    const clash = await db.projectTask.findFirst({ where: { projectId, title }, select: { id: true } });
+    if (clash) return { ok: false, code: "VALIDATION", message: "Another item already has this name." };
+    await db.$transaction(async (tx) => {
+      await tx.projectTask.updateMany({ where: { projectId, title: oldTitle }, data: { title } });
+      await carryTargetsOnRename(tx, projectId, oldTitle, title);
+    });
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);
@@ -116,12 +155,55 @@ export async function setTaskStatus(projectId: string, taskId: string, status: P
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change status." };
     if (!TASK_STATUS_ORDER.includes(status)) return { ok: false, code: "VALIDATION", message: "Pick a valid status." };
-    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true } });
+    const task = await db.projectTask.findFirst({ where: { id: taskId, projectId }, select: { id: true, status: true } });
     if (!task) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    await db.projectTask.update({ where: { id: taskId }, data: { status } });
-    revalidatePath(`/projects/${projectId}/tasks`);
+    await db.$transaction((tx) => recordTaskChange(tx, { taskId, actorId: user.id, kind: "STATUS", from: task.status, to: status, data: { status } }));
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, status };
+  }, unauthResult);
+}
+
+export type ItemBulkResult = { ok: true; changed: number } | { ok: false; code: TaskStageCode; message: string };
+
+/**
+ * Sets the stage of every variant of one item (all rows sharing `itemTitle` in this project). Needs `project.manage`.
+ * Variants whose stage is CANCELLED are skipped unless the target is CANCELLED itself; variants already at the target
+ * are skipped. Runs in one transaction and writes one STAGE event per changed variant. Returns how many changed.
+ */
+export async function setItemStage(projectId: string, itemTitle: string, stage: ProjectStage): Promise<ItemBulkResult> {
+  return withUser<ItemBulkResult, ItemBulkResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change task stages." };
+    if (!PROJECT_STAGES.includes(stage)) return { ok: false, code: "VALIDATION", message: "Pick a valid stage." };
+    const tasks = await db.projectTask.findMany({ where: { projectId, title: itemTitle }, select: { id: true, stage: true } });
+    if (tasks.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    const targets = tasks.filter((t) => t.stage !== stage && (t.stage !== "CANCELLED" || stage === "CANCELLED"));
+    await db.$transaction(async (tx) => {
+      for (const t of targets) await recordTaskChange(tx, { taskId: t.id, actorId: user.id, kind: "STAGE", from: t.stage, to: stage, data: { stage } });
+    });
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true, changed: targets.length };
+  }, unauthResult);
+}
+
+/**
+ * Sets the status of every variant of one item. Needs `project.manage`; CANCELLED is a project-only status and is not
+ * valid here. Variants already at the target are skipped. Runs in one transaction and writes one STATUS event per
+ * changed variant. Returns how many changed.
+ */
+export async function setItemStatus(projectId: string, itemTitle: string, status: ProjectStatus): Promise<ItemBulkResult> {
+  return withUser<ItemBulkResult, ItemBulkResult>(requireUser, async (user) => {
+    const db = dbFor(user);
+    if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to change status." };
+    if (!TASK_STATUS_ORDER.includes(status)) return { ok: false, code: "VALIDATION", message: "Pick a valid status." };
+    const tasks = await db.projectTask.findMany({ where: { projectId, title: itemTitle }, select: { id: true, status: true } });
+    if (tasks.length === 0) return { ok: false, code: "NOT_FOUND", message: "That item is not in this project." };
+    const targets = tasks.filter((t) => t.status !== status);
+    await db.$transaction(async (tx) => {
+      for (const t of targets) await recordTaskChange(tx, { taskId: t.id, actorId: user.id, kind: "STATUS", from: t.status, to: status, data: { status } });
+    });
+    revalidatePath(`/projects/${projectId}`);
+    return { ok: true, changed: targets.length };
   }, unauthResult);
 }
 
@@ -132,7 +214,7 @@ export type CreateDetailResult = { ok: true; id: string } | { ok: false; code: T
 
 /**
  * Adds a row to a project. The Stage or Status value must match what the project uses (stages for design projects,
- * statuses for tracker projects). New rows go to the bottom of the table. Needs `project.manage`.
+ * statuses for tracker projects). A new variant of an existing item is inserted right after that item's last row; a new item is appended at the bottom. Needs `project.manage`.
  */
 export async function createTaskDetail(projectId: string, input: NewDetailInput): Promise<CreateDetailResult> {
   return withUser<CreateDetailResult, CreateDetailResult>(requireUser, async (user) => {
@@ -174,22 +256,26 @@ export async function createTaskDetail(projectId: string, input: NewDetailInput)
     if (orderError) return { ok: false, code: "VALIDATION", message: orderError };
 
     const fileUrl = cleanFileUrl(input.fileUrl);
-    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: "Use a full link that starts with https://." };
+    if (fileUrl === undefined) return { ok: false, code: "VALIDATION", message: FILE_LOCATION_HINT };
 
     const clash = await db.projectTask.findFirst({ where: { projectId, title, subTitle }, select: { id: true } });
     if (clash) return { ok: false, code: "VALIDATION", message: "Another detail already has this item and detail name." };
 
-    const position = existing.reduce((max, t) => Math.max(max, t.position), 0) + 1;
-    const created = await db.projectTask.create({
-      data: {
-        projectId, position, title, subTitle, ownerId, stage, status,
-        startDate: startIso ? jakartaDay(startIso) : null,
-        dueDate: dueIso ? jakartaDay(dueIso) : null,
-        fileUrl,
-      },
-      select: { id: true },
+    // A new variant of an existing item goes right after that item's last row (later rows shift down by one); a new item goes last.
+    const lastOfItem = (await db.projectTask.findMany({ where: { projectId, title }, select: { position: true } })).reduce((max, t) => Math.max(max, t.position), 0);
+    const position = lastOfItem > 0 ? lastOfItem + 1 : existing.reduce((max, t) => Math.max(max, t.position), 0) + 1;
+    const created = await db.$transaction(async (tx) => {
+      if (lastOfItem > 0) await tx.projectTask.updateMany({ where: { projectId, position: { gte: position } }, data: { position: { increment: 1 } } });
+      return tx.projectTask.create({
+        data: {
+          projectId, position, title, subTitle, ownerId, stage, status,
+          startDate: startIso ? jakartaDay(startIso) : null,
+          dueDate: dueIso ? jakartaDay(dueIso) : null,
+          fileUrl,
+        },
+        select: { id: true },
+      });
     });
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true, id: created.id };
   }, unauthResult);
@@ -204,14 +290,14 @@ export async function deleteTask(projectId: string, taskId: string): Promise<Tas
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to delete details." };
     const { count } = await db.projectTask.deleteMany({ where: { id: taskId, projectId } });
     if (count === 0) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);
 }
 
 /**
- * Moves one row up or down by one place, swapping positions with its neighbour. Moving past either end is a
+ * Moves one row up or down within its item, swapping positions with the nearest row that has the same item
+ * title in that direction (other items keep their places). Moving past the item's first or last row is a
  * no-op that still succeeds. Positions are renumbered 1..n first, so gaps or duplicates left by imports never
  * make a move skip or stall. Needs `project.manage`.
  */
@@ -220,10 +306,12 @@ export async function moveTask(projectId: string, taskId: string, direction: "up
     const db = dbFor(user);
     if (!can(user.appRole, "project.manage")) return { ok: false, code: "FORBIDDEN", message: "You are not allowed to reorder details." };
     if (direction !== "up" && direction !== "down") return { ok: false, code: "VALIDATION", message: "Pick up or down." };
-    const rows = await db.projectTask.findMany({ where: { projectId }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true, position: true } });
+    const rows = await db.projectTask.findMany({ where: { projectId }, orderBy: [{ position: "asc" }, { id: "asc" }], select: { id: true, position: true, title: true } });
     const from = rows.findIndex((r) => r.id === taskId);
     if (from < 0) return { ok: false, code: "NOT_FOUND", message: "That detail is not in this project." };
-    const to = direction === "up" ? from - 1 : from + 1;
+    // A variant only trades places with the nearest variant of its own item in that direction; at the item's edge it stays put.
+    let to = from;
+    do to += direction === "up" ? -1 : 1; while (to >= 0 && to < rows.length && rows[to].title !== rows[from].title);
     if (to < 0 || to >= rows.length) return { ok: true };
     const order = rows.map((r) => r.id);
     [order[from], order[to]] = [order[to], order[from]];
@@ -231,7 +319,6 @@ export async function moveTask(projectId: string, taskId: string, direction: "up
     await db.$transaction(
       order.flatMap((id, i) => (current.get(id) === i + 1 ? [] : [db.projectTask.update({ where: { id }, data: { position: i + 1 } })])),
     );
-    revalidatePath(`/projects/${projectId}/tasks`);
     revalidatePath(`/projects/${projectId}`);
     return { ok: true };
   }, unauthResult);

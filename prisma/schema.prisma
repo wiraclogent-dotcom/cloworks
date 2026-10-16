@@ -1,5 +1,8 @@
 generator client {
-  provider = "prisma-client-js"
+  // relationJoins makes "join" the default relationLoadStrategy: a query with nested includes is ONE SQL statement
+  // instead of one per relation (each a round trip to the database).
+  provider        = "prisma-client-js"
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -34,19 +37,27 @@ enum ProjectStatus {
   IN_REVIEW
   DONE
   ON_HOLD
+  /// Project-level only: a canceled project (task rows never carry it; their canceled state is ProjectStage.CANCELLED).
+  CANCELLED
 }
 
 // Every scoped model carries `workspaceId String @default(dbgenerated())`. The database has NO default (an insert
 // without a workspace fails); the empty dbgenerated() only makes the field optional in Prisma's create types so
 // the scoped client (src/lib/db.ts) can stamp it.
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  slug      String   @unique
-  createdAt DateTime @default(now())
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  createdAt       DateTime @default(now())
+  /// Chat launch moment: comments before it count as read for anyone without a ChatRead row ("start fresh").
+  chatSince       DateTime @default(now())
+  /// People whose email is on this domain may ask to join (replaces the ALLOWED_EMAIL_DOMAIN env var).
+  emailDomain     String?  @unique
+  /// Random URL-safe code in the shared join link.
+  joinCode        String?  @unique
+  joinLinkEnabled Boolean  @default(true)
 
   users             User[]
-  allowedEmails     AllowedEmail[]
   brands            Brand[]
   divisions         Division[]
   requestTypes      RequestType[]
@@ -57,65 +68,98 @@ model Workspace {
   attachments       Attachment[]
   kpiTargets        KpiTarget[]
   notifications     Notification[]
+  chatReads         ChatRead[]
   projects          Project[]
   projectTasks      ProjectTask[]
   projectMilestones ProjectMilestone[]
+  projectTaskEvents ProjectTaskEvent[]
+  projectKpiTargets ProjectKpiTarget[]
+  kpiRosterEntries  KpiRosterEntry[]
+  requestAssignees  RequestAssignee[]
+  libraryCategories LibraryCategory[]
+  libraryItems      LibraryItem[]
+  invites           Invite[]
+  applicants        Applicant[]        @relation("ApplicantRequestedWorkspace")
+  media             Media[]
+  socialChannels    SocialChannel[]
+  contentPosts      ContentPost[]
+  contentPostMedia  ContentPostMedia[]
+  contentComments   ContentComment[]
 }
 
 model User {
-  id                 String    @id @default(cuid())
-  email              String?   @unique
-  name               String
-  fullName           String
-  title              String?
-  department         String?
-  appRole            AppRole   @default(REQUESTER)
-  jobRole            JobRole   @default(OTHER)
-  aliases            String[]
-  active             Boolean   @default(true)
+  id                  String    @id @default(cuid())
+  email               String?   @unique
+  name                String
+  fullName            String
+  title               String?
+  department          String?
+  appRole             AppRole   @default(REQUESTER)
+  jobRole             JobRole   @default(OTHER)
+  aliases             String[]
+  active              Boolean   @default(true)
   /// scrypt hash for email + password sign-in; null = no password set.
-  passwordHash       String?
+  passwordHash        String?
   /// Bumped on every password change; sessions issued under an older version end.
-  passwordVersion    Int       @default(0)
-  failedLogins       Int       @default(0)
-  lockedUntil        DateTime?
+  passwordVersion     Int       @default(0)
+  failedLogins        Int       @default(0)
+  lockedUntil         DateTime?
+  /// Last "you already have an account" email (sign-up with this email); at most one per hour.
+  accountNoticeSentAt DateTime?
   /// Set when an admin sets or resets the password; cleared when the person changes it.
-  mustChangePassword Boolean   @default(false)
+  mustChangePassword  Boolean   @default(false)
+  /// Profile photo: a small JPEG/PNG/WebP stored in the row (null = initials). Served by /api/avatar/<id>.
+  avatar              Bytes?
+  avatarType          String?
+  avatarUpdatedAt     DateTime?
+  /// Requests board background: a preset id from src/lib/boardBackground.ts or "custom" (the uploaded picture below).
+  boardBackground        String  @default("gradient")
+  /// The veil over that picture, -100 (white wash, dark text) .. 100 (navy wash, white text); null = the preset's default.
+  boardVeil              Int?
+  /// The person's own uploaded board picture (a Cloudinary image in the workspace's board folder).
+  boardBackgroundMediaId String?
+  boardBackgroundMedia   Media?  @relation("UserBoardBackground", fields: [boardBackgroundMediaId], references: [id], onDelete: SetNull)
 
-  requested      Request[]       @relation("RequestRequester")
-  assigned       Request[]       @relation("RequestAssignee")
-  statusEvents   StatusEvent[]
-  deadlineEvents DeadlineEvent[]
-  comments       Comment[]
-  attachments    Attachment[]
-  kpiTargets     KpiTarget[]
-  notifications  Notification[]
-  ownedProjects  Project[]
-  projectTasks   ProjectTask[]
+  requested                Request[]          @relation("RequestRequester")
+  assignments              RequestAssignee[]  @relation("RequestAssigneeUser")
+  statusEvents             StatusEvent[]
+  deadlineEvents           DeadlineEvent[]
+  comments                 Comment[]
+  attachments              Attachment[]
+  kpiTargets               KpiTarget[]
+  notifications            Notification[]
+  chatReads                ChatRead[]
+  ownedProjects            Project[]
+  libraryItemsCreated      LibraryItem[]      @relation("LibraryItemCreatedBy")
+  libraryItemsUpdated      LibraryItem[]      @relation("LibraryItemUpdatedBy")
+  projectTasks             ProjectTask[]
+  projectTaskEvents        ProjectTaskEvent[]
+  projectKpiTargets        ProjectKpiTarget[] @relation("ProjectKpiTargetUser")
+  projectKpiTargetsCreated ProjectKpiTarget[] @relation("ProjectKpiTargetCreator")
+  kpiRosterEntries         KpiRosterEntry[]   @relation("KpiRosterUser")
+  kpiRosterUpdated         KpiRosterEntry[]   @relation("KpiRosterUpdater")
+  invitesSent              Invite[]           @relation("InviteSentBy")
+  invitesFor               Invite[]           @relation("InviteFor")
+
+  mediaUploaded        Media[]
+  contentPostsAuthored ContentPost[]    @relation("ContentPostAuthor")
+  contentPostsApproved ContentPost[]    @relation("ContentPostApprover")
+  contentComments      ContentComment[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-  @@index([workspaceId])
-}
-
-model AllowedEmail {
-  id    String  @id @default(cuid())
-  email String
-  note  String?
-
-  workspaceId String    @default(dbgenerated())
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-
-  @@unique([workspaceId, email])
   @@index([workspaceId])
 }
 
 model Brand {
-  id       String    @id @default(cuid())
-  name     String
-  requests Request[]
-  projects Project[]
+  id           String        @id @default(cuid())
+  name         String
+  requests     Request[]
+  projects     Project[]
+  libraryItems LibraryItem[]
+
+  socialChannels SocialChannel[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -143,6 +187,8 @@ model RequestType {
   active      Boolean   @default(true)
   requests    Request[]
 
+  contentPosts ContentPost[]
+
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -159,7 +205,6 @@ model Request {
   divisionId       String
   typeId           String
   requesterId      String
-  assigneeId       String?
   requestedAt      DateTime      @default(now())
   deadline         DateTime?
   originalDeadline DateTime?
@@ -174,21 +219,26 @@ model Request {
   division  Division    @relation(fields: [divisionId], references: [id])
   type      RequestType @relation(fields: [typeId], references: [id])
   requester User        @relation("RequestRequester", fields: [requesterId], references: [id])
-  assignee  User?       @relation("RequestAssignee", fields: [assigneeId], references: [id])
+
+  assignees RequestAssignee[]
 
   statusEvents   StatusEvent[]
   deadlineEvents DeadlineEvent[]
   comments       Comment[]
   attachments    Attachment[]
   notifications  Notification[]
+  chatReads      ChatRead[]
+
+  contentPost ContentPost?
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([status])
-  @@index([assigneeId])
   @@index([requestedAt])
   @@index([workspaceId])
+  @@index([requesterId])
+  @@index([status, deadline])
 }
 
 model StatusEvent {
@@ -207,6 +257,7 @@ model StatusEvent {
 
   @@index([requestId])
   @@index([workspaceId])
+  @@index([to, at])
 }
 
 model DeadlineEvent {
@@ -241,7 +292,25 @@ model Comment {
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
-  @@index([requestId])
+  @@index([requestId, createdAt])
+  @@index([workspaceId])
+  @@index([authorId])
+  @@index([createdAt])
+}
+
+model ChatRead {
+  id         String   @id @default(cuid())
+  userId     String
+  requestId  String
+  lastReadAt DateTime
+
+  user    User    @relation(fields: [userId], references: [id])
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, requestId])
   @@index([workspaceId])
 }
 
@@ -292,14 +361,19 @@ model Notification {
   emailedAt DateTime?
   createdAt DateTime  @default(now())
 
-  user    User     @relation(fields: [userId], references: [id])
-  request Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user        User         @relation(fields: [userId], references: [id])
+  request     Request?     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  contentPost ContentPost? @relation(fields: [contentPostId], references: [id], onDelete: Cascade)
+
+  contentPostId String?
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([userId, readAt])
   @@index([workspaceId])
+  @@index([userId, createdAt])
+  @@index([contentPostId])
 }
 
 enum ProjectStage {
@@ -328,6 +402,7 @@ model Project {
   owner      User               @relation(fields: [ownerId], references: [id])
   tasks      ProjectTask[]
   milestones ProjectMilestone[]
+  kpiTargets ProjectKpiTarget[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -354,8 +429,9 @@ model ProjectTask {
   fileUrl   String?
   notes     String?
 
-  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  owner   User?   @relation(fields: [ownerId], references: [id])
+  project Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  owner   User?              @relation(fields: [ownerId], references: [id])
+  events  ProjectTaskEvent[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -378,5 +454,373 @@ model ProjectMilestone {
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
   @@index([projectId, date])
+  @@index([workspaceId])
+}
+
+enum ProjectTaskEventKind {
+  STAGE
+  STATUS
+  DUE
+}
+
+/// Change log for project task rows. Feeds finish dates, revisions and slips for the Project KPI.
+model ProjectTaskEvent {
+  id        String               @id @default(cuid())
+  taskId    String
+  kind      ProjectTaskEventKind
+  fromValue String? // stage/status enum name, or ISO date for DUE
+  toValue   String?
+  actorId   String
+  at        DateTime             @default(now())
+
+  task  ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  actor User        @relation(fields: [actorId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([taskId, at])
+  @@index([workspaceId])
+}
+
+/// A project item a lead assigned to a person for a year. Its quarter comes from the item's due date.
+model ProjectKpiTarget {
+  id          String   @id @default(cuid())
+  userId      String
+  year        Int
+  projectId   String
+  itemTitle   String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  user      User    @relation("ProjectKpiTargetUser", fields: [userId], references: [id])
+  createdBy User    @relation("ProjectKpiTargetCreator", fields: [createdById], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, year, projectId, itemTitle])
+  @@index([workspaceId, year])
+}
+
+enum KpiKind {
+  REQUESTS
+  PROJECTS
+}
+
+/// Manual exception to who appears on a Team KPI table. No row = the automatic rule.
+model KpiRosterEntry {
+  id          String   @id @default(cuid())
+  userId      String
+  kind        KpiKind
+  included    Boolean
+  updatedById String
+  updatedAt   DateTime @updatedAt
+
+  user      User @relation("KpiRosterUser", fields: [userId], references: [id])
+  updatedBy User @relation("KpiRosterUpdater", fields: [updatedById], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([userId, kind])
+  @@index([workspaceId, kind])
+}
+
+/// One person assigned to a request. A request can have several; ordered by addedAt then userId (ASSIGNEE_ORDER).
+model RequestAssignee {
+  requestId String
+  userId    String
+  addedAt   DateTime @default(now())
+
+  request Request @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User    @relation("RequestAssigneeUser", fields: [userId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@id([requestId, userId])
+  @@index([userId])
+  @@index([workspaceId])
+}
+
+/// A named group of Library links (e.g. "Product Knowledge"). `icon` is a key from a small fixed lucide set.
+model LibraryCategory {
+  id        String        @id @default(cuid())
+  name      String
+  icon      String?
+  sortOrder Int           @default(0)
+  items     LibraryItem[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, name])
+  @@index([workspaceId])
+}
+
+/// A shared link in the Library.
+model LibraryItem {
+  id               String          @id @default(cuid())
+  title            String
+  url              String
+  description      String?
+  categoryId       String
+  category         LibraryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  brandId          String?
+  brand            Brand?          @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  pinned           Boolean         @default(false)
+  sortOrder        Int             @default(0)
+  createdById      String
+  createdBy        User            @relation("LibraryItemCreatedBy", fields: [createdById], references: [id])
+  updatedById      String
+  updatedBy        User            @relation("LibraryItemUpdatedBy", fields: [updatedById], references: [id])
+  createdAt        DateTime        @default(now())
+  /// Extra labelled file links shown as chips on the row, e.g. [{ "label": "AI", "url": "https://…" }]. Max 6.
+  files            Json            @default("[]")
+  /// Set only by create/edit (not @updatedAt): pinning and reordering leave it alone, so they don't trigger the badge.
+  contentUpdatedAt DateTime        @default(now())
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([categoryId])
+}
+
+enum JoinSource {
+  LINK
+  DOMAIN
+}
+
+/// Someone who signed up but is not a member of any workspace. Global (not workspace-scoped); the id becomes the
+/// User.id on approval.
+model Applicant {
+  id                   String      @id @default(cuid())
+  email                String      @unique
+  name                 String
+  passwordHash         String?
+  emailVerifiedAt      DateTime?
+  codeHash             String?
+  codeExpiresAt        DateTime?
+  codeAttempts         Int         @default(0)
+  codeSentAt           DateTime?
+  codesSentInWindow    Int         @default(0)
+  failedLogins         Int         @default(0)
+  lockedUntil          DateTime?
+  /// Set = join request for that workspace; null = lobby.
+  requestedWorkspaceId String?
+  requestedWorkspace   Workspace?  @relation("ApplicantRequestedWorkspace", fields: [requestedWorkspaceId], references: [id])
+  requestedAt          DateTime?
+  requestSource        JoinSource?
+  rejectedAt           DateTime?
+  /// Join code the person signed up through; used once their email is verified.
+  pendingJoinCode      String?
+  createdAt            DateTime    @default(now())
+
+  @@index([requestedWorkspaceId])
+}
+
+/// An admin's invitation to join a workspace. The raw token only lives in the email link; we keep its SHA-256 hex.
+model Invite {
+  id          String    @id @default(cuid())
+  email       String
+  appRole     AppRole
+  jobRole     JobRole
+  tokenHash   String    @unique
+  invitedById String
+  invitedBy   User      @relation("InviteSentBy", fields: [invitedById], references: [id])
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  /// Existing roster person this invite attaches the new login to (null = create a fresh person).
+  userId      String?
+  user        User?     @relation("InviteFor", fields: [userId], references: [id], onDelete: SetNull)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
+  @@index([userId])
+}
+
+/// One-time "reset my password" links. Global (not workspace-scoped): the email decides whose password it sets.
+model PasswordReset {
+  id        String    @id @default(cuid())
+  /// Lowercased address the link was sent to.
+  email     String
+  /// SHA-256 of the raw token; the raw token only lives in the emailed link.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([email])
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+}
+
+/// One file in Cloudinary. Shared by every feature that shows media (Content Plan now; avatars and attachments later).
+model Media {
+  id           String    @id @default(cuid())
+  publicId     String // Cloudinary public_id, e.g. clowork/<workspaceId>/content/<cuid>
+  type         MediaType
+  width        Int
+  height       Int
+  bytes        Int
+  durationSec  Float? // videos only
+  uploadedById String
+  createdAt    DateTime  @default(now())
+
+  uploadedBy User               @relation(fields: [uploadedById], references: [id])
+  postLinks  ContentPostMedia[]
+  channels   SocialChannel[]
+  boardBackgroundOf User[] @relation("UserBoardBackground")
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, publicId])
+  @@index([workspaceId])
+}
+
+enum SocialPlatform {
+  INSTAGRAM
+}
+
+model SocialChannel {
+  id            String         @id @default(cuid())
+  brandId       String
+  platform      SocialPlatform
+  handle        String // without the "@"
+  displayName   String
+  bio           String?
+  avatarMediaId String?
+  position      Float          @default(0)
+  createdAt     DateTime       @default(now())
+
+  brand       Brand         @relation(fields: [brandId], references: [id])
+  avatarMedia Media?        @relation(fields: [avatarMediaId], references: [id], onDelete: SetNull)
+  posts       ContentPost[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, platform, handle])
+  @@index([workspaceId])
+}
+
+enum ContentSurface {
+  FEED
+  REEL
+  STORY
+}
+
+enum ContentKind {
+  PLANNED
+  PUBLISHED
+}
+
+enum ContentFormat {
+  SINGLE
+  CAROUSEL
+  VIDEO
+}
+
+enum ContentStatus {
+  IDEA
+  DRAFT
+  SUBMITTED
+  CHANGES_REQUESTED
+  APPROVED
+  IN_PRODUCTION
+  DONE
+}
+
+model ContentPost {
+  id                 String         @id @default(cuid())
+  channelId          String
+  surface            ContentSurface
+  kind               ContentKind    @default(PLANNED)
+  status             ContentStatus  @default(IDEA) // ignored for PUBLISHED
+  position           Float // manual order within (channel, surface, kind); higher = nearer the top
+  plannedAt          DateTime?
+  publishedAt        DateTime? // PUBLISHED only
+  format             ContentFormat  @default(SINGLE)
+  caption            String?
+  brief              String?
+  typeId             String? // suggested request type
+  authorId           String
+  submittedAt        DateTime?
+  approvedById       String?
+  approvedAt         DateTime?
+  doneAt             DateTime? // used by the later cleanup job
+  requestId          String?        @unique
+  // The request a cancel unlinked; restoring that request relinks the post while it is still editable and unlinked.
+  cancelledRequestId String?        @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  channel    SocialChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  type       RequestType?       @relation(fields: [typeId], references: [id])
+  author     User               @relation("ContentPostAuthor", fields: [authorId], references: [id])
+  approvedBy User?              @relation("ContentPostApprover", fields: [approvedById], references: [id])
+  request    Request?           @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  media      ContentPostMedia[]
+  comments   ContentComment[]
+
+  workspaceId   String         @default(dbgenerated())
+  workspace     Workspace      @relation(fields: [workspaceId], references: [id])
+  notifications Notification[]
+
+  @@index([channelId, surface, kind, position])
+  @@index([status])
+  @@index([workspaceId])
+}
+
+enum ContentMediaRole {
+  MOCKUP
+  FINAL
+}
+
+model ContentPostMedia {
+  id      String           @id @default(cuid())
+  postId  String
+  mediaId String
+  role    ContentMediaRole @default(MOCKUP)
+  order   Int              @default(0)
+
+  post  ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  media Media       @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([postId, mediaId])
+  @@index([postId, role, order])
+  @@index([workspaceId])
+}
+
+model ContentComment {
+  id         String   @id @default(cuid())
+  postId     String
+  authorId   String
+  body       String
+  isFeedback Boolean  @default(false) // true = the lead's "Send back" note
+  createdAt  DateTime @default(now())
+
+  post   ContentPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User        @relation(fields: [authorId], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([postId, createdAt])
   @@index([workspaceId])
 }

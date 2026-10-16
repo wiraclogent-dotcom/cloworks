@@ -1,4 +1,6 @@
 import type { ProjectStage, ProjectStatus } from "@prisma/client";
+import { isFileLocation } from "./fileLocation";
+import { MONTHS } from "./timeline";
 
 /** Display labels for the design-project stages (the sheet's own wording). */
 export const PROJECT_STAGE_LABEL: Record<ProjectStage, string> = {
@@ -13,11 +15,11 @@ export const PROJECT_STAGE_LABEL: Record<ProjectStage, string> = {
 
 const MAX_FILE_URL_LENGTH = 2048;
 
-/** A blank value clears the link (returns null). Anything else must be a full http(s) link; returns it trimmed, or undefined when invalid. */
+/** A blank value clears the link (returns null). Anything else must be a web link or a file-server path; returns it trimmed, or undefined when invalid. */
 export function cleanFileUrl(input: string): string | null | undefined {
   const value = input.trim();
   if (!value) return null;
-  if (value.length > MAX_FILE_URL_LENGTH || !/^https?:\/\/\S+$/i.test(value)) return undefined;
+  if (value.length > MAX_FILE_URL_LENGTH || !isFileLocation(value)) return undefined;
   return value;
 }
 
@@ -39,10 +41,11 @@ export const jakartaDay = (iso: string) => new Date(`${iso}T00:00:00+07:00`);
 /** The Jakarta calendar day of an instant as `YYYY-MM-DD` (for date inputs). */
 export const jakartaIso = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "Asia/Jakarta" });
 
-const dayFmt = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short", year: "numeric" });
-/** A `YYYY-MM-DD` day or a stored instant, shown as "10 Jun 2026" (Jakarta calendar). */
+/** A `YYYY-MM-DD` day or a stored instant, shown as "8 Oct 2026" (Jakarta calendar). Same format as the project tables (formatJakartaDate). */
 export function formatJakartaDay(day: string | Date): string {
-  return dayFmt.format(typeof day === "string" ? jakartaDay(day) : day);
+  const iso = typeof day === "string" ? day : jakartaIso(day);
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
 }
 
 /** Labels and order for a task's status (tracker projects). Same vocabulary as the project statuses. */
@@ -53,6 +56,7 @@ export const TASK_STATUS_LABEL: Record<ProjectStatus, string> = {
   IN_REVIEW: "In Review",
   ON_HOLD: "On Hold",
   DONE: "Done",
+  CANCELLED: "Canceled", // project-level only (not in TASK_STATUS_ORDER); the entry keeps the record total
 };
 
 /** Returns a message when the due date is before the start date (both `YYYY-MM-DD`, or blank). */

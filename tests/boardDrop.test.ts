@@ -35,6 +35,7 @@ describe("decideDrop", () => {
     expect(decideDrop({ from: "FIRST_LOOK", to: "DONE", hasAssignee: true, canMove: true }).kind).toBe("needs-done-details");
     expect(decideDrop({ from: "REQUESTED", to: "ON_PROGRESS", hasAssignee: false, canMove: true }).kind).toBe("move");
     expect(decideDrop({ from: "DONE", to: "ON_PROGRESS", hasAssignee: true, canMove: true }).kind).toBe("move");
-    expect(decideDrop({ from: "CANCELLED", to: "REQUESTED", hasAssignee: true, canMove: true }).kind).toBe("illegal");
+    expect(decideDrop({ from: "CANCELLED", to: "REQUESTED", hasAssignee: true, canMove: true }).kind).toBe("move");
+    expect(decideDrop({ from: "CANCELLED", to: "ON_PROGRESS", hasAssignee: true, canMove: true }).kind).toBe("illegal");
   });
 });

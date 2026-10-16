@@ -1,129 +1,243 @@
 "use client";
 
 import { useState } from "react";
-import type { BriefDay, BriefItem, BriefMonth, BriefPerson, DotState } from "@/lib/briefCalendar";
-import { dayLabel } from "@/lib/calendar";
+import type { BriefDay, BriefItem, BriefMonth, BriefPerson } from "@/lib/briefCalendar";
 import { avatarColor } from "@/lib/palette";
+import { dayLabel, utc, weekdayOf } from "@/lib/calendar";
+import { Card } from "@/components/shadcn/card";
 import { useNarrow } from "../useNarrow";
 import { cn, focusRing } from "../ui/cn";
+import { EmptyState } from "../ui/EmptyState";
 import { BriefDayDialog } from "./BriefDayDialog";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-const dayAria = (d: BriefDay, people: BriefPerson[]) =>
-  `${dayLabel(d.day)}: ${people.map((p, i) => `${p.name} ${d.perPerson[i].count}`).join(", ")}`;
+const MAX_DOTS = 4;
+/** Category colours by the type's fixed slot (its place in the workspace's type list), so a type keeps its colour every month. */
+const TYPE_FILLS = ["bg-chart-cat-1", "bg-chart-cat-2", "bg-chart-cat-3", "bg-chart-cat-4", "bg-chart-cat-5"];
+function typeFill(order: string[], name: string): string {
+  const i = order.indexOf(name);
+  return i >= 0 && i < TYPE_FILLS.length ? TYPE_FILLS[i] : "bg-chart-cat-other";
+}
+/** Heat-map tint per level (1–4) on the first-look accent; 0 stays plain. */
+// Capped at 55% so the tone text on the darkest cell stays AA (4.5:1) in both themes.
+const HEAT = ["", "bg-tone-accent/15", "bg-tone-accent/28", "bg-tone-accent/42", "bg-tone-accent/55"];
 
-/** One person's mark: filled in their colour when they briefed (count shown above 1), hollow when a work day was missed. */
-function Dot({ person, count, state }: { person: BriefPerson; count: number; state: DotState }) {
-  if (state === "none") return null;
+const briefs = (n: number) => (n === 1 ? "1 brief" : `${n} briefs`);
+const dayAria = (d: BriefDay) =>
+  `${dayLabel(d.day)}: ${d.count === 0 ? "no briefs" : `${briefs(d.count)}, ${d.people.map((p) => `${p.person.name} ${p.count}`).join(", ")}`}`;
+/** "Thu 8 Oct" */
+const shortDay = (day: string) => `${WEEKDAYS[weekdayOf(utc(day))]} ${Number(day.slice(8))} ${MONTH_SHORT[Number(day.slice(5, 7)) - 1]}`;
+/** 0 for none, else 1–4 relative to the busiest cell. */
+const heatLevel = (v: number, max: number) => (v === 0 || max === 0 ? 0 : Math.min(4, Math.ceil((v / max) * 4)));
+
+function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <li aria-label={label} className="flex items-baseline justify-between gap-3 border-b border-border py-2.5 last:border-b-0">
+      <span className="text-compact text-muted-foreground">{label}</span>
+      <span className="text-right">
+        <span className="text-base font-semibold text-foreground tabular-nums">{value}</span>
+        {note && <span className="ml-1.5 text-xs text-muted-foreground tabular-nums">{note}</span>}
+      </span>
+    </li>
+  );
+}
+
+/** One bar per day of the month; the busiest day is solid, future days are a flat stub. */
+function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["summary"]["busiest"] }) {
+  const max = Math.max(1, ...days.map((d) => d.count));
+  const label = busiest ? `Briefs per day: busiest ${shortDay(busiest.day)} with ${briefs(busiest.count)}` : "Briefs per day: none yet";
+  return (
+    <div data-tone="first-look" className="mt-4">
+      <div role="img" aria-label={label} className="flex h-12 items-end gap-[3px]">
+        {days.map((d) => {
+          const top = busiest?.day === d.day;
+          return (
+            <span key={d.day} data-bar="" data-busiest={top ? "" : undefined} title={`${shortDay(d.day)} · ${briefs(d.count)}`}
+              style={{ height: d.isFuture || d.count === 0 ? 3 : `${Math.max(8, (d.count / max) * 100)}%` }}
+              className={cn("min-w-0 flex-1 rounded-[2px]", d.isFuture || d.count === 0 ? "bg-border" : top ? "bg-tone-accent" : "bg-tone-accent/40")} />
+          );
+        })}
+      </div>
+      <div aria-hidden="true" className="mt-1 flex justify-between text-xs text-muted-foreground">
+        <span>{shortDay(days[0].day).slice(4)}</span><span>{shortDay(days[days.length - 1].day).slice(4)}</span>
+      </div>
+    </div>
+  );
+}
+
+/** A person's circle in their avatar colour, the count inside above 1 (same look as the original brief calendar). */
+function Dot({ person, count, size = "h-5 min-w-5 px-0.5" }: { person: BriefPerson; count?: number; size?: string }) {
   const c = avatarColor(person.name);
   return (
-    <span aria-hidden="true" data-state={state} data-person={person.id}
-      style={state === "sent" ? { backgroundColor: c.tint, color: c.text, borderColor: c.text } : undefined}
-      className={cn(
-        "inline-flex size-5 items-center justify-center rounded-full border-2 text-[11px] leading-none font-semibold tabular-nums",
-        state === "missed" && "border-foreground-muted bg-transparent",
-      )}>
-      {state === "sent" && count > 1 ? count : null}
+    <span aria-hidden="true" data-person={person.id} style={{ backgroundColor: c.tint, color: c.text, borderColor: c.text }}
+      className={cn("inline-flex shrink-0 items-center justify-center rounded-full border-2 text-xs leading-none font-semibold tabular-nums", size)}>
+      {count && count > 1 ? count : null}
     </span>
   );
 }
 
-/** `align` keeps the tooltip on screen: grow rightwards from the dot early in the week, leftwards late in the week. */
-function Dots({ day, people, items, align }: { day: BriefDay; people: BriefPerson[]; items: BriefItem[]; align: "start" | "end" }) {
+/** `align` keeps the tooltip on screen: grow rightwards early in the week, leftwards late in the week. */
+function Dots({ day, items, align }: { day: BriefDay; items: BriefItem[]; align: "start" | "end" }) {
+  const shown = day.people.slice(0, MAX_DOTS);
+  const more = day.people.length - shown.length;
   return (
     <span className="flex flex-wrap gap-1">
-      {/* Fixed slots: an empty slot keeps its width, so a dot's position always says whose it is (not colour alone). */}
-      {people.map((p, i) => {
-        const { count, state } = day.perPerson[i];
-        return (
-          <span key={p.id} data-slot={p.id} className="group/dot relative inline-flex size-5">
-            <Dot person={p} count={count} state={state} />
-            {/* Pointer-only hint; the day button's aria-label already carries the same counts for screen readers. */}
-            {state !== "none" && (
-              <span aria-hidden="true" data-tooltip=""
-                className={cn("pointer-events-none absolute top-full z-20 mt-1.5 hidden w-max max-w-72 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs text-background shadow-raised group-hover/dot:block", align === "start" ? "left-0" : "right-0")}>
-                <span data-tooltip-head="" className="block font-semibold">
-                  {`${p.name} · ${count === 0 ? "no brief" : count === 1 ? "1 brief" : `${count} briefs`}`}
-                </span>
-                {count > 0 && (
-                  <ul className="mt-1 space-y-0.5">
-                    {items.filter((it) => it.requesterId === p.id).map((it) => <li key={it.id} className="truncate">{it.title}</li>)}
-                  </ul>
-                )}
-              </span>
-            )}
+      {shown.map(({ person, count }) => (
+        <span key={person.id} className="group/dot relative inline-flex">
+          <Dot person={person} count={count} />
+          {/* Pointer-only hint; the day button's aria-label already carries the same counts for screen readers. */}
+          <span aria-hidden="true" data-tooltip=""
+            className={cn("pointer-events-none absolute top-full z-20 mt-1.5 hidden w-max max-w-72 rounded-md bg-foreground px-2.5 py-1.5 text-left text-xs text-background shadow-raised group-hover/dot:block", align === "start" ? "left-0" : "right-0")}>
+            <span className="block font-semibold">{`${person.name} · ${briefs(count)}`}</span>
+            <span className="mt-1 block space-y-0.5">
+              {items.filter((it) => it.requesterId === person.id).map((it) => <span key={it.id} className="block truncate">{it.title}</span>)}
+            </span>
           </span>
-        );
-      })}
+        </span>
+      ))}
+      {more > 0 && (
+        <span aria-hidden="true" data-more="" className="inline-flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-border-strong px-1 text-xs leading-none font-semibold text-muted-foreground tabular-nums">
+          +{more}
+        </span>
+      )}
     </span>
   );
 }
 
 /**
- * Brief calendar (spec 2026-10-10): one summary tile per person, a Monday-first month grid (a day list on narrow
- * screens), then the legend. Every in-month day is a button that opens that day's requests.
+ * Brief calendar (spec 2026-10-10, updated): a month summary, each requester's briefs per week, then a Monday-first
+ * month grid (a day list on narrow screens) with each day's brief count. Every in-month day opens that day's briefs.
  */
-export function BriefCalendar({ people, model }: { people: BriefPerson[]; model: BriefMonth }) {
+export function BriefCalendar({ model, typeOrder }: {
+  model: BriefMonth;
+  /** Every request type's name in its fixed order (loadTypeOrder). Without it, the month's own types sorted by name. */
+  typeOrder?: string[];
+}) {
+  const order = typeOrder ?? model.summary.byType.map((t) => t.name).sort((a, b) => a.localeCompare(b));
   const narrow = useNarrow();
   const [open, setOpen] = useState<string | null>(null);
   const days = model.weeks.flat().filter((d) => d.inMonth);
+  const s = model.summary;
+  const heatMax = Math.max(0, ...model.rows.flatMap((r) => r.perWeek));
 
   return (
     <div className="space-y-5">
-      <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-xl border border-border bg-border shadow-card sm:grid-cols-3">
-        {people.map((p, i) => {
-          const s = model.summary[i];
-          return (
-            <li key={p.id} aria-label={`${p.name} summary`} className="flex min-w-0 flex-col gap-1 bg-card p-4">
-              <span className="text-[13px] text-foreground-secondary">{p.name}</span>
-              <span className="text-2xl leading-8 font-semibold text-foreground tabular-nums">
-                {s.workdaysElapsed === 0 ? "—" : `${s.workdaysBriefed} / ${s.workdaysElapsed} work days`}
-              </span>
-              <span className="text-xs text-foreground-secondary tabular-nums">{s.briefs === 1 ? "1 brief" : `${s.briefs} briefs`}</span>
-            </li>
-          );
-        })}
-      </ul>
+      <Card asChild className="sm:p-5"><section aria-label="Month summary">
+        <ul className="grid gap-x-8 gap-y-4 sm:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+          <li aria-label="Briefs this month" className="min-w-0">
+            <span className="text-compact text-muted-foreground">Briefs this month</span>
+            <span className="mt-0.5 block text-4xl leading-none font-semibold tracking-tight text-foreground tabular-nums">{s.total}</span>
+            <DayStrip days={days} busiest={s.busiest} />
+          </li>
+          <li className="min-w-0 self-end">
+            <ul>
+              <Stat label="Today" value={s.today === null ? "—" : String(s.today)} />
+              <Stat label="Per work day" value={s.perWorkday === null ? "—" : s.perWorkday.toFixed(1)} note="Mon–Sat" />
+              <Stat label="Busiest day" value={s.busiest ? shortDay(s.busiest.day) : "—"} note={s.busiest ? briefs(s.busiest.count) : undefined} />
+            </ul>
+            {s.byType.length > 0 && (
+              <div className="mt-3">
+                <div aria-hidden="true" className="flex h-2 gap-0.5 overflow-hidden rounded-full">
+                  {s.byType.map((t) => (
+                    <span key={t.name} className={typeFill(order, t.name)} style={{ width: `${(t.count / s.total) * 100}%` }} />
+                  ))}
+                </div>
+                <p aria-label="Briefs by type" className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground tabular-nums">
+                  {s.byType.map((t) => (
+                    <span key={t.name} className="inline-flex items-center gap-1.5">
+                      <span aria-hidden="true" className={cn("size-2 rounded-full", typeFill(order, t.name))} />{`${t.name} ${t.count}`}
+                    </span>
+                  ))}
+                </p>
+              </div>
+            )}
+          </li>
+        </ul>
+      </section></Card>
+
+      <Card asChild className="overflow-hidden p-0"><section aria-labelledby="brief-weeks-h">
+        <h2 id="brief-weeks-h" className="border-b border-border px-4 py-3 text-base font-semibold text-heading">Briefs per requester, per week</h2>
+        {model.rows.length === 0 ? (
+          <EmptyState size="inline" title="No briefs this month yet." className="px-4 py-6" />
+        ) : (
+          <div className="overflow-x-auto">
+            <table aria-label="Briefs per requester per week" data-tone="first-look" className="w-full text-sm tabular-nums">
+              <thead>
+                <tr className="text-left text-xs text-muted-foreground">
+                  <th scope="col" className="px-4 py-2 font-medium">Requester</th>
+                  {model.weekCols.map((w) => <th key={w.label} scope="col" className="px-2 py-2 text-center font-medium whitespace-nowrap">{w.label}</th>)}
+                  <th scope="col" className="px-4 py-2 text-right font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {model.rows.map((r) => (
+                  <tr key={r.person.id}>
+                    <td className="px-4 py-2 font-medium whitespace-nowrap text-foreground">
+                      <span className="inline-flex items-center gap-2"><Dot person={r.person} size="size-4" />{r.person.name}</span>
+                    </td>
+                    {r.perWeek.map((c, i) => {
+                      const started = model.weekCols[i].started;
+                      const level = heatLevel(c, heatMax);
+                      return (
+                        <td key={model.weekCols[i].label} data-level={started ? level : undefined} className="px-2 py-1.5 text-center">
+                          {started ? (
+                            <span className={cn("inline-flex h-7 min-w-10 items-center justify-center rounded-md px-1.5", level === 0 ? "text-muted-foreground" : "font-medium text-tone-text", HEAT[level])}>{c}</span>
+                          ) : <span className="text-muted-foreground">–</span>}
+                        </td>
+                      );
+                    })}
+                    <td className="px-4 py-2 text-right font-semibold text-foreground">{r.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section></Card>
 
       {narrow ? (
-        <ol aria-label="Days" className="divide-y divide-border rounded-xl border border-border bg-surface">
+        <Card asChild className="divide-y divide-border overflow-hidden p-0"><ol aria-label="Days">
           {days.map((d) => (
             <li key={d.day} aria-current={d.isToday ? "date" : undefined}>
-              <button type="button" aria-haspopup="dialog" aria-label={dayAria(d, people)} onClick={() => setOpen(d.day)}
-                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isDayOff || d.isFuture) && "text-foreground-secondary", d.isDayOff && "bg-surface-muted", focusRing)}>
+              <button type="button" aria-haspopup="dialog" aria-label={dayAria(d)} onClick={() => setOpen(d.day)}
+                className={cn("flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm", (d.isDayOff || d.isFuture) && "text-muted-foreground", d.isDayOff && "bg-muted", focusRing)}>
                 <span>{dayLabel(d.day)}{d.isToday && <span className="ml-1.5 font-medium text-link">Today</span>}</span>
-                <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align="end" />
+                <Dots day={d} items={model.itemsByDay[d.day] ?? []} align="end" />
               </button>
             </li>
           ))}
-        </ol>
+        </ol></Card>
       ) : (
         <div>
           <div aria-hidden="true" className="mb-1 grid grid-cols-7 gap-1">
-            {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-foreground-secondary">{w}</div>)}
+            {WEEKDAYS.map((w) => <div key={w} data-weekday="" className="px-1 text-xs font-medium text-muted-foreground">{w}</div>)}
           </div>
           <div className="space-y-1">
             {model.weeks.map((week) => (
               <div key={week[0].day} className="grid grid-cols-7 gap-1">
                 {week.map((d) => d.inMonth ? (
-                  <button key={d.day} type="button" aria-haspopup="dialog" aria-label={dayAria(d, people)} aria-current={d.isToday ? "date" : undefined}
+                  <button key={d.day} type="button" aria-haspopup="dialog" aria-label={dayAria(d)} aria-current={d.isToday ? "date" : undefined}
                     onClick={() => setOpen(d.day)}
                     className={cn(
-                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-accent",
-                      d.isDayOff ? "bg-surface-muted" : "bg-surface",
-                      d.isToday ? "border-ring" : "border-border",
+                      "flex min-h-20 min-w-0 flex-col items-start gap-1.5 rounded-lg border p-1.5 text-left hover:bg-muted",
+                      d.isDayOff ? "bg-muted" : "bg-card",
+                      d.isToday ? "border-ring" : "border-border hover:border-border-strong",
                       d.isFuture && "opacity-60",
                       focusRing,
                     )}>
-                    <span aria-hidden="true" className={cn(
-                      "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
-                      d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-foreground-secondary" : "text-foreground",
-                    )}>{Number(d.day.slice(8))}</span>
-                    <Dots day={d} people={people} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
+                    <span aria-hidden="true" className="flex w-full items-center justify-between">
+                      <span className={cn(
+                        "inline-flex size-6 items-center justify-center rounded-full text-xs tabular-nums",
+                        d.isToday ? "bg-accent font-semibold text-accent-foreground" : d.isDayOff ? "text-muted-foreground" : "text-foreground",
+                      )}>{Number(d.day.slice(8))}</span>
+                      {d.count > 0 && <span data-day-total="" className="pr-0.5 text-xs text-muted-foreground tabular-nums">{d.count}</span>}
+                    </span>
+                    <Dots day={d} items={model.itemsByDay[d.day] ?? []} align={d.weekday >= 4 ? "end" : "start"} />
                   </button>
                 ) : (
-                  <div key={d.day} aria-hidden="true" className="min-h-20 rounded-lg border border-border bg-surface-muted opacity-50" />
+                  <div key={d.day} aria-hidden="true" className="min-h-20 rounded-lg border border-border bg-muted opacity-50" />
                 ))}
               </div>
             ))}
@@ -131,27 +245,15 @@ export function BriefCalendar({ people, model }: { people: BriefPerson[]; model:
         </div>
       )}
 
-      <div className="space-y-2">
-        <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-foreground-secondary">
-          {people.map((p) => {
-            const c = avatarColor(p.name);
-            return (
-              <li key={p.id} className="flex items-center gap-1.5">
-                <span aria-hidden="true" className="size-3 rounded-full border-2" style={{ backgroundColor: c.tint, borderColor: c.text }} />
-                {p.name}
-              </li>
-            );
-          })}
+      {model.rows.length > 0 && (
+        <ul aria-label="Legend" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
+          {model.rows.map((r) => (
+            <li key={r.person.id} className="flex items-center gap-1.5"><Dot person={r.person} size="size-3" />{r.person.name}</li>
+          ))}
         </ul>
-        <p className="flex items-center gap-1.5 text-xs text-foreground-secondary">
-          <span aria-hidden="true" className="size-3 shrink-0 rounded-full border-2 border-foreground-muted" />
-          Hollow circle: no brief that work day (Monday to Saturday). Sundays are never counted as missed.
-        </p>
-      </div>
-
-      {open && (
-        <BriefDayDialog day={open} people={people} items={model.itemsByDay[open] ?? []} onClose={() => setOpen(null)} />
       )}
+
+      {open && <BriefDayDialog day={open} items={model.itemsByDay[open] ?? []} onClose={() => setOpen(null)} />}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 export const DENIED_MESSAGE = "This account is not allowed to sign in yet. Ask Wira to add your email.";
 export const CREDENTIALS_MESSAGE = "Wrong email or password. After 5 wrong tries the account is locked for 15 minutes.";
 export const PASSWORD_CHANGED_MESSAGE = "Password changed. Sign in with your new password.";
+export const LINKED_MESSAGE = "You're in. Sign in again to continue.";
 export const FAILED_MESSAGE = "Sign-in failed. Try again, or ask Wira for help.";
 
 /** One neutral line for a failed sign-in, or null when there is no error. Unknown codes get the generic line. */

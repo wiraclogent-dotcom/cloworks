@@ -13,4 +13,8 @@ requiresPermission: dashboard.team
 2. Use the month picker to choose the month.
 3. Select a person to open their KPI page.
 
+## Shared requests
+
+A request can have several assignees. Each of them earns the full point, so a shared request shows as one task done in every assignee's row. The team total under **Request tasks done** counts each request once, even when several people worked on it, so it can be lower than the sum of the rows.
+
 If no team members are listed, no creative team members (designers) have been added yet. Ask an admin to check the people list.

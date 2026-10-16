@@ -20,7 +20,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["src/lib/db.ts", "src/lib/signin.ts", "src/lib/passwordAuth.ts", "src/lib/session-core.ts", "src/lib/session.ts", "src/lib/auth.ts"],
+    files: ["src/lib/db.ts", "src/lib/signin.ts", "src/lib/passwordAuth.ts", "src/lib/session-core.ts", "src/lib/session.ts", "src/lib/auth.ts", "src/lib/joinDeps.ts"],
     rules: { "no-restricted-imports": "off" },
   },
   // Override default ignores of eslint-config-next.

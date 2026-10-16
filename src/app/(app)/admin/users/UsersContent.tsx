@@ -1,139 +1,143 @@
-import { ChevronRight, Mail } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { activeChip, appRoleChip, jobRoleChip } from "@/lib/adminChips";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Avatar } from "@/components/ui/Avatar";
-import { Chip } from "@/components/ui/Chip";
-import { tableClass } from "@/components/ui/table";
-import { cn } from "@/components/ui/cn";
+import { Badge } from "@/components/shadcn/badge";
+import { Card } from "@/components/shadcn/card";
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow, TableRowHeader } from "@/components/shadcn/table";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
+import { cn, focusRing } from "@/components/ui/cn";
 import { AdminDenied } from "../AdminDenied";
 import { AdminTabs } from "../AdminTabs";
-import { ActiveToggle, AddAllowedForm, AddPersonForm, EditUserForm, LoginEmailForm, PasswordForm, RemoveAllowed } from "./UserForms";
+import { listLinkablePeople } from "@/lib/linkPerson";
+import { loadJoinAdmin, requestBaseUrl } from "@/lib/joinDeps";
+import { InvitedList, type InviteRow } from "./InvitedList";
+import { InviteLinkCard } from "./InviteLinkCard";
+import { MemberTabs, parseMemberTab } from "./MemberTabs";
+import { RequestsList, type RequestRow } from "./RequestsList";
+import { ActiveToggle, EditUserForm, LoginEmailForm, MergeForm, PasswordForm } from "./UserForms";
 
-function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Chip>[0]["tone"] } } & Record<`data-${string}`, string>) {
-  return <Chip tone={chip.tone} {...rest}>{chip.label}</Chip>;
+function TonedChip({ chip, ...rest }: { chip: { label: string; tone: Parameters<typeof Badge>[0]["tone"] } } & Record<`data-${string}`, string>) {
+  return <Badge tone={chip.tone} {...rest}>{chip.label}</Badge>;
 }
 
-/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. */
-export async function UsersContent() {
+const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+const day = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric" });
+
+/** Permission is checked BEFORE any query, so a non-admin payload contains no admin data. `tab`: members | invited | requests. */
+export async function UsersContent({ tab, merged }: { tab?: string; merged?: string } = {}) {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
+  const current = parseMemberTab(tab);
 
-  const [users, allowed] = await Promise.all([
-    // Explicit select: rows go to client forms, so secrets (passwordHash) must never be loaded here.
-    db.user
-      .findMany({
-        orderBy: [{ active: "desc" }, { name: "asc" }],
-        select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
-      })
-      .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash }))),
-    db.allowedEmail.findMany({ orderBy: { email: "asc" } }),
-  ]);
-  const owners = new Map(users.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u.name]));
-  const t = tableClass({ minWidth: "min-w-[60rem]" });
+  const [{ workspace, requests }, base] = await Promise.all([loadJoinAdmin(viewer), requestBaseUrl()]);
+  const toRow = (r: (typeof requests.pending)[number]): RequestRow => ({ applicantId: r.applicantId, name: r.name, email: r.email, source: r.source, requestedAt: when.format(r.requestedAt) });
+
+  let panel: React.ReactNode;
+  let count: number | undefined;
+  if (current === "invited") {
+    const invites = await loadInvites(db);
+    panel = <InvitedList invites={invites} linkable={await listLinkablePeople(db)} />;
+  } else if (current === "requests") {
+    panel = <RequestsList pending={requests.pending.map(toRow)} rejected={requests.rejected.map(toRow)} linkable={await listLinkablePeople(db)} />;
+  } else {
+    const loaded = await loadMembers(db);
+    count = loaded.users.length;
+    panel = loaded.view;
+  }
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Users" }]} title="People and access" count={users.length} switcher={<AdminTabs current="users" />}
-        description="Company-domain addresses can sign in once bound to a person. Anyone else needs the address on the allowed list (adding a login email below does this for you)." />
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Members" }]} title="People and access" count={count} switcher={<AdminTabs current="users" />}
+        description="Anyone active with a login email can sign in. Invite people, or approve those who ask to join." />
+      {merged && <Alert variant="success" className="mb-4"><AlertDescription>Merged into {merged}.</AlertDescription></Alert>}
+      <InviteLinkCard base={base} joinCode={workspace.joinCode} enabled={workspace.joinLinkEnabled} emailDomain={workspace.emailDomain} />
+      <div className="mb-4"><MemberTabs current={current} pending={requests.pending.length} /></div>
+      {panel}
+    </>
+  );
+}
 
-      <div className={cn(t.wrapper, "max-h-[calc(100dvh-15rem)]")}>
-        <table className={t.table}>
-          <caption className="sr-only">All people</caption>
-          <thead>
-            <tr>
+async function loadInvites(db: Awaited<ReturnType<typeof requireScope>>["db"]): Promise<InviteRow[]> {
+  const now = Date.now();
+  const rows = await db.invite.findMany({
+    where: { acceptedAt: null, revokedAt: null },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, email: true, appRole: true, jobRole: true, expiresAt: true, invitedBy: { select: { name: true } }, user: { select: { name: true } } },
+  });
+  return rows.map((i) => ({ id: i.id, email: i.email, appRole: i.appRole, jobRole: i.jobRole, invitedBy: i.invitedBy.name, linkedName: i.user?.name ?? null, expiresOn: day.format(i.expiresAt), expired: i.expiresAt.getTime() <= now }));
+}
+
+async function loadMembers(db: Awaited<ReturnType<typeof requireScope>>["db"]) {
+  const users = await db.user
+    .findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+      select: { id: true, name: true, fullName: true, title: true, appRole: true, jobRole: true, aliases: true, email: true, active: true, passwordHash: true },
+    })
+    .then((rows) => rows.map(({ passwordHash, ...u }) => ({ ...u, hasPassword: !!passwordHash })));
+
+  const view = (
+    <>
+      <Card className="overflow-hidden p-0">
+        <Table containerClassName="max-h-[calc(100dvh-15rem)]" className="min-w-[60rem]">
+          <TableCaption className="sr-only">All people</TableCaption>
+          <TableHeader>
+            <TableRow>
               {["Name", "Job role", "App role", "Login email", "Status", "Manage"].map((h) => (
-                <th key={h} scope="col" className={t.th}>{h}</th>
+                <TableHead key={h} scope="col">{h}</TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users.map((u) => (
-              <tr key={u.id} className={cn(t.tr, "align-top")}>
-                <th scope="row" className={cn(t.rowHeader, "align-top")}>
+              <TableRow key={u.id} className="align-top">
+                <TableRowHeader className="align-top">
                   <div className="flex items-start gap-2.5">
                     <Avatar name={u.name} size="md" decorative className={cn(!u.active && "opacity-60")} />
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{u.name}</p>
-                      <p className="text-xs font-normal text-foreground-secondary">
+                      <p className="text-xs font-normal text-muted-foreground">
                         <span className="sr-only">Full name: </span>{u.fullName}
                         <span aria-hidden="true"> · </span>
                         <span className="sr-only">Title: </span>{u.title ?? "—"}
                       </p>
                     </div>
                   </div>
-                </th>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></td>
-                <td className={cn(t.td, "align-top break-all")}>
-                  {u.email ?? <span className="text-foreground-secondary italic">No login</span>}
+                </TableRowHeader>
+                <TableCell className="align-top"><TonedChip chip={jobRoleChip(u.jobRole)} data-job-role={u.jobRole} /></TableCell>
+                <TableCell className="align-top"><TonedChip chip={appRoleChip(u.appRole)} data-app-role={u.appRole} /></TableCell>
+                <TableCell className="align-top break-all">
+                  {u.email ?? <span className="text-muted-foreground italic">No login</span>}
                   {u.email && (
-                    <p className="mt-0.5 text-xs text-foreground-secondary" data-has-password={String(u.hasPassword)}>
+                    <p className="mt-0.5 text-xs text-muted-foreground" data-has-password={String(u.hasPassword)}>
                       {u.hasPassword ? "Password set" : "No password yet"}
                     </p>
                   )}
-                </td>
-                <td className={cn(t.td, "align-top")}><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></td>
-                <td className={cn(t.td, "min-w-72 align-top")}>
-                  <details className="group">
-                    <summary className="inline-flex cursor-pointer items-center gap-1 rounded-md font-medium text-link hover:underline">
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-open:rotate-90" />Edit {u.name}
-                    </summary>
-                    <div className="mt-3 space-y-4 rounded-lg border border-border bg-surface-muted p-3">
+                </TableCell>
+                <TableCell className="align-top"><TonedChip chip={activeChip(u.active)} data-active={String(u.active)} /></TableCell>
+                <TableCell className="min-w-72 align-top">
+                  <Collapsible className="group">
+                    <CollapsibleTrigger className={cn("inline-flex cursor-pointer items-center gap-1 rounded-md text-left font-medium text-link hover:underline", focusRing)}>
+                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 transition-transform duration-150 group-data-[state=open]:rotate-90" />Edit {u.name}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent keepMounted className="mt-3 space-y-4 rounded-lg border border-border bg-muted p-3">
                       <EditUserForm u={u} />
                       <LoginEmailForm u={u} />
                       <PasswordForm u={u} />
                       <ActiveToggle u={u} />
-                    </div>
-                  </details>
-                </td>
-              </tr>
+                      <MergeForm u={u} others={users.filter((o) => o.id !== u.id).map((o) => ({ id: o.id, name: o.name, fullName: o.fullName }))} />
+                    </CollapsibleContent>
+                  </Collapsible>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="mt-6 grid items-start gap-4 lg:grid-cols-2">
-        <Card>
-          <section aria-labelledby="add-person-h">
-            <CardHeader><CardTitle id="add-person-h">Add person</CardTitle></CardHeader>
-            <AddPersonForm />
-          </section>
-        </Card>
-
-        <Card>
-          <section aria-labelledby="allowed-h">
-            <CardHeader>
-              <CardTitle id="allowed-h">Allowed emails</CardTitle>
-              <p className="text-[13px] text-foreground-secondary">Outside addresses that may sign in.</p>
-            </CardHeader>
-            {allowed.length === 0 ? (
-              <p className="mb-4 text-sm text-foreground-secondary">No outside addresses are allowed.</p>
-            ) : (
-              <ul className="mb-4 divide-y divide-border rounded-lg border border-border">
-                {allowed.map((a) => (
-                  <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 p-3">
-                    <div className="flex min-w-0 items-start gap-2.5">
-                      <span aria-hidden="true" className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-foreground-secondary"><Mail strokeWidth={1.75} className="size-3.5" /></span>
-                      <div className="min-w-0">
-                        <p className="font-medium break-all text-foreground">{a.email}</p>
-                        <p className="text-[13px] text-foreground-secondary">
-                          {owners.has(a.email.toLowerCase()) ? `Used by ${owners.get(a.email.toLowerCase())}` : "Not linked to a person"}
-                          {a.note ? ` · ${a.note}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <RemoveAllowed email={a.email} />
-                  </li>
-                ))}
-              </ul>
-            )}
-            <AddAllowedForm />
-          </section>
-        </Card>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
     </>
   );
+  return { users, view };
 }
