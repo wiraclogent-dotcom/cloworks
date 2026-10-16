@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { AppRole, JobRole } from "@prisma/client";
 import { dbFor, requireUser } from "@/lib/session";
 import { UNAUTH_MESSAGE, withUser } from "@/lib/actionUser";
-import { AdminError, createUser, normalizeEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
+import { AdminError, assertMayAddLogin, createUser, normalizeEmail, setUserLoginEmail, setUserPassword, updateUser } from "@/lib/admin";
 import { mergePreview, mergeUsers } from "@/lib/mergeUsers";
 import { createInvite, resendInvite, revokeInvite } from "@/lib/invites";
 import { approveFor, rejectFor, requestBaseUrl, resetLinkFor, setLinkEnabledFor, undoRejectFor } from "@/lib/joinDeps";
@@ -82,8 +82,8 @@ export async function savePassword(_prev: AdminFormState, fd: FormData): Promise
 
 /**
  * Adds a person, optionally with a login email and a temporary password (which they must change at first sign-in).
- * The email (format and not already someone's login in this workspace) and the password are validated before anything
- * is created; a concurrent claim of the same email can still fail later. The typed password is never echoed back.
+ * The email (format, not already someone's login in this workspace, not a reserved platform-admin address) and the
+ * password are validated before anything is created; a concurrent claim of the same email can still fail later. The typed password is never echoed back.
  * Create, email and password are separate steps: if a later one fails the person already exists, and the message says
  * so; the admin finishes with that row's login email and password forms.
  */
@@ -105,6 +105,8 @@ export async function addPerson(_prev: AdminFormState, fd: FormData): Promise<Ad
             const problem = checkNewPassword(password);
             if (problem) throw new AdminError("VALIDATION", problem);
           }
+          // A platform-admin address is reserved (see assertMayAddLogin): refused here, before the person exists.
+          if (email !== "") await assertMayAddLogin(db, actor, email, password !== "");
           const person = await createUser(db, actor, {
             name: s(fd, "name"),
             fullName: s(fd, "fullName"),
