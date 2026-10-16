@@ -111,7 +111,7 @@ export function HowItWorks() {
     <section id="how" aria-labelledby="how-title" className={cn("relative isolate scroll-mt-16 overflow-hidden", band.className)} style={band.style}>
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 id="how-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>How a request moves</h2>
+          <h2 id="how-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>How a design request moves, from brief to approval</h2>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
             The same five steps for every post, reel, banner and carousel. The board columns match them one to one.
           </p>

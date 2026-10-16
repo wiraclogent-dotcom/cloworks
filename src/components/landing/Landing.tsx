@@ -11,8 +11,10 @@ import { cn } from "@/components/ui/cn";
 import { HeroBoard } from "./HeroBoard";
 import { HowItWorks } from "./HowItWorks";
 import { GLASS, PRISM_VEIL, glassBand } from "./glassBand";
+import { Faq } from "./Faq";
 import { LightOnly } from "./LightOnly";
 import { HowItWorksVideo } from "./HowItWorksVideo";
+import { WaitlistForm } from "./WaitlistForm";
 
 const display = "font-display tracking-[-0.02em]";
 const hero = glassBand("gradient", PRISM_VEIL, "center top");
@@ -30,9 +32,8 @@ const NAV = [
   { href: "#how", label: "How it works" },
   { href: "#teams", label: "For teams" },
   { href: "#features", label: "Features" },
+  { href: "#faq", label: "FAQ" },
 ];
-
-
 
 const TOOLS: { icon: ReactNode; title: string; body: string }[] = [
   { icon: <LayoutGrid />, title: "Board", body: "Drag cards between columns, on desktop or by touch. Keyboard works too." },
@@ -200,7 +201,7 @@ export function Landing() {
           </ul>
           <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
             <Link href="/signin" className="hidden rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted sm:inline-flex">Sign in</Link>
-            <Link href="/signin" className={cn(ctaPrimary, "h-10 px-4 text-sm")}>Open Clowork</Link>
+            <Link href="#waitlist" className={cn(ctaPrimary, "h-10 px-4 text-sm")}>Join the waitlist</Link>
           </div>
         </nav>
       </header>
@@ -211,17 +212,17 @@ export function Landing() {
       <div className={cn("relative isolate -mt-16 overflow-hidden pt-16", hero.className)} style={hero.style}>
         <section aria-labelledby="hero-title" className="mx-auto max-w-6xl px-4 pt-16 pb-16 text-center sm:px-6 sm:pt-20 sm:pb-24">
           <p className={cn(frostedPill, "inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-compact font-medium text-foreground")}>
-            Clogent&apos;s creative studio, in one board
+            Now in beta · Design request management
           </p>
           <h1 id="hero-title" className={cn(display, "mx-auto mt-6 max-w-3xl text-[2.5rem] leading-[1.05] font-semibold text-heading sm:text-6xl lg:text-[4.25rem]")}>
-            Every creative request, from brief to done.
+            Manage every design request, from brief to done.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-foreground sm:text-lg">
-            Clowork is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
-            picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
+            Clowork gives marketing and creative teams one place to send design and video briefs, track every request on a
+            board, review the work, and see who has room for more. No more chasing in the group chat.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signin" className={cn(ctaPrimary, "h-12 px-6 text-[15px]")}>Sign in to Clowork</Link>
+            <Link href="#waitlist" className={cn(ctaPrimary, "h-12 px-6 text-[15px]")}>Join the waitlist</Link>
             <HowItWorksVideo className={cn(frostedPill, "inline-flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-medium text-foreground transition-colors hover:bg-white [&_svg]:size-4")} />
           </div>
 
@@ -235,9 +236,9 @@ export function Landing() {
       <section id="showcase" aria-labelledby="feed-title" className="scroll-mt-16 overflow-hidden bg-background">
         <div className="mx-auto max-w-6xl px-4 pt-16 pb-14 sm:px-6 sm:pt-20">
           <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-3">
-            <h2 id="feed-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>From brief to feed</h2>
+            <h2 id="feed-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>From design brief to finished post</h2>
             <p className="max-w-md text-base text-muted-foreground">
-              Carousels, reels, stories and banners. Each one starts as a request on the board and ends on Done.
+              Carousels, reels, stories and banners, made with Clowork by the creative team at Clogent. Each one started as a request on the board and ended on Done.
             </p>
           </div>
           <ul className="-mx-4 mt-10 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-6 lg:overflow-visible lg:px-0">
@@ -268,7 +269,7 @@ export function Landing() {
       <section id="teams" aria-labelledby="roles-title" className="scroll-mt-16 bg-background">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <h2 id="roles-title" className={cn(display, "max-w-2xl text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>
-            Built for the three people on every request
+            Built for requesters, designers and creative leads
           </h2>
           <div className="mt-14 space-y-20 sm:space-y-24">
             {ROLES.map((role, i) => (
@@ -298,7 +299,7 @@ export function Landing() {
       <section id="features" aria-labelledby="tools-title" className="scroll-mt-16 border-t border-border bg-card">
         <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
           <h2 id="tools-title" className={cn(display, "max-w-2xl text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>
-            Look at the work the way you need it
+            Track design requests on a board, table or calendar
           </h2>
           <dl className="mt-12 grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
             {TOOLS.map((t) => (
@@ -315,22 +316,23 @@ export function Landing() {
         </div>
       </section>
 
-      {/* Closing call to action on the same bright fractal glass as the hero (Prism's lower, warmer part). */}
-      <section aria-labelledby="cta-title" className={closing.className} style={closing.style}>
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 py-16 sm:px-6 sm:py-20 md:flex-row md:items-center md:justify-between">
-          <div className="md:order-1">
-            <h2 id="cta-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>Got something to brief?</h2>
-            <p className="mt-3 text-base text-foreground">Sign in with your Clogent account. New here? Ask your workspace lead for a join link.</p>
+      <Faq />
+
+      {/* Closing call to action on the same bright fractal glass as the hero (Prism's lower, warmer part), with the waitlist form. */}
+      <section id="waitlist" aria-labelledby="cta-title" className={cn("scroll-mt-16", closing.className)} style={closing.style}>
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
+          <h2 id="cta-title" className={cn(display, "max-w-2xl text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>Bring your team&apos;s design requests into one place.</h2>
+          <p className="mt-3 max-w-2xl text-base text-foreground">Clowork is in private beta. Join the waitlist and we&apos;ll email you when there&apos;s a spot for your team.</p>
+          <div className="mt-8">
+            <WaitlistForm />
           </div>
-          <Link href="/signin" className={cn(ctaPrimary, "press h-11 shrink-0 px-5 text-[15px] whitespace-nowrap md:order-3")}>Sign in to Clowork</Link>
         </div>
       </section>
       </main>
 
       <footer className="border-t border-white/10 bg-[var(--brand-deep-blue-night)] text-white/70">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-compact sm:px-6">
-          <span className="inline-flex items-center gap-2"><LogoMark size={20} />Clowork, the Clogent creative team&apos;s request tracker</span>
-          <span>Clogent</span>
+          <span className="inline-flex items-center gap-2"><LogoMark size={20} />Clowork, design request management for creative teams</span>
         </div>
       </footer>
     </div>
