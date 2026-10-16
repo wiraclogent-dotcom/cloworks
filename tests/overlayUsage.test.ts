@@ -15,7 +15,8 @@ const ALLOWED_ROLE_DIALOG = new Set(["components/chat/ChatDockView.tsx"]);
 
 /**
  * The landing FAQ is static, server-rendered text where native `<details>` is the right disclosure: it works without
- * JavaScript and keeps every answer in the HTML for search (the SEO spec asks for it). No state, so no Collapsible.
+ * JavaScript and keeps every answer in the HTML. That format is the landing spec's choice, not an SEO requirement. No
+ * state, so no Collapsible.
  */
 const ALLOWED_DETAILS = new Set(["components/landing/Faq.tsx"]);
 

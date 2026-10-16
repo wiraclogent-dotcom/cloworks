@@ -47,7 +47,7 @@ export function WaitlistForm({ action = joinWaitlist }: { action?: (prev: AuthFo
             {WAITLIST_SIZES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </NativeSelect>
         </div>
-        <Button type="submit" variant="default" loading={pending} className="h-11 px-6 text-[15px]">
+        <Button type="submit" variant="default" loading={pending} className="h-11 rounded-full px-6 text-[15px]">
           {pending ? "Joining…" : "Join the waitlist"}
         </Button>
       </div>

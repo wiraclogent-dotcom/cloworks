@@ -187,7 +187,7 @@ export function Landing() {
       {/* Floating frosted bar: it sits on the hero's fractal glass at the top and on white further down. */}
       <header className="sticky top-0 z-40 h-16 px-2 pt-2 sm:px-4">
         <nav aria-label="Main"
-          className={cn(GLASS.card, GLASS.frost, "mx-auto flex h-14 max-w-6xl items-center gap-6 rounded-full pr-2 pl-4 shadow-raised sm:pl-5")}>
+          className={cn(GLASS.card, GLASS.frost, "mx-auto flex h-14 max-w-6xl items-center gap-2 rounded-full pr-2 pl-3 shadow-raised sm:gap-6 sm:pl-5")}>
           <Link href="/" className="flex items-center gap-2.5 rounded-md text-[17px] font-semibold text-heading">
             <LogoMark size={30} />
             Clowork
@@ -200,8 +200,8 @@ export function Landing() {
             ))}
           </ul>
           <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
-            <Link href="/signin" className="hidden rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted sm:inline-flex">Sign in</Link>
-            <Link href="#waitlist" className={cn(ctaPrimary, "h-10 px-4 text-sm")}>Join the waitlist</Link>
+            <Link href="/signin" className="inline-flex rounded-md px-2 py-2 text-sm font-medium text-foreground hover:bg-muted sm:px-3">Sign in</Link>
+            <Link href="#waitlist" className={cn(ctaPrimary, "h-10 px-3 text-sm sm:px-4")}>Join the waitlist</Link>
           </div>
         </nav>
       </header>

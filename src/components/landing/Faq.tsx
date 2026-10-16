@@ -1,9 +1,11 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/components/ui/cn";
 
 const display = "font-display tracking-[-0.02em]";
 
-const QUESTIONS: { q: string; a: string }[] = [
+const QUESTIONS: { q: string; a: ReactNode }[] = [
   {
     q: "What is a design request tool?",
     a: "A shared place where people who need design work (marketing, social media, sales) send briefs, and the creative team picks them up, tracks them to done and gets them approved, instead of requests scattered across chat and email.",
@@ -18,7 +20,12 @@ const QUESTIONS: { q: string; a: string }[] = [
   },
   {
     q: "How do I get access?",
-    a: "Clowork is in private beta. Join the waitlist with your work email and we'll reach out when there's a spot for your team. Already on a team that uses Clowork? Sign in.",
+    a: (
+      <>
+        Clowork is in private beta. Join the waitlist with your work email and we&apos;ll reach out when there&apos;s a spot
+        for your team. Already on a team that uses Clowork? <Link href="/signin" className="font-medium text-link underline underline-offset-2">Sign in</Link>.
+      </>
+    ),
   },
 ];
 

@@ -52,4 +52,15 @@ describe("landing: SEO copy", () => {
     expect(text).not.toMatch(/Cloworks/);
     expect(text).not.toMatch(/\bfree\b/i);
   });
+
+  it("keeps Sign in reachable at every width: a visible header link and a link in the last FAQ answer", () => {
+    const { container } = render(<Landing />);
+    const header = container.querySelector("header")!;
+    const link = Array.from(header.querySelectorAll("a")).find((a) => a.textContent === "Sign in");
+    expect(link?.getAttribute("href")).toBe("/signin");
+    expect(link!.classList.contains("hidden")).toBe(false);
+    const answer = container.querySelectorAll("section#faq details")[3];
+    expect(answer.querySelector('a[href="/signin"]')?.textContent).toBe("Sign in");
+    expect(answer.textContent).toContain("Already on a team that uses Clowork? Sign in.");
+  });
 });
