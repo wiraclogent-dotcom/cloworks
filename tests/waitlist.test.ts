@@ -113,10 +113,13 @@ describe("joinWaitlistWith", () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
-  it("notification cap: the 20th sign-up still notifies, and rows older than an hour do not count", async () => {
+  it("notification cap: the 20th sign-up in an hour still notifies, older rows do not count", async () => {
     const { db, notify, deps } = setup();
+    for (let i = 0; i < NOTIFY_CAP_PER_HOUR - 1; i++) {
+      db.rows.push({ id: `old${i}`, email: `old${i}@x.co`, team: "T", teamSize: "SIZE_1_5", status: "NEW", contactedAt: null, createdAt: new Date(NOW.getTime() - 60_000) });
+    }
     for (let i = 0; i < 30; i++) {
-      db.rows.push({ id: `old${i}`, email: `old${i}@x.co`, team: "T", teamSize: "SIZE_1_5", status: "NEW", contactedAt: null, createdAt: new Date(NOW.getTime() - 2 * 3_600_000) });
+      db.rows.push({ id: `stale${i}`, email: `stale${i}@x.co`, team: "T", teamSize: "SIZE_1_5", status: "NEW", contactedAt: null, createdAt: new Date(NOW.getTime() - 2 * 3_600_000) });
     }
     await joinWaitlistWith(deps, form());
     expect(notify).toHaveBeenCalledTimes(1);
