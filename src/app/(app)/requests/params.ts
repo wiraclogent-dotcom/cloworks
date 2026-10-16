@@ -12,7 +12,7 @@ export type ViewParams = {
   view: "board" | "table" | "calendar" | "timeline";
   /** YYYY-MM shown by the calendar view; always set (defaults to the current Jakarta month). */
   month: string;
-  /** Monday (YYYY-MM-DD) the timeline's two weeks start on; always set (defaults to last week's Monday). */
+  /** Monday (YYYY-MM-DD) the timeline's week starts on; always set (defaults to this week's Monday). */
   week: string;
   status?: RequestStatus; assigneeId?: string; brandId?: string; divisionId?: string; q?: string;
   /** ?motion=yes|no (anything else = any). */
