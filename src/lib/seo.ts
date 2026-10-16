@@ -1,6 +1,13 @@
 /** Public-site SEO constants shared by the landing metadata, robots, sitemap and JSON-LD. */
 export const SITE_URL = "https://clowork.my.id";
 
+/**
+ * Open Graph and Twitter fields every page shares. Next merges metadata shallowly, so a page that sets its own
+ * `openGraph` or `twitter` replaces the layout's whole object: spread these into each one that does.
+ */
+export const OPEN_GRAPH_DEFAULTS = { siteName: "Clowork", type: "website", locale: "en_US" } as const;
+export const TWITTER_DEFAULTS = { card: "summary_large_image" } as const;
+
 export const LANDING_TITLE = "Clowork: Design Request Management for Creative Teams";
 
 export const LANDING_DESCRIPTION =

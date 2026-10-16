@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { LucideProvider } from "lucide-react";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
-import { SITE_URL } from "@/lib/seo";
+import { OPEN_GRAPH_DEFAULTS, SITE_URL, TWITTER_DEFAULTS } from "@/lib/seo";
 import { LiquidGlassFilter } from "@/components/ui/LiquidGlassFilter";
 import "./globals.css";
 
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
   // Pages set a short `title`; the template appends the app name ("Requests · Clowork").
   title: { default: "Clowork", template: "%s · Clowork" },
   description: "Request, track and measure creative work.",
-  openGraph: { siteName: "Clowork", type: "website", locale: "en_US" },
-  twitter: { card: "summary_large_image" },
+  openGraph: { ...OPEN_GRAPH_DEFAULTS },
+  twitter: { ...TWITTER_DEFAULTS },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { Landing } from "@/components/landing/Landing";
-import { LANDING_DESCRIPTION, LANDING_TITLE, landingJsonLd } from "@/lib/seo";
+import { LANDING_DESCRIPTION, LANDING_TITLE, OPEN_GRAPH_DEFAULTS, TWITTER_DEFAULTS, landingJsonLd } from "@/lib/seo";
 
 export const metadata: Metadata = {
   title: { absolute: LANDING_TITLE },
   description: LANDING_DESCRIPTION,
   alternates: { canonical: "/" },
-  openGraph: { title: LANDING_TITLE, description: LANDING_DESCRIPTION, url: "/" },
-  twitter: { title: LANDING_TITLE, description: LANDING_DESCRIPTION },
+  // Shallow merge: these replace the layout's openGraph/twitter, so the shared defaults are spread back in.
+  openGraph: { ...OPEN_GRAPH_DEFAULTS, title: LANDING_TITLE, description: LANDING_DESCRIPTION, url: "/" },
+  twitter: { ...TWITTER_DEFAULTS, title: LANDING_TITLE, description: LANDING_DESCRIPTION },
 };
 
 // Public landing page. The proxy sends signed-in visitors straight to /requests, so this page never reads the session.
