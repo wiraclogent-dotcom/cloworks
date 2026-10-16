@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { ChevronDown, MessagesSquare, PanelRightClose, PanelRightOpen } from "lucide-react";
 import type { ChatMessage, ChatSummary } from "@/lib/chat";
 import type { CollabFail } from "@/lib/collab";
@@ -137,7 +137,8 @@ export function ChatDockView({ unread, latestUnread = null, userId, actions = se
 
   const convRef = useRef(conv);
   const selectedRef = useRef(selectedId);
-  useEffect(() => { convRef.current = conv; selectedRef.current = selectedId; });
+  // Layout effect: a poll fired as soon as the conversation shows must see it, not the state of a commit ago.
+  useLayoutEffect(() => { convRef.current = conv; selectedRef.current = selectedId; });
 
   // ---- Idle backoff: `lastActivity` (throttled) against a coarse clock decides how fast, or whether, to poll ----
   const [lastActivity, setLastActivity] = useState(() => Date.now());

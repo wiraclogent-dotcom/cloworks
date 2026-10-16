@@ -181,6 +181,23 @@ describe("ChatDockView", () => {
     expect(a.markRead).toHaveBeenCalledWith("r1", at("2026-10-10T05:00:00Z"));
   });
 
+  // Regression: the polls read the conversation through refs that lagged the DOM by a scheduler task, so a poll fired
+  // right after the messages appeared (as firePoll does under CPU load) saw it still loading and did nothing.
+  it("a poll fired the moment the conversation appears already polls it", async () => {
+    const a = fakeActions([chat()]);
+    a.listMessages.mockResolvedValueOnce({ ok: true, messages: [msg()], hasOlder: false }); // the first load
+    a.listMessages.mockResolvedValueOnce({ ok: true, messages: [msg({ id: "m3", body: "New one", createdAt: at("2026-10-10T05:00:00Z") })], hasOlder: false });
+    const shown = new MutationObserver(() => {
+      if (!screen.queryByText("Poster draft is up", { selector: "p" })) return;
+      shown.disconnect();
+      document.dispatchEvent(new Event("visibilitychange")); // same task as the commit, before any later one
+    });
+    shown.observe(document.body, { childList: true, subtree: true, characterData: true });
+    await openConversation(a);
+    expect(await screen.findByText("New one", { selector: "p" })).toBeTruthy();
+    expect(a.listMessages).toHaveBeenLastCalledWith("r1", { after: { at: msg().createdAt, id: "m1" } });
+  });
+
   it("a poll that only repeats known messages (the overlap window) does not mark read again", async () => {
     const a = fakeActions([chat()]);
     await openConversation(a);
