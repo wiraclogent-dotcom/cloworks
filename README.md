@@ -183,8 +183,7 @@ What to know:
 - **shadcn first.** Generic elements (buttons, fields, dialogs, menus, popovers, tabs, badges, cards, alerts…) come
   from shadcn/ui in `src/components/shadcn/` (add with `npx shadcn@latest add <name>`, then restyle with our tokens).
   `src/components/ui/` holds only what shadcn lacks (domain components such as `StatusChip`, `KpiTile`,
-  `PageHeader`). Rules, component map and migration status: `src/components/ui/README.md`; plan:
-  `docs/superpowers/specs/2026-10-14-shadcn-first-design.md`.
+  `PageHeader`). Rules, component map and migration status: `src/components/ui/README.md`.
 - **Tokens** live in `src/app/globals.css`: light under `:root` (the default, independent of the OS) and dark under
   `:root[data-theme="dark"]`. Use the shadcn token names first (`bg-background`, `bg-card`, `bg-muted`,
   `text-muted-foreground`, `border-border`, `border-input`, `bg-primary`, `bg-sidebar`, ...), our extension tokens

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-/** QA fix round 1 (docs/superpowers/reports/2026-10-08-redesign-qa.md): markup/class contracts jsdom can check. */
+/** QA fix round 1: markup/class contracts jsdom can check. */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { act } from "react";
 import { render, screen, cleanup, within, fireEvent } from "@testing-library/react";

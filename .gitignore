@@ -24,3 +24,9 @@ data/
 .e2e/summary.md
 .e2e/logs/
 .e2e/videos/
+
+# local-only tooling (never commit)
+*.local.*
+.archify/
+.claude/
+docs/superpowers/

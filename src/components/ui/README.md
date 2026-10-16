@@ -15,8 +15,7 @@ Every screen is built from two folders, in this order of preference:
 The same order applies to **tokens**: use the shadcn token names first, our extension tokens only for roles shadcn has
 no name for (see [Tokens](#tokens-globalscss)).
 
-The migration to this order is done (plan, audit and final score:
-`docs/superpowers/specs/2026-10-14-shadcn-first-design.md`). Every generic element now comes from `shadcn/`; guard
+The migration to this order is done. Every generic element now comes from `shadcn/`; guard
 tests keep the old patterns from coming back (`tests/shadcnFolder`, `tokenNames`, `typeScale`, `buttonUsage`,
 `kitRemoved`, `cardUsage`, `overlayUsage`).
 
