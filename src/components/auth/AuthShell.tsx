@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Card } from "@/components/shadcn/card";
 import { LogoMark } from "@/components/ui/LogoMark";
 import { cn } from "@/components/ui/cn";
+import { BrandPanel } from "./BrandPanel";
 
 /** Same display face as the landing page (loaded in the root layout), so the account pages read as one site. */
 export const display = "font-display tracking-[-0.02em]";
@@ -12,7 +12,7 @@ export const authTitleClass = cn(display, "text-[2.25rem] leading-[1.1] font-bol
 
 /**
  * Layout for the public account pages (/signin, /signup, /verify, /join/*, /lobby): the form side with the landing
- * calm canvas, and on wide screens the blue V3 panel with a few flat product cards. `title` is the page's h1;
+ * calm canvas, and on wide screens the blue V3 panel (`BrandPanel`). `title` is the page's h1;
  * pass `title={null}` when the content renders its own (e.g. a heading that depends on request data).
  */
 export function AuthShell({ title, intro, children }: { title: ReactNode; intro?: ReactNode; children: ReactNode }) {
@@ -40,27 +40,7 @@ export function AuthShell({ title, intro, children }: { title: ReactNode; intro?
         </main>
       </div>
 
-      {/* Product panel (wide screens): the V3 blue that fades to a pale sky, with a few flat product cards. Decorative. */}
-      <aside data-brand-panel="" aria-label="About Clowork" className="relative isolate hidden overflow-hidden text-white lg:sticky lg:top-0 lg:flex lg:h-dvh lg:flex-col lg:p-4">
-        <div className="relative isolate flex flex-1 flex-col overflow-hidden rounded-[28px] bg-[linear-gradient(180deg,var(--brand-deep-blue)_0%,var(--brand-gradient-via)_42%,var(--brand-aqua)_68%,var(--brand-aqua-tint)_100%)] px-10 pt-14 xl:px-14">
-          <p className="inline-flex w-fit items-center gap-2 rounded-full bg-white/12 px-4 py-2 text-sm font-medium ring-1 ring-white/35 ring-inset">Creative ops for Clogent</p>
-          <p className={cn(display, "mt-6 max-w-md text-[2.5rem] leading-[1.06] font-semibold")}>Every creative request, from brief to done.</p>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-white/85">
-            Carousels, reels, stories and banners for Clogent&apos;s brands. Each one started as a request here.
-          </p>
-          <div aria-hidden="true" className="mt-auto grid w-full max-w-md gap-3 self-center pb-12 text-foreground">
-            <Card className="p-5">
-              <p className="flex items-center justify-between text-compact"><span className="font-semibold">REQ-A04D</span><span data-tone="first-look" className="rounded-full bg-tone-tint px-2.5 py-0.5 font-medium text-tone-text">First look</span></p>
-              <p className="mt-2 text-lg font-semibold">Product launch reel</p>
-              <p className="mt-3 rounded-xl rounded-bl-sm bg-muted px-3.5 py-2.5 text-sm"><span className="font-semibold">Nadia</span> Can the logo hold a beat longer?</p>
-            </Card>
-            <div className="grid grid-cols-2 gap-3">
-              <Card className="border-primary bg-primary p-4 text-primary-foreground"><p className="text-compact opacity-90">October target</p><p className="mt-1 text-2xl font-semibold">18 / 20</p></Card>
-              <Card className="p-4"><p className="text-compact text-muted-foreground">Open requests</p><p className="mt-1 text-2xl font-semibold">13</p></Card>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <BrandPanel display={display} />
     </div>
   );
 }
