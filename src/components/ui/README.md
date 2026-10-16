@@ -72,7 +72,7 @@ Run `npm run typecheck` and the tests that cover the screens you touched.
 | Button border | `border-border-strong` |
 | Primary / destructive hover | `hover:bg-primary-hover` / `hover:bg-destructive-hover` |
 | Depth | `shadow-card` (resting), `shadow-raised` (dialogs, menus, drawer) |
-| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, chosen per person in the board's Background picker, src/lib/boardBackground.ts) every card and its drag copy is a `LiquidGlassCard`; the wrapper is `board-picture` (`--board-image` under `--board-veil`) plus `board-ink-light` or `board-ink-dark`, which re-point the text tokens; columns turn `bg-glass-column`. Glass needs content behind it |
+| Glass | `liquid-glass` (tint + lens + lip, raised): the dragged card on a plain board. On a picture board (`<Board background>`, chosen per person in the board's Background picker, src/lib/boardBackground.ts) every card and its drag copy is a `LiquidGlassCard`; the wrapper is `board-picture` (`--board-image` under `--board-veil`) plus `board-ink-light` or `board-ink-dark`, which re-point the text tokens; columns turn `bg-glass-column`. The landing page (light only, `<LightOnly>`) puts its hero, How it works and closing CTA on the same pairing via `glassBand()` (bright Prism and Mist under a white veil, `board-ink-dark`), and uses only the three whites in `GLASS` (src/components/landing/glassBand.ts) for its frosted elements. Glass needs content behind it |
 | Status colours | `data-tone="<tone>"` + `bg-tone-tint text-tone-text border-tone-accent` |
 | Brand | `brand-*` (landing, auth and emails only) |
 
@@ -194,7 +194,7 @@ Helpers without a row: `photoDirectory.ts` (workspace photos for `Avatar`, fille
 - No hex, `text-white`, `bg-black` or Tailwind palette colours (`red-600`…) in components. Tokens already switch with
   the theme, so `dark:` is rarely needed (if you must, it follows `data-theme`, not the OS).
 - No gradients, glass, heavy shadows (`shadow-lg`/`shadow-xl`) or animation beyond 120–180 ms hover/focus
-  transitions.
+  transitions. Exceptions: the picture board (above) and the landing page's fractal-glass bands.
 - Do not render another `<main>`: the shell owns `<main id="main">`; pages render a `<div>`.
 - Do not add per-user data reads to the shell or layouts outside a `<Suspense>` boundary (cacheComponents).
 - Hydration: in a client component, never derive props or markup from `window`, `localStorage`, `matchMedia`,

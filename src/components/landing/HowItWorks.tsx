@@ -1,17 +1,24 @@
 import type { ReactNode } from "react";
 import { Check, CheckCheck, Clapperboard, FilePlus2, MessageSquareText, Palette, UserCheck } from "lucide-react";
-import { Card } from "@/components/shadcn/card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/shadcn/badge";
 import { BrandTag } from "@/components/ui/BrandTag";
 import { cn } from "@/components/ui/cn";
+import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
+import { GLASS, glassBand } from "./glassBand";
 
 const display = "font-display tracking-[-0.02em]";
+const band = glassBand("mist");
 
 /* ---------- one small illustration per step: a decorative slice of the screen used at that step ---------- */
 
+/** A frosted slice of the screen, the same glass as a board card on a picture background. */
 function Frame({ children }: { children: ReactNode }) {
-  return <Card aria-hidden="true" className="p-3 text-[11px]">{children}</Card>;
+  return (
+    <LiquidGlassCard aria-hidden="true" borderRadius="12px" shadowIntensity="xs" glowIntensity="none" className={cn("p-3 text-[11px] text-foreground", GLASS.card)}>
+      {children}
+    </LiquidGlassCard>
+  );
 }
 
 function BriefForm() {
@@ -36,8 +43,8 @@ function AssignPicker() {
         {people.map((p) => (
           <li key={p.name} className={cn("flex items-center gap-2 rounded-md px-1.5 py-1", p.picked && "bg-accent")}>
             <Avatar name={p.name} size="sm" decorative />
-            <span className={cn("flex-1", p.picked ? "font-medium text-accent-foreground" : "text-foreground")}>{p.name}</span>
-            {p.picked ? <Check className="size-3.5 text-accent-foreground" strokeWidth={2.25} /> : null}
+            <span className={cn("flex-1 text-foreground", p.picked && "font-medium")}>{p.name}</span>
+            {p.picked ? <Check className="size-3.5 text-foreground" strokeWidth={2.25} /> : null}
           </li>
         ))}
       </ul>
@@ -100,7 +107,8 @@ const STEPS: { title: string; body: string; icon: ReactNode; tone: string; art: 
 
 export function HowItWorks() {
   return (
-    <section id="how" aria-labelledby="how-title" className="relative isolate scroll-mt-16 overflow-hidden border-y border-border bg-card">
+    // On soft fractal glass (the board's Mist picture) with the board's dark ink; the steps' slices are frosted glass.
+    <section id="how" aria-labelledby="how-title" className={cn("relative isolate scroll-mt-16 overflow-hidden", band.className)} style={band.style}>
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 id="how-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>How a request moves</h2>
@@ -110,9 +118,9 @@ export function HowItWorks() {
         </div>
 
         <ol className="relative mx-auto mt-14 grid max-w-4xl gap-10 lg:mt-16 lg:max-w-none lg:grid-cols-5 lg:gap-5">
-          {/* Desktop connector through the icon centres, coloured stage by stage. */}
+          {/* Desktop connector through the icon centres. */}
           <span aria-hidden="true"
-            className="absolute top-7 right-[10%] left-[10%] hidden h-0.5 rounded-full bg-gradient-to-r from-[var(--status-tag-clogent-accent)] via-[var(--status-first-look-accent)] to-[var(--status-done-accent)] opacity-60 lg:block" />
+            className="absolute top-7 right-[10%] left-[10%] hidden h-0.5 rounded-full bg-border-strong lg:block" />
           {STEPS.map((step, i) => (
             <li key={step.title} className="reveal relative pl-20 md:grid md:grid-cols-[minmax(0,1fr)_20rem] md:items-start md:gap-x-10 lg:block lg:pl-0 lg:text-center">
               {/* Phone and tablet: one step per row, joined by a vertical line. Tablet puts the illustration beside the text. */}
@@ -121,10 +129,10 @@ export function HowItWorks() {
               ) : null}
               <div data-tone={step.tone} className="absolute top-0 left-0 lg:relative lg:mx-auto lg:w-fit">
                 <span aria-hidden="true"
-                  className="flex size-14 items-center justify-center rounded-2xl bg-tone-tint text-tone-text shadow-card ring-4 ring-card [&_svg]:size-6">
+                  className={cn("flex size-14 items-center justify-center rounded-2xl text-heading shadow-card [&_svg]:size-6", GLASS.card, GLASS.frost)}>
                   {step.icon}
                 </span>
-                <span className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-tone-accent text-[11px] font-bold text-white ring-2 ring-card tabular-nums">
+                <span className="absolute -top-1.5 -right-1.5 flex size-6 items-center justify-center rounded-full bg-tone-accent text-[11px] font-bold text-white ring-2 ring-white tabular-nums">
                   <span className="sr-only">Step </span>{i + 1}
                 </span>
               </div>

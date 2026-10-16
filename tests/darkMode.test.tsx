@@ -2,6 +2,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { ThemeSync, useDarkMode } from "@/components/ui/darkMode";
+import { LightOnly } from "@/components/landing/LightOnly";
 import { THEME_INIT_SCRIPT, parseThemePref, resetThemeMemory, resolveTheme } from "@/lib/theme";
 
 function mockMatchMedia(dark: boolean) {
@@ -32,6 +33,7 @@ describe("boot script (runs before first paint)", () => {
     expect(html().getAttribute("data-theme")).toBe("light");
   });
   it("applies a stored dark choice and resolves system from the OS", () => {
+    window.history.replaceState(null, "", "/requests");
     localStorage.setItem("ct-theme", "dark");
     runBootScript();
     expect(html().getAttribute("data-theme")).toBe("dark");
@@ -39,6 +41,13 @@ describe("boot script (runs before first paint)", () => {
     mockMatchMedia(true);
     runBootScript();
     expect(html().getAttribute("data-theme")).toBe("dark");
+    window.history.replaceState(null, "", "/");
+  });
+  it("keeps the landing page light whatever the stored choice", () => {
+    window.history.replaceState(null, "", "/");
+    localStorage.setItem("ct-theme", "dark");
+    runBootScript();
+    expect(html().getAttribute("data-theme")).toBe("light");
   });
   it("restores the collapsed sidebar and never throws when storage is blocked", () => {
     localStorage.setItem("ct-sidebar", "collapsed");
@@ -126,5 +135,16 @@ describe("useDarkMode + ThemeSync", () => {
     fireEvent.click(sw());
     expect(html().getAttribute("data-theme")).toBe("dark");
     spy.mockRestore();
+  });
+});
+
+describe("<LightOnly> (landing page)", () => {
+  it("paints the page light while mounted and hands back the stored choice on the way out", () => {
+    localStorage.setItem("ct-theme", "dark");
+    html().setAttribute("data-theme", "dark");
+    const { unmount } = render(<LightOnly />);
+    expect(html().getAttribute("data-theme")).toBe("light");
+    unmount();
+    expect(html().getAttribute("data-theme")).toBe("dark");
   });
 });

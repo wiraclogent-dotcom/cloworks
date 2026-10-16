@@ -92,7 +92,9 @@ async function hydrateWithStoredPrefs(prefs: Record<string, string>) {
   gate = null;
   const serverHtml = renderToString(<Shell />);
   newGate();
-  // Browser: the stored prefs exist and the blocking boot script has already applied them before React runs.
+  // Browser: the stored prefs exist and the blocking boot script has already applied them before React runs. The shell
+  // lives on app pages, never on "/" (the landing page, which the boot script keeps light).
+  window.history.replaceState(null, "", "/requests");
   for (const [k, v] of Object.entries(prefs)) localStorage.setItem(k, v);
   new Function(THEME_INIT_SCRIPT)();
   container.innerHTML = serverHtml;

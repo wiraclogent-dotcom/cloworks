@@ -8,6 +8,8 @@ import { BrandTag } from "@/components/ui/BrandTag";
 import { NeedsMotionChip } from "@/components/ui/NeedsMotionChip";
 import { cn } from "@/components/ui/cn";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { LiquidGlassCard } from "@/components/ui/LiquidGlassCard";
+import { GLASS } from "./glassBand";
 
 type Sample = { title: string; brand: string; who: string; motion?: boolean };
 
@@ -51,12 +53,13 @@ function MiniBoard() {
             </div>
           </div>
         ))}
-        <div className="landing-traveller flex flex-col rounded-md bg-card p-2 shadow-raised sm:p-2.5">
+        {/* The one card that moves: near-white frosted glass over the clearer cards it passes, so it reads as the card in hand. */}
+        <div className={cn("landing-traveller flex flex-col rounded-md p-2 shadow-raised sm:p-2.5", GLASS.solid, GLASS.frost)}>
           <p className="line-clamp-2 text-[11px] leading-4 font-semibold text-foreground sm:text-xs">October feed, 9 posts</p>
           <div className="relative mt-auto h-4">
             {BOARD_STATUSES.map((status, i) => (
               <span key={status} data-tone={REQUEST_STATUS_TONE[status]}
-                className={cn("landing-state", `landing-s${i}`, "absolute inset-0 flex items-center gap-1 text-[10px] font-medium text-tone-text sm:text-[11px]")}>
+                className={cn("landing-state", `landing-s${i}`, "absolute inset-0 flex items-center gap-1 text-[10px] font-medium text-foreground sm:text-[11px]")}>
                 <span className="size-1.5 shrink-0 rounded-full bg-tone-accent" />
                 <span className="truncate">{STATUS_LABEL[status]}</span>
               </span>
@@ -77,13 +80,16 @@ const SIDEBAR: { icon: ReactNode; label: string; active?: boolean }[] = [
 
 /**
  * Decorative app window for the landing hero: browser bar, the app's sidebar and toolbar, and the live mini board.
- * Hidden from assistive tech: the hero copy and the "How a request moves" steps say the same thing in words.
+ * Frosted glass over the hero's bright fractal glass: it takes the hero's dark ink (`board-ink-dark`), so cards,
+ * columns and borders are the board's own glass tokens. Hidden from assistive tech: the hero copy and the "How a request moves"
+ * steps say the same thing in words.
  */
 export function HeroBoard() {
   return (
-    <div aria-hidden="true" className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_64px_-12px_color-mix(in_srgb,var(--brand-deep-blue)_28%,transparent)]">
+    <LiquidGlassCard aria-hidden="true" borderRadius="16px" shadowIntensity="xs" glowIntensity="sm"
+      className={cn("overflow-hidden shadow-raised", GLASS.surface)}>
       {/* Browser bar */}
-      <div className="flex items-center gap-3 border-b border-border bg-muted px-4 py-2.5">
+      <div className={cn("flex items-center gap-3 border-b border-border px-4 py-2.5", GLASS.surface)}>
         <span className="flex gap-1.5">
           <span className="size-2.5 rounded-full bg-[#ff5f57]" />
           <span className="size-2.5 rounded-full bg-[#febc2e]" />
@@ -97,7 +103,7 @@ export function HeroBoard() {
 
       <div className="flex">
         {/* App sidebar */}
-        <div className="hidden w-48 shrink-0 flex-col gap-1 border-r border-border bg-sidebar p-3 md:flex">
+        <div className="hidden w-48 shrink-0 flex-col gap-1 border-r border-border p-3 md:flex">
           <span className="mb-3 flex items-center gap-2 px-1.5 text-compact font-semibold text-foreground"><LogoMark size={22} />Cloworks</span>
           <span className="mb-2 flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] text-muted-foreground [&_svg]:size-3.5">
             <Search />Search
@@ -105,7 +111,7 @@ export function HeroBoard() {
           {SIDEBAR.map((item) => (
             <span key={item.label}
               className={cn("flex items-center gap-2 rounded-md px-2 py-1.5 text-xs [&_svg]:size-3.5",
-                item.active ? "bg-sidebar-active font-medium text-foreground shadow-card" : "text-muted-foreground")}>
+                item.active ? "bg-card font-medium text-foreground" : "text-muted-foreground")}>
               {item.icon}{item.label}
             </span>
           ))}
@@ -128,11 +134,11 @@ export function HeroBoard() {
             ))}
             <span className="ml-auto hidden items-center gap-1 text-muted-foreground sm:inline-flex [&_svg]:size-3.5"><SlidersHorizontal />Filters</span>
           </div>
-          <div className="rounded-xl bg-[var(--board-canvas)] p-2.5 sm:p-3">
+          <div className="rounded-xl bg-glass-column p-2.5 sm:p-3">
             <MiniBoard />
           </div>
         </div>
       </div>
-    </div>
+    </LiquidGlassCard>
   );
 }
