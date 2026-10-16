@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { AdminSkeleton } from "@/components/PageSkeletons";
 import { UsersContent } from "./UsersContent";
 
-/** Tab title: "Admin · Members · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Admin · Members · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Admin · Members" };
 
 async function Content({ searchParams }: { searchParams: PageProps<"/admin/users">["searchParams"] }) {

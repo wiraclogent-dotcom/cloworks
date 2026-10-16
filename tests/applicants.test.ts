@@ -95,7 +95,7 @@ describe("applicants", () => {
     expect(await db.raw.applicant.findUnique({ where: { email } })).toBeNull();
     expect(sent).toHaveLength(1);
     expect(sent[0].to).toBe(email);
-    expect(sent[0].subject).toBe("You already have a Cloworks account");
+    expect(sent[0].subject).toBe("You already have a Clowork account");
     expect(sent[0].text).toContain("https://cloworks.test/signin");
   });
 
@@ -105,7 +105,7 @@ describe("applicants", () => {
     // The code email just sent counts toward the once-an-hour limit, so come back later.
     const { d, sent } = deps({ now: new Date(Date.now() + 61 * 60_000) });
     expect(await signUp(d, { name: "Again", email, password: PASSWORD })).toEqual({ applicantId: null });
-    expect(sent[0].subject).toBe("You already have a Cloworks account");
+    expect(sent[0].subject).toBe("You already have a Clowork account");
     expect((await db.raw.applicant.findUniqueOrThrow({ where: { email } })).name).toBe("Andi");
   });
 

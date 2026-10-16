@@ -39,7 +39,7 @@ async function TodayLoader() {
   return <TodayOverview name={user.name} now={now} overview={overview} />;
 }
 
-/** Tab title: "Requests · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Requests · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Requests" };
 
 async function RequestsContent({ searchParams }: { searchParams: PageProps<"/requests">["searchParams"] }) {

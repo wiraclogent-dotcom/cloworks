@@ -14,7 +14,7 @@ describe("landing: See how it works", () => {
     expect(link.getAttribute("href")).toBe("#how");
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(link);
-    const dialog = screen.getByRole("dialog", { name: "See how Cloworks works" });
+    const dialog = screen.getByRole("dialog", { name: "See how Clowork works" });
     const video = dialog.querySelector("video");
     expect(video?.getAttribute("src")).toBe(HOW_IT_WORKS_VIDEO);
     expect(video?.hasAttribute("controls")).toBe(true);

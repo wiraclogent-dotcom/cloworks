@@ -20,7 +20,7 @@ order: 5
 
 ## Draft a post
 
-1. Open the **Feed**, **Reels** or **Stories** tab you are planning for, then select the **+** tile at the top of the grid. Cloworks adds a new post as an **Idea** in that tab and opens it in the side panel.
+1. Open the **Feed**, **Reels** or **Stories** tab you are planning for, then select the **+** tile at the top of the grid. Clowork adds a new post as an **Idea** in that tab and opens it in the side panel.
 2. Add media: a mock-up or reference. Images can be up to 10 MB. Videos can be up to 100 MB and 90 seconds. Use JPG, PNG, WebP, HEIC, MP4 or MOV.
 3. Write the **Brief**. This is the message for the creative team.
 4. Write the **Caption draft** if you have one.
@@ -47,7 +47,7 @@ A post needs a **Brief** and a **Post date** before you can select **Submit for 
 A lead or admin opens a submitted post and chooses one of two actions.
 
 - **Send back**: write a **Feedback note** (required). The author gets the post back with the status **Changes requested**, edits it, and submits again.
-- **Approve & create request**: check the title, type, division, deadline, outputs and assignee, then confirm. Cloworks creates a normal request. The post's author is the requester, and the mock-ups are attached to the request. The deadline starts 3 days before the post date, and never earlier than today.
+- **Approve & create request**: check the title, type, division, deadline, outputs and assignee, then confirm. Clowork creates a normal request. The post's author is the requester, and the mock-ups are attached to the request. The deadline starts 3 days before the post date, and never earlier than today.
 
 ## Follow the request
 

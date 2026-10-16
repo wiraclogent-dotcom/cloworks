@@ -15,7 +15,7 @@ const expires = new Date("2026-11-01T00:00:00Z");
 describe("join emails", () => {
   it("codeEmail: code is one unbroken token in html and text, no button", () => {
     const m = codeEmail("482913");
-    expect(m.subject).toBe("Your Cloworks code: 482913");
+    expect(m.subject).toBe("Your Clowork code: 482913");
     expect(m.html).toContain("482913");
     expect(m.text).toContain("482913");
     expect(m.html).toContain("Your sign-up code");
@@ -26,8 +26,8 @@ describe("join emails", () => {
 
   it("inviteEmail: heading, line, button and note", () => {
     const m = inviteEmail({ inviter: "Lia", workspace: "Clogent", role: "Designer", url: "https://clowork.my.id/join/abc", expires });
-    expect(m.subject).toBe("Lia invited you to join Clogent on Cloworks");
-    expect(m.html).toContain("Join Clogent on Cloworks");
+    expect(m.subject).toBe("Lia invited you to join Clogent on Clowork");
+    expect(m.html).toContain("Join Clogent on Clowork");
     expect(m.text).toContain("Lia invited you to join Clogent as Designer.");
     expect(m.text).toContain("Accept invite: https://clowork.my.id/join/abc");
     expect(m.html).toContain('href="https://clowork.my.id/join/abc"');
@@ -53,28 +53,28 @@ describe("join emails", () => {
 
   it("approvedEmail without a link adds the sign-in line", () => {
     const m = approvedEmail({ workspace: "Clogent", url: "" });
-    expect(m.text).toContain("Sign in to Cloworks to get started.");
+    expect(m.text).toContain("Sign in to Clowork to get started.");
     expect(m.html).not.toContain("href=");
   });
 
   it("alreadyHaveAccountEmail: heading, line, button and note", () => {
     const m = alreadyHaveAccountEmail({ signinUrl: "https://clowork.my.id/signin" });
-    expect(m.subject).toBe("You already have a Cloworks account");
+    expect(m.subject).toBe("You already have a Clowork account");
     expect(m.text).toContain("You already have an account");
-    expect(m.text).toContain("This email already has a Cloworks account.");
+    expect(m.text).toContain("This email already has a Clowork account.");
     expect(m.text).toContain("Sign in: https://clowork.my.id/signin");
     expect(m.text).toContain("Can't sign in? Contact your admin. Not you? Ignore this email.");
   });
 
   it("alreadyHaveAccountEmail without a link adds the sign-in line", () => {
     const m = alreadyHaveAccountEmail({ signinUrl: "" });
-    expect(m.text).toContain("Sign in to Cloworks with this email.");
+    expect(m.text).toContain("Sign in to Clowork with this email.");
     expect(m.html).not.toContain("href=");
   });
 
   it("resetEmail: heading, line, button and note", () => {
     const m = resetEmail({ url: "https://clowork.my.id/reset/t" });
-    expect(m.subject).toBe("Reset your Cloworks password");
+    expect(m.subject).toBe("Reset your Clowork password");
     expect(m.text).toContain("Reset your password");
     expect(m.text).toContain("Someone asked to reset the password for this email. The link works for one hour.");
     expect(m.text).toContain("Set new password: https://clowork.my.id/reset/t");

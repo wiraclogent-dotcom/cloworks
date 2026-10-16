@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Landing } from "@/components/landing/Landing";
 
 export const metadata: Metadata = {
-  title: { absolute: "Cloworks: creative requests from brief to done" },
+  title: { absolute: "Clowork: creative requests from brief to done" },
   description: "Send design and video briefs, follow them across the board, and see the team's finished work against its monthly target.",
 };
 

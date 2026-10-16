@@ -64,7 +64,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
         <div className="sb-item sb-frame flex items-center gap-2.5 p-1.5">
           <LogoMark size={32} />
           <div className="sb-label min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">Cloworks</p>
+            <p className="truncate text-sm font-semibold text-sidebar-foreground">Clowork</p>
             <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
           </div>
           {drawer ? (
@@ -118,7 +118,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
             </Button>
           </SheetTrigger>
           <LogoMark size={24} />
-          <span className="text-[15px] font-semibold">Cloworks</span>
+          <span className="text-[15px] font-semibold">Clowork</span>
         </header>
 
         {/* Mobile drawer. Following a link in it closes it (no usePathname here: it would make every route dynamic). */}

@@ -9,8 +9,8 @@ import "./globals.css";
 const archivo = Archivo({ variable: "--font-archivo", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  // Pages set a short `title`; the template appends the app name ("Requests · Cloworks").
-  title: { default: "Cloworks", template: "%s · Cloworks" },
+  // Pages set a short `title`; the template appends the app name ("Requests · Clowork").
+  title: { default: "Clowork", template: "%s · Clowork" },
   description: "Request, track and measure creative work.",
 };
 

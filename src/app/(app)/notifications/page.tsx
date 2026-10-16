@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { NotificationsContent } from "./NotificationsContent";
 
-/** Tab title: "Notifications · Cloworks". Opened from "See all notifications" in the top-bar bell (no sidebar link). */
+/** Tab title: "Notifications · Clowork". Opened from "See all notifications" in the top-bar bell (no sidebar link). */
 export const metadata: Metadata = { title: "Notifications" };
 
 export default function NotificationsPage({ searchParams }: PageProps<"/notifications">) {

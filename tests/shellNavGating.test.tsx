@@ -55,7 +55,7 @@ describe("workspace name in the sidebar header", () => {
     expect(findWorkspace).toHaveBeenCalledWith({ where: { id: "clogent" }, select: { name: true } });
     render(<AppFrame nav={null} footer={null} workspace={name}><p>x</p></AppFrame>);
     const label = screen.getByText("Clogent");
-    expect(label.previousElementSibling?.textContent).toBe("Cloworks");
+    expect(label.previousElementSibling?.textContent).toBe("Clowork");
     expect(label.className).toContain("text-sidebar-foreground-secondary");
   });
 });

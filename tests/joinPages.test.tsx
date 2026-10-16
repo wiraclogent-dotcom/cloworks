@@ -280,10 +280,10 @@ describe("/lobby", () => {
 
 describe("/join/[code]", () => {
   const params = (code: string) => sp({ code });
-  it("anonymous: Join Clogent on Cloworks with sign-up and sign-in links", async () => {
+  it("anonymous: Join Clogent on Clowork with sign-up and sign-in links", async () => {
     lib.describeJoinCode.mockResolvedValue({ workspaceName: "Clogent" });
     render(await JoinCodeView({ params: params("abc") }));
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Join Clogent on Cloworks");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Join Clogent on Clowork");
     expect(screen.getByRole("link", { name: "Create account" }).getAttribute("href")).toBe("/signup?join=abc");
     expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/signin?next=%2Fjoin%2Fabc");
   });

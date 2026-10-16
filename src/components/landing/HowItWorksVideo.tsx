@@ -22,7 +22,7 @@ export function HowItWorksVideo({ className }: { className?: string }) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-4xl gap-3 p-3 sm:p-4">
           <DialogHeader className="px-1 pt-1">
-            <DialogTitle>See how Cloworks works</DialogTitle>
+            <DialogTitle>See how Clowork works</DialogTitle>
             <DialogDescription>Send a brief, get feedback on the work, approve it. 18 seconds.</DialogDescription>
           </DialogHeader>
           <video src={HOW_IT_WORKS_VIDEO} controls autoPlay playsInline preload="auto"

@@ -11,7 +11,7 @@ const linkOf = (url: string | undefined): string | null => (url && /^https?:\/\/
 /** Sign-up verification code. */
 export function codeEmail(code: string): Mail {
   return {
-    subject: `Your Cloworks code: ${code}`,
+    subject: `Your Clowork code: ${code}`,
     ...renderEmail({
       preheader: "Your code expires in 15 minutes",
       heading: "Your sign-up code",
@@ -29,10 +29,10 @@ export function inviteEmail(p: { inviter: string; workspace: string; role: strin
   const lines = [`${p.inviter} invited you to join ${p.workspace} as ${p.role}.`];
   if (!link) lines.push(`Ask ${p.inviter} for the invite link.`);
   return {
-    subject: `${p.inviter} invited you to join ${p.workspace} on Cloworks`,
+    subject: `${p.inviter} invited you to join ${p.workspace} on Clowork`,
     ...renderEmail({
       preheader: `${p.inviter} invited you to ${p.workspace}`,
-      heading: `Join ${p.workspace} on Cloworks`,
+      heading: `Join ${p.workspace} on Clowork`,
       lines,
       button: link ? { label: "Accept invite", url: link } : undefined,
       note: `This invite expires on ${date}.`,
@@ -44,7 +44,7 @@ export function inviteEmail(p: { inviter: string; workspace: string; role: strin
 export function approvedEmail(p: { workspace: string; url: string }): Mail {
   const link = linkOf(p.url);
   const lines = [`${p.workspace} approved your request to join.`];
-  if (!link) lines.push("Sign in to Cloworks to get started.");
+  if (!link) lines.push("Sign in to Clowork to get started.");
   return {
     subject: `You're in: ${p.workspace} approved your request`,
     ...renderEmail({
@@ -62,10 +62,10 @@ export function approvedEmail(p: { workspace: string; url: string }): Mail {
  */
 export function alreadyHaveAccountEmail(p: { signinUrl: string }): Mail {
   const link = linkOf(p.signinUrl);
-  const lines = ["This email already has a Cloworks account."];
-  if (!link) lines.push("Sign in to Cloworks with this email.");
+  const lines = ["This email already has a Clowork account."];
+  if (!link) lines.push("Sign in to Clowork with this email.");
   return {
-    subject: "You already have a Cloworks account",
+    subject: "You already have a Clowork account",
     ...renderEmail({
       preheader: "Sign in with your existing account",
       heading: "You already have an account",
@@ -80,7 +80,7 @@ export function alreadyHaveAccountEmail(p: { signinUrl: string }): Mail {
 export function resetEmail(p: { url: string }): Mail {
   const link = linkOf(p.url);
   return {
-    subject: "Reset your Cloworks password",
+    subject: "Reset your Clowork password",
     ...renderEmail({
       preheader: "The link works for one hour",
       heading: "Reset your password",

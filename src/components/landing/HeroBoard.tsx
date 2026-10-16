@@ -96,7 +96,7 @@ export function HeroBoard() {
           <span className="size-2.5 rounded-full bg-[#28c840]" />
         </span>
         <span className="mx-auto hidden w-full max-w-xs items-center justify-center rounded-md bg-card px-3 py-1 text-[11px] text-muted-foreground sm:flex">
-          cloworks.vercel.app/requests
+          clowork.my.id/requests
         </span>
         <span className="w-[42px]" />
       </div>
@@ -104,7 +104,7 @@ export function HeroBoard() {
       <div className="flex">
         {/* App sidebar */}
         <div className="hidden w-48 shrink-0 flex-col gap-1 border-r border-border p-3 md:flex">
-          <span className="mb-3 flex items-center gap-2 px-1.5 text-compact font-semibold text-foreground"><LogoMark size={22} />Cloworks</span>
+          <span className="mb-3 flex items-center gap-2 px-1.5 text-compact font-semibold text-foreground"><LogoMark size={22} />Clowork</span>
           <span className="mb-2 flex items-center gap-2 rounded-md border border-border bg-card px-2 py-1.5 text-[11px] text-muted-foreground [&_svg]:size-3.5">
             <Search />Search
           </span>

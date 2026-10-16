@@ -9,7 +9,7 @@ import { PostPanel } from "@/components/content/PostPanel";
 import { ProjectsSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 
-/** Tab title: "Content Plan · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Content Plan · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Content Plan" };
 
 const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);

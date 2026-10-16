@@ -13,7 +13,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { canViewPersonKpi, parseUserParam } from "../../params";
 import { Button } from "@/components/shadcn/button";
 
-/** Tab title: "Project KPI · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Project KPI · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Project KPI" };
 
 async function PersonContent({ params, searchParams }: {

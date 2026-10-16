@@ -17,7 +17,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { GoogleButton, OrDivider } from "@/components/auth/ProviderButtons";
 import { brandSubmit, providerButton } from "@/components/auth/styles";
 
-/** Tab title: "Sign in · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Sign in · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Sign in" };
 
 type SP = Promise<{ error?: string | string[]; changed?: string | string[]; linked?: string | string[]; next?: string | string[] }>;

@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { FormSkeleton, NewRequestContent } from "../../new/NewRequestContent";
 
-/** Tab title: "New request · Cloworks" (root layout template). */
+/** Tab title: "New request · Clowork" (root layout template). */
 export const metadata: Metadata = { title: "New request" };
 
 /**

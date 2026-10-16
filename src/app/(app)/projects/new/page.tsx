@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { FormSkeleton } from "@/components/PageSkeletons";
 import { NewProjectContent } from "../ProjectFormContent";
 
-/** Tab title: "New project · Cloworks" (root layout template). */
+/** Tab title: "New project · Clowork" (root layout template). */
 export const metadata: Metadata = { title: "New project" };
 
 export default function NewProjectPage() {

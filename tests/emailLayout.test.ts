@@ -33,7 +33,7 @@ describe("renderEmail", () => {
     for (const baseUrl of [undefined, "ftp://x"]) {
       const html = renderEmail(base, { baseUrl }).html;
       expect(html).not.toContain("<img");
-      expect(html).toMatch(/#1f5eff[\s\S]*Cloworks/);
+      expect(html).toMatch(/#1f5eff[\s\S]*Clowork/);
     }
   });
 

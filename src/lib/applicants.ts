@@ -29,7 +29,7 @@ export type Deps = {
   /** HMAC secret for verification codes (see codeSecret()). */
   secret: string;
   now?: Date;
-  /** Origin used for links in emails, e.g. "https://cloworks.vercel.app". */
+  /** Origin used for links in emails, e.g. "https://clowork.my.id". */
   baseUrl: string;
   /** Called once after any join request is written; default: notifyJoinRequest (bell + email to the admins). */
   onRequest?: (applicantId: string) => Promise<void>;

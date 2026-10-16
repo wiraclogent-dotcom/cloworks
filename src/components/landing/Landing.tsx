@@ -189,7 +189,7 @@ export function Landing() {
           className={cn(GLASS.card, GLASS.frost, "mx-auto flex h-14 max-w-6xl items-center gap-6 rounded-full pr-2 pl-4 shadow-raised sm:pl-5")}>
           <Link href="/" className="flex items-center gap-2.5 rounded-md text-[17px] font-semibold text-heading">
             <LogoMark size={30} />
-            Cloworks
+            Clowork
           </Link>
           <ul className="mx-auto hidden items-center gap-1 text-sm font-medium whitespace-nowrap text-muted-foreground lg:flex">
             {NAV.map((n) => (
@@ -200,7 +200,7 @@ export function Landing() {
           </ul>
           <div className="ml-auto flex items-center gap-2 whitespace-nowrap lg:ml-0">
             <Link href="/signin" className="hidden rounded-md px-3 py-2 text-sm font-medium text-foreground hover:bg-muted sm:inline-flex">Sign in</Link>
-            <Link href="/signin" className={cn(ctaPrimary, "h-10 px-4 text-sm")}>Open Cloworks</Link>
+            <Link href="/signin" className={cn(ctaPrimary, "h-10 px-4 text-sm")}>Open Clowork</Link>
           </div>
         </nav>
       </header>
@@ -217,11 +217,11 @@ export function Landing() {
             Every creative request, from brief to done.
           </h1>
           <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-foreground sm:text-lg">
-            Cloworks is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
+            Clowork is where Clogent&apos;s social media team sends design and video briefs, and where the creative team
             picks them up, makes them, and hands them back. One board, so nobody has to ask &ldquo;is it done yet?&rdquo;
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/signin" className={cn(ctaPrimary, "h-12 px-6 text-[15px]")}>Sign in to Cloworks</Link>
+            <Link href="/signin" className={cn(ctaPrimary, "h-12 px-6 text-[15px]")}>Sign in to Clowork</Link>
             <HowItWorksVideo className={cn(frostedPill, "inline-flex h-12 items-center gap-2 rounded-full px-6 text-[15px] font-medium text-foreground transition-colors hover:bg-white [&_svg]:size-4")} />
           </div>
 
@@ -322,14 +322,14 @@ export function Landing() {
             <h2 id="cta-title" className={cn(display, "text-3xl leading-tight font-bold text-heading sm:text-[2.75rem]")}>Got something to brief?</h2>
             <p className="mt-3 text-base text-foreground">Sign in with your Clogent account. New here? Ask your workspace lead for a join link.</p>
           </div>
-          <Link href="/signin" className={cn(ctaPrimary, "press h-11 shrink-0 px-5 text-[15px] whitespace-nowrap md:order-3")}>Sign in to Cloworks</Link>
+          <Link href="/signin" className={cn(ctaPrimary, "press h-11 shrink-0 px-5 text-[15px] whitespace-nowrap md:order-3")}>Sign in to Clowork</Link>
         </div>
       </section>
       </main>
 
       <footer className="border-t border-white/10 bg-[var(--brand-deep-blue-night)] text-white/70">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-compact sm:px-6">
-          <span className="inline-flex items-center gap-2"><LogoMark size={20} />Cloworks, the Clogent creative team&apos;s request tracker</span>
+          <span className="inline-flex items-center gap-2"><LogoMark size={20} />Clowork, the Clogent creative team&apos;s request tracker</span>
           <span>Clogent</span>
         </div>
       </footer>

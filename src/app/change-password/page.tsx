@@ -7,7 +7,7 @@ import { ChangePasswordPageForm } from "./ChangePasswordPageForm";
 import { SessionGate } from "./SessionGate";
 import { signOutFromPasswordChange } from "./actions";
 
-/** Tab title: "Choose a new password · Cloworks" (root layout template). Static: no per-user data in metadata. */
+/** Tab title: "Choose a new password · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Choose a new password" };
 
 /**
@@ -21,7 +21,7 @@ export default function ChangePasswordPage() {
       <div data-brand-band="" className="border-b border-border bg-card px-4 pt-12 pb-24 text-center text-foreground sm:pt-16">
         <div className="mx-auto flex max-w-md flex-col items-center">
           <LogoMark size={44} />
-          <p className="mt-4 text-2xl font-semibold tracking-tight">Cloworks</p>
+          <p className="mt-4 text-2xl font-semibold tracking-tight">Clowork</p>
           <p className="mt-1 text-sm text-muted-foreground">Request, track and measure creative work.</p>
         </div>
       </div>
