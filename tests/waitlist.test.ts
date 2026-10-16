@@ -61,6 +61,20 @@ describe("joinWaitlistWith", () => {
     expect(notify).not.toHaveBeenCalled();
   });
 
+  it("honeypot: a value longer than any field allows (600 chars) is still a bot", async () => {
+    const { db, notify, deps } = setup();
+    const r = await joinWaitlistWith(deps, form({ website: "x".repeat(600) }));
+    expect(r.info).toBe(waitlistSuccess("ana@team.co"));
+    expect(db.rows).toHaveLength(0);
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it("honeypot: an empty website field is a person", async () => {
+    const { db, deps } = setup();
+    await joinWaitlistWith(deps, form({ website: "" }));
+    expect(db.rows).toHaveLength(1);
+  });
+
   it("stores a normalised email", async () => {
     const { db, notify, deps } = setup();
     const r = await joinWaitlistWith(deps, form({ email: "  Ana@Team.co " }));

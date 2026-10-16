@@ -20,6 +20,7 @@ vi.mock("@/lib/waitlistDeps", () => deps);
 import { AdminTabs } from "@/app/(app)/admin/AdminTabs";
 import { WaitlistContent } from "@/app/(app)/admin/waitlist/WaitlistContent";
 import { markWaitlist, deleteWaitlist } from "@/app/(app)/admin/waitlist/actions";
+import AdminWaitlistPage, { metadata as waitlistMetadata } from "@/app/(app)/admin/waitlist/page";
 
 const rows = [
   { id: "e2", email: "new@acme.co", team: "Acme Studio", teamSize: "SIZE_6_15", status: "NEW", createdAt: new Date("2026-10-15T08:00:00Z"), contactedAt: null },
@@ -56,6 +57,19 @@ describe("AdminTabs", () => {
   it("marks Waitlist as the current page on its own tab", () => {
     render(<AdminTabs current="waitlist" waitlist />);
     expect(screen.getByRole("link", { name: /waitlist/i }).getAttribute("aria-current")).toBe("page");
+  });
+});
+
+describe("waitlist page shell", () => {
+  // A non-platform admin gets a 404 from the content, but the title and the loading fallback render first.
+  it("has the generic title Admin, which does not reveal the page", () => {
+    expect(waitlistMetadata.title).toBe("Admin");
+  });
+  it("shows a generic Loading… while the content loads", () => {
+    const suspense = AdminWaitlistPage().props.children as React.ReactElement<{ fallback: React.ReactNode }>;
+    render(<>{suspense.props.fallback}</>);
+    expect(screen.getByRole("status").textContent).toBe("Loading…");
+    expect(document.body.textContent).not.toMatch(/waitlist/i);
   });
 });
 

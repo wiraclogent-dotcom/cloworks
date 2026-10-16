@@ -31,8 +31,10 @@ export async function joinWaitlistWith({ db, notify, now = () => new Date() }: W
   const rawEmail = field(fd, "email", { max: 320 });
   const email = rawEmail.toLowerCase();
 
-  // Honeypot: real people never see this field. Answer like a success and keep nothing.
-  if (field(fd, "website") !== "") return told(waitlistSuccess(email));
+  // Honeypot: real people never see this field. Any value at all (read raw: `field` drops over-long ones) is a bot,
+  // answered like a success with nothing kept.
+  const website = fd.get("website");
+  if (typeof website === "string" && website !== "") return told(waitlistSuccess(email));
 
   const team = field(fd, "team", { max: 120 });
   const size = field(fd, "teamSize");

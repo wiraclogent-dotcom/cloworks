@@ -129,6 +129,7 @@ To sign in with a password locally, give the seeded admin one: `npm run set-pass
 | `EMAIL_FROM` | Sender, e.g. `Clowork <noreply@yourdomain>`. Needed together with `RESEND_API_KEY`. | Yes in production |
 | `APP_BASE_URL` | Public origin used for links in emails, e.g. `https://clowork.my.id`. In production, emails carry no links without it (request headers are never trusted for this). | Yes in production |
 | `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Cloudinary account for Content Plan media uploads (values are on the Cloudinary dashboard). Empty disables uploads. | No |
+| `PLATFORM_ADMIN_EMAILS` | Comma-separated emails of the people who run Clowork: they see the waitlist in Admin and get an email per sign-up. Empty means nobody. | No |
 
 Only for the e2e tests:
 
