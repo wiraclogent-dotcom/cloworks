@@ -59,7 +59,7 @@ describe("timeline params", () => {
   const now = new Date("2026-10-08T05:00:00Z");
   it("parses view=timeline and week", () => {
     expect(parseParams({ view: "timeline", week: "2026-10-14" }, now)).toMatchObject({ view: "timeline", week: "2026-10-12" });
-    expect(parseParams({}, now).week).toBe("2026-09-28");
+    expect(parseParams({}, now).week).toBe("2026-10-05"); // this week's Monday
     expect(parseView("timeline")).toBe("timeline");
   });
   it("hrefWith emits week only for the timeline view", () => {

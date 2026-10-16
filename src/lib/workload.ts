@@ -10,7 +10,7 @@ export type TimelineDay = { day: string; weekday: number; isToday: boolean; /** 
 export type TimelineItem = { id: string; assignees: AssigneeRef[]; requestDay: string; deadlineDay: string | null };
 export type TimelineBar = {
   id: string;
-  /** Window columns 0..13, inclusive. */
+  /** Window columns 0..TIMELINE_DAYS-1, inclusive. */
   startCol: number; endCol: number;
   /** Column of the deadline of an overdue bar when it falls inside the window (the tail runs after it), else null. */
   planEndCol: number | null;
@@ -25,9 +25,9 @@ const addDays = (day: string, n: number) => fmt(utc(day) + n * DAY_MS);
 const mondayOf = (day: string) => addDays(day, -weekdayOf(utc(day)));
 const diffDays = (a: string, b: string) => Math.round((utc(b) - utc(a)) / DAY_MS);
 
-/** The Monday of the week before `today`'s week: the window shows last week and this week. */
+/** The Monday of `today`'s week: the window is one week (TIMELINE_DAYS), so it opens on the current one. */
 export function defaultWeek(today: string): string {
-  return addDays(mondayOf(today), -7);
+  return mondayOf(today);
 }
 
 /** A valid YYYY-MM-DD (2000–2100) snapped back to its Monday; anything else gives the default window. */

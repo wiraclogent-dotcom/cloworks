@@ -4,10 +4,16 @@ import { barSpan, buildWindow, defaultWeek, layoutRows, parseWeek, shiftWeek, ty
 const TODAY = "2026-10-08"; // Thursday
 
 describe("weeks", () => {
-  it("defaults to last week's Monday", () => expect(defaultWeek("2026-10-08")).toBe("2026-09-28"));
-  it("defaults to last week's Monday on a Monday and a Sunday", () => {
-    expect(defaultWeek("2026-10-05")).toBe("2026-09-28");
-    expect(defaultWeek("2026-10-11")).toBe("2026-09-28");
+  it("defaults to this week's Monday (the window is one week)", () => expect(defaultWeek("2026-10-08")).toBe("2026-10-05"));
+  it("defaults to this week's Monday on a Monday and a Sunday", () => {
+    expect(defaultWeek("2026-10-05")).toBe("2026-10-05");
+    expect(defaultWeek("2026-10-11")).toBe("2026-10-05");
+  });
+  it("the default window contains today", () => {
+    for (const today of ["2026-10-12", "2026-10-16", "2026-10-18"]) {
+      const w = buildWindow(defaultWeek(today), today);
+      expect(w.days.some((d) => d.isToday)).toBe(true);
+    }
   });
   it("parseWeek snaps to Monday and rejects junk", () => {
     const now = new Date("2026-10-08T05:00:00Z");
@@ -15,10 +21,10 @@ describe("weeks", () => {
     expect(parseWeek("2026-10-12", now)).toBe("2026-10-12");
     expect(parseWeek("2026-10-18", now)).toBe("2026-10-12");
     for (const bad of [undefined, "", "bogus", "2026-02-30", "1999-12-27", "2101-01-03", "2026-1-5", "2026-10-12x"])
-      expect(parseWeek(bad, now)).toBe("2026-09-28");
+      expect(parseWeek(bad, now)).toBe("2026-10-05");
   });
   it("parseWeek default uses the Jakarta day", () =>
-    expect(parseWeek(undefined, new Date("2026-10-11T18:00:00Z"))).toBe("2026-10-05")); // Mon 12 Oct in Jakarta
+    expect(parseWeek(undefined, new Date("2026-10-11T18:00:00Z"))).toBe("2026-10-12")); // Mon 12 Oct in Jakarta
   it("shiftWeek moves whole weeks, across years", () => {
     expect(shiftWeek("2026-09-28", 1)).toBe("2026-10-05");
     expect(shiftWeek("2026-01-05", -1)).toBe("2025-12-29");
