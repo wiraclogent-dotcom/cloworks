@@ -97,7 +97,7 @@ export function CalendarSkeleton() {
   );
 }
 
-/** Requests timeline fallback: range bar, then a label column + 14 day columns with a few bar placeholders per person. */
+/** Requests timeline fallback: range bar, then a label column + 7 day columns (one week) with a few bar placeholders per person. */
 export function TimelineSkeleton() {
   return (
     <Busy label="Loading timeline…" className="w-full">
@@ -114,9 +114,9 @@ export function TimelineSkeleton() {
               <Skeleton className="size-6 rounded-full" />
               <Skeleton className="h-4 w-24" />
             </div>
-            <div className="grid grid-cols-14 gap-y-1 py-2">
-              <Skeleton className={cn("col-span-5 h-6", OFFSET[r % 3])} />
-              {r % 2 === 0 && <Skeleton className={cn("col-span-4 h-6", OFFSET[(r + 1) % 3])} />}
+            <div className="grid grid-cols-7 gap-y-1 py-2">
+              <Skeleton className={cn("col-span-3 h-6", OFFSET[r % 3])} />
+              {r % 2 === 0 && <Skeleton className={cn("col-span-2 h-6", OFFSET[(r + 1) % 3])} />}
             </div>
           </div>
         ))}
@@ -125,7 +125,7 @@ export function TimelineSkeleton() {
   );
 }
 
-const OFFSET = ["col-start-1", "col-start-4", "col-start-8"];
+const OFFSET = ["col-start-1", "col-start-3", "col-start-5"];
 
 const WIDTH: Record<number, string> ={ 14: "w-14", 16: "w-16", 24: "w-24" };
 

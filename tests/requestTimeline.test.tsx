@@ -5,7 +5,7 @@ import { RequestTimeline } from "@/components/RequestTimeline";
 import { TimelineSkeleton } from "@/components/RequestSkeletons";
 import type { TimelineRow } from "@/lib/requests";
 
-const TODAY = "2026-10-08"; // Thursday; the default window runs Mon 28 Sep to Sun 11 Oct.
+const TODAY = "2026-10-08"; // Thursday; tests pass WEEK explicitly (the week before today's).
 const WEEK = "2026-09-28";
 const PEOPLE = [{ id: "a", name: "Adi" }, { id: "b", name: "Bea" }];
 const HREFS = { prevHref: "/requests?view=timeline&week=2026-09-21", nextHref: "/requests?view=timeline&week=2026-10-05", todayHref: "/requests?view=timeline" };
@@ -161,5 +161,18 @@ describe("TimelineSkeleton", () => {
     render(<TimelineSkeleton />);
     expect(screen.getByRole("status").textContent).toContain("Loading timeline…");
     expect(document.querySelector("[data-skeleton-timeline]")).toBeTruthy();
+  });
+});
+
+describe("RequestTimeline chart grid", () => {
+  it("lays the week out in exactly TIMELINE_DAYS columns, so the days fill the card's width", async () => {
+    const { TIMELINE_DAYS } = await import("@/lib/workload");
+    view([row("1", "Banner")]);
+    const headers = document.querySelectorAll("[data-day]");
+    expect(headers).toHaveLength(TIMELINE_DAYS);
+    for (const grid of [headers[0].parentElement!, document.querySelector("[aria-hidden='true'].absolute")!]) {
+      expect(grid.className).toContain(`repeat(${TIMELINE_DAYS},`);
+      expect(grid.className).not.toMatch(/repeat\(14,/);
+    }
   });
 });
