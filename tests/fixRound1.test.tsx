@@ -30,7 +30,7 @@ import { metadata as usersMeta } from "@/app/(app)/admin/users/page";
 import { metadata as listsMeta } from "@/app/(app)/admin/lists/page";
 import { metadata as signinMeta } from "@/app/signin/page";
 
-afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 describe("D2/D7 PageHeader wraps on narrow screens", () => {
   it("title block takes a full row below sm and keeps ≥ 10rem from sm; actions wrap", () => {
@@ -114,6 +114,9 @@ describe("D11 per-page titles", () => {
 
 describe("D10 sign-in brand panel", () => {
   it("flat blue V3 panel with product cards and no illustration, next to the form and a link home", async () => {
+    // Google's button shows only when its provider is configured; don't depend on a local .env.
+    vi.stubEnv("AUTH_GOOGLE_ID", "gid");
+    vi.stubEnv("AUTH_GOOGLE_SECRET", "gsecret");
     await act(async () => { render(<SignInPage searchParams={Promise.resolve({})} />); });
     const panel = document.querySelector("[data-brand-panel]")!;
     expect(panel.innerHTML).toContain("var(--brand-deep-blue)");
