@@ -15,15 +15,27 @@ async function requirePlatformAdmin(): Promise<void> {
   if (!(await isPlatformAdminUser(db, user.id))) notFound();
 }
 
+/** Prisma's "record to update/delete not found": another admin or tab already removed the row. */
+const isNotFound = (e: unknown): boolean => typeof e === "object" && e !== null && (e as { code?: unknown }).code === "P2025";
+
+/** Runs the write; a row that is already gone counts as done (the page still refreshes), any other error is thrown. */
+async function writeOrGone(write: () => Promise<void>): Promise<void> {
+  try {
+    await write();
+  } catch (e) {
+    if (!isNotFound(e)) throw e;
+  }
+  revalidatePath("/admin/waitlist");
+}
+
 export async function markWaitlist(id: string, status: "NEW" | "CONTACTED"): Promise<void> {
   await requirePlatformAdmin();
-  if (status !== "NEW" && status !== "CONTACTED") return;
-  await setWaitlistStatusBy(id, status);
-  revalidatePath("/admin/waitlist");
+  if (typeof id !== "string" || (status !== "NEW" && status !== "CONTACTED")) return;
+  await writeOrGone(() => setWaitlistStatusBy(id, status));
 }
 
 export async function deleteWaitlist(id: string): Promise<void> {
   await requirePlatformAdmin();
-  await deleteWaitlistEntryBy(id);
-  revalidatePath("/admin/waitlist");
+  if (typeof id !== "string") return;
+  await writeOrGone(() => deleteWaitlistEntryBy(id));
 }

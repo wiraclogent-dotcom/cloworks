@@ -95,6 +95,21 @@ describe("WaitlistContent", () => {
     expect(within(body[1]).getByText("Contacted").getAttribute("data-tone")).toBe("done");
   });
 
+  it("puts Signed up first, then Email, Team, Size, Status", async () => {
+    viewer("ADMIN", "boss@clogent.co.id");
+    render(await WaitlistContent());
+    const heads = screen.getAllByRole("columnheader").map((h) => h.textContent);
+    expect(heads.slice(0, 5)).toEqual(["Signed up", "Email", "Team", "Size", "Status"]);
+    expect(within(screen.getAllByRole("row")[1]).getAllByRole("cell")[0].textContent).toMatch(/15 Oct 2026/);
+  });
+
+  it("keeps an address with query characters as one mailto recipient", async () => {
+    viewer("ADMIN", "boss@clogent.co.id");
+    deps.loadWaitlist.mockResolvedValue([{ ...rows[0], email: "a?body=x@acme.co" }]);
+    render(await WaitlistContent());
+    expect(screen.getByRole("link", { name: "a?body=x@acme.co" }).getAttribute("href")).toBe("mailto:a%3Fbody%3Dx@acme.co");
+  });
+
   it("shows the Waitlist tab and the row count", async () => {
     viewer("ADMIN", "other@clogent.co.id");
     render(await WaitlistContent());
@@ -103,11 +118,11 @@ describe("WaitlistContent", () => {
     expect(screen.getByText("2")).toBeTruthy();
   });
 
-  it("offers mark-contacted for a new row, undo for a contacted one, and a confirmed delete", async () => {
+  it("offers Mark contacted for a new row, Mark as new for a contacted one, and a confirmed delete", async () => {
     viewer("ADMIN", "boss@clogent.co.id");
     render(await WaitlistContent());
-    expect(screen.getByRole("button", { name: /mark acme studio as contacted/i })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /mark beta co as new again/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mark contacted: Acme Studio" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Mark as new: Beta Co" })).toBeTruthy();
     expect(screen.getAllByRole("button", { name: /^delete /i })).toHaveLength(2);
   });
 
@@ -165,6 +180,34 @@ describe("waitlist actions", () => {
     viewer("ADMIN", "boss@clogent.co.id");
     await markWaitlist("e1", "BOGUS" as never);
     expect(deps.setWaitlistStatusBy).not.toHaveBeenCalled();
+  });
+
+  it("a stale id (row already gone, P2025) still revalidates and does not throw", async () => {
+    viewer("ADMIN", "boss@clogent.co.id");
+    const gone = Object.assign(new Error("Record to update not found."), { code: "P2025" });
+    deps.setWaitlistStatusBy.mockRejectedValueOnce(gone);
+    deps.deleteWaitlistEntryBy.mockRejectedValueOnce(gone);
+    await expect(markWaitlist("old", "CONTACTED")).resolves.toBeUndefined();
+    await expect(deleteWaitlist("old")).resolves.toBeUndefined();
+    expect(revalidatePath).toHaveBeenCalledTimes(2);
+    expect(revalidatePath).toHaveBeenCalledWith("/admin/waitlist");
+  });
+
+  it("any other write error still throws and does not revalidate", async () => {
+    viewer("ADMIN", "boss@clogent.co.id");
+    deps.setWaitlistStatusBy.mockRejectedValueOnce(Object.assign(new Error("db down"), { code: "P1001" }));
+    deps.deleteWaitlistEntryBy.mockRejectedValueOnce(new Error("boom"));
+    await expect(markWaitlist("e1", "NEW")).rejects.toThrow("db down");
+    await expect(deleteWaitlist("e1")).rejects.toThrow("boom");
+    expect(revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("a non-string id never reaches the wrappers", async () => {
+    viewer("ADMIN", "boss@clogent.co.id");
+    await markWaitlist({ id: "x" } as never, "NEW");
+    await deleteWaitlist(undefined as never);
+    expect(deps.setWaitlistStatusBy).not.toHaveBeenCalled();
+    expect(deps.deleteWaitlistEntryBy).not.toHaveBeenCalled();
   });
 
   it("deleteWaitlist deletes then revalidates for a platform admin", async () => {
