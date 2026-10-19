@@ -11,6 +11,7 @@ vi.mock("@/app/(app)/marketing/actions", () => ({
 
 import { MarketingCalendar } from "@/components/marketing/MarketingCalendar";
 import { OCTOBER } from "./helpers/marketingFixture";
+import { MarketingSheetProvider } from "@/components/marketing/sheetState";
 
 afterEach(() => { cleanup(); narrow = false; });
 
@@ -74,5 +75,38 @@ describe("MarketingCalendar grid", () => {
     cleanup();
     render(<MarketingCalendar data={{ ...OCTOBER, divisions: [], activities: [], canManageMonth: true }} />);
     expect(screen.getByRole("link", { name: "Set up divisions" }).getAttribute("href")).toBe("/admin/lists");
+  });
+});
+
+describe("MarketingCalendar on a narrow screen", () => {
+  it("shows an agenda per division instead of the grid", () => {
+    narrow = true;
+    render(<MarketingCalendar data={OCTOBER} />);
+    expect(screen.queryAllByRole("group", { name: /^Week of / })).toHaveLength(0);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Notice", "Brand", "Digital Ads", "KOL", "Social Media"]);
+    const brand = screen.getByRole("region", { name: "Brand" });
+    expect(within(brand).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["5–9 OctRebranding launchConfirmed", "21 OctBrand photoshootPlanned"]);
+    expect(within(screen.getByRole("region", { name: "Notice" })).getByText("22–24 Oct")).toBeTruthy();
+  });
+
+  it("says when a division has nothing this month and respects the filter", () => {
+    narrow = true;
+    render(<MarketingCalendar data={{ ...OCTOBER, activities: OCTOBER.activities.filter((a) => a.divisionId !== "kol") }} />);
+    expect(within(screen.getByRole("region", { name: "KOL" })).getByText("No activities this month")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "KOL", pressed: true }));
+    expect(screen.queryByRole("region", { name: "KOL" })).toBeNull();
+  });
+
+  it("leaves out activities that only touch the neighbouring months' grid days", () => {
+    narrow = true;
+    render(<MarketingCalendar data={{ ...OCTOBER, activities: [{ ...OCTOBER.activities[0], id: "x", title: "September only", startDay: "2026-09-28", endDay: "2026-09-30" }] }} />);
+    expect(screen.queryByText("September only")).toBeNull();
+  });
+
+  it("opens the sheet from a row", async () => {
+    narrow = true;
+    render(<MarketingSheetProvider data={OCTOBER}><MarketingCalendar data={OCTOBER} /></MarketingSheetProvider>);
+    fireEvent.click(screen.getByRole("button", { name: "Brand: Brand photoshoot, 21 Oct, planned" }));
+    expect(await screen.findByRole("dialog", { name: "Brand photoshoot" })).toBeTruthy();
   });
 });

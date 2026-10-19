@@ -11,6 +11,8 @@ import { Card } from "@/components/shadcn/card";
 import { EmptyState } from "../ui/EmptyState";
 import { cn, focusRing } from "../ui/cn";
 import { WeekBlock } from "./WeekBlock";
+import { MarketingAgenda } from "./MarketingAgenda";
+import { useNarrow } from "../useNarrow";
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -23,6 +25,7 @@ export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
   const announcements = useMemo(() => new Map(data.announcements.map((a) => [a.id, a])), [data.announcements]);
   const editable = useMemo(() => new Set(data.editableDivisionIds), [data.editableDivisionIds]);
   const visible = data.divisions.filter((d) => !hidden.has(d.id));
+  const narrow = useNarrow();
 
   if (data.divisions.length === 0) {
     return (
@@ -58,25 +61,27 @@ export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
         </ul>
         <p className="ml-auto text-xs text-muted-foreground">Solid = confirmed · dashed = planned · ✓ done</p>
       </div>
-      <Card className="overflow-x-auto p-3 shadow-none">
-        {visible.length === 0 ? (
-          <div className="flex flex-wrap items-center gap-3 py-6">
-            <p className="text-sm text-muted-foreground">All divisions are hidden.</p>
-            <Button variant="outline" size="sm" onClick={() => setHidden(new Set())}>Show all</Button>
-          </div>
-        ) : (
-          <div className="min-w-[44rem] space-y-1.5">
-            <div aria-hidden="true" className="grid grid-cols-[5.5rem_repeat(7,minmax(0,1fr))] gap-x-1">
-              <span />
-              {WEEKDAYS.map((w) => <span key={w} className="px-1.5 text-xs font-medium text-muted-foreground">{w}</span>)}
+      {narrow && visible.length > 0 ? <MarketingAgenda data={data} divisions={visible} /> : (
+        <Card className="overflow-x-auto p-3 shadow-none">
+          {visible.length === 0 ? (
+            <div className="flex flex-wrap items-center gap-3 py-6">
+              <p className="text-sm text-muted-foreground">All divisions are hidden.</p>
+              <Button variant="outline" size="sm" onClick={() => setHidden(new Set())}>Show all</Button>
             </div>
-            {weeks.map((w) => (
-              <WeekBlock key={w.days[0].day} week={w} divisions={visible} activities={activities} announcements={announcements}
-                editable={editable} month={data.month} canManageMonth={data.canManageMonth} />
-            ))}
-          </div>
-        )}
-      </Card>
+          ) : (
+            <div className="min-w-[44rem] space-y-1.5">
+              <div aria-hidden="true" className="grid grid-cols-[5.5rem_repeat(7,minmax(0,1fr))] gap-x-1">
+                <span />
+                {WEEKDAYS.map((w) => <span key={w} className="px-1.5 text-xs font-medium text-muted-foreground">{w}</span>)}
+              </div>
+              {weeks.map((w) => (
+                <WeekBlock key={w.days[0].day} week={w} divisions={visible} activities={activities} announcements={announcements}
+                  editable={editable} month={data.month} canManageMonth={data.canManageMonth} />
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
     </section>
   );
 }
