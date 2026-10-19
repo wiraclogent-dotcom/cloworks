@@ -57,68 +57,72 @@ model Workspace {
   joinCode        String?  @unique
   joinLinkEnabled Boolean  @default(true)
 
-  users             User[]
-  brands            Brand[]
-  divisions         Division[]
-  requestTypes      RequestType[]
-  requests          Request[]
-  statusEvents      StatusEvent[]
-  deadlineEvents    DeadlineEvent[]
-  comments          Comment[]
-  attachments       Attachment[]
-  kpiTargets        KpiTarget[]
-  notifications     Notification[]
-  chatReads         ChatRead[]
-  projects          Project[]
-  projectTasks      ProjectTask[]
-  projectMilestones ProjectMilestone[]
-  projectTaskEvents ProjectTaskEvent[]
-  projectKpiTargets ProjectKpiTarget[]
-  kpiRosterEntries  KpiRosterEntry[]
-  requestAssignees  RequestAssignee[]
-  libraryCategories LibraryCategory[]
-  libraryItems      LibraryItem[]
-  invites           Invite[]
-  applicants        Applicant[]        @relation("ApplicantRequestedWorkspace")
-  media             Media[]
-  socialChannels    SocialChannel[]
-  contentPosts      ContentPost[]
-  contentPostMedia  ContentPostMedia[]
-  contentComments   ContentComment[]
+  users                  User[]
+  brands                 Brand[]
+  divisions              Division[]
+  requestTypes           RequestType[]
+  requests               Request[]
+  statusEvents           StatusEvent[]
+  deadlineEvents         DeadlineEvent[]
+  comments               Comment[]
+  attachments            Attachment[]
+  kpiTargets             KpiTarget[]
+  notifications          Notification[]
+  chatReads              ChatRead[]
+  projects               Project[]
+  projectTasks           ProjectTask[]
+  projectMilestones      ProjectMilestone[]
+  projectTaskEvents      ProjectTaskEvent[]
+  projectKpiTargets      ProjectKpiTarget[]
+  kpiRosterEntries       KpiRosterEntry[]
+  requestAssignees       RequestAssignee[]
+  libraryCategories      LibraryCategory[]
+  libraryItems           LibraryItem[]
+  invites                Invite[]
+  applicants             Applicant[]             @relation("ApplicantRequestedWorkspace")
+  media                  Media[]
+  socialChannels         SocialChannel[]
+  contentPosts           ContentPost[]
+  contentPostMedia       ContentPostMedia[]
+  contentComments        ContentComment[]
+  divisionLeads          DivisionLead[]
+  marketingActivities    MarketingActivity[]
+  marketingMonths        MarketingMonth[]
+  marketingAnnouncements MarketingAnnouncement[]
 }
 
 model User {
-  id                  String    @id @default(cuid())
-  email               String?   @unique
-  name                String
-  fullName            String
-  title               String?
-  department          String?
-  appRole             AppRole   @default(REQUESTER)
-  jobRole             JobRole   @default(OTHER)
-  aliases             String[]
-  active              Boolean   @default(true)
+  id                     String    @id @default(cuid())
+  email                  String?   @unique
+  name                   String
+  fullName               String
+  title                  String?
+  department             String?
+  appRole                AppRole   @default(REQUESTER)
+  jobRole                JobRole   @default(OTHER)
+  aliases                String[]
+  active                 Boolean   @default(true)
   /// scrypt hash for email + password sign-in; null = no password set.
-  passwordHash        String?
+  passwordHash           String?
   /// Bumped on every password change; sessions issued under an older version end.
-  passwordVersion     Int       @default(0)
-  failedLogins        Int       @default(0)
-  lockedUntil         DateTime?
+  passwordVersion        Int       @default(0)
+  failedLogins           Int       @default(0)
+  lockedUntil            DateTime?
   /// Last "you already have an account" email (sign-up with this email); at most one per hour.
-  accountNoticeSentAt DateTime?
+  accountNoticeSentAt    DateTime?
   /// Set when an admin sets or resets the password; cleared when the person changes it.
-  mustChangePassword  Boolean   @default(false)
+  mustChangePassword     Boolean   @default(false)
   /// Profile photo: a small JPEG/PNG/WebP stored in the row (null = initials). Served by /api/avatar/<id>.
-  avatar              Bytes?
-  avatarType          String?
-  avatarUpdatedAt     DateTime?
+  avatar                 Bytes?
+  avatarType             String?
+  avatarUpdatedAt        DateTime?
   /// Requests board background: a preset id from src/lib/boardBackground.ts or "custom" (the uploaded picture below).
-  boardBackground        String  @default("gradient")
+  boardBackground        String    @default("gradient")
   /// The veil over that picture, -100 (white wash, dark text) .. 100 (navy wash, white text); null = the preset's default.
   boardVeil              Int?
   /// The person's own uploaded board picture (a Cloudinary image in the workspace's board folder).
   boardBackgroundMediaId String?
-  boardBackgroundMedia   Media?  @relation("UserBoardBackground", fields: [boardBackgroundMediaId], references: [id], onDelete: SetNull)
+  boardBackgroundMedia   Media?    @relation("UserBoardBackground", fields: [boardBackgroundMediaId], references: [id], onDelete: SetNull)
 
   requested                Request[]          @relation("RequestRequester")
   assignments              RequestAssignee[]  @relation("RequestAssigneeUser")
@@ -146,6 +150,12 @@ model User {
   contentPostsApproved ContentPost[]    @relation("ContentPostApprover")
   contentComments      ContentComment[]
 
+  divisionLeads              DivisionLead[]
+  marketingActivitiesCreated MarketingActivity[]     @relation("MarketingActivityCreatedBy")
+  marketingActivitiesUpdated MarketingActivity[]     @relation("MarketingActivityUpdatedBy")
+  marketingMonthsUpdated     MarketingMonth[]
+  marketingAnnouncements     MarketingAnnouncement[]
+
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
 
@@ -172,6 +182,16 @@ model Division {
   id       String    @id @default(cuid())
   name     String
   requests Request[]
+
+  /// Lane colour on the Marketing Calendar: a DIVISION_TONES key ("div-1" … "div-8").
+  color               String  @default("div-1")
+  /// Shown as a lane on the Marketing Calendar.
+  onMarketingCalendar Boolean @default(false)
+  /// Lane order (ascending), ties broken by name.
+  sortOrder           Int     @default(0)
+
+  leads               DivisionLead[]
+  marketingActivities MarketingActivity[]
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -705,10 +725,10 @@ model Media {
   uploadedById String
   createdAt    DateTime  @default(now())
 
-  uploadedBy User               @relation(fields: [uploadedById], references: [id])
-  postLinks  ContentPostMedia[]
-  channels   SocialChannel[]
-  boardBackgroundOf User[] @relation("UserBoardBackground")
+  uploadedBy        User               @relation(fields: [uploadedById], references: [id])
+  postLinks         ContentPostMedia[]
+  channels          SocialChannel[]
+  boardBackgroundOf User[]             @relation("UserBoardBackground")
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -850,4 +870,90 @@ model ContentComment {
 
   @@index([postId, createdAt])
   @@index([workspaceId])
+}
+
+/// May add, edit and delete the division's Marketing Calendar activities (spec 2026-10-19).
+model DivisionLead {
+  id         String   @id @default(cuid())
+  divisionId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  division Division @relation(fields: [divisionId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, divisionId, userId])
+  @@index([workspaceId])
+}
+
+enum MarketingActivityStatus {
+  PLANNED
+  CONFIRMED
+  DONE
+  CANCELLED
+}
+
+/// One division activity on the Marketing Calendar: a single day (startDay = endDay) or a range of Jakarta days.
+model MarketingActivity {
+  id          String                  @id @default(cuid())
+  divisionId  String
+  title       String
+  startDay    DateTime                @db.Date
+  endDay      DateTime                @db.Date
+  status      MarketingActivityStatus @default(PLANNED)
+  createdById String
+  updatedById String
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  division  Division @relation(fields: [divisionId], references: [id])
+  createdBy User     @relation("MarketingActivityCreatedBy", fields: [createdById], references: [id])
+  updatedBy User     @relation("MarketingActivityUpdatedBy", fields: [updatedById], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([workspaceId, startDay])
+}
+
+/// The month's product focus on the Marketing Calendar (ADMIN only).
+model MarketingMonth {
+  id           String   @id @default(cuid())
+  month        String // "YYYY-MM"
+  productFocus String // empty string = cleared
+  updatedById  String
+  updatedAt    DateTime @updatedAt
+
+  updatedBy User @relation(fields: [updatedById], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, month])
+  @@index([workspaceId])
+}
+
+/// An admin notice on the Marketing Calendar. Dated ones (both days set) also show as a Notice bar on the grid.
+model MarketingAnnouncement {
+  id          String    @id @default(cuid())
+  /// "YYYY-MM": the month whose header lists an undated announcement; for a dated one, the month of startDay.
+  month       String
+  body        String
+  startDay    DateTime? @db.Date
+  endDay      DateTime? @db.Date
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([workspaceId, month])
 }

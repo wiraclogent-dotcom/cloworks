@@ -19,6 +19,7 @@ const SCOPED_MODELS = new Set([
   "ProjectTaskEvent", "ProjectKpiTarget", "KpiRosterEntry", "RequestAssignee",
   "LibraryCategory", "LibraryItem", "Invite",
   "Media", "SocialChannel", "ContentPost", "ContentPostMedia", "ContentComment",
+  "DivisionLead", "MarketingActivity", "MarketingMonth", "MarketingAnnouncement",
 ]);
 
 const WHERE_OPS = new Set([
