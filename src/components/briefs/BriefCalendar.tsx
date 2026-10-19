@@ -67,13 +67,13 @@ function DayStrip({ days, busiest }: { days: BriefDay[]; busiest: BriefMonth["su
   );
 }
 
-/** A person's circle in their avatar colour, the count inside above 1 (same look as the original brief calendar). */
+/** A person's circle in their avatar colour, with their count inside when one is given (the legend and table pass none). */
 function Dot({ person, count, size = "h-5 min-w-5 px-0.5" }: { person: BriefPerson; count?: number; size?: string }) {
   const c = avatarColor(person.name);
   return (
     <span aria-hidden="true" data-person={person.id} style={{ backgroundColor: c.tint, color: c.text, borderColor: c.text }}
       className={cn("inline-flex shrink-0 items-center justify-center rounded-full border-2 text-xs leading-none font-semibold tabular-nums", size)}>
-      {count && count > 1 ? count : null}
+      {count || null}
     </span>
   );
 }

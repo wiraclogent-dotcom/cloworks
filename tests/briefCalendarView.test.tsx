@@ -63,12 +63,12 @@ describe("BriefCalendar", () => {
     expect(screen.queryByRole("table")).toBeNull();
   });
 
-  it("each day is a labelled button with one circle per person who briefed, count inside above 1, and the day total", () => {
+  it("each day is a labelled button with one circle per person who briefed, their count inside (1 included), and the day total", () => {
     render(<BriefCalendar model={OCT} />);
     const day8 = screen.getByRole("button", { name: DAY8 });
     const dots = [...day8.querySelectorAll("[data-person]")];
     expect(dots.map((d) => d.getAttribute("data-person"))).toEqual(["f", "d"]);
-    expect(dots.map((d) => d.textContent)).toEqual(["2", ""]);
+    expect(dots.map((d) => d.textContent)).toEqual(["2", "1"]);
     expect(day8.querySelector("[data-day-total]")!.textContent).toBe("3");
     const day2 = screen.getByRole("button", { name: "Friday 2 October: no briefs" });
     expect(day2.querySelector("[data-person]")).toBeNull();
