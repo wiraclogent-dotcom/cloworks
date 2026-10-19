@@ -157,3 +157,52 @@ export function initials(name: string | null | undefined): string {
   }
   return (Array.from(words[0])[0] + Array.from(words[1])[0]).toUpperCase();
 }
+
+/**
+ * Division lane colours on the Marketing Calendar (spec 2026-10-19). A division stores one key (`Division.color`);
+ * globals.css writes the same values as `--division-<n>-accent|tint|text` and `[data-tone="div-<n>"]`.
+ * Light tint = 12% accent on white, light text = accent darkened toward the foreground; dark tint = 28% accent on the
+ * dark surface #121A2E, dark text = a pale stop. Text on tint is ≥ 4.5:1 in both themes (tests/palette.test.ts).
+ */
+export const DIVISION_TONES = ["div-1", "div-2", "div-3", "div-4", "div-5", "div-6", "div-7", "div-8"] as const;
+export type DivisionTone = (typeof DIVISION_TONES)[number];
+
+export const DIVISION_PALETTE: Record<DivisionTone, ThemedSwatch> = {
+  "div-1": { // blue
+    light: { accent: "#2A78D6", tint: "#E5EFFA", text: "#183E71" },
+    dark: { accent: "#2A78D6", tint: "#19345D", text: "#B4D0F1" },
+  },
+  "div-2": { // coral
+    light: { accent: "#EB6834", tint: "#FDEDE7", text: "#6F3728" },
+    dark: { accent: "#EB6834", tint: "#4F3030", text: "#F8CAB8" },
+  },
+  "div-3": { // green
+    light: { accent: "#1BAF7A", tint: "#E4F5EF", text: "#125748" },
+    dark: { accent: "#1BAF7A", tint: "#154443", text: "#AFE3D0" },
+  },
+  "div-4": { // amber
+    light: { accent: "#EDA100", tint: "#FDF4E0", text: "#705111" },
+    dark: { accent: "#EDA100", tint: "#4F4021", text: "#F9DEA6" },
+  },
+  "div-5": { // pink
+    light: { accent: "#E87BA4", tint: "#FCEFF4", text: "#6E405B" },
+    dark: { accent: "#E87BA4", tint: "#4E354F", text: "#F7D1DF" },
+  },
+  "div-6": { // violet
+    light: { accent: "#6D5BFF", tint: "#EDEBFF", text: "#373184" },
+    dark: { accent: "#6D5BFF", tint: "#2B2C69", text: "#CCC6FF" },
+  },
+  "div-7": { // teal
+    light: { accent: "#0E9BB8", tint: "#E2F3F6", text: "#0C4E64" },
+    dark: { accent: "#0E9BB8", tint: "#113E55", text: "#ABDCE6" },
+  },
+  "div-8": { // slate
+    light: { accent: "#8A93A6", tint: "#F1F2F4", text: "#444A5C" },
+    dark: { accent: "#8A93A6", tint: "#343C50", text: "#D6D9E0" },
+  },
+};
+
+/** The tone for a stored `Division.color`; anything unknown is slate. */
+export function divisionTone(color: string): DivisionTone {
+  return (DIVISION_TONES as readonly string[]).includes(color) ? (color as DivisionTone) : "div-8";
+}

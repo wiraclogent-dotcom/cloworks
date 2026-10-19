@@ -170,6 +170,31 @@
   --avatar-7-text: #27500a;
   --avatar-8-tint: #eaeff5;
   --avatar-8-text: #2b3a4d;
+  /* Marketing Calendar division lanes (src/lib/palette.ts DIVISION_PALETTE). */
+  --division-1-accent: #2a78d6;
+  --division-1-tint: #e5effa;
+  --division-1-text: #183e71;
+  --division-2-accent: #eb6834;
+  --division-2-tint: #fdede7;
+  --division-2-text: #6f3728;
+  --division-3-accent: #1baf7a;
+  --division-3-tint: #e4f5ef;
+  --division-3-text: #125748;
+  --division-4-accent: #eda100;
+  --division-4-tint: #fdf4e0;
+  --division-4-text: #705111;
+  --division-5-accent: #e87ba4;
+  --division-5-tint: #fceff4;
+  --division-5-text: #6e405b;
+  --division-6-accent: #6d5bff;
+  --division-6-tint: #edebff;
+  --division-6-text: #373184;
+  --division-7-accent: #0e9bb8;
+  --division-7-tint: #e2f3f6;
+  --division-7-text: #0c4e64;
+  --division-8-accent: #8a93a6;
+  --division-8-tint: #f1f2f4;
+  --division-8-text: #444a5c;
 }
 
 :root[data-theme="dark"] {
@@ -285,6 +310,31 @@
   --avatar-7-text: #c0dd97;
   --avatar-8-tint: #314358;
   --avatar-8-text: #d3dce8;
+  /* Marketing Calendar division lanes (src/lib/palette.ts DIVISION_PALETTE). */
+  --division-1-accent: #2a78d6;
+  --division-1-tint: #19345d;
+  --division-1-text: #b4d0f1;
+  --division-2-accent: #eb6834;
+  --division-2-tint: #4f3030;
+  --division-2-text: #f8cab8;
+  --division-3-accent: #1baf7a;
+  --division-3-tint: #154443;
+  --division-3-text: #afe3d0;
+  --division-4-accent: #eda100;
+  --division-4-tint: #4f4021;
+  --division-4-text: #f9dea6;
+  --division-5-accent: #e87ba4;
+  --division-5-tint: #4e354f;
+  --division-5-text: #f7d1df;
+  --division-6-accent: #6d5bff;
+  --division-6-tint: #2b2c69;
+  --division-6-text: #ccc6ff;
+  --division-7-accent: #0e9bb8;
+  --division-7-tint: #113e55;
+  --division-7-text: #abdce6;
+  --division-8-accent: #8a93a6;
+  --division-8-tint: #343c50;
+  --division-8-text: #d6d9e0;
 }
 
 /* `data-tone` exposes one palette entry as --tone-accent/tint/text (Badge, StatusChip, column bars, Alert). */
@@ -299,6 +349,14 @@
 [data-tone="tag-clogent"] { --tone-accent: var(--status-tag-clogent-accent); --tone-tint: var(--status-tag-clogent-tint); --tone-text: var(--status-tag-clogent-text); }
 [data-tone="tag-bubble-wash"] { --tone-accent: var(--status-tag-bubble-wash-accent); --tone-tint: var(--status-tag-bubble-wash-tint); --tone-text: var(--status-tag-bubble-wash-text); }
 [data-tone="tag-neutral"] { --tone-accent: var(--status-tag-neutral-accent); --tone-tint: var(--status-tag-neutral-tint); --tone-text: var(--status-tag-neutral-text); }
+[data-tone="div-1"] { --tone-accent: var(--division-1-accent); --tone-tint: var(--division-1-tint); --tone-text: var(--division-1-text); }
+[data-tone="div-2"] { --tone-accent: var(--division-2-accent); --tone-tint: var(--division-2-tint); --tone-text: var(--division-2-text); }
+[data-tone="div-3"] { --tone-accent: var(--division-3-accent); --tone-tint: var(--division-3-tint); --tone-text: var(--division-3-text); }
+[data-tone="div-4"] { --tone-accent: var(--division-4-accent); --tone-tint: var(--division-4-tint); --tone-text: var(--division-4-text); }
+[data-tone="div-5"] { --tone-accent: var(--division-5-accent); --tone-tint: var(--division-5-tint); --tone-text: var(--division-5-text); }
+[data-tone="div-6"] { --tone-accent: var(--division-6-accent); --tone-tint: var(--division-6-tint); --tone-text: var(--division-6-text); }
+[data-tone="div-7"] { --tone-accent: var(--division-7-accent); --tone-tint: var(--division-7-tint); --tone-text: var(--division-7-text); }
+[data-tone="div-8"] { --tone-accent: var(--division-8-accent); --tone-tint: var(--division-8-tint); --tone-text: var(--division-8-text); }
 
 @theme inline {
   --text-compact: 0.8125rem;
