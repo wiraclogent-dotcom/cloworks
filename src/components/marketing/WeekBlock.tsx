@@ -71,6 +71,7 @@ export function WeekBlock({ week, divisions, activities, announcements, editable
         const covered = new Set(lane.rows[0].flatMap((s) => Array.from({ length: s.span }, (_, k) => s.col + k)));
         return (
           <div key={lane.divisionId} className="contents">
+            <div data-lane-rule="" aria-hidden="true" style={{ gridColumn: "2 / -1", gridRow: start }} className="relative z-[5] self-start border-t border-dashed border-border" />
             <p data-tone={division.tone} style={{ gridColumn: 1, gridRow: `${start} / span ${lane.rows.length}` }}
               className="flex min-w-0 items-start gap-1.5 border-t border-dashed border-border pt-1.5 pr-1 text-xs text-muted-foreground">
               <span aria-hidden="true" className="mt-0.5 size-2 shrink-0 rounded-xs bg-tone-accent" />

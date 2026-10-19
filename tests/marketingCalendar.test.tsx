@@ -30,6 +30,15 @@ describe("MarketingCalendar grid", () => {
     for (const w of weeks) expect(within(w).getAllByText(/^(Brand|Digital Ads|KOL|Social Media)$/).map((e) => e.textContent)).toEqual(["Brand", "Digital Ads", "KOL", "Social Media"]);
   });
 
+  it("draws a dashed rule across the day columns at the top of every lane", () => {
+    render(<MarketingCalendar data={OCTOBER} />);
+    for (const w of screen.getAllByRole("group", { name: /^Week of / })) {
+      const rules = [...w.querySelectorAll<HTMLElement>("[data-lane-rule]")];
+      expect(rules).toHaveLength(4);
+      for (const r of rules) expect(r.style.gridColumn).toBe("2 / -1");
+    }
+  });
+
   it("marks today", () => {
     render(<MarketingCalendar data={OCTOBER} />);
     const today = document.querySelector('[aria-current="date"]')!;

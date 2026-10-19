@@ -13,7 +13,7 @@ import { Label } from "@/components/shadcn/label";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { cn, focusRing } from "@/components/ui/cn";
-import { DIVISION_TONES } from "@/lib/palette";
+import { DIVISION_TONES, DIVISION_TONE_LABEL } from "@/lib/palette";
 
 export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: string; name?: string }) {
   const action = kind === "brand" ? saveBrand : saveDivision;
@@ -76,9 +76,9 @@ export function DivisionCalendarForm({ division: d, members }: { division: Divis
           <fieldset>
             <legend className="mb-1.5 text-sm font-medium text-foreground">Colour</legend>
             <RadioGroup name="color" defaultValue={d.color} className="flex flex-wrap gap-2">
-              {DIVISION_TONES.map((tone, i) => (
-                <RadioGroupItem key={tone} value={tone} aria-label={`Colour ${i + 1}`} data-tone={tone}
-                  className="size-7 border-2 border-transparent bg-(--tone-accent) data-[state=checked]:border-foreground [&_svg]:fill-white" />
+              {DIVISION_TONES.map((tone) => (
+                <RadioGroupItem key={tone} value={tone} aria-label={DIVISION_TONE_LABEL[tone]} title={DIVISION_TONE_LABEL[tone]} data-tone={tone}
+                  className="size-7 border-2 border-transparent bg-tone-accent data-[state=checked]:border-foreground [&_svg]:fill-primary-foreground" />
               ))}
             </RadioGroup>
           </fieldset>

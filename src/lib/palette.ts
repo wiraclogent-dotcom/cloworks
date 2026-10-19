@@ -202,6 +202,11 @@ export const DIVISION_PALETTE: Record<DivisionTone, ThemedSwatch> = {
   },
 };
 
+/** Accessible names of the division colours (the swatch radios in Admin › Lists). */
+export const DIVISION_TONE_LABEL: Record<DivisionTone, string> = {
+  "div-1": "Blue", "div-2": "Coral", "div-3": "Green", "div-4": "Amber", "div-5": "Pink", "div-6": "Violet", "div-7": "Teal", "div-8": "Slate",
+};
+
 /** The tone for a stored `Division.color`; anything unknown is slate. */
 export function divisionTone(color: string): DivisionTone {
   return (DIVISION_TONES as readonly string[]).includes(color) ? (color as DivisionTone) : "div-8";

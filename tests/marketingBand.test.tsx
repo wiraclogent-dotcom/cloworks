@@ -33,6 +33,11 @@ describe("MonthBand for members", () => {
     expect(screen.getByText("Lavender 1L + refill")).toBeTruthy();
     expect(screen.queryByText("Announcements")).toBeNull();
   });
+  it("lists only the notices that touch the month itself, not the grid's neighbouring days", () => {
+    render(<MonthBand data={{ ...base, announcements: [...notices, { id: "n3", body: "Stock opname", startDay: "2026-11-01", endDay: "2026-11-02" }] }} />);
+    expect(screen.queryByText("Stock opname")).toBeNull();
+    expect(within(screen.getByRole("list", { name: "Announcements" })).getAllByRole("listitem")).toHaveLength(2);
+  });
   it("shows date pills and no editing controls", () => {
     render(<MonthBand data={{ ...base, announcements: notices }} />);
     const items = within(screen.getByRole("list", { name: "Announcements" })).getAllByRole("listitem");

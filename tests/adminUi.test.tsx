@@ -224,8 +224,9 @@ describe("division calendar settings form", () => {
 
   it("shows colour, the calendar switch, order and the leads", () => {
     render(<DivisionCalendarForm division={division} members={members} />);
-    expect(screen.getAllByRole("radio")).toHaveLength(8);
-    expect(screen.getByRole("radio", { name: "Colour 3" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Blue", "Coral", "Green", "Amber", "Pink", "Violet", "Teal", "Slate"]);
+    expect(screen.getByRole("radio", { name: "Green" }).getAttribute("aria-checked")).toBe("true");
+    for (const r of screen.getAllByRole("radio")) expect(r.className).not.toMatch(/white|\(--/); // tokens only (AGENTS.md)
     expect(screen.getByRole("switch", { name: "Marketing calendar" }).getAttribute("aria-checked")).toBe("true");
     expect((screen.getByLabelText("Order") as HTMLInputElement).value).toBe("3");
     fireEvent.click(screen.getByRole("button", { name: "Leads of KOL: Rifqy" }));
@@ -238,7 +239,7 @@ describe("division calendar settings form", () => {
     render(<DivisionCalendarForm division={division} members={members} />);
     fireEvent.click(screen.getByRole("button", { name: "Leads of KOL: Rifqy" }));
     fireEvent.click(screen.getByRole("checkbox", { name: "Fafa" }));
-    fireEvent.click(screen.getByRole("radio", { name: "Colour 5" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Pink" }));
     fireEvent.click(screen.getByRole("button", { name: "Save calendar settings for KOL" }));
     await screen.findByText("Division calendar settings saved.");
     const fd = act.saveDivisionCalendar.mock.calls[0][1] as FormData;
@@ -246,6 +247,18 @@ describe("division calendar settings form", () => {
     expect(fd.get("color")).toBe("div-5");
     expect(fd.get("onMarketingCalendar")).toBe("on");
     expect(fd.get("sortOrder")).toBe("3");
+    expect(fd.getAll("leadIds").sort()).toEqual(["m1", "m2"]);
+  });
+
+  it("keeps the current leads when saving without opening the leads list", async () => {
+    act.saveDivisionCalendar.mockResolvedValue({ ok: true, message: "Division calendar settings saved.", values: {}, nonce: "n" });
+    render(<DivisionCalendarForm division={{ ...division, leadIds: ["m1", "m2"] }} members={members} />);
+    expect(screen.getByRole("button", { name: "Leads of KOL: Fafa, Rifqy" }).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(screen.getByRole("radio", { name: "Teal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save calendar settings for KOL" }));
+    await screen.findByText("Division calendar settings saved.");
+    const fd = act.saveDivisionCalendar.mock.calls[0][1] as FormData;
+    expect(fd.get("color")).toBe("div-7");
     expect(fd.getAll("leadIds").sort()).toEqual(["m1", "m2"]);
   });
 

@@ -1,5 +1,5 @@
 import type { ScopedDb } from "../db";
-import { buildMonthGrid, fmt } from "../calendar";
+import { buildMonthGrid } from "../calendar";
 import { divisionTone } from "../palette";
 import { dateOnly, loadLeadDivisionIds } from "./activities";
 import { canManageMonth } from "./rules";
@@ -10,9 +10,6 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
 /** Everything the Marketing Calendar page shows for one month, shaped for the client (spec 2026-10-19). */
 export async function loadMarketingMonth(db: ScopedDb, viewer: MarketingViewer, month: string, today: string): Promise<MarketingMonthData> {
   const grid = buildMonthGrid(month, today);
-  const [y, m] = month.split("-").map(Number);
-  const monthFirst = `${month}-01`;
-  const monthLast = fmt(Date.UTC(y, m, 0, 12));
 
   const divisions = await db.division.findMany({
     where: { onMarketingCalendar: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, color: true },
@@ -25,7 +22,8 @@ export async function loadMarketingMonth(db: ScopedDb, viewer: MarketingViewer, 
       select: { id: true, divisionId: true, title: true, startDay: true, endDay: true, status: true, updatedAt: true, updatedBy: { select: { name: true } } },
     }),
     db.marketingAnnouncement.findMany({
-      where: { OR: [{ startDay: null, month }, { startDay: { lte: dateOnly(monthLast) }, endDay: { gte: dateOnly(monthFirst) } }] },
+      // Dated: any that touch the grid (the Notice row covers neighbouring-month days too); the band keeps the month's.
+      where: { OR: [{ startDay: null, month }, { startDay: { lte: dateOnly(grid.to) }, endDay: { gte: dateOnly(grid.from) } }] },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select: { id: true, body: true, startDay: true, endDay: true },
     }),

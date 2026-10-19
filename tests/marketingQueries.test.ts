@@ -39,6 +39,7 @@ describe("loadMarketingMonth", () => {
     await notice("undatedNov", "2026-11", null, null);
     await notice("crossing", "2026-10", "2026-10-30", "2026-11-02");
     await notice("inbound", "2026-10", "2026-10-22", "2026-10-24");
+    await notice("novFirst", "2026-11", "2026-11-01", "2026-11-02"); // 1 Nov is a trailing day of October's grid
     await p.marketingMonth.create({ data: { month: "2026-10", productFocus: "Lavender 1L", updatedById: v.admin.id } });
     await p.marketingMonth.create({ data: { month: "2026-12", productFocus: "", updatedById: v.admin.id } });
   });
@@ -57,12 +58,12 @@ describe("loadMarketingMonth", () => {
     expect(typeof m.activities[0].updatedAt).toBe("string");
   });
 
-  it("lists dated announcements first, then the month's undated ones", async () => {
+  it("lists dated announcements on the month's grid days first, then the month's undated ones", async () => {
     const oct = await loadMarketingMonth(db.prisma, v.member, "2026-10", "2026-10-19");
-    expect(oct.announcements.map((a) => a.body)).toEqual(["inbound", "crossing", "undatedOct"]);
+    expect(oct.announcements.map((a) => a.body)).toEqual(["inbound", "crossing", "novFirst", "undatedOct"]);
     expect(oct.announcements[0]).toEqual({ id: ids.inbound, body: "inbound", startDay: "2026-10-22", endDay: "2026-10-24" });
     const nov = await loadMarketingMonth(db.prisma, v.member, "2026-11", "2026-10-19");
-    expect(nov.announcements.map((a) => a.body)).toEqual(["crossing", "undatedNov"]);
+    expect(nov.announcements.map((a) => a.body)).toEqual(["crossing", "novFirst", "undatedNov"]);
   });
 
   it("returns the product focus, null when missing or cleared", async () => {

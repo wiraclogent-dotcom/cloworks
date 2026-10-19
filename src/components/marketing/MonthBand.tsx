@@ -25,13 +25,16 @@ import { AnnouncementDialog } from "./AnnouncementDialog";
  */
 export function MonthBand({ data }: { data: MarketingMonthData }) {
   const admin = data.canManageMonth;
+  // The query also returns dated notices on the grid's neighbouring-month days; the band lists the month's own.
+  const first = `${data.month}-01`, last = `${data.month}-31`;
+  const announcements = data.announcements.filter((a) => a.startDay === null || (a.startDay <= last && a.endDay! >= first));
   const showFocus = admin || data.productFocus !== null;
-  const showNotices = admin || data.announcements.length > 0;
+  const showNotices = admin || announcements.length > 0;
   if (!showFocus && !showNotices) return null;
   return (
     <section aria-label="This month" className={cn("mb-5 grid gap-3", showFocus && showNotices && "sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]")}>
       {showFocus ? <FocusCard month={data.month} focus={data.productFocus} admin={admin} /> : null}
-      {showNotices ? <AnnouncementsCard month={data.month} items={data.announcements} admin={admin} /> : null}
+      {showNotices ? <AnnouncementsCard month={data.month} items={announcements} admin={admin} /> : null}
     </section>
   );
 }
