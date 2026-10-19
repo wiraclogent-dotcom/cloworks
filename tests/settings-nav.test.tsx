@@ -31,10 +31,11 @@ describe("Settings entry point", () => {
 describe("sidebar Work group", () => {
   // Role-gated items (Brief Calendar, Team KPI) are async server components and do not stream in this client render;
   // their placement is checked in the browser.
-  it("has Requests and Projects and no Workflow placeholder", async () => {
+  it("has Requests, Projects and Marketing Calendar (for everyone) and no Workflow placeholder", async () => {
     render(<AppShell><p>page</p></AppShell>);
     const work = await screen.findByRole("list", { name: "Work" });
-    expect(within(work).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/requests", "/projects"]);
+    expect(within(work).getAllByRole("link").map((a) => a.getAttribute("href"))).toEqual(["/requests", "/projects", "/marketing"]);
+    expect(within(work).getByRole("link", { name: "Marketing Calendar" })).toBeTruthy();
     expect(screen.queryByText("Workflow")).toBeNull();
   });
 });

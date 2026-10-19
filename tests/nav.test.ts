@@ -14,6 +14,8 @@ describe("activeNavHref", () => {
     ["/dashboard/briefs", "/dashboard/briefs"],
     ["/library", "/library"],
     ["/content", "/content"],
+    ["/marketing", "/marketing"],
+    ["/marketing?month=2026-10", "/marketing"],
     ["/content?channel=x", "/content"],
     ["/content?channel=x&tab=reels#top", "/content"],
   ])("%s → %s", (path, want) => {
