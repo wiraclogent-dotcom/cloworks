@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { dbFor, requireUser } from "@/lib/session";
 import { withUser } from "@/lib/actionUser";
-import { AdminError, createBrand, createDivision, renameBrand, renameDivision, upsertRequestType } from "@/lib/admin";
+import { AdminError, createBrand, createDivision, renameBrand, renameDivision, updateDivisionCalendar, upsertRequestType } from "@/lib/admin";
 import { adminResult, adminUnauth, type AdminFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
@@ -35,6 +35,26 @@ export async function saveDivision(_prev: AdminFormState, fd: FormData): Promise
         if (id) await renameDivision(db, actor, id, s(fd, "name"));
         else await createDivision(db, actor, s(fd, "name"));
         return id ? "Division renamed." : "Division added.";
+      }),
+    );
+  }, () => adminUnauth(fd));
+}
+
+/** Marketing Calendar settings of a division (colour, calendar switch, order, leads). */
+export async function saveDivisionCalendar(_prev: AdminFormState, fd: FormData): Promise<AdminFormState> {
+  return withUser<NonNullable<AdminFormState>, NonNullable<AdminFormState>>(requireUser, async (actor) => {
+    const db = dbFor(actor);
+    return done(
+      await adminResult(fd, async () => {
+        const raw = s(fd, "sortOrder").trim();
+        await updateDivisionCalendar(db, actor, s(fd, "id"), {
+          color: s(fd, "color"),
+          onMarketingCalendar: fd.get("onMarketingCalendar") === "on",
+          sortOrder: raw === "" ? Number.NaN : Number(raw),
+          leadIds: fd.getAll("leadIds").filter((v): v is string => typeof v === "string" && v !== ""),
+        });
+        revalidatePath("/marketing");
+        return "Division calendar settings saved.";
       }),
     );
   }, () => adminUnauth(fd));

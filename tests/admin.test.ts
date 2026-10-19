@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import type { AppRole } from "@prisma/client";
 import {
   AdminError, updateUser, createUser, setUserLoginEmail, setUserPassword, assertMayAddLogin,
-  createBrand, renameBrand, createDivision, renameDivision, upsertRequestType,
+  createBrand, renameBrand, createDivision, renameDivision, upsertRequestType, updateDivisionCalendar,
 } from "@/lib/admin";
 import { loadActiveUser, requireUserWith } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
@@ -475,5 +475,36 @@ describe("normalizeEmail", () => {
     for (const bad of ["andi@gmail", "andi@gmail.", "andi@.com", "andi@gmail..com", "a@b@c.com", "@x.com", "a b@x.com", ""]) {
       expect(() => normalizeEmail(bad), bad).toThrow(AdminError);
     }
+  });
+});
+
+describe("updateDivisionCalendar (marketing calendar settings)", () => {
+  const settings = (over: Record<string, unknown> = {}) => ({ color: "div-3", onMarketingCalendar: true, sortOrder: 3, leadIds: [] as string[], ...over });
+  const msg = async (p: Promise<unknown>) => { try { await p; } catch (e) { return (e as Error).message; } return "OK"; };
+
+  it("is admin only", async () => {
+    const d = await db.prisma.division.create({ data: { name: uniq("KOL") } });
+    expect(await code(updateDivisionCalendar(db.prisma, { id: "x", appRole: "LEAD", workspaceId: "clogent" }, d.id, settings()))).toBe("FORBIDDEN");
+  });
+
+  it("saves colour, calendar flag, order and replaces the leads", async () => {
+    const d = await db.prisma.division.create({ data: { name: uniq("KOL") } });
+    const [a, b, c] = [await mk(), await mk(), await mk()];
+    await updateDivisionCalendar(db.prisma, admin, d.id, settings({ leadIds: [a.id, b.id] }));
+    await updateDivisionCalendar(db.prisma, admin, d.id, settings({ leadIds: [b.id, c.id, c.id] }));
+    expect(await db.prisma.division.findUnique({ where: { id: d.id }, select: { color: true, onMarketingCalendar: true, sortOrder: true } }))
+      .toEqual({ color: "div-3", onMarketingCalendar: true, sortOrder: 3 });
+    const leads = await db.prisma.divisionLead.findMany({ where: { divisionId: d.id }, select: { userId: true } });
+    expect(leads.map((l) => l.userId).sort()).toEqual([b.id, c.id].sort());
+  });
+
+  it("rejects bad input with readable messages", async () => {
+    const d = await db.prisma.division.create({ data: { name: uniq("KOL") } });
+    const gone = await mk({ active: false });
+    expect(await msg(updateDivisionCalendar(db.prisma, admin, d.id, settings({ color: "purple" })))).toBe("Pick a colour.");
+    expect(await msg(updateDivisionCalendar(db.prisma, admin, d.id, settings({ sortOrder: 1000 })))).toBe("Order must be a whole number from 0 to 999.");
+    expect(await msg(updateDivisionCalendar(db.prisma, admin, d.id, settings({ sortOrder: 1.5 })))).toBe("Order must be a whole number from 0 to 999.");
+    expect(await msg(updateDivisionCalendar(db.prisma, admin, d.id, settings({ leadIds: [gone.id] })))).toBe("Pick active members only.");
+    expect(await code(updateDivisionCalendar(db.prisma, admin, "nope", settings()))).toBe("NOT_FOUND");
   });
 });

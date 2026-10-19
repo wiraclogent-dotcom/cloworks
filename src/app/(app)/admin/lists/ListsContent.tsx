@@ -10,16 +10,17 @@ import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { activeChip } from "@/lib/adminChips";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
-import { NameForm, TypeForm } from "./ListForms";
+import { DivisionCalendarForm, NameForm, TypeForm } from "./ListForms";
 
 export async function ListsContent() {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
-  const [brands, divisions, types] = await Promise.all([
+  const [brands, divisions, types, members] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" } }),
-    db.division.findMany({ orderBy: { name: "asc" } }),
+    db.division.findMany({ orderBy: { name: "asc" }, include: { leads: { select: { userId: true } } } }),
     db.requestType.findMany({ orderBy: { name: "asc" } }),
+    db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (
@@ -41,7 +42,26 @@ export async function ListsContent() {
           <section aria-labelledby="divisions-h">
             <CardHeader><CardTitle id="divisions-h">Divisions</CardTitle></CardHeader>
             <ul className="mb-4 space-y-2">
-              {divisions.map((d) => <li key={d.id}><NameForm kind="division" id={d.id} name={d.name} /></li>)}
+              {divisions.map((d) => {
+                const chip = activeChip(d.onMarketingCalendar);
+                return (
+                  <li key={d.id} className="space-y-2">
+                    <NameForm kind="division" id={d.id} name={d.name} />
+                    <Collapsible className="group rounded-lg border border-border">
+                      <CollapsibleTrigger className={cn("flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-muted", focusRing)}>
+                        <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
+                        Marketing calendar settings<span className="sr-only"> for {d.name}</span>
+                        <span className="sr-only"> · </span>
+                        <Badge tone={chip.tone}>{d.onMarketingCalendar ? "On calendar" : "Off"}</Badge>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent keepMounted className="border-t border-border p-3">
+                        <DivisionCalendarForm members={members}
+                          division={{ id: d.id, name: d.name, color: d.color, onMarketingCalendar: d.onMarketingCalendar, sortOrder: d.sortOrder, leadIds: d.leads.map((l) => l.userId) }} />
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </li>
+                );
+              })}
             </ul>
             <div className="border-t border-border pt-4"><NameForm kind="division" /></div>
           </section>

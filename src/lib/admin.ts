@@ -4,6 +4,7 @@ import { fieldSchemaSchema } from "./fieldSchema";
 import { normalizeName } from "./import/aliases";
 import { checkNewPassword, hashPassword, verifyPassword } from "./password";
 import { isPlatformAdmin } from "./platformAdmin";
+import { DIVISION_TONES } from "./palette";
 
 export type AdminErrorCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "LAST_ADMIN";
 
@@ -391,4 +392,25 @@ export async function upsertRequestType(db: Db, actor: Actor, input: { id?: stri
   } catch (e) {
     return mapUnique(e, `Request type "${name}" already exists`);
   }
+}
+
+export type DivisionCalendarInput = { color: string; onMarketingCalendar: boolean; sortOrder: number; leadIds: string[] };
+
+/** Marketing Calendar settings of one division: lane colour, shown or not, lane order, and its leads (replaced as a set). */
+export async function updateDivisionCalendar(db: Db, actor: Actor, id: string, input: DivisionCalendarInput): Promise<void> {
+  assertAdmin(actor);
+  if (!(DIVISION_TONES as readonly string[]).includes(input.color)) throw new AdminError("VALIDATION", "Pick a colour.");
+  if (!Number.isInteger(input.sortOrder) || input.sortOrder < 0 || input.sortOrder > 999) {
+    throw new AdminError("VALIDATION", "Order must be a whole number from 0 to 999.");
+  }
+  const leadIds = [...new Set(input.leadIds)];
+  await db.$transaction(async (tx) => {
+    if (!(await tx.division.findUnique({ where: { id }, select: { id: true } }))) throw new AdminError("NOT_FOUND", "Division not found");
+    if ((await tx.user.count({ where: { id: { in: leadIds }, active: true } })) !== leadIds.length) throw new AdminError("VALIDATION", "Pick active members only.");
+    await tx.division.update({ where: { id }, data: { color: input.color, onMarketingCalendar: input.onMarketingCalendar, sortOrder: input.sortOrder } });
+    await tx.divisionLead.deleteMany({ where: { divisionId: id, userId: { notIn: leadIds } } });
+    const existing = new Set((await tx.divisionLead.findMany({ where: { divisionId: id }, select: { userId: true } })).map((l) => l.userId));
+    const add = leadIds.filter((u) => !existing.has(u));
+    if (add.length) await tx.divisionLead.createMany({ data: add.map((userId) => ({ divisionId: id, userId })) });
+  });
 }

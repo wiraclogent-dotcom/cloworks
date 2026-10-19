@@ -9,7 +9,7 @@ vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 import { submitRequest } from "@/app/(app)/requests/actions";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
 import { saveUser } from "@/app/(app)/admin/users/actions";
-import { saveBrand } from "@/app/(app)/admin/lists/actions";
+import { saveBrand, saveDivisionCalendar } from "@/app/(app)/admin/lists/actions";
 import { submitProject, createProject } from "@/app/(app)/projects/actions";
 import {
   createItem, updateItem, deleteItem, setPinned, moveItem, createCategory, updateCategory, moveCategory, deleteCategory,
@@ -35,6 +35,7 @@ describe("server actions return a result object when the session ended", () => {
   it("admin form actions", async () => {
     expect(await saveUser(null, fd({ userId: "u1", fullName: "X" }))).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG, values: { fullName: "X" } });
     expect(await saveBrand(null, fd({ name: "B" }))).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
+    expect(await saveDivisionCalendar(null, fd({ id: "d", color: "div-2" }))).toMatchObject({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
   it("project, comment and KPI-flag actions", async () => {
     expect(await createProject({ title: "x", ownerId: "o", status: "NOT_STARTED" })).toMatchObject({ ok: false, code: "UNAUTHENTICATED" });
