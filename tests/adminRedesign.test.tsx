@@ -5,7 +5,7 @@ import { render, screen, fireEvent, cleanup, within } from "@testing-library/rea
 vi.mock("@/app/(app)/admin/users/actions", () => ({
   inviteMember: vi.fn(), resendMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn(), undoRejectRequest: vi.fn(), resetInviteLink: vi.fn(), toggleInviteLink: vi.fn(), previewMerge: vi.fn(), mergePerson: vi.fn(), saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveUser: vi.fn(), addPerson: vi.fn(),
 }));
-vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn() }));
+vi.mock("@/app/(app)/admin/lists/actions", () => ({ saveRequestType: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(), saveDivisionCalendar: vi.fn() }));
 vi.mock("@/lib/joinDeps", () => ({
   loadJoinAdmin: async () => ({ workspace: { joinCode: "abc123", joinLinkEnabled: true, emailDomain: null }, requests: { pending: [], rejected: [] } }),
   requestBaseUrl: async () => "https://cloworks.test",
@@ -41,7 +41,7 @@ beforeEach(() => {
   requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
   prismaMock.user.findMany.mockResolvedValue(users);
   prismaMock.brand.findMany.mockResolvedValue([{ id: "b1", name: "Clogent" }, { id: "b2", name: "Zed" }]);
-  prismaMock.division.findMany.mockResolvedValue([{ id: "d1", name: "Marketing" }]);
+  prismaMock.division.findMany.mockResolvedValue([{ id: "d1", name: "Marketing", color: "div-1", onMarketingCalendar: false, sortOrder: 0, leads: [] }]);
   prismaMock.requestType.findMany.mockResolvedValue([{ id: "t1", name: "Video", active: false, fieldSchema: [] }]);
 });
 afterEach(cleanup);

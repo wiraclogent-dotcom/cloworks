@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
+import { contrastRatio } from "@/lib/contrast";
 import path from "node:path";
-import { AVATAR_PAIRS, PALETTE, PROJECT_STATUS_TONE, REQUEST_STATUS_TONE, TONES, avatarColor, avatarIndex, brandTone, initials } from "@/lib/palette";
+import { AVATAR_PAIRS, DIVISION_PALETTE, DIVISION_TONES, PALETTE, divisionTone, PROJECT_STATUS_TONE, REQUEST_STATUS_TONE, TONES, avatarColor, avatarIndex, brandTone, initials } from "@/lib/palette";
 
 const css = fs.readFileSync(path.resolve(__dirname, "../src/app/globals.css"), "utf8");
 function vars(selector: string): Record<string, string> {
@@ -85,5 +86,33 @@ describe("initials", () => {
     ["  ibnu   hajar ", "IH"],
   ])("%j → %s", (name, want) => {
     expect(initials(name)).toBe(want);
+  });
+});
+
+describe("division tones (marketing calendar lanes)", () => {
+  it.each(["light", "dark"] as const)("every division tone in %s CSS equals the palette", (theme) => {
+    DIVISION_TONES.forEach((tone, i) => {
+      for (const part of ["accent", "tint", "text"] as const) {
+        expect(CSS[theme][`--division-${i + 1}-${part}`], `--division-${i + 1}-${part}`).toBe(DIVISION_PALETTE[tone][theme][part].toLowerCase());
+      }
+    });
+  });
+  it("light accents are the spec's", () => {
+    expect(DIVISION_TONES.map((t) => DIVISION_PALETTE[t].light.accent)).toEqual(
+      ["#2A78D6", "#EB6834", "#1BAF7A", "#EDA100", "#E87BA4", "#6D5BFF", "#0E9BB8", "#8A93A6"]);
+  });
+  it.each(["light", "dark"] as const)("text on tint passes 4.5:1 in %s", (theme) => {
+    for (const tone of DIVISION_TONES) {
+      const s = DIVISION_PALETTE[tone][theme];
+      expect(contrastRatio(s.text, s.tint), tone).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it("every division tone has a data-tone rule", () => {
+    DIVISION_TONES.forEach((tone, i) =>
+      expect(css).toContain(`[data-tone="${tone}"] { --tone-accent: var(--division-${i + 1}-accent); --tone-tint: var(--division-${i + 1}-tint); --tone-text: var(--division-${i + 1}-text); }`));
+  });
+  it("a stored colour maps to its tone; unknown values fall back to slate", () => {
+    expect(divisionTone("div-3")).toBe("div-3");
+    expect(divisionTone("purple")).toBe("div-8");
   });
 });

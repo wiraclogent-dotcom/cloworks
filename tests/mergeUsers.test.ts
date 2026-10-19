@@ -187,6 +187,24 @@ describe("mergeUsers", () => {
     expect(await db.raw.kpiRosterEntry.count({ where: { OR: [{ userId: from.id }, { updatedById: from.id }] } })).toBe(0);
   });
 
+  it("keeps one division lead row when both people lead the same division, and moves marketing calendar rows", async () => {
+    const from = await person();
+    const into = await person();
+    const kol = await db.prisma.division.create({ data: { name: uniq("KOL"), onMarketingCalendar: true } });
+    const ads = await db.prisma.division.create({ data: { name: uniq("Ads"), onMarketingCalendar: true } });
+    await db.prisma.divisionLead.createMany({ data: [{ divisionId: kol.id, userId: into.id }, { divisionId: kol.id, userId: from.id }, { divisionId: ads.id, userId: from.id }] });
+    const d = new Date("2026-10-05T00:00:00Z");
+    await db.prisma.marketingActivity.create({ data: { divisionId: kol.id, title: "x", startDay: d, endDay: d, createdById: from.id, updatedById: from.id } });
+    await db.prisma.marketingAnnouncement.create({ data: { month: uniq("2026-"), body: "x", createdById: from.id } });
+    await db.prisma.marketingMonth.create({ data: { month: uniq("2027-"), productFocus: "x", updatedById: from.id } });
+    await mergeUsers(db.prisma, admin, from.id, into.id);
+    const leads = await db.raw.divisionLead.findMany({ where: { userId: into.id }, select: { divisionId: true } });
+    expect(leads.map((l) => l.divisionId).sort()).toEqual([kol.id, ads.id].sort());
+    expect(await db.raw.marketingActivity.count({ where: { createdById: into.id, updatedById: into.id } })).toBe(1);
+    expect(await db.raw.marketingAnnouncement.count({ where: { createdById: into.id } })).toBe(1);
+    expect(await db.raw.marketingMonth.count({ where: { updatedById: into.id } })).toBe(1);
+  });
+
   it("keeps the later chat read for a clashing request", async () => {
     const T1 = new Date("2026-10-01T00:00:00Z");
     const T2 = new Date("2026-10-02T00:00:00Z");

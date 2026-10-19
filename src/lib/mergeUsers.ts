@@ -20,7 +20,7 @@ export type MergePreview = {
 
 /**
  * One `updateMany` per foreign key to User, moving rows from the duplicate to the survivor. KpiTarget, ProjectKpiTarget,
- * KpiRosterEntry, RequestAssignee and ChatRead clashes (their unique keys) are resolved before these run. A new User relation must be added here:
+ * KpiRosterEntry, RequestAssignee, ChatRead and DivisionLead clashes (their unique keys) are resolved before these run. A new User relation must be added here:
  * a test compares this list with the Prisma DMMF.
  */
 const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<unknown>> = {
@@ -48,6 +48,11 @@ const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<un
   "ContentPost.approvedById": (tx, from, into) => tx.contentPost.updateMany({ where: { approvedById: from }, data: { approvedById: into } }),
   "ContentComment.authorId": (tx, from, into) => tx.contentComment.updateMany({ where: { authorId: from }, data: { authorId: into } }),
   "Media.uploadedById": (tx, from, into) => tx.media.updateMany({ where: { uploadedById: from }, data: { uploadedById: into } }),
+  "DivisionLead.userId": (tx, from, into) => tx.divisionLead.updateMany({ where: { userId: from }, data: { userId: into } }),
+  "MarketingActivity.createdById": (tx, from, into) => tx.marketingActivity.updateMany({ where: { createdById: from }, data: { createdById: into } }),
+  "MarketingActivity.updatedById": (tx, from, into) => tx.marketingActivity.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
+  "MarketingAnnouncement.createdById": (tx, from, into) => tx.marketingAnnouncement.updateMany({ where: { createdById: from }, data: { createdById: into } }),
+  "MarketingMonth.updatedById": (tx, from, into) => tx.marketingMonth.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
 };
 
 /** "Model.field" for every foreign key to User that mergeUsers re-points. */
@@ -166,6 +171,10 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
       const alreadyInto = await tx.requestAssignee.findMany({ where: { userId: into.id, requestId: { in: requestIds } }, select: { requestId: true } });
       if (alreadyInto.length > 0) await tx.requestAssignee.deleteMany({ where: { userId: from.id, requestId: { in: alreadyInto.map((a) => a.requestId) } } });
     }
+
+    // Division lead clash: where the survivor already leads the division, the duplicate's row is dropped.
+    const intoDivisions = await tx.divisionLead.findMany({ where: { userId: into.id }, select: { divisionId: true } });
+    if (intoDivisions.length > 0) await tx.divisionLead.deleteMany({ where: { userId: from.id, divisionId: { in: intoDivisions.map((l) => l.divisionId) } } });
 
     for (const repoint of Object.values(REPOINT)) await repoint(tx, from.id, into.id);
 

@@ -19,7 +19,9 @@ describe("migrations 20261014120000_request_assignees + 20261014130000_drop_requ
     const assignee = { id: "u-dim" };
     await r.$executeRaw`INSERT INTO "User" ("id", "name", "fullName", "email", "workspaceId") VALUES (${requester.id}, 'Req', 'Req', 'req@clogent.co.id', ${ws}), (${assignee.id}, 'Dim', 'Dim', 'dim@clogent.co.id', ${ws})`;
     const brand = await r.brand.create({ data: { name: "B", workspaceId: ws } });
-    const division = await r.division.create({ data: { name: "D", workspaceId: ws } });
+    // Division by SQL too: later migrations add columns (marketing calendar colour, order) the old table lacks.
+    const division = { id: "d-1" };
+    await r.$executeRaw`INSERT INTO "Division" ("id", "name", "workspaceId") VALUES (${division.id}, 'D', ${ws})`;
     const type = await r.requestType.create({ data: { name: "T", workspaceId: ws } });
     const base = { brandId: brand.id, divisionId: division.id, typeId: type.id, requesterId: requester.id, workspaceId: ws };
     // The generated client no longer knows Request.assigneeId, so set it with SQL while the old column still exists.

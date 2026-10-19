@@ -118,6 +118,20 @@ export function BriefCalendarSkeleton() {
   );
 }
 
+/** Marketing Calendar fallback: header, the product focus + announcements band, the month grid. */
+export function MarketingCalendarSkeleton() {
+  return (
+    <Busy label="Loading marketing calendar…">
+      <HeaderSkeleton />
+      <div className="mb-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+        <CardSkeleton><Skeleton className="h-20 w-full" /></CardSkeleton>
+        <CardSkeleton><Skeleton className="h-20 w-full" /></CardSkeleton>
+      </div>
+      <CardSkeleton><Skeleton className="h-[32rem] w-full" /></CardSkeleton>
+    </Busy>
+  );
+}
+
 /** Projects fallback: header, grouped table card, timeline card. */
 export function ProjectsSkeleton() {
   return (

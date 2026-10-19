@@ -4,7 +4,7 @@ import { render, screen, fireEvent, waitFor, cleanup } from "@testing-library/re
 
 const act = {
   saveLoginEmail: vi.fn(), savePassword: vi.fn(), setUserActive: vi.fn(), saveRequestType: vi.fn(),
-  saveUser: vi.fn(), addPerson: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(),
+  saveUser: vi.fn(), addPerson: vi.fn(), saveBrand: vi.fn(), saveDivision: vi.fn(), saveDivisionCalendar: vi.fn(),
 };
 vi.mock("@/app/(app)/admin/users/actions", () => ({
   inviteMember: vi.fn(), resendMemberInvite: vi.fn(), revokeMemberInvite: vi.fn(), approveRequest: vi.fn(), rejectRequest: vi.fn(), undoRejectRequest: vi.fn(), resetInviteLink: vi.fn(), toggleInviteLink: vi.fn(), previewMerge: vi.fn(), mergePerson: vi.fn(), saveLoginEmail: (...a: unknown[]) => act.saveLoginEmail(...a),
@@ -17,6 +17,7 @@ vi.mock("@/app/(app)/admin/lists/actions", () => ({
   saveRequestType: (...a: unknown[]) => act.saveRequestType(...a),
   saveBrand: (...a: unknown[]) => act.saveBrand(...a),
   saveDivision: (...a: unknown[]) => act.saveDivision(...a),
+  saveDivisionCalendar: (...a: unknown[]) => act.saveDivisionCalendar(...a),
 }));
 
 vi.mock("@/lib/joinDeps", () => ({
@@ -36,7 +37,7 @@ vi.mock("@/lib/session", () => ({
 }));
 
 import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm } from "@/app/(app)/admin/users/UserForms";
-import { TypeForm } from "@/app/(app)/admin/lists/ListForms";
+import { DivisionCalendarForm, TypeForm } from "@/app/(app)/admin/lists/ListForms";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
 
@@ -214,5 +215,55 @@ describe("admin pages gate", () => {
     expect(screen.getByText("Password set")).toBeTruthy();
     expect(screen.getByText("No password yet")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Set password for Rina" }).textContent).toBe("Reset password");
+  });
+});
+
+describe("division calendar settings form", () => {
+  const members = [{ id: "m1", name: "Fafa" }, { id: "m2", name: "Rifqy" }];
+  const division = { id: "d1", name: "KOL", color: "div-3", onMarketingCalendar: true, sortOrder: 3, leadIds: ["m2"] };
+
+  it("shows colour, the calendar switch, order and the leads", () => {
+    render(<DivisionCalendarForm division={division} members={members} />);
+    expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Blue", "Coral", "Green", "Amber", "Pink", "Violet", "Teal", "Slate"]);
+    expect(screen.getByRole("radio", { name: "Green" }).getAttribute("aria-checked")).toBe("true");
+    for (const r of screen.getAllByRole("radio")) expect(r.className).not.toMatch(/white|\(--/); // tokens only (AGENTS.md)
+    expect(screen.getByRole("switch", { name: "Marketing calendar" }).getAttribute("aria-checked")).toBe("true");
+    expect((screen.getByLabelText("Order") as HTMLInputElement).value).toBe("3");
+    fireEvent.click(screen.getByRole("button", { name: "Leads of KOL: Rifqy" }));
+    expect(screen.getByRole("checkbox", { name: "Rifqy" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("checkbox", { name: "Fafa" }).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("posts the settings with every ticked lead", async () => {
+    act.saveDivisionCalendar.mockResolvedValue({ ok: true, message: "Division calendar settings saved.", values: {}, nonce: "n" });
+    render(<DivisionCalendarForm division={division} members={members} />);
+    fireEvent.click(screen.getByRole("button", { name: "Leads of KOL: Rifqy" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Fafa" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Pink" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save calendar settings for KOL" }));
+    await screen.findByText("Division calendar settings saved.");
+    const fd = act.saveDivisionCalendar.mock.calls[0][1] as FormData;
+    expect(fd.get("id")).toBe("d1");
+    expect(fd.get("color")).toBe("div-5");
+    expect(fd.get("onMarketingCalendar")).toBe("on");
+    expect(fd.get("sortOrder")).toBe("3");
+    expect(fd.getAll("leadIds").sort()).toEqual(["m1", "m2"]);
+  });
+
+  it("keeps the current leads when saving without opening the leads list", async () => {
+    act.saveDivisionCalendar.mockResolvedValue({ ok: true, message: "Division calendar settings saved.", values: {}, nonce: "n" });
+    render(<DivisionCalendarForm division={{ ...division, leadIds: ["m1", "m2"] }} members={members} />);
+    expect(screen.getByRole("button", { name: "Leads of KOL: Fafa, Rifqy" }).getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(screen.getByRole("radio", { name: "Teal" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save calendar settings for KOL" }));
+    await screen.findByText("Division calendar settings saved.");
+    const fd = act.saveDivisionCalendar.mock.calls[0][1] as FormData;
+    expect(fd.get("color")).toBe("div-7");
+    expect(fd.getAll("leadIds").sort()).toEqual(["m1", "m2"]);
+  });
+
+  it("shows No leads when nobody leads the division", () => {
+    render(<DivisionCalendarForm division={{ ...division, leadIds: [] }} members={members} />);
+    expect(screen.getByRole("button", { name: "Leads of KOL: No leads" })).toBeTruthy();
   });
 });
