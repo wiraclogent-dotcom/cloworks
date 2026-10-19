@@ -74,7 +74,7 @@ function AnnouncementForm({ month, announcement, onDone }: { month: string; anno
       <p className="text-compact text-muted-foreground">With dates, the announcement also shows on the calendar.</p>
       <DialogFooter>
         <Button type="button" variant="outline" onClick={onDone}>Cancel</Button>
-        <Button type="submit" loading={pending}>Save</Button>
+        <Button type="submit" variant="default" loading={pending}>Save</Button>
       </DialogFooter>
     </form>
   );

@@ -70,7 +70,7 @@ function FocusCard({ month, focus, admin }: { month: string; focus: string | nul
           <FieldError id={`${id}-error`}>{error}</FieldError>
           <div className="mt-3 flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => { setEditing(false); setError(null); }}>Cancel</Button>
-            <Button size="sm" loading={pending} onClick={save}>Save</Button>
+            <Button variant="default" size="sm" loading={pending} onClick={save}>Save</Button>
           </div>
         </div>
       ) : focus !== null ? (

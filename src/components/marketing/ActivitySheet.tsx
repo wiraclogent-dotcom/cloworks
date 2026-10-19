@@ -142,7 +142,7 @@ function ActivityForm({ data, activity, preset, onDone }: {
           <Button type="button" variant="ghost" className="mr-auto text-danger" icon={<Trash2 aria-hidden="true" strokeWidth={1.75} />} onClick={() => setConfirming(true)}>Delete</Button>
         ) : null}
         <Button type="button" variant="outline" onClick={onDone}>Cancel</Button>
-        <Button type="submit" loading={pending}>Save</Button>
+        <Button type="submit" variant="default" loading={pending}>Save</Button>
       </SheetFooter>
       <AlertDialog open={confirming} onOpenChange={setConfirming}>
         <AlertDialogContent>
