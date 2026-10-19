@@ -9,6 +9,8 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/shadcn/button";
 import { AddActivityButton } from "@/components/marketing/AddActivityButton";
 import { MonthBand } from "@/components/marketing/MonthBand";
+import { MarketingCalendar } from "@/components/marketing/MarketingCalendar";
+import { MarketingSheetProvider } from "@/components/marketing/sheetState";
 import { parseMonthParam, type RawParam } from "../dashboard/params";
 
 /** Marketing Calendar body (spec 2026-10-19). Lives outside page.tsx so tests can render it without the Suspense shell. */
@@ -18,7 +20,7 @@ export async function MarketingContent({ searchParams }: { searchParams: Promise
   const month = parseMonthParam((await searchParams).month, now);
   const data = await loadMarketingMonth(db, { id: viewer.id, appRole: viewer.appRole }, month, jakartaDate(now));
   return (
-    <>
+    <MarketingSheetProvider data={data}>
       <PageHeader breadcrumb={[{ label: "Work" }, { label: "Marketing Calendar" }]} title={monthLabel(month)}
         actions={
           <>
@@ -35,6 +37,7 @@ export async function MarketingContent({ searchParams }: { searchParams: Promise
           </>
         } />
       <MonthBand data={data} />
-    </>
+      <MarketingCalendar data={data} />
+    </MarketingSheetProvider>
   );
 }
