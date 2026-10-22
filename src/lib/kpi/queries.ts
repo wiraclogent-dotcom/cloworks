@@ -1,5 +1,6 @@
 import type { JobRole, PrismaClient, RequestStatus } from "@prisma/client";
 import type { KpiRequest } from "./metrics";
+import type { KpiPost } from "./contentMetrics";
 import { ASSIGNEE_ORDER } from "../assignees";
 import { monthBounds } from "./months";
 
@@ -24,6 +25,18 @@ export async function loadKpiRequests(db: PrismaClient, months: string[]): Promi
     },
   });
   return rows.map(({ statusEvents, assignees, ...r }) => ({ ...r, assigneeIds: assignees.map((a) => a.userId), events: statusEvents }));
+}
+
+/** Planned Content Plan posts approved within `months` (Jakarta), optionally of some authors only: the social media KPI. */
+export async function loadKpiPosts(db: PrismaClient, months: string[], authorIds?: string[]): Promise<KpiPost[]> {
+  const ranges = months.map((m) => {
+    const { start, end } = monthBounds(m);
+    return { approvedAt: { gte: start, lt: end } };
+  });
+  return db.contentPost.findMany({
+    where: { kind: "PLANNED", OR: ranges, ...(authorIds ? { authorId: { in: authorIds } } : {}) },
+    select: { id: true, authorId: true, approvedAt: true, plannedAt: true },
+  });
 }
 
 export type TargetRow = { userId: string; month: string; role: JobRole; targetTasks: number; note: string | null };

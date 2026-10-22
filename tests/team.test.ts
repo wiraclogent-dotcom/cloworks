@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import type { AppRole, JobRole } from "@prisma/client";
-import { assigneeOptions, listCreativeTeam, listTeamKpiPeople } from "@/lib/team";
+import { assigneeOptions, listCreativeTeam, listSocialKpiPeople, listTeamKpiPeople } from "@/lib/team";
 import { createTestDb, type TestDb } from "./helpers/testDb";
 
 describe("listCreativeTeam", () => {
@@ -16,6 +16,9 @@ describe("listCreativeTeam", () => {
     await mk("Daus", "CREATIVE", "DESIGNER", false); // inactive
     await mk("Rina", "REQUESTER", "DESIGNER"); // requesters never count
     await mk("Bayu", "CREATIVE", "OTHER");
+    await mk("Syahda", "REQUESTER", "SOCIAL_MEDIA"); // a requester, but on the social media team
+    await mk("Gone", "REQUESTER", "SOCIAL_MEDIA", false); // inactive
+    await mk("Ex", "CREATIVE", "DESIGNER", false); // left; had a social media target
   });
   afterAll(async () => { await db?.stop(); });
   const idOf = async (name: string) => (await db.prisma.user.findFirstOrThrow({ where: { name } })).id;
@@ -36,6 +39,17 @@ describe("listCreativeTeam", () => {
     expect(people.map((p) => p.name)).toEqual(["Daus", "Irsyad", "Wira"]);
     expect(people[0]).toMatchObject({ id: await idOf("Daus"), jobRole: "DESIGNER" });
     expect((await listTeamKpiPeople(db.prisma, [])).map((p) => p.name)).toEqual(["Irsyad", "Wira"]);
+  });
+
+  it("Social media KPI people: active social media people of any app role, plus anyone with a social media target that month", async () => {
+    const targets = [
+      { userId: await idOf("Ex"), role: "SOCIAL_MEDIA" as const },
+      { userId: await idOf("Irsyad"), role: "DESIGNER" as const }, // a designer target is not the social team
+    ];
+    const people = await listSocialKpiPeople(db.prisma, targets);
+    expect(people.map((p) => p.name)).toEqual(["Ex", "Idzni", "Syahda"]);
+    expect(people[2]).toMatchObject({ id: await idOf("Syahda"), jobRole: "SOCIAL_MEDIA" });
+    expect((await listSocialKpiPeople(db.prisma, [])).map((p) => p.name)).toEqual(["Idzni", "Syahda"]);
   });
 });
 

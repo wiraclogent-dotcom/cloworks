@@ -44,7 +44,8 @@ async function relinkRestored(tx: Prisma.TransactionClient, requestId: string) {
   if (!post || post.requestId || !isEditable(post.status)) return null;
   const res = await tx.contentPost.updateMany({
     where: { id: post.id, status: post.status, requestId: null },
-    data: { status: "APPROVED", requestId, cancelledRequestId: null },
+    // Cancel cleared approvedAt; stamp it again so the post counts in the social media KPI (no approver: a restore is not one).
+    data: { status: "APPROVED", requestId, cancelledRequestId: null, approvedAt: new Date() },
   });
   return res.count === 1 ? { postId: post.id, authorId: post.authorId, cancelled: false } : null;
 }
