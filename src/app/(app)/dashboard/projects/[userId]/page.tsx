@@ -39,9 +39,9 @@ async function PersonContent({ params, searchParams }: {
   const sp = await searchParams;
   const { year, quarter } = parseProjectKpiParams(sp, new Date());
   const own = subject.id === viewer.id;
-  // `team` (from a Team KPI link) rides along so the way back leads to that team, at this page's year.
+  // `team` (from a Team KPI link) rides along so the way back leads to that team's Projects, at this page's year.
   const keep = keepParams(sp, ["team"]);
-  const teamHref = kpiHref("/dashboard/team", { year: String(year), ...keep });
+  const teamHref = kpiHref("/dashboard/team", { year: String(year), ...keep }, "projects");
   const hrefFor = (p: { year?: number; q?: string }) =>
     kpiHref(`/dashboard/projects/${subject.id}`, { year: String(p.year ?? year), q: p.q ?? String(quarter), ...keep });
 

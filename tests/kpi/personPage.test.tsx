@@ -54,15 +54,15 @@ describe("person KPI page opened from Team KPI", () => {
 });
 
 describe("person Project KPI page opened from Team KPI", () => {
-  it("leads back to the team and year it was opened from, and the year links keep that team", async () => {
+  it("leads back to the Projects section of the team and year it was opened from, and the year links keep that team", async () => {
     await showProjects({ year: "2025", team: "social" });
-    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025&team=social"));
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025&team=social#projects"));
     const yearLink = screen.getByRole("link", { name: "2025" }).getAttribute("href")!;
     expect(yearLink).toMatch(/^\/dashboard\/projects\/s1\?year=2025&q=\d&team=social$/);
   });
 
   it("without a team it goes back to the viewer's own team", async () => {
     await showProjects({ year: "2025" });
-    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025"));
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025#projects"));
   });
 });
