@@ -9,7 +9,8 @@ import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { TeamPersonCell, TeamTableFrame } from "./TeamTableParts";
-import { MEASURE_LABEL, type KpiMeasure } from "@/lib/kpi/team";
+import { MEASURE_LABEL, type KpiMeasure, type KpiTeam } from "@/lib/kpi/team";
+import { kpiHref } from "@/lib/kpi/href";
 
 export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
 
@@ -31,9 +32,10 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
 /**
  * `canOpen`: names link to each person's KPI page (leads and admins; for everyone else `user=` is ignored).
  * `measure` posts (the social media team) renames Tasks done and drops Turnaround and Workload, which posts don't have.
+ * `team` rides on those links so the person page leads back to this team.
  */
-export function TeamTable({ rows, month, canEdit, canOpen = true, measure = "requests" }: {
-  rows: TeamRow[]; month: string; canEdit: boolean; canOpen?: boolean; measure?: KpiMeasure;
+export function TeamTable({ rows, month, canEdit, canOpen = true, measure = "requests", team }: {
+  rows: TeamRow[]; month: string; canEdit: boolean; canOpen?: boolean; measure?: KpiMeasure; team?: KpiTeam;
 }) {
   const requests = measure === "requests";
   // ≥ 1024px (lg) the table fits its card: no min width, Turnaround and Workload only from xl (1280px), compact editor.
@@ -58,7 +60,7 @@ export function TeamTable({ rows, month, canEdit, canOpen = true, measure = "req
           const pct = progressPercent(r.kpi.progress);
           return (
             <TableRow key={r.userId}>
-              <TeamPersonCell name={r.name} role={r.role} href={canOpen ? `/dashboard?user=${encodeURIComponent(r.userId)}&month=${month}` : undefined} />
+              <TeamPersonCell name={r.name} role={r.role} href={canOpen ? kpiHref("/dashboard", { user: r.userId, month, team }) : undefined} />
               <TableCell numeric>{r.kpi.tasksDone}</TableCell>
               <TableCell numeric>{formatCount(r.kpi.target)}</TableCell>
               <TableCell>{pct === null ? <span className="text-muted-foreground">—</span> : <TeamProgress name={r.name} pct={pct} />}</TableCell>

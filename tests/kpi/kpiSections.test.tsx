@@ -14,7 +14,7 @@ const roster = vi.hoisted(() => ({ loadRosterEntries: vi.fn(), rosterCandidates:
 vi.mock("@/lib/kpi/roster", () => roster);
 const team = vi.hoisted(() => ({ listTeamKpiPeople: vi.fn(), listSocialKpiPeople: vi.fn() }));
 vi.mock("@/lib/team", () => team);
-const pq = vi.hoisted(() => ({ loadTeamProjectKpi: vi.fn(), loadPersonProjectKpi: vi.fn(), targetYears: vi.fn(), kpi: null as unknown }));
+const pq = vi.hoisted(() => ({ loadTeamProjectKpi: vi.fn(), loadPersonProjectKpi: vi.fn(), targetYears: vi.fn(), hasProjectTargets: () => true, kpi: null as unknown }));
 vi.mock("@/lib/kpi/projectQueries", () => pq);
 
 // PersonProjectKpiSection is an async server component (jsdom cannot render those): stand in with the real panel.
@@ -240,6 +240,8 @@ describe("TeamRequestsSection for the social media team", () => {
     expect(within(section).getAllByRole("columnheader").map((c) => c.textContent)).toEqual(["Person", "Posts approved", "Target", "Progress", "On-time", "Set target"]);
     expect(within(section).getByRole("row", { name: /Syahda/ }).textContent).toContain("1");
     expect(within(section).getByRole("link", { name: /Download/ }).getAttribute("href")).toBe("/dashboard/team/export?month=2026-10&team=social");
+    // The person page links back to this team.
+    expect(within(section).getByRole("link", { name: "Syahda" }).getAttribute("href")).toBe("/dashboard?user=s&month=2026-10&team=social");
     expect(roster.rosterCandidates).toHaveBeenCalledWith(expect.anything(), "social");
     fireEvent.click(within(section).getByText("October 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025&team=social");
@@ -270,6 +272,12 @@ describe("TeamProjectsSection", () => {
     await run(true, { db: db(2) });
     expect(screen.getByRole("button", { name: "Manage people" })).toBeTruthy();
     expect(screen.getByText("No one is shown for 2026.")).toBeTruthy();
+  });
+  it("on the social media team, names link to the person's targets with the team", async () => {
+    const q = { score: { score: null, parts: {}, usedParts: [], items: 0, done: 0, onTimeCount: 0, lateCount: 0 }, items: [] };
+    pq.loadTeamProjectKpi.mockResolvedValue([{ userId: "s", name: "Syahda", jobRole: "SOCIAL_MEDIA", year: 2026, quarters: { 1: q, 2: q, 3: q, 4: q }, unscheduled: [], excluded: [], otherWork: [], yearScore: null }]);
+    await run(true, { team: "social" });
+    expect(screen.getByRole("link", { name: "Syahda" }).getAttribute("href")).toBe("/dashboard/projects/s?year=2026&team=social");
   });
   it("adds the scroll effect only when asked", async () => {
     const spy = vi.fn(); Element.prototype.scrollIntoView = spy;
@@ -362,6 +370,10 @@ describe("MyProjectsSection", () => {
   it("empty year: Set targets link for dashboard.team", async () => {
     await run({ canTeam: true });
     expect(screen.getByRole("link", { name: "Set targets" }).getAttribute("href")).toBe("/dashboard/projects/u1?year=2026");
+  });
+  it("Set targets keeps the team the person page was opened from", async () => {
+    await run({ canTeam: true, keep: { month: "2026-09", team: "social" } });
+    expect(screen.getByRole("link", { name: "Set targets" }).getAttribute("href")).toBe("/dashboard/projects/u1?year=2026&team=social");
   });
   it("Not scored is an h3 inside the section, and an h2 in a bare panel (person page)", async () => {
     const item = { projectId: "p", projectTitle: "P", itemTitle: "I", state: "cancelled", dueDate: null, bucket: null, startAt: null, finishAt: null, progress: 0, onTime: null, revisions: 0, slips: 0, targetId: "t" } as unknown as PersonProjectKpi["excluded"][number];

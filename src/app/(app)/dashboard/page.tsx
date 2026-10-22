@@ -21,8 +21,8 @@ export const metadata: Metadata = { title: "My KPI" };
 
 /**
  * My KPI: Requests (month) and Projects (year, quarter) as two sections on one page, each loading on its own. One URL
- * carries both (`month`, `year`, `q`, and `user` for leads); each picker keeps the other's params. `?view=projects`
- * (old links) scrolls to Projects.
+ * carries both (`month`, `year`, `q`, and `user` for leads); each picker keeps the other's params. `team` (from a Team
+ * KPI link) is kept too, so the way back leads to that team, month and year. `?view=projects` (old links) scrolls to Projects.
  */
 async function DashboardContent({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   const { user: viewer, db } = await requireScope();
@@ -45,21 +45,22 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   const own = subject.id === viewer.id;
   const canTeam = can(viewer.appRole, "dashboard.team");
   const userKeep = own ? undefined : subject.id;
+  const teamHref = kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year", "team"]) });
   return (
     <>
-      <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
+      <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: teamHref }, { label: subject.name }]}
         title={own ? "My KPI" : `KPI: ${subject.name}`} description="Request and project KPIs"
-        actions={!own && canTeam ? <Button asChild variant="ghost" size="sm"><Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year"]) })}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : null} />
+        actions={!own && canTeam ? <Button asChild variant="ghost" size="sm"><Link href={teamHref}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : null} />
       <div className="space-y-8">
         <Suspense fallback={<SummarySkeleton count={4} />}>
           <MySummary db={db} subject={subject} month={month} year={year} />
         </Suspense>
         <Suspense fallback={<KpiSectionSkeleton title="Requests" tiles={4} />}>
-          <MyRequestsSection db={db} subject={subject} own={own} month={month} keep={keepParams(sp, ["year", "q"])} />
+          <MyRequestsSection db={db} subject={subject} own={own} month={month} keep={keepParams(sp, ["year", "q", "team"])} />
         </Suspense>
         <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} id="projects" />}>
           <MyProjectsSection db={db} subject={subject} canTeam={canTeam} year={year} quarter={quarter}
-            keep={{ ...keepParams(sp, ["month"]), user: userKeep }} autoScroll={parseViewParam(sp.view) === "projects"} />
+            keep={{ ...keepParams(sp, ["month", "team"]), user: userKeep }} autoScroll={parseViewParam(sp.view) === "projects"} />
         </Suspense>
       </div>
     </>

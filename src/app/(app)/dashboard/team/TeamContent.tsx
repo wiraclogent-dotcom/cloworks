@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { parseProjectKpiParams } from "@/lib/kpi/projectParams";
-import { resolveTeam } from "@/lib/kpi/team";
+import { MEASURE_LABEL, measureOfTeam, resolveTeam } from "@/lib/kpi/team";
 import { TeamSummary } from "@/components/kpi/sections/TeamSummary";
 import { TeamRequestsSection } from "@/components/kpi/sections/TeamRequestsSection";
 import { TeamProjectsSection } from "@/components/kpi/sections/TeamProjectsSection";
@@ -38,7 +38,7 @@ export async function TeamContent({ searchParams }: { searchParams: Promise<Reco
         <Suspense fallback={<SummarySkeleton count={5} />}>
           <TeamSummary db={db} month={month} year={year} team={team} />
         </Suspense>
-        <Suspense fallback={<KpiSectionSkeleton title="Requests" tiles={0} />}>
+        <Suspense fallback={<KpiSectionSkeleton title={MEASURE_LABEL[measureOfTeam(team)].section} tiles={0} />}>
           <TeamRequestsSection db={db} month={month} canManage={canManage} keep={keepParams(sp, ["year", "team"])} team={team} />
         </Suspense>
         <Suspense fallback={<KpiSectionSkeleton title="Projects" tiles={0} id="projects" />}>

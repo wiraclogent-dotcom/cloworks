@@ -97,11 +97,12 @@ describe("request status drives the content post", () => {
     const { postId, requestId } = await approved();
     await move(requestId, "CANCELLED");
     expect((await post(postId)).approvedAt).toBeNull();
-    const before = new Date();
     await move(requestId, "REQUESTED");
     const restored = await post(postId);
     expect(restored.status).toBe("APPROVED");
-    expect(restored.approvedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
+    // Stamped with the transition's own time, the same instant as its status event.
+    const restoredAt = (await db.prisma.statusEvent.findFirstOrThrow({ where: { requestId, from: "CANCELLED", to: "REQUESTED" } })).at;
+    expect(restored.approvedAt).toEqual(restoredAt);
     expect(restored.approvedById).toBeNull();
   });
 

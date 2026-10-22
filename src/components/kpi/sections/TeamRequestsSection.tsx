@@ -43,7 +43,7 @@ export async function TeamRequestsSection({ db, month, canManage, keep, team = "
           <EmptyState icon={<Users />} title="No team members to show" description={team === "social" ? "No social media team members yet." : "No creative team members yet."} />
         )
       ) : (
-        <TeamTable rows={rows} month={month} canEdit={canManage} canOpen={canManage} measure={measure} />
+        <TeamTable rows={rows} month={month} canEdit={canManage} canOpen={canManage} measure={measure} team={team} />
       )}
     </KpiSection>
   );
