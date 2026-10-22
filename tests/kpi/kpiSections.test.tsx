@@ -240,6 +240,8 @@ describe("TeamRequestsSection for the social media team", () => {
     expect(within(section).getAllByRole("columnheader").map((c) => c.textContent)).toEqual(["Person", "Posts approved", "Target", "Progress", "On-time", "Set target"]);
     expect(within(section).getByRole("row", { name: /Syahda/ }).textContent).toContain("1");
     expect(within(section).getByRole("link", { name: /Download/ }).getAttribute("href")).toBe("/dashboard/team/export?month=2026-10&team=social");
+    // The person page links back to this team.
+    expect(within(section).getByRole("link", { name: "Syahda" }).getAttribute("href")).toBe("/dashboard?user=s&month=2026-10&team=social");
     expect(roster.rosterCandidates).toHaveBeenCalledWith(expect.anything(), "social");
     fireEvent.click(within(section).getByText("October 2026").closest("button")!);
     expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025&team=social");
