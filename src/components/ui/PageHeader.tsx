@@ -51,7 +51,7 @@ export function PageHeader({ title, count, description, switcher, actions, bread
         {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {switcher || actions ? (
-        <div data-page-actions="" className="flex flex-wrap items-center gap-2">
+        <div data-page-actions="" className="flex max-w-full min-w-0 flex-wrap items-center gap-2">
           {switcher}
           {actions}
         </div>

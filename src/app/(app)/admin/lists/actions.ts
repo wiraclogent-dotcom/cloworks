@@ -8,7 +8,8 @@ import { adminResult, adminUnauth, type AdminFormState } from "@/lib/adminForm";
 
 const s = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? (fd.get(k) as string) : "");
 const done = (r: NonNullable<AdminFormState>) => {
-  if (r.ok) revalidatePath("/admin/lists");
+  // Settings › Marketing calendar lists the same divisions.
+  if (r.ok) { revalidatePath("/admin/lists"); revalidatePath("/admin/calendar"); }
   return r;
 };
 

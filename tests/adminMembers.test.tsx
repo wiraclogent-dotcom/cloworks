@@ -70,7 +70,7 @@ describe("Members page", () => {
     expect(within(nav).getAllByRole("link").map((l) => l.textContent)).toEqual(["Members", "Invited", "Requests 3"]);
     expect(within(nav).getByRole("link", { name: "Members" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Requests 3" }).getAttribute("href")).toBe("/admin/users?tab=requests");
-    const sections = screen.getByRole("navigation", { name: "Admin sections" });
+    const sections = screen.getByRole("navigation", { name: "Settings sections" });
     expect(within(sections).getByRole("link", { name: "Members" }).getAttribute("href")).toBe("/admin/users");
     expect(screen.queryByRole("heading", { name: "Add person" })).toBeNull(); // moved to its own page
   });

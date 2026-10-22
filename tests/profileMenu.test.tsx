@@ -31,11 +31,11 @@ describe("ProfileMenuView", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("lists name and role, Account settings, Help center, Dark mode and Sign out", () => {
+  it("lists name and role, Settings, Help center, Dark mode and Sign out", () => {
     const menu = open();
     expect(menu.textContent).toContain("Wira");
     expect(menu.textContent).toContain("Admin");
-    expect(screen.getByRole("menuitem", { name: "Account settings" }).getAttribute("href")).toBe("/settings");
+    expect(screen.getByRole("menuitem", { name: "Settings" }).getAttribute("href")).toBe("/settings");
     expect(screen.getByRole("menuitem", { name: "Help center" }).getAttribute("href")).toBe("/help");
     expect(screen.getByRole("menuitemcheckbox", { name: "Dark mode" }).getAttribute("aria-checked")).toBe("false");
     expect(screen.getByRole("menuitem", { name: "Sign out" })).toBeTruthy();

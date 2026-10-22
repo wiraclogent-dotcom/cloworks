@@ -1,7 +1,8 @@
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { AdminDenied } from "../AdminDenied";
-import { AdminTabs } from "../AdminTabs";
+import Link from "next/link";
+import { SettingsTabs } from "../../settings/SettingsTabs";
 import { isPlatformAdminUser } from "@/lib/platformAdmin";
 import { ChevronRight } from "lucide-react";
 import { cn, focusRing } from "@/components/ui/cn";
@@ -10,22 +11,21 @@ import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Badge } from "@/components/shadcn/badge";
 import { activeChip } from "@/lib/adminChips";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
-import { DivisionCalendarForm, NameForm, TypeForm } from "./ListForms";
+import { NameForm, TypeForm } from "./ListForms";
 
 export async function ListsContent() {
   const { user: viewer, db } = await requireScope();
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
-  const [brands, divisions, types, members] = await Promise.all([
+  const [brands, divisions, types] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" } }),
-    db.division.findMany({ orderBy: { name: "asc" }, include: { leads: { select: { userId: true } } } }),
+    db.division.findMany({ orderBy: { name: "asc" } }),
     db.requestType.findMany({ orderBy: { name: "asc" } }),
-    db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<AdminTabs current="lists" waitlist={await isPlatformAdminUser(db, viewer.id)} />}
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Lists" }]} title="Brands, divisions and request types" switcher={<SettingsTabs current="lists" admin waitlist={await isPlatformAdminUser(db, viewer.id)} />}
         description="Nothing here can be deleted; deactivate a request type to hide it from the new request form." />
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -41,27 +41,11 @@ export async function ListsContent() {
         <Card>
           <section aria-labelledby="divisions-h">
             <CardHeader><CardTitle id="divisions-h">Divisions</CardTitle></CardHeader>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Lanes, colours and leads on the calendar: <Link href="/admin/calendar" className={cn("font-medium text-link underline-offset-2 hover:underline", focusRing)}>Marketing calendar</Link>.
+            </p>
             <ul className="mb-4 space-y-2">
-              {divisions.map((d) => {
-                const chip = activeChip(d.onMarketingCalendar);
-                return (
-                  <li key={d.id} className="space-y-2">
-                    <NameForm kind="division" id={d.id} name={d.name} />
-                    <Collapsible className="group rounded-lg border border-border">
-                      <CollapsibleTrigger className={cn("flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-medium text-foreground hover:bg-muted", focusRing)}>
-                        <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
-                        Marketing calendar settings<span className="sr-only"> for {d.name}</span>
-                        <span className="sr-only"> · </span>
-                        <Badge tone={chip.tone}>{d.onMarketingCalendar ? "On calendar" : "Off"}</Badge>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent keepMounted className="border-t border-border p-3">
-                        <DivisionCalendarForm members={members}
-                          division={{ id: d.id, name: d.name, color: d.color, onMarketingCalendar: d.onMarketingCalendar, sortOrder: d.sortOrder, leadIds: d.leads.map((l) => l.userId) }} />
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </li>
-                );
-              })}
+              {divisions.map((d) => <li key={d.id}><NameForm kind="division" id={d.id} name={d.name} /></li>)}
             </ul>
             <div className="border-t border-border pt-4"><NameForm kind="division" /></div>
           </section>

@@ -88,7 +88,7 @@ describe("MarketingCalendar grid", () => {
     expect(screen.queryByRole("link", { name: "Set up divisions" })).toBeNull();
     cleanup();
     render(<MarketingCalendar data={{ ...OCTOBER, divisions: [], activities: [], canManageMonth: true }} />);
-    expect(screen.getByRole("link", { name: "Set up divisions" }).getAttribute("href")).toBe("/admin/lists");
+    expect(screen.getByRole("link", { name: "Set up divisions" }).getAttribute("href")).toBe("/admin/calendar");
   });
 });
 

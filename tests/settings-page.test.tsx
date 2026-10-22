@@ -14,6 +14,7 @@ vi.mock("@/app/(app)/settings/actions", () => ({ changePassword: vi.fn() }));
 const ME = { fullName: "Wira Budi", email: "wira@example.com", title: null, department: "Creative", passwordHash: null as string | null };
 
 import { SettingsContent } from "@/app/(app)/settings/SettingsContent";
+import { SettingsSwitcher } from "@/app/(app)/settings/SettingsTabs";
 
 beforeEach(() => findUnique.mockResolvedValue({ ...ME }));
 afterEach(() => { cleanup(); appRole = "CREATIVE"; });
@@ -53,16 +54,26 @@ describe("settings: general", () => {
 });
 
 describe("settings: administration", () => {
-  it("admins do not get an Administration card here: Members and Lists live in the sidebar", async () => {
+  it("admins do not get an Administration card here: the Settings tabs hold Members, Lists and the calendar", async () => {
     appRole = "ADMIN";
     render(await SettingsContent());
     expect(screen.queryByRole("heading", { name: "Administration" })).toBeNull();
   });
 
-  it.each(["REQUESTER", "CREATIVE", "LEAD"])("%s does not see it", async (r) => {
+  it("admins get the Settings tabs with Account current", async () => {
+    appRole = "ADMIN";
+    render(<>{await SettingsSwitcher()}</>);
+    const nav = screen.getByRole("navigation", { name: "Settings sections" });
+    expect(nav.querySelector('[aria-current="page"]')!.textContent).toBe("Account");
+    expect(nav.textContent).toContain("Members");
+  });
+
+  it.each(["REQUESTER", "CREATIVE", "LEAD"])("%s does not see it, nor any Settings tabs", async (r) => {
     appRole = r;
     render(await SettingsContent());
     expect(screen.queryByRole("heading", { name: "Administration" })).toBeNull();
+    const { container } = render(<>{await SettingsSwitcher()}</>);
+    expect(container.textContent).toBe("");
   });
 });
 

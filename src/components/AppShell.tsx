@@ -1,9 +1,8 @@
 import { Suspense } from "react";
-import { CalendarDays, CalendarRange, ChartColumn, ClipboardList, FolderKanban, LayoutGrid, LibraryBig, ListChecks, SquareKanban, Users } from "lucide-react";
+import { CalendarDays, CalendarRange, ChartColumn, FolderKanban, LayoutGrid, LibraryBig, SquareKanban, Users } from "lucide-react";
 // eslint-disable-next-line no-restricted-imports -- Workspace is unscoped
 import { prisma } from "@/lib/db";
-import { dbFor, requireUserOrRedirect } from "@/lib/session";
-import { isPlatformAdminUser } from "@/lib/platformAdmin";
+import { requireUserOrRedirect } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { ThemeSync } from "./ui/darkMode";
 import { AppFrame } from "./shell/AppFrame";
@@ -40,24 +39,6 @@ export async function BriefCalendarItem() {
   return can(appRole, "briefs.view") ? <NavItem href="/dashboard/briefs" label="Brief Calendar" icon={<CalendarDays aria-hidden="true" />} /> : null;
 }
 
-/**
- * Admin links: Members and Lists for workspace admins, Waitlist for platform admins (PLATFORM_ADMIN_EMAILS), so a
- * platform admin who is not a workspace admin gets the group with Waitlist only. The pages re-check on the server.
- */
-export async function AdminNavGroup() {
-  const user = await requireUserOrRedirect();
-  const admin = can(user.appRole, "admin.manage");
-  const platform = await isPlatformAdminUser(dbFor(user), user.id);
-  if (!admin && !platform) return null;
-  return (
-    <NavGroup id="nav-admin" label="Admin" divided>
-      {admin ? <NavItem href="/admin/users" label="Members" icon={<Users aria-hidden="true" />} /> : null}
-      {admin ? <NavItem href="/admin/lists" label="Lists" icon={<ListChecks aria-hidden="true" />} /> : null}
-      {platform ? <NavItem href="/admin/waitlist" label="Waitlist" icon={<ClipboardList aria-hidden="true" />} /> : null}
-    </NavGroup>
-  );
-}
-
 /** The signed-in person's workspace name, under the app name in the sidebar header. `Workspace` is not scoped. */
 export async function WorkspaceName() {
   const { workspaceId } = await requireUserOrRedirect();
@@ -67,8 +48,8 @@ export async function WorkspaceName() {
 
 /**
  * Shell for authenticated pages: white V3 sidebar (Work / Insights / Tools). The notification bell and the profile menu
- * (Account settings, Help center, Dark mode, Sign out) sit at the top right of every page, the chat dock at the bottom
- * right; admin pages open from Settings.
+ * (Settings, Help center, Dark mode, Sign out) sit at the top right of every page, the chat dock at the bottom
+ * right; admin pages are tabs of Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -99,7 +80,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavItem href="/library" label="Library" icon={<LibraryBig aria-hidden="true" />} />
             <NavItem href="/content" label="Content Plan" icon={<LayoutGrid aria-hidden="true" />} />
           </NavGroup>
-          <Suspense fallback={null}><AdminNavGroup /></Suspense>
         </nav>
       }
 >

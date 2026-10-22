@@ -17,7 +17,7 @@ vi.mock("next/navigation", () => ({ notFound: () => notFound() }));
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => revalidatePath(p) }));
 vi.mock("@/lib/waitlistDeps", () => deps);
 
-import { AdminTabs } from "@/app/(app)/admin/AdminTabs";
+import { SettingsTabs } from "@/app/(app)/settings/SettingsTabs";
 import { WaitlistContent } from "@/app/(app)/admin/waitlist/WaitlistContent";
 import { markWaitlist, deleteWaitlist } from "@/app/(app)/admin/waitlist/actions";
 import AdminWaitlistPage, { metadata as waitlistMetadata } from "@/app/(app)/admin/waitlist/page";
@@ -43,19 +43,26 @@ afterEach(() => {
   delete process.env.PLATFORM_ADMIN_EMAILS;
 });
 
-describe("AdminTabs", () => {
-  it("has no Waitlist link by default", () => {
-    render(<AdminTabs current="users" />);
-    expect(screen.queryByRole("link", { name: /waitlist/i })).toBeNull();
+describe("SettingsTabs", () => {
+  const tabs = () => within(screen.getByRole("navigation", { name: "Settings sections" })).getAllByRole("link").map((a) => [a.textContent, a.getAttribute("href")]);
+
+  it("gives an admin Account, Members, Lists and Marketing calendar, and no Waitlist by default", () => {
+    render(<SettingsTabs current="users" admin />);
+    expect(tabs()).toEqual([["Account", "/settings"], ["Members", "/admin/users"], ["Lists", "/admin/lists"], ["Marketing calendar", "/admin/calendar"]]);
   });
 
-  it("links to /admin/waitlist when asked", () => {
-    render(<AdminTabs current="users" waitlist />);
-    expect(screen.getByRole("link", { name: /waitlist/i }).getAttribute("href")).toBe("/admin/waitlist");
+  it("adds Waitlist last when asked", () => {
+    render(<SettingsTabs current="users" admin waitlist />);
+    expect(tabs().at(-1)).toEqual(["Waitlist", "/admin/waitlist"]);
   });
 
-  it("marks Waitlist as the current page on its own tab", () => {
-    render(<AdminTabs current="waitlist" waitlist />);
+  it("gives a platform admin who is not a workspace admin only Account and Waitlist", () => {
+    render(<SettingsTabs current="waitlist" waitlist />);
+    expect(tabs().map(([label]) => label)).toEqual(["Account", "Waitlist"]);
+  });
+
+  it("marks the current tab", () => {
+    render(<SettingsTabs current="waitlist" admin waitlist />);
     expect(screen.getByRole("link", { name: /waitlist/i }).getAttribute("aria-current")).toBe("page");
   });
 });

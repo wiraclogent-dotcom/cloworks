@@ -30,7 +30,7 @@ export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
     return (
       <EmptyState icon={<CalendarRange />} title="No divisions on the Marketing Calendar yet"
         description="An admin picks which divisions get a lane, their colour and their leads."
-        action={data.canManageMonth ? <Button asChild variant="outline" size="sm"><Link href="/admin/lists">Set up divisions</Link></Button> : undefined} />
+        action={data.canManageMonth ? <Button asChild variant="outline" size="sm"><Link href="/admin/calendar">Set up divisions</Link></Button> : undefined} />
     );
   }
 

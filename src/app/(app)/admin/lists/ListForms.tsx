@@ -5,14 +5,15 @@ import { Input } from "@/components/shadcn/input";
 import { Textarea } from "@/components/shadcn/textarea";
 import { FieldDescription } from "@/components/shadcn/field";
 import { useState } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { saveBrand, saveDivision, saveDivisionCalendar, saveRequestType } from "./actions";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Switch } from "@/components/shadcn/switch";
 import { Label } from "@/components/shadcn/label";
 import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
-import { cn, focusRing } from "@/components/ui/cn";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
+import { Button } from "@/components/shadcn/button";
+import { cn } from "@/components/ui/cn";
 import { DIVISION_TONES, DIVISION_TONE_LABEL } from "@/lib/palette";
 
 export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: string; name?: string }) {
@@ -63,56 +64,62 @@ export function TypeForm({ t }: { t?: { id: string; name: string; active: boolea
 
 export type DivisionCalendarRow = { id: string; name: string; color: string; onMarketingCalendar: boolean; sortOrder: number; leadIds: string[] };
 
-/** Marketing Calendar settings of one division: lane colour, shown or not, lane order and its leads (spec 2026-10-19). */
+/**
+ * One division's row on Settings › Marketing calendar: lane colour, shown or not, lane order, its leads and Save
+ * (spec 2026-10-19; a row since 2026-10-22). The leads popover is portaled out of the form, so the ticked ids post
+ * as hidden inputs.
+ */
 export function DivisionCalendarForm({ division: d, members }: { division: DivisionCalendarRow; members: { id: string; name: string }[] }) {
   const [leads, setLeads] = useState<string[]>(d.leadIds);
   const names = members.filter((m) => leads.includes(m.id)).map((m) => m.name);
   const summary = names.length ? names.join(", ") : "No leads";
   return (
-    <AdminForm action={saveDivisionCalendar} prefix={`divcal-${d.id}`} submitLabel="Save calendar settings" submitAriaLabel={`Save calendar settings for ${d.name}`}
-      submitVariant="outline" hidden={{ id: d.id }}>
+    <AdminForm action={saveDivisionCalendar} prefix={`divcal-${d.id}`} submitLabel="Save" submitAriaLabel={`Save calendar settings for ${d.name}`}
+      submitVariant="outline" hidden={{ id: d.id }} className="flex flex-wrap items-end gap-x-5 gap-y-3">
       {({ idFor, aria }) => (
         <>
+          <p data-division-name="" className="w-full font-semibold text-foreground sm:w-32 sm:self-center">{d.name}</p>
           <fieldset>
             <legend className="mb-1.5 text-sm font-medium text-foreground">Colour</legend>
-            <RadioGroup name="color" defaultValue={d.color} className="flex flex-wrap gap-2">
+            <RadioGroup name="color" defaultValue={d.color} className="flex flex-wrap gap-1.5">
               {DIVISION_TONES.map((tone) => (
                 <RadioGroupItem key={tone} value={tone} aria-label={DIVISION_TONE_LABEL[tone]} title={DIVISION_TONE_LABEL[tone]} data-tone={tone}
                   className="size-7 border-2 border-transparent bg-tone-accent data-[state=checked]:border-foreground [&_svg]:fill-primary-foreground" />
               ))}
             </RadioGroup>
           </fieldset>
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex min-h-9 items-center gap-2">
-              <Switch id={idFor("onMarketingCalendar")} name="onMarketingCalendar" defaultChecked={d.onMarketingCalendar} />
-              <Label htmlFor={idFor("onMarketingCalendar")}>Marketing calendar</Label>
-            </div>
-            <Labeled id={idFor("sortOrder")} label="Order" className="w-24">
-              <Input id={idFor("sortOrder")} name="sortOrder" type="number" min={0} max={999} step={1} defaultValue={String(d.sortOrder)} {...aria()} />
-            </Labeled>
+          <div className="flex min-h-9 items-center gap-2">
+            <Switch id={idFor("onMarketingCalendar")} name="onMarketingCalendar" defaultChecked={d.onMarketingCalendar} />
+            <Label htmlFor={idFor("onMarketingCalendar")}>On the calendar</Label>
           </div>
-          <Collapsible className="group rounded-lg border border-border">
-            <CollapsibleTrigger aria-label={`Leads of ${d.name}: ${summary}`}
-              className={cn("flex w-full cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-muted", focusRing)}>
-              <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4 text-muted-foreground transition-transform duration-150 group-data-[state=open]:rotate-90" />
-              <span className="font-medium text-foreground">Leads</span>
-              <span className="truncate text-muted-foreground">{summary}</span>
-            </CollapsibleTrigger>
-            {/* keepMounted: unopened lead checkboxes still post with the form. */}
-            <CollapsibleContent keepMounted className="border-t border-border p-3">
-              <ul className="grid gap-2 sm:grid-cols-2">
-                {members.map((m) => (
-                  <li key={m.id}>
-                    <label className="flex items-center gap-2 text-sm text-foreground" htmlFor={idFor(`lead-${m.id}`)}>
-                      <Checkbox id={idFor(`lead-${m.id}`)} name="leadIds" value={m.id} checked={leads.includes(m.id)}
-                        onCheckedChange={(on) => setLeads((cur) => (on === true ? [...cur, m.id] : cur.filter((x) => x !== m.id)))} />
-                      {m.name}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </CollapsibleContent>
-          </Collapsible>
+          <Labeled id={idFor("sortOrder")} label="Order" className="w-20">
+            <Input id={idFor("sortOrder")} name="sortOrder" type="number" min={0} max={999} step={1} defaultValue={String(d.sortOrder)} {...aria()} />
+          </Labeled>
+          <div className="min-w-0 sm:w-56">
+            <p aria-hidden="true" className="mb-1.5 text-sm font-medium text-foreground">Leads</p>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" aria-label={`Leads of ${d.name}: ${summary}`} className="w-full justify-between font-normal">
+                  <span className={cn("truncate", !names.length && "text-muted-foreground")}>{summary}</span>
+                  <ChevronDown aria-hidden="true" strokeWidth={1.75} className="text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="max-h-72 w-64 overflow-y-auto">
+                <ul className="space-y-2">
+                  {members.map((m) => (
+                    <li key={m.id}>
+                      <label className="flex items-center gap-2 text-sm text-foreground" htmlFor={idFor(`lead-${m.id}`)}>
+                        <Checkbox id={idFor(`lead-${m.id}`)} checked={leads.includes(m.id)}
+                          onCheckedChange={(on) => setLeads((cur) => (on === true ? [...cur, m.id] : cur.filter((x) => x !== m.id)))} />
+                        {m.name}
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              </PopoverContent>
+            </Popover>
+            {leads.map((id) => <input key={id} type="hidden" name="leadIds" value={id} />)}
+          </div>
         </>
       )}
     </AdminForm>

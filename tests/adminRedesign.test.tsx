@@ -25,6 +25,7 @@ vi.mock("@/lib/session", () => ({
 import { activeChip, appRoleChip, enumLabel, jobRoleChip } from "@/lib/adminChips";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
+import { CalendarContent } from "@/app/(app)/admin/calendar/CalendarContent";
 import { ActiveToggle } from "@/app/(app)/admin/users/UserForms";
 import { AdminSkeleton } from "@/components/PageSkeletons";
 import AppError from "@/app/(app)/error";
@@ -60,12 +61,14 @@ describe("admin chips", () => {
 });
 
 describe("Users page", () => {
-  it("one h1 via PageHeader, Members | Lists switcher, card headings", async () => {
+  it("one h1 via PageHeader, the Settings tabs, a Settings breadcrumb, card headings", async () => {
     render(await UsersContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["People and access"]);
-    const nav = screen.getByRole("navigation", { name: "Admin sections" });
+    const nav = screen.getByRole("navigation", { name: "Settings sections" });
+    expect(within(nav).getAllByRole("link").map((a) => a.textContent)).toEqual(["Account", "Members", "Lists", "Marketing calendar"]);
     expect(within(nav).getByRole("link", { name: "Members" }).getAttribute("aria-current")).toBe("page");
     expect(within(nav).getByRole("link", { name: "Lists" }).getAttribute("href")).toBe("/admin/lists");
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" }).textContent).not.toContain("Admin");
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Invite link"]);
   });
   it("table: avatar + name + full name/title, role chips, login email, active chip, unique Edit summaries", async () => {
@@ -120,7 +123,7 @@ describe("Lists page", () => {
   it("PageHeader + switcher, three cards, unique rename buttons, type status chip", async () => {
     render(await ListsContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Brands, divisions and request types"]);
-    expect(within(screen.getByRole("navigation", { name: "Admin sections" })).getByRole("link", { name: "Lists" }).getAttribute("aria-current")).toBe("page");
+    expect(within(screen.getByRole("navigation", { name: "Settings sections" })).getByRole("link", { name: "Lists" }).getAttribute("aria-current")).toBe("page");
     expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(["Brands", "Divisions", "Request types"]);
     expect(screen.getByRole("button", { name: "Rename Clogent" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Rename Zed" })).toBeTruthy();
@@ -132,6 +135,52 @@ describe("Lists page", () => {
     fireEvent.click(toggle);
     expect(screen.getByRole("button", { name: "Save type Video" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "Add request type" })).toBeTruthy();
+  });
+});
+
+describe("Lists page without calendar settings", () => {
+  it("points to the Marketing calendar tab instead of folding calendar settings under each division", async () => {
+    render(await ListsContent());
+    expect(screen.queryByText(/Marketing calendar settings/)).toBeNull();
+    expect(screen.queryByRole("switch")).toBeNull();
+    const divisions = screen.getByRole("region", { name: "Divisions" });
+    expect(within(divisions).getByRole("link", { name: "Marketing calendar" }).getAttribute("href")).toBe("/admin/calendar");
+  });
+});
+
+describe("Marketing calendar settings page", () => {
+  beforeEach(() => {
+    prismaMock.division.findMany.mockResolvedValue([
+      { id: "d1", name: "KOL", color: "div-3", onMarketingCalendar: true, sortOrder: 3, leads: [{ userId: "u1" }] },
+      { id: "d2", name: "Creative", color: "div-1", onMarketingCalendar: false, sortOrder: 0, leads: [] },
+    ]);
+  });
+
+  it("is a Settings tab with one open row per division: colour, switch, order, leads and its own Save", async () => {
+    render(await CalendarContent());
+    expect(screen.getByRole("heading", { level: 1, name: "Marketing calendar" })).toBeTruthy();
+    expect(within(screen.getByRole("navigation", { name: "Settings sections" })).getByRole("link", { name: "Marketing calendar" }).getAttribute("aria-current")).toBe("page");
+    const rows = within(screen.getByRole("list", { name: "Divisions" })).getAllByRole("listitem");
+    expect(rows.map((r) => r.querySelector("[data-division-name]")!.textContent)).toEqual(["KOL", "Creative"]);
+    expect(within(rows[0]).getByRole("switch", { name: "On the calendar" }).getAttribute("aria-checked")).toBe("true");
+    expect(within(rows[1]).getByRole("switch", { name: "On the calendar" }).getAttribute("aria-checked")).toBe("false");
+    expect(within(rows[0]).getByRole("button", { name: "Leads of KOL: Rina" })).toBeTruthy();
+    expect(within(rows[1]).getByRole("button", { name: "Save calendar settings for Creative" })).toBeTruthy();
+    expect(prismaMock.division.findMany).toHaveBeenCalledWith(expect.objectContaining({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }] }));
+  });
+
+  it("sends an admin with no divisions to Lists", async () => {
+    prismaMock.division.findMany.mockResolvedValue([]);
+    render(await CalendarContent());
+    expect(screen.getByRole("link", { name: "Add divisions in Lists" }).getAttribute("href")).toBe("/admin/lists");
+  });
+
+  it("refuses non-admins before reading anything", async () => {
+    requireUser.mockResolvedValue({ id: "x", appRole: "LEAD", jobRole: "OTHER" });
+    render(await CalendarContent());
+    expect(within(screen.getByRole("alert")).getByRole("heading", { level: 1 }).textContent).toBe("403 · Access denied");
+    expect(prismaMock.division.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.user.findMany).not.toHaveBeenCalled();
   });
 });
 
