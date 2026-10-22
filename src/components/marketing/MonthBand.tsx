@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Megaphone, Pencil, Plus, Target, Trash2 } from "lucide-react";
 import { deleteAnnouncement, saveProductFocus } from "@/app/(app)/marketing/actions";
 import { safeAction } from "@/lib/safeAction";
-import { rangeLabel } from "@/lib/marketing/format";
 import type { CalAnnouncement, MarketingMonthData } from "@/lib/marketing/types";
 import { Card, CardAction, CardHeader, CardTitle } from "@/components/shadcn/card";
 import { Button } from "@/components/shadcn/button";
@@ -25,16 +24,13 @@ import { AnnouncementDialog } from "./AnnouncementDialog";
  */
 export function MonthBand({ data }: { data: MarketingMonthData }) {
   const admin = data.canManageMonth;
-  // The query also returns dated notices on the grid's neighbouring-month days; the band lists the month's own.
-  const first = `${data.month}-01`, last = `${data.month}-31`;
-  const announcements = data.announcements.filter((a) => a.startDay === null || (a.startDay <= last && a.endDay! >= first));
   const showFocus = admin || data.productFocus !== null;
-  const showNotices = admin || announcements.length > 0;
+  const showNotices = admin || data.announcements.length > 0;
   if (!showFocus && !showNotices) return null;
   return (
     <section aria-label="This month" className={cn("mb-5 grid gap-3", showFocus && showNotices && "sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]")}>
       {showFocus ? <FocusCard month={data.month} focus={data.productFocus} admin={admin} /> : null}
-      {showNotices ? <AnnouncementsCard month={data.month} items={announcements} admin={admin} /> : null}
+      {showNotices ? <AnnouncementsCard month={data.month} items={data.announcements} admin={admin} /> : null}
     </section>
   );
 }
@@ -104,11 +100,6 @@ function AnnouncementsCard({ month, items, admin }: { month: string; items: CalA
         <ul aria-label="Announcements" className="divide-y divide-border">
           {items.map((a) => (
             <li key={a.id} className="flex items-start gap-3 py-2 first:pt-0 last:pb-0">
-              {a.startDay && a.endDay ? (
-                <span className="shrink-0 rounded-full bg-foreground px-2 py-0.5 text-xs font-medium text-background tabular-nums">{rangeLabel(a.startDay, a.endDay)}</span>
-              ) : (
-                <span className="shrink-0 rounded-full border border-border-strong px-2 py-0.5 text-xs text-muted-foreground">No date</span>
-              )}
               <p className="min-w-0 flex-1 text-sm whitespace-pre-line text-foreground">{a.body}</p>
               {admin ? (
                 <span className="flex shrink-0 gap-0.5">

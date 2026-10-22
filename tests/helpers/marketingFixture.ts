@@ -16,8 +16,8 @@ export const OCTOBER: MarketingMonthData = {
     { id: "a5", divisionId: "social", title: "Halloween series", startDay: "2026-10-27", endDay: "2026-10-31", status: "CANCELLED", updatedByName: "Fafa", updatedAt: at },
   ],
   announcements: [
-    { id: "n1", body: "Inbound China (Pitbond)", startDay: "2026-10-22", endDay: "2026-10-24" },
-    { id: "n2", body: "Budget Q4 approved", startDay: null, endDay: null },
+    { id: "n1", body: "Inbound China (Pitbond) 22–24 Oct" },
+    { id: "n2", body: "Budget Q4 approved" },
   ],
   productFocus: null, editableDivisionIds: [], canManageMonth: false,
 };

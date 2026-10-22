@@ -1,6 +1,5 @@
 import type { ScopedDb } from "../db";
 import { isValidMonth } from "../kpi/months";
-import { dateOnly } from "./activities";
 import { MarketingError } from "./errors";
 import { canManageMonth } from "./rules";
 import { validateAnnouncement, validateProductFocus } from "./validate";
@@ -24,10 +23,8 @@ export async function saveAnnouncementWith(db: ScopedDb, viewer: MarketingViewer
   const valid = validateAnnouncement(input);
   if (id && !(await db.marketingAnnouncement.findFirst({ where: { id }, select: { id: true } }))) throw new MarketingError("NOT_FOUND", "Announcement not found.");
   assertManager(viewer);
-  const data = {
-    month: valid.month, body: valid.body,
-    startDay: valid.startDay ? dateOnly(valid.startDay) : null, endDay: valid.endDay ? dateOnly(valid.endDay) : null,
-  };
+  // Announcements are monthly now: saving one dated from before clears its days (the columns stay, unused).
+  const data = { month: valid.month, body: valid.body, startDay: null, endDay: null };
   if (id) {
     await db.marketingAnnouncement.update({ where: { id }, data });
     return { id };

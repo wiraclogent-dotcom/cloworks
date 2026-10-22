@@ -33,17 +33,11 @@ describe("validateActivity", () => {
 });
 
 describe("validateAnnouncement", () => {
-  const base = { month: "2026-10", body: "Inbound China", startDay: null, endDay: null };
-  it("keeps an undated announcement in its month", () => expect(validateAnnouncement({ ...base, body: "  Budget approved " })).toEqual({ ...base, body: "Budget approved" }));
+  const base = { month: "2026-10", body: "Inbound China" };
+  it("keeps the announcement in its month", () => expect(validateAnnouncement({ ...base, body: "  Budget approved " })).toEqual({ ...base, body: "Budget approved" }));
   it("needs a body", () => expect(errorsOf(() => validateAnnouncement({ ...base, body: "" }))).toEqual({ body: "Write the announcement." }));
   it("caps the body at 500", () =>
     expect(errorsOf(() => validateAnnouncement({ ...base, body: "x".repeat(501) }))).toEqual({ body: "Announcement must be 500 characters or fewer." }));
-  it("needs both dates or neither", () =>
-    expect(errorsOf(() => validateAnnouncement({ ...base, startDay: "2026-10-22" }))).toEqual({ endDay: "Set both dates or neither." }));
-  it("files a dated announcement under the month of its start", () =>
-    expect(validateAnnouncement({ month: "2026-11", body: "x", startDay: "2026-10-30", endDay: "2026-11-02" }).month).toBe("2026-10"));
-  it("checks dated ranges like activities", () =>
-    expect(errorsOf(() => validateAnnouncement({ ...base, startDay: "2026-10-24", endDay: "2026-10-22" }))).toEqual({ endDay: "End date can't be before the start date." }));
   it("rejects a bad month", () => expect(errorsOf(() => validateAnnouncement({ ...base, month: "2026-13" }))).toEqual({ month: "Pick a valid month." }));
 });
 

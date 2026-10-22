@@ -81,7 +81,7 @@ describe("marketing writes", () => {
   });
 
   it("an admin creates, edits and deletes an announcement; others cannot", async () => {
-    const a = { month: "2026-10", body: "Inbound China", startDay: "2026-10-22", endDay: "2026-10-24" };
+    const a = { month: "2026-10", body: "Inbound China" };
     expect(await codeOf(saveAnnouncementWith(db.prisma, v.kolLead, null, a))).toBe("FORBIDDEN");
     const { id } = await saveAnnouncementWith(db.prisma, v.admin, null, a);
     await saveAnnouncementWith(db.prisma, v.admin, id, { ...a, body: "Inbound China (Pitbond)" });
@@ -90,5 +90,15 @@ describe("marketing writes", () => {
     expect(await codeOf(deleteAnnouncementWith(db.prisma, v.lead, id))).toBe("FORBIDDEN");
     await deleteAnnouncementWith(db.prisma, v.admin, id);
     expect(await db.prisma.marketingAnnouncement.count({ where: { id } })).toBe(0);
+  });
+
+  it("saving an announcement dated before they became monthly clears its dates", async () => {
+    const day = (s: string) => new Date(`${s}T00:00:00Z`);
+    const { id } = await db.prisma.marketingAnnouncement.create({
+      data: { month: "2026-11", body: "Shipping 17", startDay: day("2026-11-17"), endDay: day("2026-11-18"), createdById: v.admin.id },
+    });
+    await saveAnnouncementWith(db.prisma, v.admin, id, { month: "2026-11", body: "Shipping 17 (ETA 18/11)" });
+    const row = await db.prisma.marketingAnnouncement.findUniqueOrThrow({ where: { id } });
+    expect([row.body, row.startDay, row.endDay]).toEqual(["Shipping 17 (ETA 18/11)", null, null]);
   });
 });

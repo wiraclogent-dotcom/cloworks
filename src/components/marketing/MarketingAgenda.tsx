@@ -1,31 +1,19 @@
 "use client";
 
 import { useId } from "react";
-import { Megaphone } from "lucide-react";
 import { STATUS_LABEL, activityLabel, rangeLabel } from "@/lib/marketing/format";
 import type { CalDivision, MarketingMonthData } from "@/lib/marketing/types";
 import { Card } from "@/components/shadcn/card";
 import { cn, focusRing } from "../ui/cn";
 import { useMarketingSheet } from "./sheetState";
 
-/** Narrow screens: the month's dated notices, then one section per visible division with its activities by start day. */
+/** Narrow screens: one section per visible division with its activities by start day. */
 export function MarketingAgenda({ data, divisions }: { data: MarketingMonthData; divisions: CalDivision[] }) {
   const first = `${data.month}-01`;
   const last = `${data.month}-31`; // string compare: no month has a later day
   const inMonth = (s: string, e: string) => s <= last && e >= first;
-  const notices = data.announcements.filter((a) => a.startDay !== null && a.endDay !== null && inMonth(a.startDay, a.endDay));
   return (
     <div className="space-y-3">
-      {notices.length > 0 ? (
-        <AgendaSection title="Notice" icon={<Megaphone aria-hidden="true" strokeWidth={1.75} className="size-3.5" />}>
-          {notices.map((a) => (
-            <li key={a.id} className="flex gap-3 py-2 text-sm">
-              <span className="w-24 shrink-0 text-muted-foreground tabular-nums">{rangeLabel(a.startDay!, a.endDay!)}</span>
-              <span className="min-w-0 text-foreground">{a.body}</span>
-            </li>
-          ))}
-        </AgendaSection>
-      ) : null}
       {divisions.map((d) => (
         <DivisionSection key={d.id} data={data} division={d} inMonth={inMonth} />
       ))}

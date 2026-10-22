@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildMonthGrid } from "@/lib/calendar";
 import { buildMarketingWeeks, packSegments } from "@/lib/marketing/layout";
-import type { CalActivity, CalAnnouncement, CalDivision } from "@/lib/marketing/types";
+import type { CalActivity, CalDivision } from "@/lib/marketing/types";
 
 // October 2026 (Monday first): week 0 = 28 Sep–4 Oct, 1 = 5–11, 2 = 12–18, 3 = 19–25, 4 = 26 Oct–1 Nov.
 const grid = buildMonthGrid("2026-10", "2026-10-19");
@@ -41,32 +41,23 @@ describe("packSegments", () => {
 
 describe("buildMarketingWeeks", () => {
   it("places a 5–9 Oct activity in week 2 without cut edges", () => {
-    const weeks = buildMarketingWeeks(grid.weeks, divisions, [act("brand", "2026-10-05", "2026-10-09")], []);
+    const weeks = buildMarketingWeeks(grid.weeks, divisions, [act("brand", "2026-10-05", "2026-10-09")]);
     expect(seg(weeks, 1, "brand")).toEqual([[{ id: `a${n}`, col: 1, span: 5, continuesLeft: false, continuesRight: false }]]);
   });
   it("an activity starting on the grid's first day is not cut; one from earlier is", () => {
     const inGrid = act("ads", "2026-09-28", "2026-10-03");
     const earlier = act("kol", "2026-09-20", "2026-10-01");
-    const weeks = buildMarketingWeeks(grid.weeks, divisions, [inGrid, earlier], []);
+    const weeks = buildMarketingWeeks(grid.weeks, divisions, [inGrid, earlier]);
     expect(seg(weeks, 0, "ads")[0][0]).toMatchObject({ col: 1, span: 6, continuesLeft: false });
     expect(seg(weeks, 0, "kol")[0][0]).toMatchObject({ col: 1, span: 4, continuesLeft: true });
   });
   it("keeps every division lane, in the given order, with one empty row when idle", () => {
-    const weeks = buildMarketingWeeks(grid.weeks, divisions, [], []);
+    const weeks = buildMarketingWeeks(grid.weeks, divisions, []);
     expect(weeks).toHaveLength(5);
     for (const w of weeks) expect(w.lanes).toEqual(divisions.map((d) => ({ divisionId: d.id, rows: [[]] })));
   });
   it("ignores activities outside the grid and of unknown divisions", () => {
-    const weeks = buildMarketingWeeks(grid.weeks, divisions, [act("brand", "2026-11-10", "2026-11-12"), act("creative", "2026-10-05", "2026-10-05")], []);
+    const weeks = buildMarketingWeeks(grid.weeks, divisions, [act("brand", "2026-11-10", "2026-11-12"), act("creative", "2026-10-05", "2026-10-05")]);
     expect(weeks.every((w) => w.lanes.every((l) => l.rows.flat().length === 0))).toBe(true);
-  });
-  it("shows dated announcements as a notice row only in their weeks", () => {
-    const notices: CalAnnouncement[] = [
-      { id: "in", body: "Inbound China", startDay: "2026-10-22", endDay: "2026-10-24" },
-      { id: "undated", body: "Budget approved", startDay: null, endDay: null },
-    ];
-    const weeks = buildMarketingWeeks(grid.weeks, divisions, [], notices);
-    expect(weeks.map((w) => w.notice.length)).toEqual([0, 0, 0, 1, 0]);
-    expect(weeks[3].notice).toEqual([[{ id: "in", col: 4, span: 3, continuesLeft: false, continuesRight: false }]]);
   });
 });

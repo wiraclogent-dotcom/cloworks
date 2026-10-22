@@ -36,7 +36,7 @@ describe("marketing actions", () => {
     expect(await saveActivity(null, input)).toEqual(unauth);
     expect(await deleteActivity("a")).toEqual(unauth);
     expect(await saveProductFocus("2026-10", "x")).toEqual(unauth);
-    expect(await saveAnnouncement(null, { month: "2026-10", body: "x", startDay: null, endDay: null })).toEqual(unauth);
+    expect(await saveAnnouncement(null, { month: "2026-10", body: "x" })).toEqual(unauth);
     expect(await deleteAnnouncement("n")).toEqual(unauth);
     expect(saveActivityWith).not.toHaveBeenCalled();
   });
@@ -61,7 +61,7 @@ describe("marketing actions", () => {
 
   it("rethrow anything that is not a marketing error", async () => {
     saveAnnouncementWith.mockRejectedValue(new Error("db down"));
-    await expect(saveAnnouncement(null, { month: "2026-10", body: "x", startDay: null, endDay: null })).rejects.toThrow("db down");
+    await expect(saveAnnouncement(null, { month: "2026-10", body: "x" })).rejects.toThrow("db down");
   });
 
   it("delete an announcement", async () => {

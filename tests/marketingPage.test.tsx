@@ -27,12 +27,14 @@ beforeEach(() => { editable = []; load.mockClear(); });
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("Marketing Calendar page", () => {
-  it("titles the page with the month and links to the neighbouring months", async () => {
+  it("titles the page with the month and links to the neighbouring months by name", async () => {
     await show("2026-10");
     expect(screen.getByRole("heading", { level: 1, name: "October 2026" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Previous month" }).getAttribute("href")).toBe("/marketing?month=2026-09");
-    expect(screen.getByRole("link", { name: "Next month" }).getAttribute("href")).toBe("/marketing?month=2026-11");
-    expect(screen.getByRole("link", { name: "Today" }).getAttribute("href")).toBe("/marketing");
+    const prev = screen.getByRole("link", { name: "Previous month, September 2026" });
+    const next = screen.getByRole("link", { name: "Next month, November 2026" });
+    expect([prev.getAttribute("href"), prev.textContent]).toEqual(["/marketing?month=2026-09", "Sep"]);
+    expect([next.getAttribute("href"), next.textContent]).toEqual(["/marketing?month=2026-11", "Nov"]);
+    expect(screen.queryByRole("link", { name: "Today" })).toBeNull();
     expect(screen.getByRole("navigation", { name: "Breadcrumb" }).textContent).toContain("Marketing Calendar");
   });
 

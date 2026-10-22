@@ -58,12 +58,12 @@ describe("loadMarketingMonth", () => {
     expect(typeof m.activities[0].updatedAt).toBe("string");
   });
 
-  it("lists dated announcements on the month's grid days first, then the month's undated ones", async () => {
+  it("lists only the month's own announcements, oldest first, ignoring dates left from before they were monthly", async () => {
     const oct = await loadMarketingMonth(db.prisma, v.member, "2026-10", "2026-10-19");
-    expect(oct.announcements.map((a) => a.body)).toEqual(["inbound", "crossing", "novFirst", "undatedOct"]);
-    expect(oct.announcements[0]).toEqual({ id: ids.inbound, body: "inbound", startDay: "2026-10-22", endDay: "2026-10-24" });
+    expect(oct.announcements.map((a) => a.body)).toEqual(["undatedOct", "crossing", "inbound"]);
+    expect(oct.announcements[2]).toEqual({ id: ids.inbound, body: "inbound" });
     const nov = await loadMarketingMonth(db.prisma, v.member, "2026-11", "2026-10-19");
-    expect(nov.announcements.map((a) => a.body)).toEqual(["crossing", "novFirst", "undatedNov"]);
+    expect(nov.announcements.map((a) => a.body)).toEqual(["undatedNov", "novFirst"]);
   });
 
   it("returns the product focus, null when missing or cleared", async () => {

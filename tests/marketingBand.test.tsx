@@ -16,8 +16,8 @@ import { MonthBand } from "@/components/marketing/MonthBand";
 
 const base: MarketingMonthData = { month: "2026-10", today: "2026-10-19", divisions: [], activities: [], announcements: [], productFocus: null, editableDivisionIds: [], canManageMonth: false };
 const notices = [
-  { id: "n1", body: "Inbound China (Pitbond)", startDay: "2026-10-22", endDay: "2026-10-24" },
-  { id: "n2", body: "Budget Q4 approved", startDay: null, endDay: null },
+  { id: "n1", body: "Inbound China (Pitbond)" },
+  { id: "n2", body: "Budget Q4 approved" },
 ];
 
 beforeEach(() => vi.clearAllMocks());
@@ -33,16 +33,10 @@ describe("MonthBand for members", () => {
     expect(screen.getByText("Lavender 1L + refill")).toBeTruthy();
     expect(screen.queryByText("Announcements")).toBeNull();
   });
-  it("lists only the notices that touch the month itself, not the grid's neighbouring days", () => {
-    render(<MonthBand data={{ ...base, announcements: [...notices, { id: "n3", body: "Stock opname", startDay: "2026-11-01", endDay: "2026-11-02" }] }} />);
-    expect(screen.queryByText("Stock opname")).toBeNull();
-    expect(within(screen.getByRole("list", { name: "Announcements" })).getAllByRole("listitem")).toHaveLength(2);
-  });
-  it("shows date pills and no editing controls", () => {
+  it("lists the month's announcements without date pills or editing controls", () => {
     render(<MonthBand data={{ ...base, announcements: notices }} />);
     const items = within(screen.getByRole("list", { name: "Announcements" })).getAllByRole("listitem");
-    expect(items[0].textContent).toContain("22–24 Oct");
-    expect(items[1].textContent).toContain("No date");
+    expect(items.map((li) => li.textContent)).toEqual(["Inbound China (Pitbond)", "Budget Q4 approved"]);
     expect(screen.queryByRole("button")).toBeNull();
   });
 });
@@ -76,7 +70,7 @@ describe("MonthBand for admins", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
-  it("adds an undated announcement", async () => {
+  it("adds an announcement to the month", async () => {
     act.saveAnnouncement.mockResolvedValue({ ok: true, id: "n9" });
     render(<MonthBand data={admin} />);
     fireEvent.click(screen.getByRole("button", { name: "Add an announcement" }));
@@ -84,16 +78,17 @@ describe("MonthBand for admins", () => {
     fireEvent.change(within(dialog).getByLabelText("Announcement"), { target: { value: "Budget Q4 approved" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
-    expect(act.saveAnnouncement).toHaveBeenCalledWith(null, { month: "2026-10", body: "Budget Q4 approved", startDay: null, endDay: null });
+    expect(act.saveAnnouncement).toHaveBeenCalledWith(null, { month: "2026-10", body: "Budget Q4 approved" });
+    expect(within(dialog).queryByText("Start date")).toBeNull();
   });
 
-  it("edits an announcement with its dates", async () => {
+  it("edits an announcement", async () => {
     act.saveAnnouncement.mockResolvedValue({ ok: true, id: "n1" });
     render(<MonthBand data={{ ...admin, announcements: notices }} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit announcement: Inbound China (Pitbond)" }));
     const dialog = await screen.findByRole("dialog", { name: "Edit announcement" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
-    await vi.waitFor(() => expect(act.saveAnnouncement).toHaveBeenCalledWith("n1", { month: "2026-10", body: "Inbound China (Pitbond)", startDay: "2026-10-22", endDay: "2026-10-24" }));
+    await vi.waitFor(() => expect(act.saveAnnouncement).toHaveBeenCalledWith("n1", { month: "2026-10", body: "Inbound China (Pitbond)" }));
   });
 
   it("deletes an announcement after confirmation", async () => {
