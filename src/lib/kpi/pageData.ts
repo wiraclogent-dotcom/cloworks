@@ -67,9 +67,11 @@ export const teamProjectsData = cache(async (db: ScopedDb, year: number, team: K
     extraUserIds: entries.filter((e) => e.included).map((e) => e.userId),
     excludeUserIds: entries.filter((e) => !e.included).map((e) => e.userId),
   })).filter((k) => (k.jobRole === "SOCIAL_MEDIA") === (team === "social"));
-  // An empty table is "hidden" when removals took out people who do have targets this year.
+  // An empty table is "hidden" when removals took out people of this team who do have targets this year.
   const removed = entries.filter((e) => !e.included).map((e) => e.userId);
-  const hiddenByRoster = kpis.length === 0 && removed.length > 0 && (await db.projectKpiTarget.count({ where: { year, userId: { in: removed } } })) > 0;
+  const hiddenByRoster = kpis.length === 0 && removed.length > 0 && (await db.projectKpiTarget.count({
+    where: { year, userId: { in: removed }, user: { jobRole: team === "social" ? "SOCIAL_MEDIA" : { not: "SOCIAL_MEDIA" } } },
+  })) > 0;
   return { kpis, hiddenByRoster };
 });
 

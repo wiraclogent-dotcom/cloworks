@@ -63,6 +63,19 @@ describe("Team KPI data per team", () => {
     expect((await teamProjectsData(db.prisma, 2026)).kpis.map((k) => k.name)).toEqual(["Dimas"]);
   });
 
+  it("hiding a creative person with targets leaves Social media › Projects with the normal empty state", async () => {
+    const p = db.prisma;
+    const project = await p.project.findFirstOrThrow();
+    await p.projectKpiTarget.create({ data: { userId: ids.Dimas, year: 2025, projectId: project.id, itemTitle: "Y", createdById: ids.Idzni } });
+    const entry = await p.kpiRosterEntry.create({ data: { userId: ids.Dimas, kind: "PROJECTS", included: false, updatedById: ids.Idzni } });
+    try {
+      expect(await teamProjectsData(db.prisma, 2025, "social")).toEqual({ kpis: [], hiddenByRoster: false });
+      expect(await teamProjectsData(db.prisma, 2025)).toEqual({ kpis: [], hiddenByRoster: true });
+    } finally {
+      await p.kpiRosterEntry.delete({ where: { id: entry.id } });
+    }
+  });
+
   it("My KPI counts posts for a social media person and says so", async () => {
     const sm = await myRequestsData(db.prisma, ids.Syahda, "SOCIAL_MEDIA", "2026-10");
     expect([sm.measure, sm.kpi.tasksDone, sm.isEmpty]).toEqual(["posts", 2, false]);
