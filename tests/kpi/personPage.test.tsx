@@ -32,36 +32,37 @@ const show = (sp: Record<string, string>) => renderShell(DashboardPage({ searchP
 const showProjects = (sp: Record<string, string>) =>
   renderShell(ProjectKpiPersonPage({ params: Promise.resolve({ userId: "s1" }), searchParams: Promise.resolve(sp) } as PageProps<"/dashboard/projects/[userId]">));
 const keep = (id: string) => JSON.parse(screen.getByTestId(id).textContent!);
+/** [breadcrumb "Team KPI", "Back to team"] hrefs: both lead back the same way. */
+const backLinks = () => [
+  within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href"),
+  screen.getByRole("link", { name: "Back to team" }).getAttribute("href"),
+];
 afterEach(cleanup);
 
 describe("person KPI page opened from Team KPI", () => {
-  it("leads back to the team it was opened from, and the pickers keep that team", async () => {
-    await show({ user: "s1", month: "2026-10", team: "social" });
-    const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
-    expect(within(crumbs).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team?team=social");
-    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team?month=2026-10&team=social");
+  it("leads back to the team, month and year it was opened from, and the pickers keep that team", async () => {
+    await show({ user: "s1", month: "2026-10", year: "2025", team: "social" });
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?month=2026-10&year=2025&team=social"));
     expect(keep("requests")).toMatchObject({ team: "social" });
     expect(keep("projects")).toMatchObject({ team: "social", user: "s1" });
   });
 
   it("without a team it goes back to the viewer's own team", async () => {
     await show({ user: "s1", month: "2026-10" });
-    expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
-    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team?month=2026-10");
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?month=2026-10"));
   });
 });
 
 describe("person Project KPI page opened from Team KPI", () => {
-  it("leads back to the team it was opened from, and the year links keep that team", async () => {
-    await showProjects({ year: "2026", team: "social" });
-    expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team?team=social");
-    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team?team=social");
-    expect(screen.getByRole("link", { name: "2025" }).getAttribute("href")).toContain("team=social");
+  it("leads back to the team and year it was opened from, and the year links keep that team", async () => {
+    await showProjects({ year: "2025", team: "social" });
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025&team=social"));
+    const yearLink = screen.getByRole("link", { name: "2025" }).getAttribute("href")!;
+    expect(yearLink).toMatch(/^\/dashboard\/projects\/s1\?year=2025&q=\d&team=social$/);
   });
 
   it("without a team it goes back to the viewer's own team", async () => {
-    await showProjects({ year: "2026" });
-    expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
-    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team");
+    await showProjects({ year: "2025" });
+    expect(backLinks()).toEqual(Array(2).fill("/dashboard/team?year=2025"));
   });
 });

@@ -22,7 +22,7 @@ export const metadata: Metadata = { title: "My KPI" };
 /**
  * My KPI: Requests (month) and Projects (year, quarter) as two sections on one page, each loading on its own. One URL
  * carries both (`month`, `year`, `q`, and `user` for leads); each picker keeps the other's params. `team` (from a Team
- * KPI link) is kept too, so the way back leads to that team. `?view=projects` (old links) scrolls to Projects.
+ * KPI link) is kept too, so the way back leads to that team, month and year. `?view=projects` (old links) scrolls to Projects.
  */
 async function DashboardContent({ searchParams }: { searchParams: PageProps<"/dashboard">["searchParams"] }) {
   const { user: viewer, db } = await requireScope();
@@ -45,11 +45,12 @@ async function DashboardContent({ searchParams }: { searchParams: PageProps<"/da
   const own = subject.id === viewer.id;
   const canTeam = can(viewer.appRole, "dashboard.team");
   const userKeep = own ? undefined : subject.id;
+  const teamHref = kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year", "team"]) });
   return (
     <>
-      <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: kpiHref("/dashboard/team", keepParams(sp, ["team"])) }, { label: subject.name }]}
+      <PageHeader breadcrumb={own ? [{ label: "Insights" }, { label: "My KPI" }] : [{ label: "Insights" }, { label: "Team KPI", href: teamHref }, { label: subject.name }]}
         title={own ? "My KPI" : `KPI: ${subject.name}`} description="Request and project KPIs"
-        actions={!own && canTeam ? <Button asChild variant="ghost" size="sm"><Link href={kpiHref("/dashboard/team", { month, ...keepParams(sp, ["year", "team"]) })}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : null} />
+        actions={!own && canTeam ? <Button asChild variant="ghost" size="sm"><Link href={teamHref}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : null} />
       <div className="space-y-8">
         <Suspense fallback={<SummarySkeleton count={4} />}>
           <MySummary db={db} subject={subject} month={month} year={year} />
