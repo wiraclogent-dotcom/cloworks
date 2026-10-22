@@ -309,6 +309,41 @@ describe("MyRequestsSection", () => {
   });
 });
 
+describe("MyRequestsSection for a social media person", () => {
+  const subject = { id: "s1", name: "Syahda", jobRole: "SOCIAL_MEDIA" as const };
+  const run = async (over: Record<string, unknown> = {}) =>
+    render(await MyRequestsSection({ db: db(), subject, own: false, month: "2026-10", ...over } as Parameters<typeof MyRequestsSection>[0]));
+  const approved = (id: string, at: string) => ({ id, authorId: "s1", approvedAt: new Date(at), plannedAt: new Date("2026-10-20T00:00:00+07:00") });
+
+  it("is a Content Plan section with post tiles, headline and trend (also when a lead opens it)", async () => {
+    queries.loadKpiPosts.mockResolvedValue([approved("p1", "2026-10-05T03:00:00Z"), approved("p2", "2026-09-10T03:00:00Z")]);
+    queries.loadTargets.mockResolvedValue([{ userId: "s1", month: "2026-10", role: "SOCIAL_MEDIA", targetTasks: 4, note: null }]);
+    await run();
+    const section = screen.getByRole("region", { name: "Content Plan" });
+    expect([...section.querySelectorAll("[data-kpi]")].map((t) => t.getAttribute("data-kpi"))).toEqual(["target", "progress", "onTime"]);
+    expect(section.querySelector('[data-kpi="onTime"]')!.textContent).toContain("On-time rate");
+    expect(within(section).getByText("Posts approved vs target, October 2026")).toBeTruthy();
+    expect(within(section).getByText("Posts approved vs target, last 6 months")).toBeTruthy();
+    expect(queries.loadKpiPosts).toHaveBeenCalledWith(expect.anything(), expect.arrayContaining(["2026-10"]), ["s1"]);
+  });
+
+  it("says so in one line when no post was approved and there is no target", async () => {
+    await run();
+    expect(within(screen.getByRole("region", { name: "Content Plan" })).getByText("No Content Plan posts approved in October 2026.")).toBeTruthy();
+    expect(document.querySelector("[data-kpi]")).toBeNull();
+  });
+
+  it("labels the summary in posts", async () => {
+    queries.loadKpiPosts.mockResolvedValue([approved("p1", "2026-10-05T03:00:00Z")]);
+    const q = { score: { score: null, parts: {}, usedParts: [], items: 0, done: 0, onTimeCount: 0, lateCount: 0 }, items: [] };
+    pq.loadPersonProjectKpi.mockResolvedValue({ userId: "s1", year: 2026, quarters: { 1: q, 2: q, 3: q, 4: q }, unscheduled: [], excluded: [], otherWork: [], yearScore: null });
+    render(await MySummary({ db: db(), subject, month: "2026-10", year: 2026 }));
+    const done = screen.getByRole("region", { name: "Summary" }).querySelector('[data-kpi="reqDone"]')!;
+    expect(done.textContent).toContain("Posts approved · Oct 2026");
+    expect(done.textContent).toContain("1");
+  });
+});
+
 describe("MyProjectsSection", () => {
   const subject = { id: "u1", name: "Ann" };
   const emptyQ = () => ({ score: { score: null, parts: { onTime: null, completion: null, speed: null, revisions: null, slips: null }, usedParts: [], items: 0, done: 0, onTimeCount: 0, lateCount: 0 }, items: [] });

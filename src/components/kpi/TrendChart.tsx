@@ -13,26 +13,26 @@ const tick = { fill: "var(--foreground-secondary)", fontSize: 12 };
 /** Compact density for the "View as table" cells. */
 const DENSE = "py-1.5";
 
-type TipProps = { active?: boolean; payload?: readonly { payload?: TrendPoint }[] };
+type TipProps = { active?: boolean; payload?: readonly { payload?: TrendPoint }[]; doneLabel: string };
 
 /** Tooltip in the kit's card style (tokens only). */
-function ChartTooltip({ active, payload }: TipProps) {
+function ChartTooltip({ active, payload, doneLabel }: TipProps) {
   const p = active ? payload?.[0]?.payload : undefined;
   if (!p) return null;
   return (
     <div className="rounded-lg border border-border bg-popover px-3 py-2 text-compact text-card-foreground shadow-raised">
       <p className="mb-1 font-semibold">{p.label}</p>
-      <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="size-2.5 rounded-sm bg-chart-done" />Tasks done: {p.tasksDone}</p>
+      <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="size-2.5 rounded-sm bg-chart-done" />{doneLabel}: {p.tasksDone}</p>
       <p className="flex items-center gap-2 tabular-nums"><span aria-hidden="true" className="h-0.5 w-2.5 rounded-full bg-chart-target" />Target: {p.target ?? "—"}</p>
     </div>
   );
 }
 
 /**
- * Tasks done (blue bars, labelled) vs target (ink dashed line) per month, in a card. The chart is decorative for
+ * Tasks done (or `doneLabel`, e.g. Posts approved; blue bars, labelled) vs target (ink dashed line) per month, in a card. The chart is decorative for
  * assistive tech; the "View as table" data table is the accessible alternative (kept from before the redesign).
  */
-export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[]; headingLevel?: 2 | 3 }) {
+export function TrendChart({ points, headingLevel = 2, doneLabel = "Tasks done" }: { points: TrendPoint[]; headingLevel?: 2 | 3; doneLabel?: string }) {
   const Heading = headingLevel === 3 ? "h3" : "h2";
   const data = points.map((p) => ({ ...p, short: p.label.replace(/ \d{4}$/, "") }));
   return (
@@ -41,10 +41,10 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>
             <Heading className="text-base font-semibold text-foreground">Last {points.length} months</Heading>
-            <figcaption className="text-compact text-muted-foreground">Tasks done vs target, last {points.length} months</figcaption>
+            <figcaption className="text-compact text-muted-foreground">{doneLabel} vs target, last {points.length} months</figcaption>
           </div>
           <ul aria-hidden="true" className="flex items-center gap-4 text-xs text-muted-foreground">
-            <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-done" />Tasks done</li>
+            <li className="flex items-center gap-1.5"><span className="size-2.5 rounded-sm bg-chart-done" />{doneLabel}</li>
             <li className="flex items-center gap-1.5"><span className="h-0.5 w-4 rounded-full bg-chart-target" />Target</li>
           </ul>
         </div>
@@ -54,8 +54,8 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
               <CartesianGrid stroke="var(--chart-grid)" vertical={false} />
               <XAxis dataKey="short" tick={tick} stroke="var(--chart-grid)" tickLine={false} />
               <YAxis allowDecimals={false} tick={tick} stroke="var(--chart-grid)" tickLine={false} axisLine={false} width={36} />
-              <Tooltip content={ChartTooltip} cursor={{ fill: "var(--surface-muted)" }} isAnimationActive={false} />
-              <Bar dataKey="tasksDone" name="Tasks done" fill="var(--chart-done)" radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false}>
+              <Tooltip content={(tip: Omit<TipProps, "doneLabel">) => <ChartTooltip {...tip} doneLabel={doneLabel} />} cursor={{ fill: "var(--surface-muted)" }} isAnimationActive={false} />
+              <Bar dataKey="tasksDone" name={doneLabel} fill="var(--chart-done)" radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false}>
                 <LabelList dataKey="tasksDone" position="top" fill="var(--foreground)" fontSize={12} />
               </Bar>
               <Line dataKey="target" name="Target" type="monotone" stroke="var(--chart-target)" strokeWidth={2} strokeDasharray="6 4" dot={{ r: 3, fill: "var(--chart-target)" }} connectNulls={false} isAnimationActive={false} />
@@ -70,11 +70,11 @@ export function TrendChart({ points, headingLevel = 2 }: { points: TrendPoint[];
         </CollapsibleTrigger>
         <CollapsibleContent className="mt-2">
           <Table>
-            <TableCaption className="sr-only">Tasks done versus target by month</TableCaption>
+            <TableCaption className="sr-only">{doneLabel} versus target by month</TableCaption>
             <TableHeader>
               <TableRow>
                 <TableHead scope="col" className={DENSE}>Month</TableHead>
-                <TableHead scope="col" numeric className={DENSE}>Tasks done</TableHead>
+                <TableHead scope="col" numeric className={DENSE}>{doneLabel}</TableHead>
                 <TableHead scope="col" numeric className={DENSE}>Target</TableHead>
               </TableRow>
             </TableHeader>
