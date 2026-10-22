@@ -17,7 +17,7 @@ function eventFor(from: RequestStatus, to: RequestStatus): ContentEvent | null {
 export async function syncContentPostForRequest(
   tx: Prisma.TransactionClient, requestId: string, from: RequestStatus, to: RequestStatus, now: Date,
 ): Promise<{ postId: string; authorId: string; cancelled: boolean } | null> {
-  if (from === "CANCELLED" && to === "REQUESTED") return relinkRestored(tx, requestId);
+  if (from === "CANCELLED" && to === "REQUESTED") return relinkRestored(tx, requestId, now);
   const ev = eventFor(from, to);
   if (!ev) return null;
   const post = await tx.contentPost.findFirst({ where: { requestId }, select: { id: true, status: true, authorId: true } });
@@ -39,13 +39,13 @@ export async function syncContentPostForRequest(
  * A cancelled request was restored: relink the post the cancel unlinked, unless it has moved on since (resubmitted,
  * or approved into a new request, which clears `cancelledRequestId`).
  */
-async function relinkRestored(tx: Prisma.TransactionClient, requestId: string) {
+async function relinkRestored(tx: Prisma.TransactionClient, requestId: string, now: Date) {
   const post = await tx.contentPost.findFirst({ where: { cancelledRequestId: requestId }, select: { id: true, status: true, authorId: true, requestId: true } });
   if (!post || post.requestId || !isEditable(post.status)) return null;
   const res = await tx.contentPost.updateMany({
     where: { id: post.id, status: post.status, requestId: null },
     // Cancel cleared approvedAt; stamp it again so the post counts in the social media KPI (no approver: a restore is not one).
-    data: { status: "APPROVED", requestId, cancelledRequestId: null, approvedAt: new Date() },
+    data: { status: "APPROVED", requestId, cancelledRequestId: null, approvedAt: now },
   });
   return res.count === 1 ? { postId: post.id, authorId: post.authorId, cancelled: false } : null;
 }
