@@ -28,12 +28,18 @@ describe("My KPI tiles", () => {
     expect(tiles.find((t) => t.key === "onTime")!.hint).toBeUndefined();
   });
   it("null values become an em dash with the existing hints; workload only for designers", () => {
-    const tiles = Object.fromEntries(myKpiTiles(empty, "SOCIAL_MEDIA").map((t) => [t.key, t]));
+    const tiles = Object.fromEntries(myKpiTiles(empty, "OTHER").map((t) => [t.key, t]));
     expect(tiles.target.value).toBe("—");
     expect(tiles.progress.value).toBe("—");
     expect(tiles.onTime).toMatchObject({ value: "—", hint: "No finished tasks with a deadline this month." });
     expect(tiles.turnaround).toMatchObject({ value: "—", hint: "No finished tasks this month." });
     expect(tiles.workload).toMatchObject({ value: "—", hint: "Only tracked for designers." });
+  });
+
+  it("social media people get the post tiles only", () => {
+    const tiles = myKpiTiles(empty, "SOCIAL_MEDIA");
+    expect(tiles.map((t) => [t.key, t.label])).toEqual([["tasksDone", "Posts approved"], ["target", "Target"], ["progress", "Progress"], ["onTime", "On-time rate"]]);
+    expect(tiles[3]).toMatchObject({ value: "—", hint: "No approved posts with a planned date this month." });
   });
 });
 
