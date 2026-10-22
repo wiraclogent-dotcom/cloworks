@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 
-const h = vi.hoisted(() => ({ viewer: { id: "u1", appRole: "ADMIN", jobRole: "DESIGNER" } as Record<string, string> }));
+const h = vi.hoisted(() => ({ viewer: { id: "u1", appRole: "ADMIN", jobRole: "DESIGNER" } as Record<string, string>, suspend: false }));
 vi.mock("next/navigation", () => ({ usePathname: () => "/dashboard/team", useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/lib/session", () => ({ requireScope: async () => ({ user: h.viewer, db: {} }) }));
 // The sections are async server components (jsdom cannot render those): stand in with what the page hands them.
@@ -10,14 +10,19 @@ const { stub } = vi.hoisted(() => ({
   stub: (name: string) => (p: { team: string; keep?: Record<string, string> }) => <p data-testid={name}>{JSON.stringify({ team: p.team, keep: p.keep ?? null })}</p>,
 }));
 vi.mock("@/components/kpi/sections/TeamSummary", () => ({ TeamSummary: stub("summary") }));
-vi.mock("@/components/kpi/sections/TeamRequestsSection", () => ({ TeamRequestsSection: stub("requests") }));
+vi.mock("@/components/kpi/sections/TeamRequestsSection", () => ({
+  TeamRequestsSection: (p: { team: string }) => {
+    if (h.suspend) throw new Promise(() => {}); // still loading: the Suspense fallback shows
+    return stub("requests")(p);
+  },
+}));
 vi.mock("@/components/kpi/sections/TeamProjectsSection", () => ({ TeamProjectsSection: stub("projects") }));
 
 import { TeamContent } from "@/app/(app)/dashboard/team/TeamContent";
 
 const show = async (sp: Record<string, string> = {}) => render(await TeamContent({ searchParams: Promise.resolve(sp) }));
 const props = (id: string) => JSON.parse(screen.getByTestId(id).textContent!);
-afterEach(cleanup);
+afterEach(() => { cleanup(); h.suspend = false; });
 
 describe("Team KPI page", () => {
   it("gives an admin a Creative / Social media switch, on their own team by default", async () => {
@@ -48,6 +53,16 @@ describe("Team KPI page", () => {
     await show({ team: "social" });
     expect(screen.queryByRole("navigation", { name: "Team" })).toBeNull();
     expect(props("requests").team).toBe("creative");
+  });
+
+  it("while the main section loads, its skeleton is titled for the team", async () => {
+    h.viewer = { id: "u1", appRole: "ADMIN", jobRole: "DESIGNER" };
+    h.suspend = true;
+    await show({ team: "social" });
+    expect(screen.getByRole("heading", { name: "Content Plan" })).toBeTruthy();
+    cleanup();
+    await show();
+    expect(screen.getByRole("heading", { name: "Requests" })).toBeTruthy();
   });
 
   it("a social media lead sees the social media team", async () => {
