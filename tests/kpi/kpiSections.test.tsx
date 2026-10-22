@@ -8,11 +8,11 @@ vi.mock("@/app/(app)/dashboard/projects/actions", () => ({ addProjectTargets: vi
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push, back: vi.fn(), refresh: vi.fn() }) }));
 
-const queries = vi.hoisted(() => ({ loadKpiRequests: vi.fn(), loadTargets: vi.fn() }));
+const queries = vi.hoisted(() => ({ loadKpiRequests: vi.fn(), loadTargets: vi.fn(), loadKpiPosts: vi.fn() }));
 vi.mock("@/lib/kpi/queries", () => queries);
 const roster = vi.hoisted(() => ({ loadRosterEntries: vi.fn(), rosterCandidates: vi.fn(), rosterPeople: vi.fn() }));
 vi.mock("@/lib/kpi/roster", () => roster);
-const team = vi.hoisted(() => ({ listTeamKpiPeople: vi.fn() }));
+const team = vi.hoisted(() => ({ listTeamKpiPeople: vi.fn(), listSocialKpiPeople: vi.fn() }));
 vi.mock("@/lib/team", () => team);
 const pq = vi.hoisted(() => ({ loadTeamProjectKpi: vi.fn(), loadPersonProjectKpi: vi.fn(), targetYears: vi.fn(), kpi: null as unknown }));
 vi.mock("@/lib/kpi/projectQueries", () => pq);
@@ -47,10 +47,12 @@ beforeEach(() => {
   push.mockReset();
   queries.loadKpiRequests.mockReset().mockResolvedValue([]);
   queries.loadTargets.mockReset().mockResolvedValue([]);
+  queries.loadKpiPosts.mockReset().mockResolvedValue([]);
   roster.loadRosterEntries.mockReset().mockResolvedValue([]);
   roster.rosterCandidates.mockReset().mockResolvedValue([{ id: "a", name: "Ann" }]);
   roster.rosterPeople.mockReset().mockImplementation(async (_db: unknown, automatic: unknown[]) => automatic);
   team.listTeamKpiPeople.mockReset().mockResolvedValue([]);
+  team.listSocialKpiPeople.mockReset().mockResolvedValue([]);
   pq.loadTeamProjectKpi.mockReset().mockResolvedValue([]);
   pq.loadPersonProjectKpi.mockReset();
   pq.targetYears.mockReset().mockResolvedValue([2026, 2025]);
@@ -221,6 +223,31 @@ describe("TeamRequestsSection", () => {
     await run(true);
     expect(screen.getByText("No one is shown.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Manage people" })).toBeTruthy();
+  });
+});
+
+describe("TeamRequestsSection for the social media team", () => {
+  const syahda = { id: "s", name: "Syahda", jobRole: "SOCIAL_MEDIA" };
+  const run = async (canManage: boolean) =>
+    render(await TeamRequestsSection({ db: db(), month: "2026-10", canManage, team: "social", keep: { year: "2025", team: "social" } }));
+
+  it("is a Content Plan section with post columns, a social export and a month picker that keeps the team", async () => {
+    team.listSocialKpiPeople.mockResolvedValue([syahda]);
+    queries.loadKpiPosts.mockResolvedValue([{ id: "p1", authorId: "s", approvedAt: new Date("2026-10-05T03:00:00Z"), plannedAt: new Date("2026-10-06T00:00:00Z") }]);
+    await run(true);
+    const section = screen.getByRole("region", { name: "Content Plan" });
+    expect(section.id).toBe("requests");
+    expect(within(section).getAllByRole("columnheader").map((c) => c.textContent)).toEqual(["Person", "Posts approved", "Target", "Progress", "On-time", "Set target"]);
+    expect(within(section).getByRole("row", { name: /Syahda/ }).textContent).toContain("1");
+    expect(within(section).getByRole("link", { name: /Download/ }).getAttribute("href")).toBe("/dashboard/team/export?month=2026-10&team=social");
+    expect(roster.rosterCandidates).toHaveBeenCalledWith(expect.anything(), "social");
+    fireEvent.click(within(section).getByText("October 2026").closest("button")!);
+    expect(screen.getByRole("link", { name: "May 2026" }).getAttribute("href")).toBe("/dashboard/team?month=2026-05&year=2025&team=social");
+  });
+
+  it("says when there is nobody on the social media team", async () => {
+    await run(false);
+    expect(screen.getByText("No social media team members yet.")).toBeTruthy();
   });
 });
 

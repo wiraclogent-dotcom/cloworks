@@ -21,7 +21,7 @@ describe("Team KPI › Requests download", () => {
     teamRequestsData.mockResolvedValue({ rows: [row], automaticCount: 1 });
     render(await TeamRequestsSection({ db, month: "2026-09", canManage: false }));
     const link = screen.getByRole("link", { name: /download \.xlsx/i });
-    expect(link.getAttribute("href")).toBe("/dashboard/team/export?month=2026-09");
+    expect(link.getAttribute("href")).toBe("/dashboard/team/export?month=2026-09&team=creative");
     expect(link.hasAttribute("download")).toBe(true);
   });
 

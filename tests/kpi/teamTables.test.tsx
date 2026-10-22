@@ -44,6 +44,14 @@ describe("shared person cell", () => {
   });
 });
 
+describe("TeamTable measured in posts", () => {
+  it("says Posts approved and drops the request-only columns", () => {
+    render(<TeamTable rows={[{ ...reqRows[0], role: "SOCIAL_MEDIA" }]} month="2026-10" canEdit={false} measure="posts" />);
+    expect(screen.getAllByRole("columnheader").map((c) => c.textContent)).toEqual(["Person", "Posts approved", "Target", "Progress", "On-time"]);
+    expect(screen.getByRole("table").querySelector("caption")!.textContent).toBe("Content Plan KPI per person for the selected month");
+  });
+});
+
 describe("both tables share the frame", () => {
   it("each has the sideways-scroll hint and a scroll wrapper inside the card", () => {
     const a = render(<TeamTable rows={reqRows} month="2026-10" canEdit />);
