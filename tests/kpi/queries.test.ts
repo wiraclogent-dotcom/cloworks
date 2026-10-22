@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { JobRole, RequestStatus as S } from "@prisma/client";
-import { loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
+import { loadKpiPosts, loadKpiRequests, loadTargets } from "@/lib/kpi/queries";
 import { computeKpi } from "@/lib/kpi/metrics";
 import { setTargetWith } from "@/lib/kpi/targets";
 import { createTestDb, type TestDb } from "../helpers/testDb";
@@ -90,7 +90,7 @@ describe("kpi queries + targets", () => {
       expect(rows.find((r) => r.id === id)!.assigneeIds).toEqual([ids.pairA, ids.pairB]);
       expect(rows.find((r) => r.id === none)!.assigneeIds).toEqual([]);
     });
-    it("end to end: both assignees get the point and a requester sees it once", async () => {
+    it("end to end: both assignees get the point; the social media requester gets none (posts are their measure)", async () => {
       const id = await mkReq({ requestedAt: "2026-11-04T03:00:00Z", assignees: ["pairA", "pairB"], requester: "sm", doneAt: "2026-11-05T03:00:00Z" });
       const reqs = await loadKpiRequests(db.prisma, ["2026-11"]);
       for (const u of ["pairA", "pairB"]) {
@@ -98,7 +98,7 @@ describe("kpi queries + targets", () => {
         expect(k.tasksDone).toBe(1);
         expect(k.doneRequestIds).toEqual([id]);
       }
-      expect(computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-11", null).tasksDone).toBe(1);
+      expect(computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-11", null).tasksDone).toBe(0);
     });
   });
 
@@ -139,15 +139,37 @@ describe("kpi queries + targets", () => {
       expect(k.activeWorkload).toBe(2);
     });
 
-    it("social media user counted as requester per target role", async () => {
+    it("a social media target keeps its number but counts no requests (posts are their measure)", async () => {
       await mkReq({ requester: "sm", assignee: "fadli", requestedAt: "2026-10-12T03:00:00Z", doneAt: "2026-10-13T03:00:00Z" });
       await mkReq({ requester: "sm", requestedAt: "2026-10-12T03:00:00Z", doneAt: "2026-10-13T03:00:00Z" });
       await setTargetWith(db.prisma, { id: ids.lead, appRole: "LEAD" }, { userId: ids.sm, month: "2026-10", role: "SOCIAL_MEDIA", targetTasks: 20 });
       const t = (await loadTargets(db.prisma, ["2026-10"])).find((x) => x.userId === ids.sm)!;
       const reqs = await loadKpiRequests(db.prisma, ["2026-10"]);
       const k = computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-10", { role: t.role, targetTasks: t.targetTasks });
-      expect(k.tasksDone).toBe(2);
+      expect(k.tasksDone).toBe(0);
       expect(k.target).toBe(20);
+    });
+  });
+
+  describe("loadKpiPosts", () => {
+    it("returns approved planned posts of the months only", async () => {
+      const ch = await db.prisma.socialChannel.create({ data: { brandId: base.brandId, platform: "INSTAGRAM", handle: "kpi", displayName: "KPI" } });
+      const mkPost = async (o: { approvedAt: string | null; kind?: "PLANNED" | "PUBLISHED"; author?: string }) =>
+        (await db.prisma.contentPost.create({
+          data: {
+            channelId: ch.id, surface: "FEED", kind: o.kind ?? "PLANNED", position: 1, authorId: ids[o.author ?? "sm"],
+            approvedAt: o.approvedAt ? new Date(o.approvedAt) : null, plannedAt: new Date("2026-10-20T00:00:00+07:00"),
+          },
+        })).id;
+      const oct = await mkPost({ approvedAt: "2026-10-10T03:00:00Z" });
+      await mkPost({ approvedAt: "2026-10-31T17:10:00Z" }); // 1 Nov 00:10 WIB
+      await mkPost({ approvedAt: null });
+      await mkPost({ approvedAt: "2026-10-11T03:00:00Z", kind: "PUBLISHED" });
+      const byFadli = await mkPost({ approvedAt: "2026-10-12T03:00:00Z", author: "fadli" });
+      const posts = await loadKpiPosts(db.prisma, ["2026-10"]);
+      expect(posts.map((p) => p.id).sort()).toEqual([oct, byFadli].sort());
+      expect(posts.find((p) => p.id === oct)).toEqual({ id: oct, authorId: ids.sm, approvedAt: new Date("2026-10-10T03:00:00Z"), plannedAt: new Date("2026-10-20T00:00:00+07:00") });
+      expect((await loadKpiPosts(db.prisma, ["2026-10"], [ids.sm])).map((p) => p.id)).toEqual([oct]);
     });
   });
 

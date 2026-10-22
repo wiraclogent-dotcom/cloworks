@@ -265,4 +265,52 @@ describe("Team KPI roster", () => {
       expect(k.map((x) => x.name)).toEqual(["Cara"]);
     });
   });
+
+  describe("the social media team", () => {
+    let syahdaId: string, dausId: string, idzniId: string;
+    beforeAll(async () => {
+      const mk = async (k: string, appRole: "REQUESTER" | "LEAD" = "REQUESTER") =>
+        (await db.prisma.user.create({ data: { email: `${k}@clogent.co.id`, name: k, fullName: k, appRole, jobRole: "SOCIAL_MEDIA" } })).id;
+      syahdaId = await mk("Syahda");
+      dausId = await mk("Daus");
+      idzniId = await mk("Idzni", "LEAD");
+    });
+
+    it("the two teams' candidates never overlap: social media people only on the social team, requesters included", async () => {
+      expect((await rosterCandidates(db.prisma, "social")).map((x) => x.name)).toEqual(["Daus", "Idzni", "Syahda"]);
+      expect((await rosterCandidates(db.prisma)).map((x) => x.name)).toEqual(["Ana", "Budi", "Cara", "Lena"]);
+    });
+
+    it("an override made on Social media survives a save on Creative", async () => {
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [idzniId], year: 2026, team: "social" })).toEqual({ ok: true });
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [], year: 2026 })).toEqual({ ok: true });
+      expect(await entries("PROJECTS")).toEqual([[idzniId, true]]);
+    });
+
+    it("someone added on the Creative table does not show on the Social media table", async () => {
+      await db.raw.kpiRosterEntry.create({ data: { workspaceId: "clogent", userId: budiId, kind: "REQUESTS", included: true, updatedById: leadId } });
+      const all = await loadRosterEntries(db.prisma, "REQUESTS");
+      const social = await rosterPeople(db.prisma, [], all, "social");
+      expect(social.map((p) => p.name)).toEqual([]);
+      expect((await rosterPeople(db.prisma, [], all)).map((p) => p.name)).toEqual(["Budi"]);
+    });
+
+    it("on the social team, unticking Daus hides only Daus and adding a designer is NOT_FOUND", async () => {
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [syahdaId, idzniId], month: "2026-10", team: "social" })).toEqual({ ok: true });
+      expect(await entries("REQUESTS")).toEqual([[dausId, false]]);
+      const r = await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [syahdaId, idzniId, anaId], month: "2026-10", team: "social" });
+      expect(r).toMatchObject({ ok: false, code: "NOT_FOUND" });
+    });
+
+    it("Projects on the social team only sees social media people with targets", async () => {
+      for (const userId of [anaId, syahdaId]) await db.prisma.projectKpiTarget.create({ data: { userId, year: 2026, projectId, itemTitle: "X", createdById: leadId } });
+      expect(await setKpiRosterWith(db.prisma, lead(), { kind: "PROJECTS", userIds: [], year: 2026, team: "social" })).toEqual({ ok: true });
+      expect(await entries("PROJECTS")).toEqual([[syahdaId, false]]);
+    });
+
+    it("an unknown team is a validation error", async () => {
+      const r = await setKpiRosterWith(db.prisma, lead(), { kind: "REQUESTS", userIds: [], month: "2026-10", team: "sales" as never });
+      expect(r).toEqual({ ok: false, code: "VALIDATION", message: "Choose a team." });
+    });
+  });
 });

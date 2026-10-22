@@ -61,6 +61,16 @@ describe("teamRequestsWorkbook", () => {
   });
 });
 
+describe("teamRequestsWorkbook measured in posts", () => {
+  it("is a Content Plan sheet with post columns only", () => {
+    const ws = teamRequestsWorkbook(rows, "2026-10", now, "posts").getWorksheet("Content Plan")!;
+    expect(ws.getCell("A1").value).toBe("Team KPI: Content Plan, October 2026");
+    expect(values(ws, TEAM_REQUESTS_HEADER_ROW)).toEqual(["Name", "Role", "Posts approved", "Target", "Progress", "On-time", "Note"]);
+    expect(values(ws, TEAM_REQUESTS_HEADER_ROW + 1).slice(0, 3)).toEqual(["Ayu", "Designer", 12]);
+    expect(teamRequestsFilename("2026-10", "posts")).toBe("team-kpi-content-plan-2026-10.xlsx");
+  });
+});
+
 describe("teamRequestsFilename", () => {
   it("names the file after the month", () => {
     expect(teamRequestsFilename("2026-10")).toBe("team-kpi-requests-2026-10.xlsx");

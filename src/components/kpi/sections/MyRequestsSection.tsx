@@ -13,6 +13,7 @@ import { TrendChart } from "@/components/kpi/TrendChart";
 import { cn } from "@/components/ui/cn";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card, CardHeader, CardTitle } from "@/components/shadcn/card";
+import { MEASURE_LABEL } from "@/lib/kpi/team";
 
 const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone }> = {
   tasksDone: { icon: <CircleCheckBig />, tone: "done" },
@@ -26,7 +27,7 @@ const TILE_LOOK: Record<KpiTileData["key"], { icon: React.ReactNode; tone: Tone 
 };
 
 /**
- * My KPI › Requests: the person's month (tiles, target progress, six-month trend). `keep` is the Projects section's
+ * My KPI › Requests (or Content Plan for a social media basis: approved posts): the person's month (tiles, target progress, six-month trend). `keep` is the Projects section's
  * params (year, q) so changing the month leaves them alone. When nothing happened that month and there is no target,
  * a single line replaces the content (the header and picker stay).
  */
@@ -34,15 +35,17 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
   db: ScopedDb; subject: { id: string; name: string; jobRole: JobRole }; own: boolean; month: string;
   keep?: Record<string, string | undefined>;
 }) {
-  const { kpi, target, basisRole, points, isEmpty } = await myRequestsData(db, subject.id, subject.jobRole, month);
+  const { kpi, target, basisRole, measure, points, isEmpty } = await myRequestsData(db, subject.id, subject.jobRole, month);
+  const label = MEASURE_LABEL[measure];
+  const headline = `${label.done} vs target, ${monthLabel(month)}`;
 
   // Tasks done is on the page summary now; the rest stay as this person's detail. An odd count widens the last tile.
   const tiles = myKpiTiles(kpi, basisRole).filter((t) => t.key !== "tasksDone");
   return (
-    <KpiSection id="requests" title="Requests"
+    <KpiSection id="requests" title={label.section}
       controls={<MonthPicker month={month} current={jakartaMonth(new Date())} userId={own ? undefined : subject.id} action="/dashboard" keep={keep} />}>
       {isEmpty ? (
-        <Card className="px-4 py-3"><EmptyState size="inline" title={`No request work in ${monthLabel(month)}.`} /></Card>
+        <Card className="px-4 py-3"><EmptyState size="inline" title={measure === "posts" ? `No Content Plan posts approved in ${monthLabel(month)}.` : `No request work in ${monthLabel(month)}.`} /></Card>
       ) : (
         <div className="space-y-5">
           <section aria-labelledby="kpi-numbers">
@@ -59,13 +62,13 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
             <section aria-labelledby="headline">
               <CardHeader className="mb-4">
                 <CardTitle id="headline" as="h3">Monthly target</CardTitle>
-                <p className="text-compact text-muted-foreground">Tasks done vs target, {monthLabel(month)}</p>
+                <p className="text-compact text-muted-foreground">{headline}</p>
               </CardHeader>
-              <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={`Tasks done vs target, ${monthLabel(month)}`} />
+              <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={headline} unit={measure === "posts" ? "posts" : "tasks"} />
               {target?.note ? <p className="mt-3 text-sm text-muted-foreground">Note: {target.note}</p> : null}
             </section>
           </Card>
-          <TrendChart points={points} headingLevel={3} />
+          <TrendChart points={points} headingLevel={3} doneLabel={label.done} />
         </div>
       )}
     </KpiSection>

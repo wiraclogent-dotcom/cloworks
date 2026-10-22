@@ -2,7 +2,8 @@ import type { JobRole, KpiKind } from "@prisma/client";
 import type { ScopedDb } from "@/lib/db";
 import { can } from "@/lib/permissions";
 import type { SessionUser } from "@/lib/session-core";
-import { listTeamKpiPeople } from "@/lib/team";
+import { listSocialKpiPeople, listTeamKpiPeople } from "@/lib/team";
+import { KPI_TEAMS, type KpiTeam } from "./team";
 import { isValidMonth } from "./months";
 import { loadTargets } from "./queries";
 
@@ -31,10 +32,19 @@ export async function loadRosterEntries(db: ScopedDb, kind: KpiKind): Promise<{ 
   return db.kpiRosterEntry.findMany({ where: { kind }, select: { userId: true, included: true } });
 }
 
-/** Everyone who may be put on a roster: active, not a requester, in this workspace. By name. */
-export function rosterCandidates(db: ScopedDb): Promise<{ id: string; name: string }[]> {
+/**
+ * A person's overrides belong to the team of their job role, so the two teams' rosters never touch each other's
+ * people (one table's save cannot hide or add someone on the other). Social media: any app role; creative: no requesters.
+ */
+const TEAM_PEOPLE = {
+  social: { jobRole: "SOCIAL_MEDIA" },
+  creative: { appRole: { not: "REQUESTER" }, jobRole: { not: "SOCIAL_MEDIA" } },
+} as const;
+
+/** Everyone who may be put on a team's roster, in this workspace, by name: the team's active people. */
+export function rosterCandidates(db: ScopedDb, team: KpiTeam = "creative"): Promise<{ id: string; name: string }[]> {
   return db.user.findMany({
-    where: { active: true, appRole: { not: "REQUESTER" } },
+    where: { active: true, ...TEAM_PEOPLE[team] },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
@@ -43,16 +53,17 @@ export function rosterCandidates(db: ScopedDb): Promise<{ id: string; name: stri
 type Person = { id: string; name: string; jobRole: JobRole };
 
 /**
- * Requests roster: the automatic people with the overrides applied, always sorted by name. Added people are loaded in
- * one query; an override for someone who has since left or become a requester is ignored.
+ * Requests roster of `team`: the automatic people with the overrides applied, always sorted by name. Added people are
+ * loaded in one query, only the team's own (an override for someone who has since left, or who belongs to the other
+ * team, is ignored).
  */
-export async function rosterPeople(db: ScopedDb, automatic: Person[], entries: { userId: string; included: boolean }[]): Promise<Person[]> {
+export async function rosterPeople(db: ScopedDb, automatic: Person[], entries: { userId: string; included: boolean }[], team: KpiTeam = "creative"): Promise<Person[]> {
   const wanted = new Set(resolveRoster(automatic.map((p) => p.id), entries));
   const have = new Set(automatic.map((p) => p.id));
   const missing = [...wanted].filter((id) => !have.has(id));
   const added: Person[] = missing.length
     ? await db.user.findMany({
-        where: { id: { in: missing }, active: true, appRole: { not: "REQUESTER" } },
+        where: { id: { in: missing }, active: true, ...TEAM_PEOPLE[team] },
         select: { id: true, name: true, jobRole: true },
       })
     : [];
@@ -78,7 +89,7 @@ function capped(userIds: string[]): string[] | null {
 export async function setRosterWith(
   db: ScopedDb,
   actor: Actor,
-  input: { kind: KpiKind; userIds: string[]; automaticIds: string[] },
+  input: { kind: KpiKind; userIds: string[]; automaticIds: string[]; team?: KpiTeam },
 ): Promise<RosterResult> {
   if (!can(actor.appRole, "dashboard.team")) return fail("FORBIDDEN", NOT_ALLOWED);
   if (!input || typeof input !== "object") return fail("VALIDATION", "Invalid request.");
@@ -89,7 +100,7 @@ export async function setRosterWith(
   if (!ids) return fail("VALIDATION", `Choose at most ${MAX_PEOPLE} people.`);
   const desired = new Set(ids);
 
-  const candidates = await rosterCandidates(db);
+  const candidates = await rosterCandidates(db, input.team);
   const known = new Set(candidates.map((c) => c.id));
   if (ids.some((id) => !known.has(id))) return fail("NOT_FOUND", "One of those people was not found.");
 
@@ -109,23 +120,25 @@ export async function setRosterWith(
 }
 
 /** The ids the table shows with no overrides, recomputed on the server (never trusted from the client). */
-export async function automaticRosterIds(db: ScopedDb, kind: KpiKind, scope: { month?: string; year?: number }): Promise<string[]> {
+export async function automaticRosterIds(db: ScopedDb, kind: KpiKind, scope: { month?: string; year?: number }, team: KpiTeam = "creative"): Promise<string[]> {
   if (kind === "REQUESTS") {
     const targets = await loadTargets(db, [scope.month!]);
-    return (await listTeamKpiPeople(db, targets)).map((p) => p.id);
+    return (await (team === "social" ? listSocialKpiPeople : listTeamKpiPeople)(db, targets)).map((p) => p.id);
   }
-  const rows = await db.projectKpiTarget.findMany({ where: { year: scope.year! }, select: { userId: true }, distinct: ["userId"] });
-  return rows.map((r) => r.userId);
+  // Projects: the year's target holders of this team (job role SOCIAL_MEDIA → social, anyone else → creative).
+  const rows = await db.projectKpiTarget.findMany({ where: { year: scope.year! }, select: { userId: true, user: { select: { jobRole: true } } }, distinct: ["userId"] });
+  return rows.filter((r) => (r.user.jobRole === "SOCIAL_MEDIA") === (team === "social")).map((r) => r.userId);
 }
 
-/** What the dialog sends: the full desired list, and the month (Requests) or year (Projects) it was looking at. */
-export type SetKpiRosterInput = { kind: KpiKind; userIds: string[]; month?: string; year?: number };
+/** What the dialog sends: the full desired list, the month (Requests) or year (Projects) and the team it was looking at. */
+export type SetKpiRosterInput = { kind: KpiKind; userIds: string[]; month?: string; year?: number; team?: KpiTeam };
 
 export async function setKpiRosterWith(db: ScopedDb, actor: Actor, input: SetKpiRosterInput): Promise<RosterResult> {
   if (!can(actor.appRole, "dashboard.team")) return fail("FORBIDDEN", NOT_ALLOWED);
   if (!input || typeof input !== "object") return fail("VALIDATION", "Invalid request.");
-  const { kind, userIds, month, year } = input;
+  const { kind, userIds, month, year, team = "creative" } = input;
   if (!KINDS.includes(kind)) return fail("VALIDATION", "Choose Requests or Projects.");
+  if (!KPI_TEAMS.includes(team)) return fail("VALIDATION", "Choose a team.");
   if (kind === "REQUESTS" && (typeof month !== "string" || !isValidMonth(month))) return fail("VALIDATION", "Invalid month.");
   if (kind === "PROJECTS" && (typeof year !== "number" || !Number.isInteger(year) || year < 2020 || year > 2100)) {
     return fail("VALIDATION", "Year must be between 2020 and 2100.");
@@ -134,6 +147,6 @@ export async function setKpiRosterWith(db: ScopedDb, actor: Actor, input: SetKpi
   if (!Array.isArray(userIds) || userIds.some((id) => typeof id !== "string" || !id)) return fail("VALIDATION", "Invalid list of people.");
   const ids = capped(userIds);
   if (!ids) return fail("VALIDATION", `Choose at most ${MAX_PEOPLE} people.`);
-  const automaticIds = await automaticRosterIds(db, kind, { month, year });
-  return setRosterWith(db, actor, { kind, userIds: ids, automaticIds });
+  const automaticIds = await automaticRosterIds(db, kind, { month, year }, team);
+  return setRosterWith(db, actor, { kind, userIds: ids, automaticIds, team });
 }

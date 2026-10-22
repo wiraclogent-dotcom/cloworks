@@ -31,6 +31,13 @@ describe("teamSummaryCells", () => {
   const projects = [kpi("a", [q(1, 2, 1, 0), q(2, 3, 1, 1), none(), none()]), kpi("d", [none(), none(), none(), q(1, 1, 0, 1)])];
   const cells = teamSummaryCells({ month: "2026-10", year: 2026, requestRows: rows, projectKpis: projects });
 
+  it("labels the cards in posts for the social media team", () => {
+    const posts = teamSummaryCells({ month: "2026-10", year: 2026, requestRows: rows, projectKpis: projects, measure: "posts" });
+    expect(posts.map((c) => c.label).slice(1, 3)).toEqual(["Posts approved · Oct 2026", "Post target progress · Oct 2026"]);
+    expect(posts[1].hint).toBe("Each post counted once.");
+    expect(posts[0].hint).toBe("3 Content Plan · 2 projects");
+  });
+
   it("has the five cards in order with period labels", () => {
     expect(cells.map((c) => c.key)).toEqual(["people", "reqDone", "reqProgress", "projDone", "projOnTime"]);
     expect(cells.map((c) => c.label)).toEqual(["People", "Request tasks done · Oct 2026", "Request target progress · Oct 2026", "Project items done · 2026", "Project on time · 2026"]);

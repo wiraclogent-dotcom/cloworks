@@ -43,6 +43,15 @@ export type KpiTileData = {
 export function myKpiTiles(kpi: KpiResult, basisRole: JobRole): KpiTileData[] {
   const pct = progressPercent(kpi.progress);
   const designer = basisRole === JobRole.DESIGNER;
+  // Social media people are measured in approved Content Plan posts: no turnaround, revisions, outputs or workload.
+  if (basisRole === JobRole.SOCIAL_MEDIA) {
+    return [
+      { key: "tasksDone", label: "Posts approved", value: formatCount(kpi.tasksDone) },
+      { key: "target", label: "Target", value: formatCount(kpi.target), hint: kpi.target === null ? "No target set for this month." : undefined },
+      { key: "progress", label: "Progress", value: pct === null ? "—" : `${pct}%` },
+      { key: "onTime", label: "On-time rate", value: formatPercent(kpi.onTimeRate), hint: kpi.onTimeRate === null ? "No approved posts with a planned date this month." : undefined },
+    ];
+  }
   return [
     { key: "tasksDone", label: "Tasks done", value: formatCount(kpi.tasksDone) },
     { key: "target", label: "Target", value: formatCount(kpi.target), hint: kpi.target === null ? "No target set for this month." : undefined },

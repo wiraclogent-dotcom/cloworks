@@ -1,6 +1,7 @@
 import type { AppRole } from "@prisma/client";
 import { can } from "@/lib/permissions";
 import { isValidMonth, jakartaMonth } from "@/lib/kpi/months";
+import { KPI_TEAMS, type KpiTeam } from "@/lib/kpi/team";
 
 export type RawParam = string | string[] | undefined;
 const first = (v: RawParam) => (Array.isArray(v) ? v[0] : v);
@@ -31,6 +32,12 @@ export function canViewPersonKpi(viewer: { id: string; appRole: AppRole }, userI
 export function parseViewParam(raw: RawParam): "requests" | "projects" | undefined {
   const v = first(raw);
   return v === "projects" || v === "requests" ? v : undefined;
+}
+
+/** `team=creative|social` (Team KPI); anything else is ignored. Whether the viewer may choose is `resolveTeam`'s call. */
+export function parseTeamParam(raw: RawParam): KpiTeam | undefined {
+  const v = first(raw);
+  return KPI_TEAMS.find((t) => t === v);
 }
 
 /** The first value of each named param that is present, so a picker's links can carry the other section's state. */

@@ -20,6 +20,14 @@ requiresPermission: dashboard.self
 
 If a number shows a dash or a note, there was not enough data that month to calculate it.
 
+## Social media: Content Plan posts
+
+If your job role is **Social media**, the section is called **Content Plan** and counts your posts instead of requests:
+
+- **Posts approved**: your Content Plan posts a lead approved in the month.
+- **Target**: the number of posts you aim to have approved.
+- **On-time rate**: the share of approved posts that were approved on or before their planned date.
+
 ## Shared requests
 
 A request can have several assignees, for example a designer and a video editor. Every assignee gets the full point: when a shared request is done, it counts as one task done for each of them, with its outputs, on-time result and turnaround.

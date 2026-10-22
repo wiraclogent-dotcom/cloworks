@@ -16,6 +16,22 @@ export function listCreativeTeam(db: Pick<PrismaClient, "user">): Promise<{ id: 
   });
 }
 
+/** The social media team for Team KPI (spec 2026-10-22): job role decides, whatever the app role (requesters included). */
+export const SOCIAL_TEAM = { active: true, jobRole: "SOCIAL_MEDIA" } as const;
+
+/** Social media Team KPI rows for a month: the social media team, plus anyone with a SOCIAL_MEDIA target that month. By name. */
+export function listSocialKpiPeople(
+  db: Pick<PrismaClient, "user">,
+  targets: { userId: string; role: JobRole }[],
+): Promise<{ id: string; name: string; jobRole: JobRole }[]> {
+  const socialTargets = targets.filter((t) => t.role === "SOCIAL_MEDIA").map((t) => t.userId);
+  return db.user.findMany({
+    where: { OR: [SOCIAL_TEAM, { id: { in: socialTargets } }] },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, jobRole: true },
+  });
+}
+
 /**
  * Assign-picker options: the team, plus every current assignee who is not on it at the top, labelled with why and
  * flagged `offTeam` (the picker never offers those to add: the server would refuse them).

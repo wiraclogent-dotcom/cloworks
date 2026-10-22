@@ -1,6 +1,7 @@
 import { formatCount, progressPercent } from "./format";
 import { teamSummary } from "./presentation";
 import type { PersonProjectKpi } from "./projectQueries";
+import { MEASURE_LABEL, type KpiMeasure } from "./team";
 
 /** One summary card. `key` picks the icon and is the card's `data-kpi`. */
 export type SummaryCell = { key: "people" | "reqDone" | "reqProgress" | "projDone" | "projOnTime"; label: string; value: string; hint?: string };
@@ -29,20 +30,23 @@ const projOnTime = (t: { onTime: number; late: number }, year: number): SummaryC
  * Team KPI summary across both rosters: people (union), request totals for the month (a request several people
  * share counts once: the union of each row's `doneRequestIds`), project totals for the year.
  */
-export function teamSummaryCells({ month, year, requestRows, projectKpis }: {
+export function teamSummaryCells({ month, year, requestRows, projectKpis, measure = "requests" }: {
   month: string; year: number;
   requestRows: { userId: string; kpi: { doneRequestIds: string[]; progress: number | null } }[];
   projectKpis: (Quarters & { userId: string })[];
+  /** posts: the social media team (approved Content Plan posts). */
+  measure?: KpiMeasure;
 }): SummaryCell[] {
   const sum = teamSummary(requestRows);
+  const label = MEASURE_LABEL[measure];
+  const mainRows = measure === "posts" ? `${requestRows.length} Content Plan` : `${requestRows.length} ${requestRows.length === 1 ? "request" : "requests"}`;
   const people = new Set([...requestRows.map((r) => r.userId), ...projectKpis.map((k) => k.userId)]);
   const period = shortMonthLabel(month);
   const totals = projectTotals(projectKpis);
   return [
-    { key: "people", label: "People", value: formatCount(people.size), hint: `${requestRows.length} ${requestRows.length === 1 ? "request" : "requests"} · ${projectKpis.length} ${projectKpis.length === 1 ? "project" : "projects"}` },
-    { key: "reqDone", label: `Request tasks done · ${period}`, value: formatCount(sum.tasksDone),
-      hint: "Each request counted once, even when several people worked on it." },
-    { key: "reqProgress", label: `Request target progress · ${period}`, value: sum.avgProgress === null ? "—" : `${sum.avgProgress}%`,
+    { key: "people", label: "People", value: formatCount(people.size), hint: `${mainRows} · ${projectKpis.length} ${projectKpis.length === 1 ? "project" : "projects"}` },
+    { key: "reqDone", label: `${label.summaryDone} · ${period}`, value: formatCount(sum.tasksDone), hint: label.doneHint },
+    { key: "reqProgress", label: `${label.summaryProgress} · ${period}`, value: sum.avgProgress === null ? "—" : `${sum.avgProgress}%`,
       hint: sum.avgProgress === null ? "Nobody has a target this month." : `Across ${sum.withTarget} ${sum.withTarget === 1 ? "person" : "people"} with a target.` },
     projDone(totals, year),
     projOnTime(totals, year),
@@ -53,18 +57,20 @@ export function teamSummaryCells({ month, year, requestRows, projectKpis }: {
  * One person's summary: the Team cards without People. `request` is null when the Requests section is empty that
  * month; `project` is null (or has no items) when there are no project targets that year. Empty sections show "—".
  */
-export function personSummaryCells({ month, year, request, project }: {
+export function personSummaryCells({ month, year, request, project, measure = "requests" }: {
   month: string; year: number;
   request: { tasksDone: number; target: number | null; progress: number | null } | null;
   project: Quarters | null;
+  measure?: KpiMeasure;
 }): SummaryCell[] {
+  const label = MEASURE_LABEL[measure];
   const period = shortMonthLabel(month);
   const pct = request ? progressPercent(request.progress) : null;
   const totals = project ? projectTotals([project]) : { done: 0, items: 0, onTime: 0, late: 0 };
   return [
-    { key: "reqDone", label: `Request tasks done · ${period}`, value: request ? formatCount(request.tasksDone) : "—" },
-    { key: "reqProgress", label: `Request target progress · ${period}`, value: pct === null ? "—" : `${pct}%`,
-      hint: request && request.target !== null && pct !== null ? `${request.tasksDone} of ${request.target} tasks` : "No target this month." },
+    { key: "reqDone", label: `${label.summaryDone} · ${period}`, value: request ? formatCount(request.tasksDone) : "—" },
+    { key: "reqProgress", label: `${label.summaryProgress} · ${period}`, value: pct === null ? "—" : `${pct}%`,
+      hint: request && request.target !== null && pct !== null ? `${request.tasksDone} of ${request.target} ${measure === "posts" ? "posts" : "tasks"}` : "No target this month." },
     projDone(totals, year),
     projOnTime(totals, year),
   ];

@@ -129,14 +129,14 @@ describe("request lifecycle (seeded roster, real cores, embedded Postgres)", () 
     expect(sent).toEqual([]); // seeded roster has no email addresses, so only in-app rows
   });
 
-  it("KPI: Fadli (designer) and Fafa (social media requester) both count the task", async () => {
+  it("KPI: Fadli (designer) counts the task; Fafa (social media requester) does not: her measure is Content Plan posts", async () => {
     expect(await setTargetWith(db.prisma, u.Idzni, { userId: u.Fadli.id, month: MONTH, role: "DESIGNER", targetTasks: 4 })).toEqual({ ok: true });
     expect(await setTargetWith(db.prisma, u.Wira, { userId: u.Fafa.id, month: MONTH, role: "SOCIAL_MEDIA", targetTasks: 2 })).toEqual({ ok: true });
 
     const fadli = await kpi("Fadli", "DESIGNER");
     expect(fadli).toMatchObject({ tasksDone: 1, target: 4, progress: 0.25, totalOutputs: 2, revisionRounds: 1, activeWorkload: 0 });
     const fafa = await kpi("Fafa", "SOCIAL_MEDIA");
-    expect(fafa).toMatchObject({ tasksDone: 1, target: 2, progress: 0.5, totalOutputs: 2, activeWorkload: 0 });
+    expect(fafa).toMatchObject({ tasksDone: 0, target: 2, progress: 0, totalOutputs: 0, activeWorkload: 0 });
     // Someone else with the same month sees nothing.
     const reqs = await loadKpiRequests(db.prisma, [MONTH]);
     expect(computeKpi(reqs, u.Irsyad, MONTH, { role: "DESIGNER", targetTasks: 4 })).toMatchObject({ tasksDone: 0, totalOutputs: 0 });

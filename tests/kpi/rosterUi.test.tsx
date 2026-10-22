@@ -52,6 +52,13 @@ describe("ManagePeopleDialog", () => {
     expect(refresh).toHaveBeenCalled();
   });
 
+  it("sends the team when the table is a team's", async () => {
+    setKpiRoster.mockResolvedValue({ ok: true });
+    open({ team: "social" });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(setKpiRoster).toHaveBeenCalledWith({ kind: "REQUESTS", userIds: ["a", "c"], month: "2026-10", team: "social" }));
+  });
+
   it("sends the year for the projects kind", async () => {
     setKpiRoster.mockResolvedValue({ ok: true });
     open({ kind: "PROJECTS", month: undefined, year: 2026, selected: [] });

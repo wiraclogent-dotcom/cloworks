@@ -1,5 +1,6 @@
 import { JobRole, RequestStatus } from "@prisma/client";
-import { JAKARTA_OFFSET_MS, workingDaysBetween } from "./workingDays";
+import { workingDaysBetween } from "./workingDays";
+import { dayOf, monthOf } from "./jakarta";
 
 export type KpiRequest = {
   id: string;
@@ -28,19 +29,8 @@ export type KpiResult = {
   activeWorkload: number;
 };
 
-// Timezone rule: all calendar logic uses Asia/Jakarta (UTC+7, no DST): the month
-// of `requestedAt`, working days, and deadline dates.
-function jakarta(d: Date): Date {
-  return new Date(d.getTime() + JAKARTA_OFFSET_MS);
-}
-function monthOf(d: Date): string {
-  const j = jakarta(d);
-  return `${j.getUTCFullYear()}-${String(j.getUTCMonth() + 1).padStart(2, "0")}`;
-}
-// Jakarta calendar day index; deadlines are dates, so done any time that day is on time.
-function dayOf(d: Date): number {
-  return Math.floor(jakarta(d).getTime() / 86_400_000);
-}
+// Timezone rule: all calendar logic uses Asia/Jakarta (UTC+7, no DST): the month of `requestedAt`, working days and
+// deadline dates (helpers in ./jakarta).
 
 function latestDoneAt(r: KpiRequest): Date | null {
   let latest: Date | null = null;
@@ -58,14 +48,9 @@ export function computeKpi(
 ): KpiResult {
   const basisRole = target ? target.role : user.jobRole;
 
-  // DESIGNER -> user is one of the assignees (each earns the full point); SOCIAL_MEDIA -> user is the requester;
-  // OTHER -> nothing counts (no KPI basis). Unassigned never matches a designer.
-  const isUsers = (r: KpiRequest): boolean =>
-    basisRole === JobRole.DESIGNER
-      ? r.assigneeIds.includes(user.id)
-      : basisRole === JobRole.SOCIAL_MEDIA
-        ? r.requesterId === user.id
-        : false;
+  // DESIGNER -> user is one of the assignees (each earns the full point); anything else -> nothing counts here
+  // (SOCIAL_MEDIA is measured in Content Plan posts, computeContentKpi). Unassigned never matches a designer.
+  const isUsers = (r: KpiRequest): boolean => basisRole === JobRole.DESIGNER && r.assigneeIds.includes(user.id);
 
   // Counted = in the month (by requestedAt), KPI-included, not cancelled, belongs to user.
   const inMonth = requests.filter(

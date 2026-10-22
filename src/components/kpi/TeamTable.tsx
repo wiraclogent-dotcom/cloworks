@@ -9,6 +9,7 @@ import { PROGRESS_FILL } from "./ProgressBar";
 import { TargetEditor } from "./TargetEditor";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { TeamPersonCell, TeamTableFrame } from "./TeamTableParts";
+import { MEASURE_LABEL, type KpiMeasure } from "@/lib/kpi/team";
 
 export type TeamRow = { userId: string; name: string; role: JobRole; kpi: KpiResult; note?: string | null };
 
@@ -27,22 +28,28 @@ export function TeamProgress({ name, pct }: { name: string; pct: number }) {
   );
 }
 
-/** `canOpen`: names link to each person's KPI page (leads and admins; for everyone else `user=` is ignored). */
-export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: TeamRow[]; month: string; canEdit: boolean; canOpen?: boolean }) {
+/**
+ * `canOpen`: names link to each person's KPI page (leads and admins; for everyone else `user=` is ignored).
+ * `measure` posts (the social media team) renames Tasks done and drops Turnaround and Workload, which posts don't have.
+ */
+export function TeamTable({ rows, month, canEdit, canOpen = true, measure = "requests" }: {
+  rows: TeamRow[]; month: string; canEdit: boolean; canOpen?: boolean; measure?: KpiMeasure;
+}) {
+  const requests = measure === "requests";
   // ≥ 1024px (lg) the table fits its card: no min width, Turnaround and Workload only from xl (1280px), compact editor.
   // Below lg it keeps a min width and scrolls sideways inside the card, with a visible hint.
   const xlOnly = "hidden xl:table-cell";
   return (
-    <TeamTableFrame caption="KPI per person for the selected month" minWidth={canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0"}>
+    <TeamTableFrame caption={requests ? "KPI per person for the selected month" : "Content Plan KPI per person for the selected month"} minWidth={canEdit ? "min-w-[46rem] lg:min-w-0" : "min-w-[36rem] lg:min-w-0"}>
       <TableHeader>
         <TableRow>
           <TableHead scope="col" className="w-full">Person</TableHead>
-          <TableHead scope="col" numeric className="w-24">Tasks done</TableHead>
+          <TableHead scope="col" numeric className="w-24">{MEASURE_LABEL[measure].done}</TableHead>
           <TableHead scope="col" numeric className="w-20">Target</TableHead>
           <TableHead scope="col" className="w-40">Progress</TableHead>
           <TableHead scope="col" numeric className="w-24">On-time</TableHead>
-          <TableHead scope="col" numeric className={cn(xlOnly, "w-32")}>Turnaround (days)</TableHead>
-          <TableHead scope="col" numeric className={cn(xlOnly, "w-24")}>Workload</TableHead>
+          {requests ? <TableHead scope="col" numeric className={cn(xlOnly, "w-32")}>Turnaround (days)</TableHead> : null}
+          {requests ? <TableHead scope="col" numeric className={cn(xlOnly, "w-24")}>Workload</TableHead> : null}
           {canEdit ? <TableHead scope="col" className="w-44">Set target</TableHead> : null}
         </TableRow>
       </TableHeader>
@@ -56,8 +63,8 @@ export function TeamTable({ rows, month, canEdit, canOpen = true }: { rows: Team
               <TableCell numeric>{formatCount(r.kpi.target)}</TableCell>
               <TableCell>{pct === null ? <span className="text-muted-foreground">—</span> : <TeamProgress name={r.name} pct={pct} />}</TableCell>
               <TableCell numeric>{formatPercent(r.kpi.onTimeRate)}</TableCell>
-              <TableCell numeric className={xlOnly}>{formatDays(r.kpi.avgTurnaroundDays)}</TableCell>
-              <TableCell numeric className={xlOnly}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</TableCell>
+              {requests ? <TableCell numeric className={xlOnly}>{formatDays(r.kpi.avgTurnaroundDays)}</TableCell> : null}
+              {requests ? <TableCell numeric className={xlOnly}>{r.role === "DESIGNER" ? formatCount(r.kpi.activeWorkload) : "—"}</TableCell> : null}
               {canEdit ? (
                 <TableCell>
                   <TargetEditor userId={r.userId} name={r.name} month={month} role={r.role} initial={r.kpi.target} />

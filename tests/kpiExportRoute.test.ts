@@ -54,12 +54,37 @@ describe("GET /dashboard/team/export", () => {
     expect(res.headers.get("Content-Type")).toBe("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     expect(res.headers.get("Content-Disposition")).toBe('attachment; filename="team-kpi-requests-2026-09.xlsx"');
     expect(res.headers.get("Cache-Control")).toBe("private, no-store");
-    expect(teamRequestsData).toHaveBeenCalledWith({ scoped: true }, "2026-09");
+    expect(teamRequestsData).toHaveBeenCalledWith({ scoped: true }, "2026-09", "creative");
     const wb = new ExcelJS.Workbook();
     await wb.xlsx.load(await res.arrayBuffer());
     const ws = wb.getWorksheet("Requests")!;
     expect(ws.getCell("A1").value).toBe("Team KPI: Requests, September 2026");
     expect(ws.getCell(`A${TEAM_REQUESTS_HEADER_ROW + 1}`).value).toBe("Ayu");
+  });
+
+  it("sends a social media lead the Content Plan sheet of their team", async () => {
+    viewer = { ...viewer, appRole: "LEAD", jobRole: "SOCIAL_MEDIA" };
+    const res = await get("?month=2026-10");
+    expect(res.headers.get("Content-Disposition")).toBe('attachment; filename="team-kpi-content-plan-2026-10.xlsx"');
+    expect(teamRequestsData).toHaveBeenCalledWith({ scoped: true }, "2026-10", "social");
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(await res.arrayBuffer());
+    expect(wb.getWorksheet("Content Plan")!.getCell("A1").value).toBe("Team KPI: Content Plan, October 2026");
+  });
+
+  it("gives a non-admin their own team whatever ?team says, and never a 400 for it", async () => {
+    viewer = { ...viewer, appRole: "LEAD", jobRole: "DESIGNER" };
+    expect((await get("?month=2026-10&team=social")).status).toBe(200);
+    viewer = { ...viewer, appRole: "REQUESTER", jobRole: "OTHER" };
+    expect((await get("?month=2026-10&team=junk")).status).toBe(200);
+    expect(teamRequestsData.mock.calls.map((c) => c[2])).toEqual(["creative", "creative"]);
+  });
+
+  it("lets an admin download either team", async () => {
+    viewer = { ...viewer, appRole: "ADMIN", jobRole: "DESIGNER" };
+    await get("?month=2026-10&team=social");
+    await get("?month=2026-10");
+    expect(teamRequestsData.mock.calls.map((c) => c[2])).toEqual(["social", "creative"]);
   });
 
   it("defaults to the current month when none is given", async () => {

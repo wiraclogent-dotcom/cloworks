@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Users } from "lucide-react";
+import type { KpiTeam } from "@/lib/kpi/team";
 import { setKpiRoster } from "@/app/(app)/dashboard/team/actions";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Button } from "@/components/shadcn/button";
@@ -12,7 +13,7 @@ import { Checkbox } from "@/components/shadcn/checkbox";
 
 type Props = {
   kind: "REQUESTS" | "PROJECTS";
-  /** Everyone who may be shown: active people who are not requesters. */
+  /** Everyone who may be shown on this team's table (rosterCandidates). */
   candidates: { id: string; name: string }[];
   /** Who the table shows now (pre-ticked). */
   selected: string[];
@@ -20,6 +21,8 @@ type Props = {
   month?: string;
   /** Projects: the year the table is showing. */
   year?: number;
+  /** The team whose table this is; omitted = the creative team. */
+  team?: KpiTeam;
 };
 
 /**
@@ -36,7 +39,7 @@ export function ManagePeopleDialog(props: Props) {
   );
 }
 
-function Picker({ kind, candidates, selected, month, year, onClose }: Props & { onClose: () => void }) {
+function Picker({ kind, candidates, selected, month, year, team, onClose }: Props & { onClose: () => void }) {
   const router = useRouter();
   const known = new Set(candidates.map((c) => c.id));
   const [picked, setPicked] = useState<Set<string>>(() => new Set(selected.filter((id) => known.has(id))));
@@ -55,7 +58,7 @@ function Picker({ kind, candidates, selected, month, year, onClose }: Props & { 
     const userIds = candidates.filter((c) => picked.has(c.id)).map((c) => c.id);
     startSave(async () => {
       try {
-        const r = await setKpiRoster(kind === "REQUESTS" ? { kind, userIds, month } : { kind, userIds, year });
+        const r = await setKpiRoster({ ...(kind === "REQUESTS" ? { kind, userIds, month } : { kind, userIds, year }), ...(team ? { team } : {}) });
         if (r.ok) { onClose(); router.refresh(); }
         else setError(r.message);
       } catch {

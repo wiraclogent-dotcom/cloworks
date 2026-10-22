@@ -93,6 +93,18 @@ describe("request status drives the content post", () => {
     expect((await post(postId)).status).toBe("IN_PRODUCTION");
   });
 
+  it("restoring a cancelled request re-stamps the approval so the post counts again", async () => {
+    const { postId, requestId } = await approved();
+    await move(requestId, "CANCELLED");
+    expect((await post(postId)).approvedAt).toBeNull();
+    const before = new Date();
+    await move(requestId, "REQUESTED");
+    const restored = await post(postId);
+    expect(restored.status).toBe("APPROVED");
+    expect(restored.approvedAt!.getTime()).toBeGreaterThanOrEqual(before.getTime() - 1000);
+    expect(restored.approvedById).toBeNull();
+  });
+
   it("restoring leaves a post that was resubmitted since the cancel alone", async () => {
     const { postId, requestId } = await approved();
     await move(requestId, "CANCELLED");
