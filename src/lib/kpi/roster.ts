@@ -33,12 +33,18 @@ export async function loadRosterEntries(db: ScopedDb, kind: KpiKind): Promise<{ 
 }
 
 /**
- * Everyone who may be put on a team's roster, in this workspace, by name: for the creative team the active
- * non-requesters, for the social media team the active social media people of any app role.
+ * A person's overrides belong to the team of their job role, so the two teams' rosters never touch each other's
+ * people (one table's save cannot hide or add someone on the other). Social media: any app role; creative: no requesters.
  */
+const TEAM_PEOPLE = {
+  social: { jobRole: "SOCIAL_MEDIA" },
+  creative: { appRole: { not: "REQUESTER" }, jobRole: { not: "SOCIAL_MEDIA" } },
+} as const;
+
+/** Everyone who may be put on a team's roster, in this workspace, by name: the team's active people. */
 export function rosterCandidates(db: ScopedDb, team: KpiTeam = "creative"): Promise<{ id: string; name: string }[]> {
   return db.user.findMany({
-    where: team === "social" ? { active: true, jobRole: "SOCIAL_MEDIA" } : { active: true, appRole: { not: "REQUESTER" } },
+    where: { active: true, ...TEAM_PEOPLE[team] },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
@@ -47,16 +53,17 @@ export function rosterCandidates(db: ScopedDb, team: KpiTeam = "creative"): Prom
 type Person = { id: string; name: string; jobRole: JobRole };
 
 /**
- * Requests roster: the automatic people with the overrides applied, always sorted by name. Added people are loaded in
- * one query; an override for someone who has since left or become a requester is ignored.
+ * Requests roster of `team`: the automatic people with the overrides applied, always sorted by name. Added people are
+ * loaded in one query, only the team's own (an override for someone who has since left, or who belongs to the other
+ * team, is ignored).
  */
-export async function rosterPeople(db: ScopedDb, automatic: Person[], entries: { userId: string; included: boolean }[]): Promise<Person[]> {
+export async function rosterPeople(db: ScopedDb, automatic: Person[], entries: { userId: string; included: boolean }[], team: KpiTeam = "creative"): Promise<Person[]> {
   const wanted = new Set(resolveRoster(automatic.map((p) => p.id), entries));
   const have = new Set(automatic.map((p) => p.id));
   const missing = [...wanted].filter((id) => !have.has(id));
   const added: Person[] = missing.length
     ? await db.user.findMany({
-        where: { id: { in: missing }, active: true, appRole: { not: "REQUESTER" } },
+        where: { id: { in: missing }, active: true, ...TEAM_PEOPLE[team] },
         select: { id: true, name: true, jobRole: true },
       })
     : [];

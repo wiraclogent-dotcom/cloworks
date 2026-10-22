@@ -33,7 +33,7 @@ export const teamRequestsData = cache(async (db: ScopedDb, month: string, team: 
   if (team === "social") {
     const [targets, posts, entries] = await Promise.all([loadTargets(db, [month]), loadKpiPosts(db, [month]), loadRosterEntries(db, "REQUESTS")]);
     const automatic = await listSocialKpiPeople(db, targets);
-    const people = await rosterPeople(db, automatic, entries);
+    const people = await rosterPeople(db, automatic, entries, "social");
     const rows: TeamRow[] = people.map((u) => {
       const t = targets.find((x) => x.userId === u.id) ?? null;
       return { userId: u.id, name: u.name, role: "SOCIAL_MEDIA", note: t?.note ?? null, kpi: computeContentKpi(posts, u.id, month, t) };
