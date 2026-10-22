@@ -1,5 +1,5 @@
 import { DAY_MS, utc, type CalendarDay } from "../calendar";
-import type { CalActivity, CalAnnouncement, CalDivision } from "./types";
+import type { CalActivity, CalDivision } from "./types";
 
 /** Pure, client-safe week/lane layout of the Marketing Calendar grid (spec 2026-10-19). */
 
@@ -7,8 +7,7 @@ import type { CalActivity, CalAnnouncement, CalDivision } from "./types";
 export type Segment = { id: string; col: number; span: number; continuesLeft: boolean; continuesRight: boolean };
 /** A division's lane in one week; always at least one (possibly empty) row. */
 export type WeekLane = { divisionId: string; rows: Segment[][] };
-/** `notice` is empty when the week has no dated announcement (then no Notice row renders). */
-export type MarketingWeek = { days: CalendarDay[]; notice: Segment[][]; lanes: WeekLane[] };
+export type MarketingWeek = { days: CalendarDay[]; lanes: WeekLane[] };
 
 type Span = { id: string; startDay: string; endDay: string };
 
@@ -38,14 +37,12 @@ export function packSegments(items: Span[], weekStart: string, weekEnd: string):
   return rows;
 }
 
-/** One entry per grid week: the dated-announcement notice rows and one lane per division, in the given order. */
-export function buildMarketingWeeks(weeks: CalendarDay[][], divisions: CalDivision[], activities: CalActivity[], announcements: CalAnnouncement[]): MarketingWeek[] {
-  const dated = announcements.filter((a): a is CalAnnouncement & { startDay: string; endDay: string } => a.startDay !== null && a.endDay !== null);
+/** One entry per grid week: one lane per division, in the given order. */
+export function buildMarketingWeeks(weeks: CalendarDay[][], divisions: CalDivision[], activities: CalActivity[]): MarketingWeek[] {
   return weeks.map((days) => {
     const start = days[0].day, end = days[days.length - 1].day;
     return {
       days,
-      notice: packSegments(dated, start, end),
       lanes: divisions.map((d) => {
         const rows = packSegments(activities.filter((a) => a.divisionId === d.id), start, end);
         return { divisionId: d.id, rows: rows.length ? rows : [[]] };

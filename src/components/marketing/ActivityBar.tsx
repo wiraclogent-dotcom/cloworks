@@ -7,8 +7,8 @@ import { activityLabel } from "@/lib/marketing/format";
 import { cn, focusRing } from "../ui/cn";
 
 const STATUS_CLASS: Record<CalActivity["status"], string> = {
-  CONFIRMED: "border-l-3 border-tone-accent bg-tone-tint text-tone-text",
-  DONE: "border-l-3 border-tone-accent bg-tone-tint text-tone-text",
+  CONFIRMED: "border border-tone-accent bg-tone-tint text-tone-text",
+  DONE: "border border-tone-accent bg-tone-tint text-tone-text",
   PLANNED: "border border-dashed border-tone-accent bg-card text-foreground",
   CANCELLED: "border border-dashed border-tone-accent bg-card text-muted-foreground line-through",
 };

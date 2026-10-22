@@ -45,12 +45,17 @@ describe("MarketingCalendar grid", () => {
     expect(today.textContent).toContain("19");
   });
 
-  it("shows dated announcements as a Notice row only in their week", () => {
+  it("leaves announcements to the band above: no Notice row in the grid", () => {
     render(<MarketingCalendar data={OCTOBER} />);
-    expect(screen.getAllByRole("button", { name: "Notice: Inbound China (Pitbond), 22–24 Oct" })).toHaveLength(1);
-    const weeks = screen.getAllByRole("group", { name: /^Week of / });
-    expect(weeks.map((w) => within(w).queryAllByText("Notice").length)).toEqual([0, 0, 0, 1, 0]);
-    expect(screen.queryByText("Budget Q4 approved")).toBeNull();
+    expect(screen.queryByText("Notice")).toBeNull();
+    expect(screen.queryByText(/Inbound China/)).toBeNull();
+  });
+
+  it("outlines confirmed bars instead of a coloured left edge", () => {
+    render(<MarketingCalendar data={OCTOBER} />);
+    const bar = screen.getAllByRole("button", { name: "Digital Ads: Payday flight Meta, 24–31 Oct, confirmed" })[0];
+    expect(bar.className).not.toMatch(/border-l-3/);
+    expect(bar.className).toMatch(/\bborder\b.*border-tone-accent/);
   });
 
   it("hides and shows divisions with the legend chips", () => {
@@ -83,7 +88,7 @@ describe("MarketingCalendar grid", () => {
     expect(screen.queryByRole("link", { name: "Set up divisions" })).toBeNull();
     cleanup();
     render(<MarketingCalendar data={{ ...OCTOBER, divisions: [], activities: [], canManageMonth: true }} />);
-    expect(screen.getByRole("link", { name: "Set up divisions" }).getAttribute("href")).toBe("/admin/lists");
+    expect(screen.getByRole("link", { name: "Set up divisions" }).getAttribute("href")).toBe("/admin/calendar");
   });
 });
 
@@ -92,10 +97,9 @@ describe("MarketingCalendar on a narrow screen", () => {
     narrow = true;
     render(<MarketingCalendar data={OCTOBER} />);
     expect(screen.queryAllByRole("group", { name: /^Week of / })).toHaveLength(0);
-    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Notice", "Brand", "Digital Ads", "KOL", "Social Media"]);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(["Brand", "Digital Ads", "KOL", "Social Media"]);
     const brand = screen.getByRole("region", { name: "Brand" });
     expect(within(brand).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["5–9 OctRebranding launchConfirmed", "21 OctBrand photoshootPlanned"]);
-    expect(within(screen.getByRole("region", { name: "Notice" })).getByText("22–24 Oct")).toBeTruthy();
   });
 
   it("says when a division has nothing this month and respects the filter", () => {

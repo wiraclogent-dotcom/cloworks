@@ -1,36 +1,30 @@
 "use client";
 
-import { useState } from "react";
-import { Megaphone, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { MarketingWeek } from "@/lib/marketing/layout";
-import type { CalActivity, CalAnnouncement, CalDivision } from "@/lib/marketing/types";
+import type { CalActivity, CalDivision } from "@/lib/marketing/types";
 import { rangeLabel } from "@/lib/marketing/format";
 import { dayLabel } from "@/lib/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
-import { Button } from "@/components/shadcn/button";
 import { cn, focusRing } from "../ui/cn";
 import { ActivityBar } from "./ActivityBar";
-import { AnnouncementDialog } from "./AnnouncementDialog";
 import { useMarketingSheet } from "./sheetState";
 
 const ROW = "1.625rem";
 
 /**
- * One week of the Marketing Calendar: day numbers, an optional Notice row (dated announcements), then one lane per
- * visible division, labelled on the left (spec 2026-10-19). Every position is a CSS grid line.
+ * One week of the Marketing Calendar: day numbers, then one lane per visible division, labelled on the left
+ * (spec 2026-10-19). Every position is a CSS grid line.
  */
-export function WeekBlock({ week, divisions, activities, announcements, editable, month, canManageMonth }: {
-  week: MarketingWeek; divisions: CalDivision[]; activities: Map<string, CalActivity>; announcements: Map<string, CalAnnouncement>;
-  editable: ReadonlySet<string>; month: string; canManageMonth: boolean;
+export function WeekBlock({ week, divisions, activities, editable }: {
+  week: MarketingWeek; divisions: CalDivision[]; activities: Map<string, CalActivity>; editable: ReadonlySet<string>;
 }) {
   const sheet = useMarketingSheet();
   const byId = new Map(divisions.map((d) => [d.id, d]));
   const lanes = week.lanes.filter((l) => byId.has(l.divisionId));
-  const rowCount = week.notice.length + lanes.reduce((n, l) => n + l.rows.length, 0);
+  const rowCount = lanes.reduce((n, l) => n + l.rows.length, 0);
   const first = week.days[0].day;
-  // Grid rows: 1 = day numbers, then the notice rows, then each lane's rows in order.
-  const noticeRow = 2;
-  const laneStarts = lanes.reduce<number[]>((acc, l, i) => [...acc, i === 0 ? noticeRow + week.notice.length : acc[i - 1] + lanes[i - 1].rows.length], []);
+  // Grid rows: 1 = day numbers, then each lane's rows in order.
+  const laneStarts = lanes.reduce<number[]>((acc, l, i) => [...acc, i === 0 ? 2 : acc[i - 1] + lanes[i - 1].rows.length], []);
 
   return (
     <div role="group" aria-label={`Week of ${dayLabel(first).split(" ").slice(1).join(" ")}`}
@@ -48,22 +42,6 @@ export function WeekBlock({ week, divisions, activities, announcements, editable
           {d.isToday ? <span className="font-medium text-link">Today</span> : null}
         </p>
       ))}
-
-      {week.notice.length > 0 ? (
-        <>
-          <p style={{ gridColumn: 1, gridRow: `${noticeRow} / span ${week.notice.length}` }} className="flex items-center gap-1.5 pr-1 text-xs text-muted-foreground">
-            <Megaphone aria-hidden="true" strokeWidth={1.75} className="size-3.5 shrink-0" />Notice
-          </p>
-          {week.notice.flatMap((segments, r) => segments.map((s) => {
-            const a = announcements.get(s.id);
-            return a ? (
-              <div key={`${s.id}-${r}`} className="relative z-10 min-w-0 px-1 pt-0.5" style={{ gridColumn: `${s.col + 1} / span ${s.span}`, gridRow: noticeRow + r }}>
-                <NoticeBar announcement={a} month={month} canManage={canManageMonth} />
-              </div>
-            ) : null;
-          }))}
-        </>
-      ) : null}
 
       {lanes.map((lane, li) => {
         const division = byId.get(lane.divisionId)!;
@@ -97,29 +75,5 @@ export function WeekBlock({ week, divisions, activities, announcements, editable
         );
       })}
     </div>
-  );
-}
-
-function NoticeBar({ announcement: a, month, canManage }: { announcement: CalAnnouncement; month: string; canManage: boolean }) {
-  const [editing, setEditing] = useState(false);
-  const range = rangeLabel(a.startDay!, a.endDay!);
-  return (
-    <>
-      <Popover>
-        <PopoverTrigger asChild>
-          <button type="button" aria-label={`Notice: ${a.body}, ${range}`}
-            className={cn("flex h-5.5 w-full min-w-0 cursor-pointer items-center gap-1 rounded-md bg-foreground px-1.5 text-left text-xs leading-none font-medium text-background", focusRing)}>
-            <Megaphone aria-hidden="true" strokeWidth={1.75} className="size-3 shrink-0" />
-            <span className="truncate">{a.body}</span>
-          </button>
-        </PopoverTrigger>
-        <PopoverContent className="w-72">
-          <p className="text-xs font-medium text-muted-foreground tabular-nums">{range}</p>
-          <p className="mt-1 text-sm whitespace-pre-line text-foreground">{a.body}</p>
-          {canManage ? <Button variant="outline" size="sm" className="mt-3" onClick={() => setEditing(true)}>Edit</Button> : null}
-        </PopoverContent>
-      </Popover>
-      {canManage ? <AnnouncementDialog month={month} announcement={a} open={editing} onOpenChange={setEditing} /> : null}
-    </>
   );
 }

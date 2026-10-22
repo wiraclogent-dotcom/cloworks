@@ -40,6 +40,7 @@ import { ActiveToggle, AddPersonForm, LoginEmailForm, PasswordForm } from "@/app
 import { DivisionCalendarForm, TypeForm } from "@/app/(app)/admin/lists/ListForms";
 import { UsersContent } from "@/app/(app)/admin/users/UsersContent";
 import { ListsContent } from "@/app/(app)/admin/lists/ListsContent";
+import { CalendarContent } from "@/app/(app)/admin/calendar/CalendarContent";
 
 const u = { id: "u1", name: "Rina", fullName: "Rina Putri", title: null, appRole: "CREATIVE", jobRole: "DESIGNER", aliases: [], email: null, active: true, hasPassword: false };
 
@@ -158,7 +159,7 @@ describe("admin pages gate", () => {
   for (const role of ["REQUESTER", "CREATIVE", "LEAD"]) {
     it(`${role} sees access denied and no query runs`, async () => {
       requireUser.mockResolvedValue({ id: "x", appRole: role, jobRole: "OTHER" });
-      for (const C of [UsersContent, ListsContent]) {
+      for (const C of [UsersContent, ListsContent, CalendarContent]) {
         const { container, unmount } = render(await C());
         expect(screen.getByRole("alert").textContent).toMatch(/access denied/i);
         expect(container.textContent).not.toMatch(/@/);
@@ -187,7 +188,7 @@ describe("admin pages gate", () => {
     prismaMock.requestType.findMany.mockResolvedValue([]);
     process.env.PLATFORM_ADMIN_EMAILS = "boss@clogent.co.id";
     try {
-      for (const C of [UsersContent, ListsContent]) {
+      for (const C of [UsersContent, ListsContent, CalendarContent]) {
         prismaMock.user.findUnique.mockResolvedValueOnce({ email: "boss@clogent.co.id" });
         const { unmount } = render(await C());
         expect(screen.getByRole("link", { name: "Waitlist" }).getAttribute("href")).toBe("/admin/waitlist");
@@ -227,7 +228,7 @@ describe("division calendar settings form", () => {
     expect(screen.getAllByRole("radio").map((r) => r.getAttribute("aria-label"))).toEqual(["Blue", "Coral", "Green", "Amber", "Pink", "Violet", "Teal", "Slate"]);
     expect(screen.getByRole("radio", { name: "Green" }).getAttribute("aria-checked")).toBe("true");
     for (const r of screen.getAllByRole("radio")) expect(r.className).not.toMatch(/white|\(--/); // tokens only (AGENTS.md)
-    expect(screen.getByRole("switch", { name: "Marketing calendar" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("switch", { name: "On the calendar" }).getAttribute("aria-checked")).toBe("true");
     expect((screen.getByLabelText("Order") as HTMLInputElement).value).toBe("3");
     fireEvent.click(screen.getByRole("button", { name: "Leads of KOL: Rifqy" }));
     expect(screen.getByRole("checkbox", { name: "Rifqy" }).getAttribute("aria-checked")).toBe("true");

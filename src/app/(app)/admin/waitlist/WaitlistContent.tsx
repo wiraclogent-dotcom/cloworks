@@ -7,7 +7,8 @@ import { WAITLIST_SIZES } from "@/lib/waitlist";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Card } from "@/components/shadcn/card";
-import { AdminTabs } from "../AdminTabs";
+import { can } from "@/lib/permissions";
+import { SettingsTabs } from "../../settings/SettingsTabs";
 import { WaitlistTable, type WaitlistRow } from "./WaitlistTable";
 
 const when = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Jakarta", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -34,7 +35,7 @@ export async function WaitlistContent() {
 
   return (
     <>
-      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Admin" }, { label: "Waitlist" }]} title="Waitlist" count={rows.length} switcher={<AdminTabs current="waitlist" waitlist />}
+      <PageHeader breadcrumb={[{ label: "Settings", href: "/settings" }, { label: "Waitlist" }]} title="Waitlist" count={rows.length} switcher={<SettingsTabs current="waitlist" admin={can(user.appRole, "admin.manage")} waitlist />}
         description="Teams that asked for a spot from the landing page, newest first." />
       {rows.length === 0 ? (
         <EmptyState icon={<ClipboardList />} title="No one on the waitlist yet." description="New sign-ups from the landing page show up here." />

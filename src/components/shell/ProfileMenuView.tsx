@@ -11,7 +11,7 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 
 /**
- * Top-right profile menu on every page: who is signed in, Account settings, Help center, Dark mode and Sign out (these
+ * Top-right profile menu on every page: who is signed in, Settings (account and, for admins, the admin tabs), Help center, Dark mode and Sign out (these
  * used to sit at the bottom of the sidebar). Radix gives keyboard support, focus return and Esc for free. `signOut` is
  * a server action from the server wrapper (`ProfileMenu`).
  */
@@ -34,7 +34,7 @@ export function ProfileMenuView({ name, roleLabel, signOut }: { name: string; ro
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
-          <Link href="/settings"><Settings aria-hidden="true" />Account settings</Link>
+          <Link href="/settings"><Settings aria-hidden="true" />Settings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href="/help"><CircleHelp aria-hidden="true" />Help center</Link>

@@ -33,21 +33,14 @@ export function validateActivity(input: ActivityInput): Omit<ActivityInput, "sta
   return { title, divisionId: input.divisionId, startDay: input.startDay, endDay: input.endDay, status: input.status as MarketingStatus };
 }
 
-/** A dated announcement is filed under the month of its start day. */
 export function validateAnnouncement(input: AnnouncementInput): AnnouncementInput {
   const body = input.body.trim();
   const errors: Record<string, string> = {};
   if (!body) errors.body = "Write the announcement.";
   else if (body.length > MAX_BODY) errors.body = "Announcement must be 500 characters or fewer.";
-  const dated = input.startDay !== null || input.endDay !== null;
-  if (dated) {
-    if (input.startDay === null || input.endDay === null) errors[input.startDay === null ? "startDay" : "endDay"] = "Set both dates or neither.";
-    else Object.assign(errors, rangeErrors(input.startDay, input.endDay));
-  } else if (!isValidMonth(input.month)) errors.month = "Pick a valid month.";
+  if (!isValidMonth(input.month)) errors.month = "Pick a valid month.";
   if (Object.keys(errors).length) throw invalid(errors);
-  return dated
-    ? { month: input.startDay!.slice(0, 7), body, startDay: input.startDay, endDay: input.endDay }
-    : { month: input.month, body, startDay: null, endDay: null };
+  return { month: input.month, body };
 }
 
 /** Trimmed; an empty string clears the month's focus. */

@@ -26,6 +26,14 @@ describe("Settings entry point", () => {
     expect(screen.queryByRole("link", { name: "Settings" })).toBeNull();
   });
 
+  it("the sidebar has no Admin group, even for an admin: Members, Lists and Waitlist live in Settings", async () => {
+    role = "ADMIN";
+    render(<AppShell><p>page</p></AppShell>);
+    await screen.findByRole("link", { name: "Requests" });
+    expect(screen.queryByRole("list", { name: "Admin" })).toBeNull();
+    for (const name of ["Members", "Lists", "Waitlist"]) expect(screen.queryByRole("link", { name })).toBeNull();
+  });
+
 });
 
 describe("sidebar Work group", () => {

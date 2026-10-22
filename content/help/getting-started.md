@@ -12,7 +12,6 @@ Clowork tracks creative requests from the moment someone asks for a piece of wor
 - **Projects** groups related requests together.
 - **My KPI** shows your own output and on-time numbers for the month.
 - **Team KPI** shows the same numbers for the whole team, if your role can see them.
-- **Admin** holds user and list settings, if your role can manage them.
 
 ## Your first steps
 
@@ -24,4 +23,4 @@ The sidebar shows only the sections your role can use.
 
 ## Your profile menu
 
-Select your profile picture at the top right of any page to open **Account settings**, the **Help center**, switch **Dark mode** on or off, or **Sign out**.
+Select your profile picture at the top right of any page to open **Settings**, the **Help center**, switch **Dark mode** on or off, or **Sign out**. Admins also find **Members**, **Lists** and **Marketing calendar** as tabs in **Settings**.

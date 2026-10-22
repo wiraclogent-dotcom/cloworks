@@ -19,19 +19,19 @@ export async function MarketingContent({ searchParams }: { searchParams: Promise
   const now = new Date();
   const month = parseMonthParam((await searchParams).month, now);
   const data = await loadMarketingMonth(db, { id: viewer.id, appRole: viewer.appRole }, month, jakartaDate(now));
+  const prev = shiftMonth(month, -1), next = shiftMonth(month, 1);
   return (
     <MarketingSheetProvider data={data}>
       <PageHeader breadcrumb={[{ label: "Work" }, { label: "Marketing Calendar" }]} title={monthLabel(month)}
         actions={
           <>
             <nav aria-label="Month" className="flex items-center gap-1">
-              <Button asChild variant="ghost" size="sm" className="px-2">
-                <Link href={`/marketing?month=${shiftMonth(month, -1)}`} aria-label="Previous month" title="Previous month"><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/marketing?month=${prev}`} aria-label={`Previous month, ${monthLabel(prev)}`}><ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-4" />{monthLabel(prev).slice(0, 3)}</Link>
               </Button>
-              <Button asChild variant="ghost" size="sm" className="px-2">
-                <Link href={`/marketing?month=${shiftMonth(month, 1)}`} aria-label="Next month" title="Next month"><ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/marketing?month=${next}`} aria-label={`Next month, ${monthLabel(next)}`}>{monthLabel(next).slice(0, 3)}<ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-4" /></Link>
               </Button>
-              <Button asChild variant="outline" size="sm"><Link href="/marketing">Today</Link></Button>
             </nav>
             {data.editableDivisionIds.length > 0 ? <AddActivityButton /> : null}
           </>

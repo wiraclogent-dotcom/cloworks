@@ -13,7 +13,8 @@ export type CalDivision = { id: string; name: string; tone: DivisionTone };
 export type CalActivity = {
   id: string; divisionId: string; title: string; startDay: string; endDay: string; status: MarketingStatus; updatedByName: string; updatedAt: string;
 };
-export type CalAnnouncement = { id: string; body: string; startDay: string | null; endDay: string | null };
+/** An announcement belongs to one month; it has no days of its own (2026-10-22). */
+export type CalAnnouncement = { id: string; body: string };
 
 export type MarketingMonthData = {
   month: string; today: string;
@@ -25,4 +26,4 @@ export type MarketingMonthData = {
 };
 
 export type ActivityInput = { title: string; divisionId: string; startDay: string; endDay: string; status: string };
-export type AnnouncementInput = { month: string; body: string; startDay: string | null; endDay: string | null };
+export type AnnouncementInput = { month: string; body: string };

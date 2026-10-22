@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { SettingsContent } from "./SettingsContent";
+import { SettingsSwitcher } from "./SettingsTabs";
 
 /** Tab title: "Settings · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Settings" };
@@ -11,7 +12,8 @@ export const metadata: Metadata = { title: "Settings" };
 export default function SettingsPage() {
   return (
     <div>
-      <PageHeader breadcrumb={[{ label: "Settings" }]} title="Settings" description="Your account and password." />
+      <PageHeader breadcrumb={[{ label: "Settings" }]} title="Settings" description="Your account and password."
+        switcher={<Suspense fallback={null}><SettingsSwitcher /></Suspense>} />
       <Suspense fallback={<SettingsSkeleton />}>
         <SettingsContent />
       </Suspense>

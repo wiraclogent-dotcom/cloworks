@@ -20,9 +20,8 @@ const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
   const grid = useMemo(() => buildMonthGrid(data.month, data.today), [data.month, data.today]);
-  const weeks = useMemo(() => buildMarketingWeeks(grid.weeks, data.divisions, data.activities, data.announcements), [grid, data]);
+  const weeks = useMemo(() => buildMarketingWeeks(grid.weeks, data.divisions, data.activities), [grid, data]);
   const activities = useMemo(() => new Map(data.activities.map((a) => [a.id, a])), [data.activities]);
-  const announcements = useMemo(() => new Map(data.announcements.map((a) => [a.id, a])), [data.announcements]);
   const editable = useMemo(() => new Set(data.editableDivisionIds), [data.editableDivisionIds]);
   const visible = data.divisions.filter((d) => !hidden.has(d.id));
   const narrow = useNarrow();
@@ -31,7 +30,7 @@ export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
     return (
       <EmptyState icon={<CalendarRange />} title="No divisions on the Marketing Calendar yet"
         description="An admin picks which divisions get a lane, their colour and their leads."
-        action={data.canManageMonth ? <Button asChild variant="outline" size="sm"><Link href="/admin/lists">Set up divisions</Link></Button> : undefined} />
+        action={data.canManageMonth ? <Button asChild variant="outline" size="sm"><Link href="/admin/calendar">Set up divisions</Link></Button> : undefined} />
     );
   }
 
@@ -75,8 +74,7 @@ export function MarketingCalendar({ data }: { data: MarketingMonthData }) {
                 {WEEKDAYS.map((w) => <span key={w} className="px-1.5 text-xs font-medium text-muted-foreground">{w}</span>)}
               </div>
               {weeks.map((w) => (
-                <WeekBlock key={w.days[0].day} week={w} divisions={visible} activities={activities} announcements={announcements}
-                  editable={editable} month={data.month} canManageMonth={data.canManageMonth} />
+                <WeekBlock key={w.days[0].day} week={w} divisions={visible} activities={activities} editable={editable} />
               ))}
             </div>
           )}
