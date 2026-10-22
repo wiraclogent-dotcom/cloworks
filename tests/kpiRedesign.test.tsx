@@ -60,6 +60,13 @@ describe("progress thresholds", () => {
     expect(screen.getByRole("progressbar").firstElementChild!.className).toContain("bg-progress-complete");
     expect(screen.getByText("Target reached").querySelector("svg")).not.toBeNull();
   });
+  it("counts posts instead of tasks when asked", () => {
+    const { unmount } = render(<ProgressBar done={2} target={4} progress={0.5} label="Posts" unit="posts" />);
+    expect(screen.getByText("2 of 4 posts (50%)")).toBeTruthy();
+    unmount();
+    render(<ProgressBar done={1} target={null} progress={null} label="Posts" unit="posts" />);
+    expect(screen.getByText("1 post done. No target set for this month.")).toBeTruthy();
+  });
   it("compact team bar: colour by level, % always printed, level in words for screen readers", () => {
     const { container } = render(<><TeamProgress name="A" pct={30} /><TeamProgress name="B" pct={75} /><TeamProgress name="C" pct={120} /></>);
     const bars = screen.getAllByRole("progressbar");
@@ -112,7 +119,7 @@ describe("Team table", () => {
     render(<TeamTable rows={rows} month="2026-10" canEdit />);
     expect(screen.getByRole("button", { name: "Save target for Fadli" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Save target for Sari" })).toBeTruthy();
-    expect(screen.getByLabelText("Target tasks for Sari")).toBeTruthy();
+    expect(screen.getByLabelText("Target posts for Sari")).toBeTruthy(); // Sari is social media: her target is in posts
     expect(screen.getByRole("progressbar", { name: "Fadli progress" })).toBeTruthy();
     expect(screen.queryByRole("progressbar", { name: "Sari progress" })).toBeNull();
   });

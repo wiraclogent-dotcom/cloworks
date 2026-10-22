@@ -36,7 +36,7 @@ export function TargetEditor({ userId, name, month, role, initial }: { userId: s
   return (
     // One line per person: [target][Save]. The status message (if any) sits under it, so rows stay short.
     <form onSubmit={save} data-target-editor="" className="flex w-full min-w-40 flex-wrap items-center gap-1.5 py-1">
-      <label htmlFor={id} className="sr-only">Target tasks for {name}</label>
+      <label htmlFor={id} className="sr-only">Target {role === "SOCIAL_MEDIA" ? "posts" : "tasks"} for {name}</label>
       <Input id={id} type="number" inputMode="numeric" min={0} max={10000} step={1} value={value}
         onChange={(e) => { setValue(e.target.value); setStatus(null); }}
         className="w-20 shrink-0 tabular-nums" size="sm" />

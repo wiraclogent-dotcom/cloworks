@@ -64,7 +64,7 @@ export async function MyRequestsSection({ db, subject, own, month, keep }: {
                 <CardTitle id="headline" as="h3">Monthly target</CardTitle>
                 <p className="text-compact text-muted-foreground">{headline}</p>
               </CardHeader>
-              <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={headline} />
+              <ProgressBar done={kpi.tasksDone} target={kpi.target} progress={kpi.progress} label={headline} unit={measure === "posts" ? "posts" : "tasks"} />
               {target?.note ? <p className="mt-3 text-sm text-muted-foreground">Note: {target.note}</p> : null}
             </section>
           </Card>
