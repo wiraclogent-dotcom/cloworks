@@ -6,6 +6,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TeamPersonCell, TeamTableFrame } from "@/components/kpi/TeamTableParts";
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/shadcn/table";
 import { Button } from "@/components/shadcn/button";
+import { kpiHref } from "@/lib/kpi/href";
+import type { KpiTeam } from "@/lib/kpi/team";
 
 export type ProjectTeamRow = {
   userId: string;
@@ -44,10 +46,10 @@ const cmp = (a: ProjectTeamRow, b: ProjectTeamRow) =>
 /**
  * Team › Projects: score per quarter and for the year, highest year score first, people without a score last. Same
  * frame and person cell as the Requests table. `canOpen` (dashboard.team): names link to the person's targets page
- * and the last column has a Set targets / Open button.
+ * and the last column has a Set targets / Open button. `team` rides on those links so that page leads back to this team.
  */
-export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = false }: {
-  rows: ProjectTeamRow[]; year: number; canOpen?: boolean;
+export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = false, team }: {
+  rows: ProjectTeamRow[]; year: number; canOpen?: boolean; team?: KpiTeam;
   /** Nobody shows because Manage people hid everyone who has targets (not because there are none). */
   hiddenByRoster?: boolean;
 }) {
@@ -58,7 +60,7 @@ export function ProjectTeamTable({ rows, year, canOpen = true, hiddenByRoster = 
     return <EmptyState icon={<Target />} title={`No project targets for ${year} yet.`} description="Add targets from a person's Project KPI page." />;
   }
   const num = (v: number | null, suffix = "") => (v === null ? "—" : `${v}${suffix}`);
-  const hrefOf = (userId: string) => `/dashboard/projects/${userId}?year=${year}`;
+  const hrefOf = (userId: string) => kpiHref(`/dashboard/projects/${userId}`, { year: String(year), team });
   return (
     <TeamTableFrame caption={`Project KPI per person for ${year}`} minWidth={canOpen ? "min-w-[46rem] lg:min-w-0" : "min-w-[38rem] lg:min-w-0"}>
       <TableHeader>

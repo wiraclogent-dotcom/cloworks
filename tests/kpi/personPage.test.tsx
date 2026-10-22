@@ -16,14 +16,21 @@ const { stub } = vi.hoisted(() => ({
 vi.mock("@/components/kpi/sections/MySummary", () => ({ MySummary: stub("summary") }));
 vi.mock("@/components/kpi/sections/MyRequestsSection", () => ({ MyRequestsSection: stub("requests") }));
 vi.mock("@/components/kpi/sections/MyProjectsSection", () => ({ MyProjectsSection: stub("projects") }));
+vi.mock("@/components/kpi/project/PersonProjectKpiSection", () => ({
+  PersonProjectKpiSection: (p: { hrefFor: (q: { year?: number; q?: string }) => string }) => <a href={p.hrefFor({ year: 2025 })}>2025</a>,
+}));
 
 import DashboardPage from "@/app/(app)/dashboard/page";
+import ProjectKpiPersonPage from "@/app/(app)/dashboard/projects/[userId]/page";
 
-// The page is a Suspense shell around an async server component: render that component's output directly.
-const show = async (sp: Record<string, string>) => {
-  const content = DashboardPage({ searchParams: Promise.resolve(sp) } as PageProps<"/dashboard">).props.children.props.children;
+// Each page is a Suspense shell around an async server component: render that component's output directly.
+const renderShell = async (page: ReturnType<typeof DashboardPage>) => {
+  const content = page.props.children.props.children;
   return render(await content.type(content.props));
 };
+const show = (sp: Record<string, string>) => renderShell(DashboardPage({ searchParams: Promise.resolve(sp) } as PageProps<"/dashboard">));
+const showProjects = (sp: Record<string, string>) =>
+  renderShell(ProjectKpiPersonPage({ params: Promise.resolve({ userId: "s1" }), searchParams: Promise.resolve(sp) } as PageProps<"/dashboard/projects/[userId]">));
 const keep = (id: string) => JSON.parse(screen.getByTestId(id).textContent!);
 afterEach(cleanup);
 
@@ -41,5 +48,20 @@ describe("person KPI page opened from Team KPI", () => {
     await show({ user: "s1", month: "2026-10" });
     expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
     expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team?month=2026-10");
+  });
+});
+
+describe("person Project KPI page opened from Team KPI", () => {
+  it("leads back to the team it was opened from, and the year links keep that team", async () => {
+    await showProjects({ year: "2026", team: "social" });
+    expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team?team=social");
+    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team?team=social");
+    expect(screen.getByRole("link", { name: "2025" }).getAttribute("href")).toContain("team=social");
+  });
+
+  it("without a team it goes back to the viewer's own team", async () => {
+    await showProjects({ year: "2026" });
+    expect(within(screen.getByRole("navigation", { name: "Breadcrumb" })).getByRole("link", { name: "Team KPI" }).getAttribute("href")).toBe("/dashboard/team");
+    expect(screen.getByRole("link", { name: "Back to team" }).getAttribute("href")).toBe("/dashboard/team");
   });
 });

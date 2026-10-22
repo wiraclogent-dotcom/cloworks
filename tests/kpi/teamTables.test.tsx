@@ -95,6 +95,11 @@ describe("ProjectTeamTable action column", () => {
     // The inline green link next to the name is gone: Set targets lives only in the action column.
     expect(within(personCell("Sari")).queryByRole("link", { name: /Set targets/ })).toBeNull();
   });
+  it("carries the team so the person's targets page leads back to it", () => {
+    render(<ProjectTeamTable rows={projRows} year={2026} team="social" />);
+    expect(screen.getByRole("link", { name: "Fadli" }).getAttribute("href")).toBe("/dashboard/projects/u1?year=2026&team=social");
+    expect(screen.getByRole("link", { name: "Open targets for Fadli" }).getAttribute("href")).toBe("/dashboard/projects/u1?year=2026&team=social");
+  });
   it("is omitted without dashboard.team", () => {
     render(<ProjectTeamTable rows={projRows} year={2026} canOpen={false} />);
     expect(screen.queryByRole("columnheader", { name: "Targets" })).toBeNull();

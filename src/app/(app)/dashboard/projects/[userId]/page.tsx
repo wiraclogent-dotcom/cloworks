@@ -10,7 +10,8 @@ import { AccessDenied } from "@/components/AccessDenied";
 import { KpiSkeleton } from "@/components/PageSkeletons";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { canViewPersonKpi, parseUserParam } from "../../params";
+import { kpiHref } from "@/lib/kpi/href";
+import { canViewPersonKpi, keepParams, parseUserParam } from "../../params";
 import { Button } from "@/components/shadcn/button";
 
 /** Tab title: "Project KPI · Clowork" (root layout template). Static: no per-user data in metadata. */
@@ -38,17 +39,20 @@ async function PersonContent({ params, searchParams }: {
   const sp = await searchParams;
   const { year, quarter } = parseProjectKpiParams(sp, new Date());
   const own = subject.id === viewer.id;
-  const base = `/dashboard/projects/${subject.id}`;
-  const hrefFor = (p: { year?: number; q?: string }) => `${base}?year=${p.year ?? year}&q=${p.q ?? quarter}`;
+  // `team` (from a Team KPI link) rides along so the way back leads to that team.
+  const keep = keepParams(sp, ["team"]);
+  const teamHref = kpiHref("/dashboard/team", keep);
+  const hrefFor = (p: { year?: number; q?: string }) =>
+    kpiHref(`/dashboard/projects/${subject.id}`, { year: String(p.year ?? year), q: p.q ?? String(quarter), ...keep });
 
   return (
     <>
       <PageHeader
         breadcrumb={own && !canTeam ? [{ label: "Insights" }, { label: "My KPI", href: "/dashboard" }, { label: "Project KPI" }]
-          : [{ label: "Insights" }, { label: "Team KPI", href: "/dashboard/team" }, { label: subject.name }]}
+          : [{ label: "Insights" }, { label: "Team KPI", href: teamHref }, { label: subject.name }]}
         title={`${subject.name} · Project KPI ${year}`}
         description="Quarterly score from the project items this person is measured on."
-        actions={canTeam ? <Button asChild variant="ghost" size="sm"><Link href="/dashboard/team"><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : undefined} />
+        actions={canTeam ? <Button asChild variant="ghost" size="sm"><Link href={teamHref}><ArrowLeft aria-hidden="true" />Back to team</Link></Button> : undefined} />
       <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} />
     </>
   );

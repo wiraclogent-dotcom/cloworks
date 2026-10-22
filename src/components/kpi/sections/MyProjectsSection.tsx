@@ -32,7 +32,7 @@ export async function MyProjectsSection({ db, subject, canTeam, year, quarter, k
       {targetCount === 0 ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <EmptyState size="inline" title={`No project targets for ${year}.`} />
-          {canTeam ? <Button asChild variant="outline" size="sm"><Link href={`/dashboard/projects/${subject.id}?year=${year}`}>Set targets</Link></Button> : null}
+          {canTeam ? <Button asChild variant="outline" size="sm"><Link href={kpiHref(`/dashboard/projects/${subject.id}`, { year: String(year), team: keep?.team })}>Set targets</Link></Button> : null}
         </Card>
       ) : (
         <PersonProjectKpiSection db={db} userId={subject.id} name={subject.name} year={year} quarter={quarter} canManage={canTeam} hrefFor={hrefFor} yearSelect={false} headingLevel={3} />

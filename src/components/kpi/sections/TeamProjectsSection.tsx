@@ -28,7 +28,7 @@ export async function TeamProjectsSection({ db, year, canManage, keep, autoScrol
       <YearSelect value={year} options={yearOptions.map((y) => ({ year: y, href: kpiHref("/dashboard/team", { ...keep, year: String(y) }, "projects") }))} />
       {canManage ? <ManagePeopleDialog kind="PROJECTS" candidates={candidates} selected={kpis.map((k) => k.userId)} year={year} team={team} /> : null}
     </>}>
-      <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={canManage} hiddenByRoster={hiddenByRoster} />
+      <ProjectTeamTable rows={projectTeamRows(kpis)} year={year} canOpen={canManage} hiddenByRoster={hiddenByRoster} team={team} />
     </KpiSection>
   );
 }
