@@ -43,10 +43,10 @@ describe("computeKpi", () => {
     expect(r.tasksDone).toBe(1);
   });
 
-  it("social media counts requester, not assignee", () => {
+  it("social media counts nothing in the request KPI (their measure is Content Plan posts)", () => {
     const sm = { id: "s1", jobRole: JobRole.SOCIAL_MEDIA };
-    const rs = [req({ doneAt: "2026-10-06T00:00:00Z" }), req({ requesterId: "other", assigneeIds: ["s1"], doneAt: "2026-10-06T00:00:00Z" })];
-    expect(computeKpi(rs, sm, "2026-10", null).tasksDone).toBe(1);
+    const rs = [req({ requesterId: "s1", doneAt: "2026-10-06T00:00:00Z" }), req({ requesterId: "other", assigneeIds: ["s1"], doneAt: "2026-10-06T00:00:00Z" })];
+    expect(computeKpi(rs, sm, "2026-10", null).tasksDone).toBe(0);
   });
 
   it("OTHER role counts nothing", () => {
@@ -76,7 +76,7 @@ describe("computeKpi", () => {
     expect(computeKpi([r1], designer, "2026-10", null).tasksDone).toBe(0);
   });
 
-  it("target role SOCIAL_MEDIA in 2026-09 -> requester; no target + DESIGNER jobRole in 2026-10 -> assignee", () => {
+  it("target role SOCIAL_MEDIA in 2026-09 -> no request basis; no target + DESIGNER jobRole in 2026-10 -> assignee", () => {
     const u = { id: "u1", jobRole: JobRole.DESIGNER };
     const sep = req({ requesterId: "u1", assigneeIds: ["x"], requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
     const sepAsAssignee = req({ requesterId: "y", assigneeIds: ["u1"], requestedAt: d("2026-09-10T00:00:00Z"), doneAt: "2026-09-12T00:00:00Z" });
@@ -84,7 +84,7 @@ describe("computeKpi", () => {
     const octAsRequester = req({ requesterId: "u1", assigneeIds: ["x"], doneAt: "2026-10-07T00:00:00Z" });
     const all = [sep, sepAsAssignee, oct, octAsRequester];
     const sepRes = computeKpi(all, u, "2026-09", { role: JobRole.SOCIAL_MEDIA, targetTasks: 10 });
-    expect(sepRes.tasksDone).toBe(1);
+    expect(sepRes.tasksDone).toBe(0);
     const octRes = computeKpi(all, u, "2026-10", null);
     expect(octRes.tasksDone).toBe(1);
   });
@@ -174,11 +174,11 @@ describe("computeKpi", () => {
       expect(k.tasksDone).toBe(0);
       expect(k.doneRequestIds).toEqual([]);
     });
-    it("a social media requester counts the request once, however many designers it has", () => {
+    it("a requester who is not an assignee gets nothing", () => {
       const r = req({ requesterId: "s1", assigneeIds: ["d1", "d2"], doneAt: "2026-10-06T00:00:00Z" });
       const k = computeKpi([r], { id: "s1", jobRole: JobRole.SOCIAL_MEDIA }, "2026-10", null);
-      expect(k.tasksDone).toBe(1);
-      expect(k.doneRequestIds).toEqual([r.id]);
+      expect(k.tasksDone).toBe(0);
+      expect(k.doneRequestIds).toEqual([]);
     });
   });
 

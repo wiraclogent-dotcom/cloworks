@@ -90,7 +90,7 @@ describe("kpi queries + targets", () => {
       expect(rows.find((r) => r.id === id)!.assigneeIds).toEqual([ids.pairA, ids.pairB]);
       expect(rows.find((r) => r.id === none)!.assigneeIds).toEqual([]);
     });
-    it("end to end: both assignees get the point and a requester sees it once", async () => {
+    it("end to end: both assignees get the point; the social media requester gets none (posts are their measure)", async () => {
       const id = await mkReq({ requestedAt: "2026-11-04T03:00:00Z", assignees: ["pairA", "pairB"], requester: "sm", doneAt: "2026-11-05T03:00:00Z" });
       const reqs = await loadKpiRequests(db.prisma, ["2026-11"]);
       for (const u of ["pairA", "pairB"]) {
@@ -98,7 +98,7 @@ describe("kpi queries + targets", () => {
         expect(k.tasksDone).toBe(1);
         expect(k.doneRequestIds).toEqual([id]);
       }
-      expect(computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-11", null).tasksDone).toBe(1);
+      expect(computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-11", null).tasksDone).toBe(0);
     });
   });
 
@@ -139,14 +139,14 @@ describe("kpi queries + targets", () => {
       expect(k.activeWorkload).toBe(2);
     });
 
-    it("social media user counted as requester per target role", async () => {
+    it("a social media target keeps its number but counts no requests (posts are their measure)", async () => {
       await mkReq({ requester: "sm", assignee: "fadli", requestedAt: "2026-10-12T03:00:00Z", doneAt: "2026-10-13T03:00:00Z" });
       await mkReq({ requester: "sm", requestedAt: "2026-10-12T03:00:00Z", doneAt: "2026-10-13T03:00:00Z" });
       await setTargetWith(db.prisma, { id: ids.lead, appRole: "LEAD" }, { userId: ids.sm, month: "2026-10", role: "SOCIAL_MEDIA", targetTasks: 20 });
       const t = (await loadTargets(db.prisma, ["2026-10"])).find((x) => x.userId === ids.sm)!;
       const reqs = await loadKpiRequests(db.prisma, ["2026-10"]);
       const k = computeKpi(reqs, { id: ids.sm, jobRole: "SOCIAL_MEDIA" }, "2026-10", { role: t.role, targetTasks: t.targetTasks });
-      expect(k.tasksDone).toBe(2);
+      expect(k.tasksDone).toBe(0);
       expect(k.target).toBe(20);
     });
   });
