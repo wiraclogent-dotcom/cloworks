@@ -4,7 +4,7 @@ import {
   AdminError, updateUser, createUser, setUserLoginEmail, setUserPassword, assertMayAddLogin,
   createBrand, renameBrand, createDivision, renameDivision, upsertRequestType, updateDivisionCalendar,
   setBrandArchived, setDivisionArchived, setRequestTypeArchived, deleteBrand, deleteDivision, deleteRequestType,
-  setBrandColor, listsUsage, usageText,
+  setBrandColor, usageText,
 } from "@/lib/admin";
 import { loadActiveUser, requireUserWith } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
@@ -387,14 +387,6 @@ describe("lists archive, delete and colour", () => {
     await setRequestTypeArchived(db.prisma, admin, t.id, true);
     const saved = await upsertRequestType(db.prisma, admin, { id: t.id, name: t.name, fieldSchema: [] });
     expect(saved.active).toBe(false);
-  });
-
-  it("counts usage per brand, division and type", async () => {
-    const r = await request({});
-    const usage = await listsUsage(db.prisma);
-    expect(usage.brands[r.brandId]).toEqual({ requests: 1, projects: 0, libraryItems: 0, channels: 0 });
-    expect(usage.divisions[r.divisionId]).toEqual({ requests: 1, activities: 0, leads: 0 });
-    expect(usage.types[r.typeId]).toEqual({ requests: 1, posts: 0 });
   });
 
   it("usage text lists the non-zero counts", () => {

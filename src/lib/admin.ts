@@ -356,32 +356,12 @@ export function usageText(parts: readonly (readonly [number, string, string])[])
   return parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`).join(" · ");
 }
 
-const brandUsage = (c: { requests: number; projects: number; libraryItems: number; socialChannels: number }) =>
+export const brandUsage = (c: { requests: number; projects: number; libraryItems: number; socialChannels: number }) =>
   usageText([[c.requests, "request", "requests"], [c.projects, "project", "projects"], [c.libraryItems, "library item", "library items"], [c.socialChannels, "Instagram channel", "Instagram channels"]]);
-const divisionUsage = (c: { requests: number; marketingActivities: number }) =>
+export const divisionUsage = (c: { requests: number; marketingActivities: number }) =>
   usageText([[c.requests, "request", "requests"], [c.marketingActivities, "calendar activity", "calendar activities"]]);
-const typeUsage = (c: { requests: number; contentPosts: number }) =>
+export const typeUsage = (c: { requests: number; contentPosts: number }) =>
   usageText([[c.requests, "request", "requests"], [c.contentPosts, "Content Plan post", "Content Plan posts"]]);
-
-export type ListsUsage = {
-  brands: Record<string, { requests: number; projects: number; libraryItems: number; channels: number }>;
-  divisions: Record<string, { requests: number; activities: number; leads: number }>;
-  types: Record<string, { requests: number; posts: number }>;
-};
-
-/** What uses each brand, division and request type (Settings › Lists usage lines and delete rules). */
-export async function listsUsage(db: Db): Promise<ListsUsage> {
-  const [brands, divisions, types] = await Promise.all([
-    db.brand.findMany({ select: { id: true, _count: { select: { requests: true, projects: true, libraryItems: true, socialChannels: true } } } }),
-    db.division.findMany({ select: { id: true, _count: { select: { requests: true, marketingActivities: true, leads: true } } } }),
-    db.requestType.findMany({ select: { id: true, _count: { select: { requests: true, contentPosts: true } } } }),
-  ]);
-  return {
-    brands: Object.fromEntries(brands.map((b) => [b.id, { requests: b._count.requests, projects: b._count.projects, libraryItems: b._count.libraryItems, channels: b._count.socialChannels }])),
-    divisions: Object.fromEntries(divisions.map((d) => [d.id, { requests: d._count.requests, activities: d._count.marketingActivities, leads: d._count.leads }])),
-    types: Object.fromEntries(types.map((t) => [t.id, { requests: t._count.requests, posts: t._count.contentPosts }])),
-  };
-}
 
 const inUse = (name: string, usage: string) => new AdminError("CONFLICT", `${name} is used by ${usage}. Archive it instead.`);
 const archivedAt = (archived: boolean) => (archived ? new Date() : null);

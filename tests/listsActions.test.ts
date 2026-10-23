@@ -9,7 +9,7 @@ vi.mock("@/lib/session", () => ({
   dbFor: () => db.prisma,
 }));
 
-import { saveRequestType } from "@/app/(app)/admin/lists/actions";
+import { archiveListItem, deleteListItem, saveBrandColor, saveRequestType } from "@/app/(app)/admin/lists/actions";
 
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
 const FIELDS = [{ key: "platform", label: "Platform", type: "select", options: ["TikTok"], required: true }];
@@ -41,5 +41,15 @@ describe("saveRequestType", () => {
     const r = await saveRequestType(null, fd({ id: typeId, name: "Social", fieldSchema: JSON.stringify(next) }));
     expect(r).toMatchObject({ ok: true });
     expect(await type()).toMatchObject({ fieldSchema: next, active: false });
+  });
+});
+
+describe("list row actions check their input", () => {
+  it("refuses an unknown kind or non-string ids before touching anything", async () => {
+    const bad = <T,>(v: unknown) => v as T;
+    for (const r of [
+      await archiveListItem(bad("user"), "x", true), await archiveListItem("brand", bad({ not: "" }), true),
+      await archiveListItem("brand", "x", bad("yes")), await deleteListItem(bad("project"), "x"), await saveBrandColor("x", bad(5)),
+    ]) expect(r).toEqual({ ok: false, code: "VALIDATION", message: "Invalid request" });
   });
 });

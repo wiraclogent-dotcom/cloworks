@@ -2,9 +2,16 @@
 
 import { AdminForm, Labeled } from "@/components/admin/AdminForm";
 import { Input } from "@/components/shadcn/input";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { saveBrand, saveDivision, saveDivisionCalendar, saveRequestType } from "./actions";
+import { useState, useTransition } from "react";
+import { Archive, ArchiveRestore, ChevronDown, Ellipsis, Trash2 } from "lucide-react";
+import {
+  archiveListItem, deleteListItem, saveBrand, saveBrandColor, saveDivision, saveDivisionCalendar, saveRequestType, type ListActionResult, type ListKind,
+} from "./actions";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/shadcn/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/shadcn/alert-dialog";
 import { Checkbox } from "@/components/shadcn/checkbox";
 import { Switch } from "@/components/shadcn/switch";
 import { Label } from "@/components/shadcn/label";
@@ -12,7 +19,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/shadcn/radio-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/popover";
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/components/ui/cn";
-import { DIVISION_TONES, DIVISION_TONE_LABEL } from "@/lib/palette";
+import { BRAND_TONES, BRAND_TONE_LABEL, DIVISION_TONES, DIVISION_TONE_LABEL, brandColorTone, type BrandTone } from "@/lib/palette";
 import { FieldSchemaEditor } from "@/components/admin/FieldSchemaEditor";
 import { rowsFromSchema, type FieldRow } from "@/lib/fieldSchemaEdit";
 import type { FieldSchema } from "@/lib/fieldSchema";
@@ -126,5 +133,89 @@ export function DivisionCalendarForm({ division: d, members }: { division: Divis
         </>
       )}
     </AdminForm>
+  );
+}
+
+/**
+ * The `⋯` menu of a list row: Archive or Restore, and Delete when nothing uses the item (it asks first). Errors from the
+ * server (e.g. the item became used meanwhile) show under the row.
+ */
+export function ListRowActions({ kind, id, name, archived, deletable }: {
+  kind: ListKind; id: string; name: string; archived: boolean; deletable: boolean;
+}) {
+  const [confirm, setConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  const run = (fn: () => Promise<ListActionResult>) => start(async () => {
+    setError(null);
+    const r = await fn();
+    if (!r.ok) setError(r.message);
+  });
+  return (
+    <>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger asChild>
+          <Button type="button" variant="ghost" size="icon-sm" aria-label={`Actions for ${name}`} title={`Actions for ${name}`} disabled={pending}>
+            <Ellipsis aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onSelect={() => run(() => archiveListItem(kind, id, !archived))}>
+            {archived ? <ArchiveRestore aria-hidden="true" /> : <Archive aria-hidden="true" />}{archived ? "Restore" : "Archive"}
+          </DropdownMenuItem>
+          {deletable ? (
+            <DropdownMenuItem variant="destructive" onSelect={() => setConfirm(true)}><Trash2 aria-hidden="true" />Delete</DropdownMenuItem>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {error ? <p role="alert" className="w-full text-xs text-danger">{error}</p> : null}
+      <AlertDialog open={confirm} onOpenChange={setConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
+            <AlertDialogDescription>Delete {name}? It isn&apos;t used anywhere. This can&apos;t be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => run(() => deleteListItem(kind, id))}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+}
+
+/** A brand's badge colour: a swatch that opens the 11 colours; picking one saves at once. */
+export function BrandColourButton({ id, name, color }: { id: string; name: string; color: string }) {
+  const [value, setValue] = useState<BrandTone>(brandColorTone(color));
+  const [error, setError] = useState<string | null>(null);
+  const [, start] = useTransition();
+  const pick = (next: string) => {
+    const previous = value;
+    setValue(brandColorTone(next));
+    start(async () => {
+      setError(null);
+      const r = await saveBrandColor(id, next);
+      if (!r.ok) { setValue(previous); setError(r.message); }
+    });
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="ghost" size="icon-sm" aria-label={`Colour of ${name}: ${BRAND_TONE_LABEL[value]}`} title={`Colour of ${name}: ${BRAND_TONE_LABEL[value]}`}>
+          <span aria-hidden="true" data-tone={value} className="size-4 rounded-full bg-tone-accent" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64">
+        <p className="mb-2 text-sm font-medium text-foreground">Colour of {name}</p>
+        <RadioGroup aria-label={`Colour of ${name}`} value={value} onValueChange={pick} className="flex flex-wrap gap-1.5">
+          {BRAND_TONES.map((tone) => (
+            <RadioGroupItem key={tone} value={tone} aria-label={BRAND_TONE_LABEL[tone]} title={BRAND_TONE_LABEL[tone]} data-tone={tone}
+              className="size-7 border-2 border-transparent bg-tone-accent data-[state=checked]:border-foreground [&_svg]:fill-primary-foreground" />
+          ))}
+        </RadioGroup>
+        {error ? <p role="alert" className="mt-2 text-xs text-danger">{error}</p> : null}
+      </PopoverContent>
+    </Popover>
   );
 }
