@@ -173,7 +173,7 @@ export function ListRowActions({ kind, id, name, archived, deletable }: {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {name}?</AlertDialogTitle>
-            <AlertDialogDescription>Delete {name}? It isn&apos;t used anywhere. This can&apos;t be undone.</AlertDialogDescription>
+            <AlertDialogDescription>It isn&apos;t used anywhere. This can&apos;t be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>

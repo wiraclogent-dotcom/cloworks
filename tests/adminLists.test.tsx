@@ -86,7 +86,9 @@ describe("Settings › Lists", () => {
     const menu = await openMenu("Typo");
     fireEvent.click(within(menu).getByRole("menuitem", { name: "Delete" }));
     const dialog = await screen.findByRole("alertdialog");
-    expect(dialog.textContent).toContain("Delete Typo? It isn't used anywhere. This can't be undone.");
+    expect(within(dialog).getByRole("heading").textContent).toBe("Delete Typo?");
+    expect(dialog.textContent).toContain("It isn't used anywhere. This can't be undone.");
+    expect(dialog.textContent?.match(/Delete Typo\?/g)).toHaveLength(1);
     await act(async () => { fireEvent.click(within(dialog).getByRole("button", { name: "Delete" })); });
     expect(actions.deleteListItem).toHaveBeenCalledWith("brand", "b2");
   });
