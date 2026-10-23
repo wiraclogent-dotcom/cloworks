@@ -33,8 +33,19 @@ export function FieldSchemaEditor({ rows: initial, requestsCount, showErrors = f
   const [touched, setTouched] = useState<Set<number>>(new Set());
   const [confirm, setConfirm] = useState<Row | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
+  // Keys of fields removed in this session, by label: adding the same label back before saving reuses the key, so the
+  // answers already given show again (a key generated from the label can differ, e.g. "Published link" → publishedUrl).
+  const [removedKeys, setRemovedKeys] = useState<ReadonlyMap<string, string>>(new Map());
 
-  const result = useMemo(() => finalizeSchema(rows), [rows]);
+  const result = useMemo(() => {
+    const used = new Set(rows.flatMap((r) => (r.key ? [r.key] : [])));
+    return finalizeSchema(rows.map((r) => {
+      const back = r.key ? null : removedKeys.get(r.label.trim().toLowerCase());
+      if (!back || used.has(back)) return r;
+      used.add(back);
+      return { ...r, key: back };
+    }));
+  }, [rows, removedKeys]);
   const errorOf = (i: number, r: Row) => (!result.ok && (showErrors || touched.has(r.uid)) ? result.errors[i] : undefined);
   const update = (u: number, patch: Partial<FieldRow>) => {
     setRows((rs) => rs.map((r) => (r.uid === u ? { ...r, ...patch } : r)));
@@ -45,7 +56,11 @@ export function FieldSchemaEditor({ rows: initial, requestsCount, showErrors = f
     [out[i], out[i + d]] = [out[i + d], out[i]];
     return out;
   });
-  const remove = (u: number) => setRows((rs) => rs.filter((r) => r.uid !== u));
+  const remove = (u: number) => {
+    const gone = rows.find((r) => r.uid === u);
+    if (gone?.key) setRemovedKeys((m) => new Map(m).set(gone.label.trim().toLowerCase(), gone.key!));
+    setRows((rs) => rs.filter((r) => r.uid !== u));
+  };
   const addChoice = (r: Row) => {
     const c = (drafts[r.uid] ?? "").trim();
     if (c) update(r.uid, { options: [...r.options, c] });

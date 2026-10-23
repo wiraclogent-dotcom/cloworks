@@ -97,7 +97,8 @@ export type ValidRequest = {
 type DbOrTx = PrismaClient | Prisma.TransactionClient;
 
 /** Everything `createRequestWith` checks except the permission: zod, lookups, field schema, deadline. Throws `CreateRequestError("VALIDATION")`. */
-export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput, now: Date): Promise<ValidRequest> {
+/** `keepBrandId`: a brand the request may use although archived (a Content Plan channel keeps its own brand). */
+export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput, now: Date, opts: { keepBrandId?: string } = {}): Promise<ValidRequest> {
   // Collect every independent error in one pass (field-keyed) so the form can show them together.
   const errs: Record<string, string> = {};
   const parsed = inputSchema.safeParse(input);
@@ -119,7 +120,7 @@ export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput
   ]);
   if (assigneeIds.length && team?.length !== assigneeIds.length) errs.assigneeIds ??= "Pick someone from the creative team";
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
-  else if (brand?.archivedAt) errs.brandId ??= "That brand is archived";
+  else if (brand?.archivedAt && brandId !== opts.keepBrandId) errs.brandId ??= "That brand is archived";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
   else if (division?.archivedAt) errs.divisionId ??= "That division is archived";
   if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;

@@ -108,6 +108,18 @@ describe("approve content post", () => {
     expect(p.approvedAt?.toISOString()).toBe(NOW.toISOString());
   });
 
+  // A channel keeps its brand after the brand is archived (spec 2026-10-23), so its waiting posts can still be approved.
+  it("approves a post whose channel's brand has since been archived", async () => {
+    const old = await db.prisma.brand.create({ data: { name: "Archived Channel Brand" } });
+    const ch = (await createChannelWith(db.prisma, lead, { brandId: old.id, handle: "archivedbrand", displayName: "AC" })).id;
+    await db.prisma.brand.update({ where: { id: old.id }, data: { archivedAt: new Date() } });
+    const post = await db.prisma.contentPost.create({
+      data: { channelId: ch, surface: "FEED", format: "SINGLE", status: "SUBMITTED", position: 1, authorId: author.id, brief: "Old brand post", plannedAt: jakarta("2099-02-01") },
+    });
+    const { requestId } = await approveContentPostWith(db.prisma, lead, post.id, input(), NOW);
+    expect((await db.prisma.request.findUniqueOrThrow({ where: { id: requestId } })).brandId).toBe(old.id);
+  });
+
   it("approving with an assignee writes one RequestAssignee row", async () => {
     const designer = await db.prisma.user.create({ data: { email: "adesigner@clogent.co.id", name: "adesigner", fullName: "A Designer", appRole: "CREATIVE", jobRole: "DESIGNER" } });
     const id = await submitted();

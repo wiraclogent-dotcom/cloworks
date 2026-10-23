@@ -10,6 +10,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 import { RequestCalendar } from "@/components/RequestCalendar";
 import { CalendarSkeleton } from "@/components/RequestSkeletons";
 import type { CalendarRow } from "@/lib/requests";
+import { setBrandDirectory } from "@/components/ui/brandDirectory";
 
 const TODAY = "2026-10-08"; // Thursday; the October grid runs Mon 28 Sep to Sun 1 Nov.
 
@@ -113,6 +114,13 @@ describe("RequestCalendar", () => {
     expect(within(late as HTMLElement).getByText("Overdue")).toBeTruthy();
     expect(document.querySelector('[data-card="3"]')!.getAttribute("data-tone")).toBe("tag-clogent");
     expect(within(cell("Monday 5 October")).getByRole("link", { name: "Late" }).getAttribute("href")).toBe("/requests/2");
+  });
+
+  it("cards use the brand's chosen colour from Settings › Lists", () => {
+    act(() => setBrandDirectory([{ name: "Clogent", color: "div-5" }]));
+    view([row("3", "Fine")]);
+    expect(document.querySelector('[data-card="3"]')!.getAttribute("data-tone")).toBe("div-5");
+    act(() => setBrandDirectory([]));
   });
 
   it("keyboard: Space, ArrowRight, Space moves the card to the next day and refreshes", async () => {

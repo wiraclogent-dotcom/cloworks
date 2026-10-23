@@ -84,6 +84,18 @@ describe("FieldSchemaEditor", () => {
     expect(schema().map((f: { key: string }) => f.key)).not.toContain("shooting");
   });
 
+  // "Published link" is stored as `publishedUrl`: a key generated from the label would be `publishedLink`, leaving the
+  // 124 answers hidden. Adding it back before saving must reuse the removed field's key.
+  it("removing a field and adding it back with the same label keeps its key", async () => {
+    view(124);
+    fireEvent.click(screen.getByRole("button", { name: "Remove Published link" }));
+    fireEvent.click(within(await screen.findByRole("alertdialog")).getByRole("button", { name: "Remove field" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add field" }));
+    fireEvent.change(label(6), { target: { value: "published LINK" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Type of field 6" }), { target: { value: "url" } });
+    expect(schema()[5]).toMatchObject({ key: "publishedUrl", label: "published LINK", type: "url" });
+  });
+
   it("a new field is removed without asking, and Checkbox rows have no Required switch", () => {
     view(124);
     fireEvent.click(screen.getByRole("button", { name: "Add field" }));

@@ -34,7 +34,7 @@ A type can ask extra questions on the new request form. Each question is a row:
 
 Use ↑ and ↓ to change the order, **Add field** for a new question and × at the end of a row to remove one. Nothing changes until you select **Save type**.
 
-Renaming a question keeps the answers already given. If you remove a question that requests have answered, Clowork asks first: the answers are kept but no longer shown. Adding the same question back shows them again.
+Renaming a question keeps the answers already given. If you remove a question that requests have answered, Clowork asks first: the answers are kept but no longer shown. If you removed one by mistake, add it back with the same label before you select **Save type**, and its answers show again.
 
 To add a type, fill in **Add request type** at the bottom of the card.
 

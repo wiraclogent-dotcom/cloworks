@@ -138,7 +138,7 @@ export async function approveContentPostWith(
       const brief = post.brief?.trim() ?? "";
       const caption = post.caption?.trim() ?? "";
       const notes = composeNotes(brief, caption);
-      const v = await validateRequestInput(tx, { ...input, brandId: post.channel.brandId, notes: notes || undefined }, now);
+      const v = await validateRequestInput(tx, { ...input, brandId: post.channel.brandId, notes: notes || undefined }, now, { keepBrandId: post.channel.brandId });
       const req = await insertRequestTx(tx, v, { requesterId: post.authorId, actorId: user.id, outputCount, now });
 
       if (cfg) {
