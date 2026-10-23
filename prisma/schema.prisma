@@ -170,6 +170,10 @@ model User {
 model Brand {
   id           String        @id @default(cuid())
   name         String
+  /// Set = archived: hidden from pickers for new work; existing records keep it.
+  archivedAt   DateTime?
+  /// Badge colour: one of BRAND_TONES (src/lib/palette.ts).
+  color        String        @default("tag-neutral")
   requests     Request[]
   projects     Project[]
   libraryItems LibraryItem[]
@@ -186,6 +190,8 @@ model Brand {
 model Division {
   id       String    @id @default(cuid())
   name     String
+  /// Set = archived: hidden from the new request form and Marketing Calendar lanes.
+  archivedAt DateTime?
   requests Request[]
 
   /// Lane colour on the Marketing Calendar: a DIVISION_TONES key ("div-1" … "div-8").

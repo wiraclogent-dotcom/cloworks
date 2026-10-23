@@ -207,6 +207,21 @@ export const DIVISION_TONE_LABEL: Record<DivisionTone, string> = {
   "div-1": "Blue", "div-2": "Coral", "div-3": "Green", "div-4": "Amber", "div-5": "Pink", "div-6": "Violet", "div-7": "Teal", "div-8": "Slate",
 };
 
+/**
+ * Brand badge colours a brand can pick (`Brand.color`, spec 2026-10-23): today's two brand tags first, the eight
+ * division tones, grey last. `brandTone(name)` stays the fallback where no brand directory is loaded.
+ */
+export const BRAND_TONES = ["tag-clogent", "tag-bubble-wash", ...DIVISION_TONES, "tag-neutral"] as const;
+export type BrandTone = (typeof BRAND_TONES)[number];
+export const BRAND_TONE_LABEL: Record<BrandTone, string> = {
+  "tag-clogent": "Brand blue", "tag-bubble-wash": "Aqua", ...DIVISION_TONE_LABEL, "tag-neutral": "Grey",
+};
+
+/** The tone for a stored `Brand.color`; anything unknown is grey. */
+export function brandColorTone(color: string): BrandTone {
+  return (BRAND_TONES as readonly string[]).includes(color) ? (color as BrandTone) : "tag-neutral";
+}
+
 /** The tone for a stored `Division.color`; anything unknown is slate. */
 export function divisionTone(color: string): DivisionTone {
   return (DIVISION_TONES as readonly string[]).includes(color) ? (color as DivisionTone) : "div-8";

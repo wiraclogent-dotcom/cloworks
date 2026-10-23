@@ -2,7 +2,7 @@ import * as React from "react"
 import { cva } from "class-variance-authority"
 import { Slot } from "radix-ui"
 import { cn } from "@/components/ui/cn"
-import type { Tone } from "@/lib/palette"
+import type { DivisionTone, Tone } from "@/lib/palette"
 
 const badgeVariants = cva(
   "inline-flex max-w-full items-center gap-1 px-2 py-0.5 text-xs leading-4 font-medium whitespace-nowrap [&_svg]:size-3.5 [&_svg]:shrink-0",
@@ -34,7 +34,7 @@ function Badge({
   asChild = false,
   ...props
 }: React.ComponentProps<"span"> & {
-  tone?: Tone
+  tone?: Tone | DivisionTone
   variant?: "default" | "count"
   asChild?: boolean
 }) {
