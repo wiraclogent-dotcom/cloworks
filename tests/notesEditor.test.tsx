@@ -159,6 +159,20 @@ describe("NoteEditor", () => {
     expect(vi.mocked(saveNote).mock.calls.every(([id]) => id === "A")).toBe(true);
   });
 
+  // ProseMirror builds attrs with Object.create(null); React's server action encoder sends such objects as temporary
+  // references, which the server cannot read ("Cannot access level on the server"). Saves must send plain JSON.
+  it("sends the server a plain JSON body (no null-prototype attrs)", async () => {
+    vi.mocked(saveNote).mockImplementation(async () => ok());
+    const { unmount } = render(<NoteEditor {...props} note={note("A")} />);
+    const editor = await editorOf();
+    act(() => { editor.commands.setContent({ type: "doc", content: [{ type: "heading", attrs: { level: 1 }, content: [{ type: "text", text: "T" }] }] }, { emitUpdate: true }); });
+    unmount();
+    await waitFor(() => expect(saveNote).toHaveBeenCalled());
+    const plain = (v: unknown): boolean =>
+      typeof v !== "object" || v === null || (Array.isArray(v) ? v.every(plain) : Object.getPrototypeOf(v) === Object.prototype && Object.values(v).every(plain));
+    expect(plain(vi.mocked(saveNote).mock.calls[0][1])).toBe(true);
+  });
+
   it("leaving an emptied note saves first, then reports it empty", async () => {
     const order: string[] = [];
     vi.mocked(saveNote).mockImplementation(async (id) => { order.push(`save ${id}`); return ok(""); });

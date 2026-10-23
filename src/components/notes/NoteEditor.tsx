@@ -63,7 +63,8 @@ export function NoteEditor({ note, folders, readOnly, onSaved, onLeaveEmpty, onC
     onCreate: ({ editor: e }) => { empty.current = e.state.doc.textContent.trim() === ""; },
     onUpdate: ({ editor: e }) => {
       empty.current = e.state.doc.textContent.trim() === "";
-      change(e.getJSON());
+      // Plain JSON: ProseMirror's null-prototype attrs would reach the server action as unreadable temporary references.
+      change(JSON.parse(JSON.stringify(e.getJSON())));
     },
   });
 
