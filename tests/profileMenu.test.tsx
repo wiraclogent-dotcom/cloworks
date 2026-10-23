@@ -16,25 +16,29 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const signOut = vi.fn(async () => {});
+const me = { name: "Wira", title: "Creative Lead", department: "Marketing", roleLabel: "Admin" };
 const open = () => {
-  render(<ProfileMenuView name="Wira" roleLabel="Admin" signOut={signOut} />);
+  render(<ProfileMenuView {...me} signOut={signOut} />);
   const trigger = screen.getByRole("button", { name: "Account menu for Wira" });
   fireEvent.keyDown(trigger, { key: "Enter" });
   return screen.getByRole("menu");
 };
 
 describe("ProfileMenuView", () => {
-  it("the trigger shows the person's initials and opens a menu", () => {
-    render(<ProfileMenuView name="Wira" roleLabel="Admin" signOut={signOut} />);
+  it("the trigger is a card with the person's initials, name, title and department, and opens a menu", () => {
+    render(<ProfileMenuView {...me} signOut={signOut} />);
     const trigger = screen.getByRole("button", { name: "Account menu for Wira" });
-    expect(trigger.textContent).toBe("WI");
+    expect(trigger.textContent).toBe("WIWiraCreative Lead · Marketing");
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
-  it("lists name and role, Settings, Help center, Dark mode and Sign out", () => {
-    const menu = open();
-    expect(menu.textContent).toContain("Wira");
-    expect(menu.textContent).toContain("Admin");
+  it("the card falls back to the app role when title and department are empty", () => {
+    render(<ProfileMenuView {...me} title={null} department="" signOut={signOut} />);
+    expect(screen.getByRole("button", { name: "Account menu for Wira" }).textContent).toBe("WIWiraAdmin");
+  });
+
+  it("lists Settings, Help center, Dark mode and Sign out", () => {
+    open();
     expect(screen.getByRole("menuitem", { name: "Settings" }).getAttribute("href")).toBe("/settings");
     expect(screen.getByRole("menuitem", { name: "Help center" }).getAttribute("href")).toBe("/help");
     expect(screen.getByRole("menuitemcheckbox", { name: "Dark mode" }).getAttribute("aria-checked")).toBe("false");

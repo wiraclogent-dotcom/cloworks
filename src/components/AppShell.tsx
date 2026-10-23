@@ -47,9 +47,9 @@ export async function WorkspaceName() {
 }
 
 /**
- * Shell for authenticated pages: white V3 sidebar (Work / Insights / Tools). The notification bell and the profile menu
- * (Settings, Help center, Dark mode, Sign out) sit at the top right of every page, the chat dock at the bottom
- * right; admin pages are tabs of Settings.
+ * Shell for authenticated pages: white V3 sidebar (Work / Insights / Tools) with the profile card (Settings, Help
+ * center, Dark mode, Sign out) at its bottom. The notification bell sits at the top right of every page, the chat dock
+ * at the bottom right; admin pages are tabs of Settings.
  * Per-user reads (role checks, the name) each sit in their own Suspense boundary (cacheComponents); the static
  * links render immediately. The sign-in page does not use it.
  */
@@ -57,13 +57,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppFrame
       workspace={<Suspense fallback={null}><WorkspaceName /></Suspense>}
-      profile={
+      topRight={
         <div className="flex items-center gap-2">
           <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><NotificationBell /></Suspense>
-          <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><ProfileMenu /></Suspense>
           <Suspense fallback={null}><PhotoDirectory /></Suspense>
         </div>
       }
+      footer={<Suspense fallback={<Skeleton className="h-[54px] rounded-xl" />}><ProfileMenu /></Suspense>}
       nav={
         <nav aria-label="Main">
           <NavGroup id="nav-work" label="Work">

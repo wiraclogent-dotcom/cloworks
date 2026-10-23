@@ -12,15 +12,15 @@ export type Crumb = { label: string; href?: string };
 export function PageHeader({ title, count, description, switcher, actions, breadcrumb, topBarActions, className }: {
   title: ReactNode; count?: number; description?: ReactNode; switcher?: ReactNode; actions?: ReactNode;
   /** Top bar: the trail to this page (the last crumb is the current page). Shown above the title with a hairline under it. */
-  breadcrumb?: Crumb[]; /** Right side of the top bar (avatars, icon buttons), left of the profile menu. Only with `breadcrumb`. */ topBarActions?: ReactNode;
+  breadcrumb?: Crumb[]; /** Right side of the top bar (avatars, icon buttons), left of the bell. Only with `breadcrumb`. */ topBarActions?: ReactNode;
   className?: string;
 }) {
   const last = (breadcrumb?.length ?? 0) - 1;
   return (
     <>
       {breadcrumb ? (
-        // min-h-12 + pr-24: the app layout pins the bell and the profile menu (36 + 8 + 36px) in this row's top-right corner (AppFrame).
-        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-24 pb-3">
+        // min-h-12 + pr-12: the app layout pins the bell (36px) in this row's top-right corner (AppFrame).
+        <div data-top-bar="" className="mb-4 flex min-h-12 flex-wrap items-center justify-between gap-3 border-b border-border pr-12 pb-3">
           <nav aria-label="Breadcrumb">
             <ol className="flex flex-wrap items-center gap-1.5 text-compact text-muted-foreground">
               {breadcrumb.map((c, i) => (

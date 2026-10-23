@@ -1,14 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore, ViewTransition, type ReactNode } from "react";
+import Link from "next/link";
 import { Menu, PanelLeftClose, PanelLeftOpen, Search, X } from "lucide-react";
 import { RAIL_DEFAULT_QUERY, setSidebarCollapsed, sidebarIsCollapsed } from "@/lib/theme";
 import { Button } from "@/components/shadcn/button";
 import { Sheet, SheetClose, SheetContent, SheetTitle, SheetTrigger } from "@/components/shadcn/sheet";
 import { LogoMark } from "@/components/ui/LogoMark";
+import { cn } from "@/components/ui/cn";
 import { sidebarRowClass } from "./classes";
 
 const SIDEBAR_ID = "app-sidebar";
+/** Home: where signing in lands (`/` sends signed-in visitors there too). */
+const HOME = "/requests";
+const homeLinkClass = "rounded-lg hover:opacity-85 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sidebar-ring";
 const DRAWER_ID = "app-drawer";
 
 function subscribeCollapsed(cb: () => void) {
@@ -25,17 +30,17 @@ const getCollapsed = sidebarIsCollapsed;
 /**
  * Client frame of the signed-in app: white V3 sidebar (232px, collapsible to a 64px rail on desktop, remembered in
  * localStorage `ct-sidebar`), slim top bar + off-canvas drawer (shadcn `Sheet` from the left) below 768px, skip link
- * and `<main id="main">`. The server AppShell passes in the nav, footer and workspace name (permission checks and reads
- * stay on the server).
+ * and `<main id="main">`. The logo is the home link (Requests, where signing in lands). The server AppShell passes in
+ * the nav, footer (the profile card) and workspace name (permission checks and reads stay on the server).
  *
  * The sidebar's parts render in exactly one place: the desktop `<aside>` (CSS-hidden below 768px) while the drawer is
  * closed, the drawer while it is open, so ids and landmarks are never doubled. The drawer is closed on the server and
  * in the first client render, so hydration never sees it.
  */
-export function AppFrame({ nav, footer, workspace, profile, children }: {
+export function AppFrame({ nav, footer, workspace, topRight, children }: {
   nav: ReactNode; footer?: ReactNode; workspace?: ReactNode;
-  /** The profile menu, pinned to the top-right of the content, in the row every PageHeader top bar leaves free. */
-  profile?: ReactNode;
+  /** The notification bell, pinned to the top-right of the content, in the row every PageHeader top bar leaves free. */
+  topRight?: ReactNode;
   children: ReactNode;
 }) {
   const collapsed = useSyncExternalStore(subscribeCollapsed, getCollapsed, () => false);
@@ -58,15 +63,17 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
   /** Workspace tile, search, nav and footer; `drawer` adds the close button and leaves out the rail toggle. */
   const parts = (drawer: boolean) => (
     <>
-      {/* Workspace tile: app name and the person's workspace. Not a switcher (each person belongs to one workspace), so no
-          chevron: a chevron here would promise a menu that does not exist. */}
+      {/* Workspace tile: app name and the person's workspace; logo and name are the home link. Not a switcher (each
+          person belongs to one workspace), so no chevron: a chevron here would promise a menu that does not exist. */}
       <div className="flex-none px-3 pt-3">
         <div className="sb-item sb-frame flex items-center gap-2.5 p-1.5">
-          <LogoMark size={32} />
-          <div className="sb-label min-w-0 flex-1 leading-tight">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">Clowork</p>
-            <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
-          </div>
+          <Link href={HOME} transitionTypes={["nav"]} aria-label="Clowork home" title="Home" className={cn("sb-item flex min-w-0 flex-1 items-center gap-2.5", homeLinkClass)}>
+            <LogoMark size={32} />
+            <div className="sb-label min-w-0 flex-1 leading-tight">
+              <p className="truncate text-sm font-semibold text-sidebar-foreground">Clowork</p>
+              <p className="min-h-4 truncate text-xs text-sidebar-foreground-secondary">{workspace}</p>
+            </div>
+          </Link>
           {drawer ? (
             <SheetClose asChild>
               <Button ref={closeButton} variant="ghost" size="icon" aria-label="Close navigation"
@@ -101,7 +108,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
         </div>
       )}
 
-      {footer ? <div className="flex-none space-y-2 border-t border-sidebar-border p-3">{footer}</div> : null}
+      {footer ? <div className="flex-none px-3 pb-3">{footer}</div> : null}
     </>
   );
 
@@ -117,8 +124,10 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
               <Menu aria-hidden="true" />
             </Button>
           </SheetTrigger>
-          <LogoMark size={24} />
-          <span className="text-[15px] font-semibold">Clowork</span>
+          <Link href={HOME} aria-label="Clowork home" className={cn("flex items-center gap-2", homeLinkClass)}>
+            <LogoMark size={24} />
+            <span className="text-[15px] font-semibold">Clowork</span>
+          </Link>
         </header>
 
         {/* Mobile drawer. Following a link in it closes it (no usePathname here: it would make every route dynamic). */}
@@ -139,7 +148,7 @@ export function AppFrame({ nav, footer, workspace, profile, children }: {
 
         <main id="main" tabIndex={-1} inert={open} className="min-w-0 flex-1 px-4 py-4 outline-none md:px-6 md:py-6">
           <div className="app-content relative mx-auto w-full max-w-[1440px]">
-            {profile ? <div data-profile-slot="" className="absolute top-0 right-0 z-10">{profile}</div> : null}
+            {topRight ? <div data-top-right-slot="" className="absolute top-0 right-0 z-10">{topRight}</div> : null}
             {/* Sidebar navigations (transition type "nav") crossfade the page; drags, refreshes and filters never animate. */}
             <ViewTransition update={{ nav: "page", default: "none" }} default="none">
               <div>{children}</div>
