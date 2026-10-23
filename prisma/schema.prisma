@@ -89,6 +89,8 @@ model Workspace {
   marketingActivities    MarketingActivity[]
   marketingMonths        MarketingMonth[]
   marketingAnnouncements MarketingAnnouncement[]
+  noteFolders            NoteFolder[]
+  notes                  Note[]
 }
 
 model User {
@@ -155,6 +157,9 @@ model User {
   marketingActivitiesUpdated MarketingActivity[]     @relation("MarketingActivityUpdatedBy")
   marketingMonthsUpdated     MarketingMonth[]
   marketingAnnouncements     MarketingAnnouncement[]
+
+  noteFolders NoteFolder[] @relation("NoteFolderOwner")
+  notes       Note[]       @relation("NoteOwner")
 
   workspaceId String    @default(dbgenerated())
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
@@ -956,4 +961,52 @@ model MarketingAnnouncement {
 
   @@index([workspaceId])
   @@index([workspaceId, month])
+}
+
+/// A person's own notes folder (Notes, spec 2026-10-23). One level; names unique per owner, case-insensitive (checked
+/// in src/lib/notes/notes.ts, not here, so a member merge can never fail on a clash).
+model NoteFolder {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  createdAt DateTime @default(now())
+
+  user  User   @relation("NoteFolderOwner", fields: [userId], references: [id])
+  notes Note[]
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([userId])
+}
+
+/// A private note: only its owner ever reads or writes it.
+model Note {
+  id                  String    @id @default(cuid())
+  userId              String
+  /// null = no folder (shown under All Notes only).
+  folderId            String?
+  /// First line of the text, <= 200 chars; "" for an empty note. Derived on save.
+  title               String    @default("")
+  /// TipTap JSON document.
+  body                Json
+  /// Plain text of `body`, for search and the list preview. Derived on save.
+  text                String    @default("")
+  pinned              Boolean   @default(false)
+  /// Set = in Recently Deleted; purged 30 days later.
+  deletedAt           DateTime?
+  /// The folder a deleted note came from, for Restore (a plain id: the folder may be gone by then).
+  deletedFromFolderId String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  user   User        @relation("NoteOwner", fields: [userId], references: [id])
+  folder NoteFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  workspaceId String    @default(dbgenerated())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@index([workspaceId])
+  @@index([userId, deletedAt, updatedAt])
 }

@@ -53,6 +53,8 @@ const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<un
   "MarketingActivity.updatedById": (tx, from, into) => tx.marketingActivity.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
   "MarketingAnnouncement.createdById": (tx, from, into) => tx.marketingAnnouncement.updateMany({ where: { createdById: from }, data: { createdById: into } }),
   "MarketingMonth.updatedById": (tx, from, into) => tx.marketingMonth.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
+  "Note.userId": (tx, from, into) => tx.note.updateMany({ where: { userId: from }, data: { userId: into } }),
+  "NoteFolder.userId": (tx, from, into) => tx.noteFolder.updateMany({ where: { userId: from }, data: { userId: into } }),
 };
 
 /** "Model.field" for every foreign key to User that mergeUsers re-points. */
