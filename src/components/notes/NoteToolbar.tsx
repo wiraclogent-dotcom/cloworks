@@ -118,46 +118,52 @@ export function NoteToolbar({ editor, note, folders, linkOpen, onLinkOpenChange,
 function LinkControl({ editor, active, href, open, onOpenChange }: {
   editor: Editor; active: boolean; href: string; open: boolean; onOpenChange: (open: boolean) => void;
 }) {
-  const [value, setValue] = useState("");
+  return (
+    <Popover open={open} onOpenChange={onOpenChange}>
+      <PopoverAnchor asChild>
+        <Toggle size="sm" aria-label="Link" title="Link (⌘K)" pressed={active || open} onPressedChange={() => onOpenChange(!open)} className="px-2">
+          <Link2 aria-hidden="true" />
+        </Toggle>
+      </PopoverAnchor>
+      <PopoverContent align="start" className="w-80">
+        {/* Mounted per opening, so the field always starts from the selection's link, never a draft left from last time. */}
+        <LinkForm editor={editor} active={active} href={href} onDone={() => onOpenChange(false)} />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function LinkForm({ editor, active, href, onDone }: { editor: Editor; active: boolean; href: string; onDone: () => void }) {
+  const [value, setValue] = useState(href);
   const [error, setError] = useState<string | null>(null);
-  const openWith = (o: boolean) => { if (o) { setValue(href); setError(null); } onOpenChange(o); };
 
   const apply = () => {
     const v = value.trim();
     if (!v) {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
-      return onOpenChange(false);
+      return onDone();
     }
     const url = /^[a-z][a-z0-9+.-]*:/i.test(v) ? v : `https://${v}`;
     if (!isSafeHref(url)) return setError("Use a web address or an email link (mailto:).");
     const chain = editor.chain().focus();
     if (editor.state.selection.empty && !active) chain.insertContent({ type: "text", text: v, marks: [{ type: "link", attrs: { href: url } }] }).run();
     else chain.extendMarkRange("link").setLink({ href: url }).run();
-    onOpenChange(false);
+    onDone();
   };
 
   return (
-    <Popover open={open} onOpenChange={openWith}>
-      <PopoverAnchor asChild>
-        <Toggle size="sm" aria-label="Link" title="Link (⌘K)" pressed={active || open} onPressedChange={() => openWith(!open)} className="px-2">
-          <Link2 aria-hidden="true" />
-        </Toggle>
-      </PopoverAnchor>
-      <PopoverContent align="start" className="w-80">
-        <form onSubmit={(e) => { e.preventDefault(); apply(); }} className="space-y-2">
-          <label htmlFor="note-link" className="text-sm font-medium text-foreground">Link</label>
-          <Input id="note-link" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="https://… or mailto:…"
-            aria-invalid={error ? true : undefined} aria-describedby={error ? "note-link-error" : undefined} />
-          {error ? <p id="note-link-error" className="text-xs text-danger">{error}</p> : null}
-          <div className="flex justify-end gap-2">
-            {active ? (
-              <Button type="button" variant="outline" size="sm"
-                onClick={() => { editor.chain().focus().extendMarkRange("link").unsetLink().run(); onOpenChange(false); }}>Remove</Button>
-            ) : null}
-            <Button type="submit" variant="default" size="sm"><Check aria-hidden="true" />Apply</Button>
-          </div>
-        </form>
-      </PopoverContent>
-    </Popover>
+    <form onSubmit={(e) => { e.preventDefault(); apply(); }} className="space-y-2">
+      <label htmlFor="note-link" className="text-sm font-medium text-foreground">Link address</label>
+      <Input id="note-link" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="https://… or mailto:…"
+        aria-invalid={error ? true : undefined} aria-describedby={error ? "note-link-error" : undefined} />
+      {error ? <p id="note-link-error" className="text-xs text-danger">{error}</p> : null}
+      <div className="flex justify-end gap-2">
+        {active ? (
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => { editor.chain().focus().extendMarkRange("link").unsetLink().run(); onDone(); }}>Remove</Button>
+        ) : null}
+        <Button type="submit" variant="default" size="sm"><Check aria-hidden="true" />Apply</Button>
+      </div>
+    </form>
   );
 }

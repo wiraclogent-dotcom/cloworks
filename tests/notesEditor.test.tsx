@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, renderHook, screen, cleanup, act, waitFor } from "@testing-library/react";
+import { render, renderHook, screen, cleanup, act, waitFor, fireEvent } from "@testing-library/react";
 import type { Editor } from "@tiptap/core";
 
 vi.mock("@/app/(app)/notes/actions", () => ({
@@ -204,6 +204,23 @@ describe("NoteEditor", () => {
     const other = await editorOf();
     await new Promise((r) => setTimeout(r, 50));
     expect(other.isFocused).toBe(false);
+  });
+
+  it("the link popover starts from the selection's link each time it opens (⌘K or the button)", async () => {
+    render(<NoteEditor {...props} note={note("A", b("halo dunia"))} />);
+    const editor = await editorOf();
+    act(() => { editor.chain().focus().setTextSelection({ from: 1, to: 5 }).run(); });
+    act(() => { fireEvent.keyDown(document.querySelector(".ProseMirror")!, { key: "k", metaKey: true }); });
+    const field = await screen.findByLabelText("Link address");
+    fireEvent.change(field, { target: { value: "draft-not-applied" } });
+    fireEvent.keyDown(field, { key: "Escape" });
+    await waitFor(() => expect(screen.queryByLabelText("Link address")).toBeNull());
+    act(() => { fireEvent.keyDown(document.querySelector(".ProseMirror")!, { key: "k", metaKey: true }); });
+    const again = await screen.findByLabelText("Link address");
+    expect((again as HTMLInputElement).value).toBe("");
+    fireEvent.change(again, { target: { value: "clowork.my.id" } });
+    await act(async () => { fireEvent.submit(again.closest("form")!); });
+    expect(editor.getJSON().content?.[0].content?.[0]).toMatchObject({ text: "halo", marks: [{ type: "link", attrs: { href: "https://clowork.my.id" } }] });
   });
 
   it("a Recently Deleted note is read-only with Restore and Delete now", async () => {
