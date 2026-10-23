@@ -7,9 +7,10 @@ describe("lists archive and colour migration", () => {
   let db: TestDb;
   beforeAll(async () => {
     db = await createTestDb({ upTo: "20261023040118_notes" });
-    for (const name of ["Clogent", " bubble  WASH ", "Clenvo"])
-      await db.raw.brand.create({ data: { name, workspaceId: db.workspaceId } });
-    await db.raw.division.create({ data: { name: "KOL", workspaceId: db.workspaceId } });
+    // By SQL: the generated client already knows the columns this migration adds.
+    const ws = db.workspaceId;
+    await db.raw.$executeRaw`INSERT INTO "Brand" ("id", "name", "workspaceId") VALUES ('b1', 'Clogent', ${ws}), ('b2', ' bubble  WASH ', ${ws}), ('b3', 'Clenvo', ${ws})`;
+    await db.raw.$executeRaw`INSERT INTO "Division" ("id", "name", "workspaceId") VALUES ('d1', 'KOL', ${ws})`;
     await db.migrate();
   });
   afterAll(async () => { await db?.stop(); });

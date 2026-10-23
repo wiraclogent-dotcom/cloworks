@@ -18,7 +18,9 @@ describe("migrations 20261014120000_request_assignees + 20261014130000_drop_requ
     const requester = { id: "u-req" };
     const assignee = { id: "u-dim" };
     await r.$executeRaw`INSERT INTO "User" ("id", "name", "fullName", "email", "workspaceId") VALUES (${requester.id}, 'Req', 'Req', 'req@clogent.co.id', ${ws}), (${assignee.id}, 'Dim', 'Dim', 'dim@clogent.co.id', ${ws})`;
-    const brand = await r.brand.create({ data: { name: "B", workspaceId: ws } });
+    // Brand by SQL: later migrations add columns (archivedAt, color) the old table lacks.
+    const brand = { id: "b-1" };
+    await r.$executeRaw`INSERT INTO "Brand" ("id", "name", "workspaceId") VALUES (${brand.id}, 'B', ${ws})`;
     // Division by SQL too: later migrations add columns (marketing calendar colour, order) the old table lacks.
     const division = { id: "d-1" };
     await r.$executeRaw`INSERT INTO "Division" ("id", "name", "workspaceId") VALUES (${division.id}, 'D', ${ws})`;
