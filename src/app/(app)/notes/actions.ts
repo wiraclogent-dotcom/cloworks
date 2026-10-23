@@ -24,7 +24,8 @@ export type NotesActionResult<T = object> =
 
 /**
  * Shared wrapper: auth, scoped db, result-object errors (Next redacts thrown errors in production). Every action but
- * saveNote revalidates /notes so the folder and note lists come back fresh; saves run every second while typing.
+ * saveNote and createNote revalidates /notes so the folder and note lists come back fresh; saves run every second while
+ * typing, and a new note is opened by navigating to it.
  */
 function run<T extends object>(fn: (db: ScopedDb, userId: string) => Promise<T | void>, revalidate = true): Promise<NotesActionResult<T>> {
   return withUser<NotesActionResult<T>, NotesActionResult<T>>(requireUser, async (user) => {
@@ -40,7 +41,8 @@ function run<T extends object>(fn: (db: ScopedDb, userId: string) => Promise<T |
 }
 
 export async function createNote(folderId: string | null): Promise<NotesActionResult<{ id: string }>> {
-  return run((db, u) => { folderRef(folderId); return createNoteWith(db, u, folderId); });
+  // No revalidate: that would re-render the URL being left, whose load cleans up empty notes (this one included).
+  return run((db, u) => { folderRef(folderId); return createNoteWith(db, u, folderId); }, false);
 }
 export async function saveNote(id: string, body: unknown): Promise<NotesActionResult<{ title: string; preview: string; updatedAt: Date }>> {
   return run((db, u) => { ids(id); return saveNoteWith(db, u, id, body); }, false);
