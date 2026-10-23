@@ -2,8 +2,6 @@
 
 import { AdminForm, Labeled } from "@/components/admin/AdminForm";
 import { Input } from "@/components/shadcn/input";
-import { Textarea } from "@/components/shadcn/textarea";
-import { FieldDescription } from "@/components/shadcn/field";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { saveBrand, saveDivision, saveDivisionCalendar, saveRequestType } from "./actions";
@@ -15,6 +13,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/shadcn/pop
 import { Button } from "@/components/shadcn/button";
 import { cn } from "@/components/ui/cn";
 import { DIVISION_TONES, DIVISION_TONE_LABEL } from "@/lib/palette";
+import { FieldSchemaEditor } from "@/components/admin/FieldSchemaEditor";
+import { rowsFromSchema, type FieldRow } from "@/lib/fieldSchemaEdit";
+import type { FieldSchema } from "@/lib/fieldSchema";
+
+/** The editor's draft echoed back after a failed save (its own form's JSON); anything unreadable starts from `fallback`. */
+function echoedRows(raw: string, fallback: FieldRow[]): FieldRow[] {
+  try {
+    const rows = JSON.parse(raw);
+    return Array.isArray(rows) ? rows : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: string; name?: string }) {
   const action = kind === "brand" ? saveBrand : saveDivision;
@@ -38,7 +49,8 @@ export function NameForm({ kind, id, name }: { kind: "brand" | "division"; id?: 
   );
 }
 
-export function TypeForm({ t }: { t?: { id: string; name: string; active: boolean; schemaText: string } }) {
+/** Name and fields of a request type. Archive and Restore live on the type's row, so saving never changes that state. */
+export function TypeForm({ t }: { t?: { id: string; name: string; schema: FieldSchema; requests: number } }) {
   return (
     <AdminForm action={saveRequestType} prefix={`type-${t?.id ?? "new"}`} submitLabel={t ? "Save type" : "Add request type"} submitAriaLabel={t ? `Save type ${t.name}` : undefined} hidden={t ? { id: t.id } : undefined}>
       {({ v, idFor, aria, failed }) => (
@@ -46,16 +58,7 @@ export function TypeForm({ t }: { t?: { id: string; name: string; active: boolea
           <Labeled id={idFor("name")} label="Name">
             <Input id={idFor("name")} name="name" maxLength={60} defaultValue={v("name", t?.name ?? "")} {...aria()} />
           </Labeled>
-          <label className="flex min-h-9 items-center gap-2 text-sm font-medium text-foreground" htmlFor={idFor("active")}>
-            <Checkbox id={idFor("active")} name="active" defaultChecked={failed ? v("active") === "on" : (t?.active ?? true)} />
-            Active (shown on the new request form)
-          </label>
-          <Labeled id={idFor("fieldSchema")} label="Field schema (JSON array)">
-            <Textarea id={idFor("fieldSchema")} name="fieldSchema" rows={8} spellCheck={false} className="font-mono text-compact" defaultValue={v("fieldSchema", t?.schemaText ?? "[]")} {...aria()} />
-          </Labeled>
-          <FieldDescription>
-            Each field: key, label, type (text, select, checkbox or url), optional required and, for select, options.
-          </FieldDescription>
+          <FieldSchemaEditor rows={echoedRows(v("fieldRows"), rowsFromSchema(t?.schema ?? []))} requestsCount={t?.requests ?? 0} showErrors={failed} />
         </>
       )}
     </AdminForm>

@@ -12,6 +12,7 @@ import { Badge } from "@/components/shadcn/badge";
 import { activeChip } from "@/lib/adminChips";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/shadcn/collapsible";
 import { NameForm, TypeForm } from "./ListForms";
+import { parseFieldSchema } from "@/lib/fieldSchema";
 
 export async function ListsContent() {
   const { user: viewer, db } = await requireScope();
@@ -20,7 +21,7 @@ export async function ListsContent() {
   const [brands, divisions, types] = await Promise.all([
     db.brand.findMany({ orderBy: { name: "asc" } }),
     db.division.findMany({ orderBy: { name: "asc" } }),
-    db.requestType.findMany({ orderBy: { name: "asc" } }),
+    db.requestType.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { requests: true } } } }),
   ]);
 
   return (
@@ -68,7 +69,7 @@ export async function ListsContent() {
                       <Badge tone={chip.tone}>{chip.label}</Badge>
                     </CollapsibleTrigger>
                     <CollapsibleContent keepMounted className="border-t border-border p-3">
-                      <TypeForm t={{ id: t.id, name: t.name, active: t.active, schemaText: JSON.stringify(t.fieldSchema, null, 2) }} />
+                      <TypeForm t={{ id: t.id, name: t.name, schema: parseFieldSchema(t.fieldSchema), requests: t._count?.requests ?? 0 }} />
                     </CollapsibleContent>
                   </Collapsible>
                 </li>

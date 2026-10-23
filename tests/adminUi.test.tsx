@@ -119,39 +119,33 @@ describe("admin forms", () => {
     expect((await screen.findByRole("alert")).textContent).toBe("Error: nope");
   });
 
-  it("request type form keeps the typed JSON and lists every schema problem", async () => {
+  it("request type form keeps the typed name and fields after a failed save, and lists every problem", async () => {
     act.saveRequestType.mockImplementation(async (_p: unknown, fd: FormData) => ({
       ok: false, code: "VALIDATION", message: "Field schema is invalid: Field 1: Required", details: ["Field 1: Required", "Field 2: key is used twice"],
-      nonce: "n4", values: { name: String(fd.get("name")), fieldSchema: String(fd.get("fieldSchema")) },
+      nonce: "n4", values: { name: String(fd.get("name")), fieldRows: String(fd.get("fieldRows")) },
     }));
     render(<TypeForm />);
     fireEvent.change(screen.getByLabelText("Name"), { target: { value: "Video" } });
-    fireEvent.change(screen.getByLabelText(/field schema/i), { target: { value: '[{"bad":1}]' } });
+    fireEvent.click(screen.getByRole("button", { name: "Add field" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Label of field 1" }), { target: { value: "Length" } });
     fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
     await screen.findByRole("alert");
     expect((screen.getByLabelText("Name") as HTMLInputElement).value).toBe("Video");
-    expect((screen.getByLabelText(/field schema/i) as HTMLTextAreaElement).value).toBe('[{"bad":1}]');
-    expect(screen.getAllByRole("listitem").map((l) => l.textContent)).toEqual(["Field 1: Required", "Field 2: key is used twice"]);
+    expect((screen.getByRole("textbox", { name: "Label of field 1" }) as HTMLInputElement).value).toBe("Length");
+    expect(screen.getAllByRole("listitem").filter((l) => l.textContent?.startsWith("Field ")).map((l) => l.textContent)).toEqual(["Field 1: Required", "Field 2: key is used twice"]);
   });
 });
 
-describe("request type form Active checkbox", () => {
-  it("posts active=on while ticked (new types start active) and nothing when unticked", async () => {
+describe("request type form", () => {
+  it("posts the fields but no Active value (Archive and Restore manage it)", async () => {
     act.saveRequestType.mockResolvedValue({ ok: true, message: "ok", values: {}, nonce: "a1" });
     render(<TypeForm />);
-    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByRole("checkbox", { name: /^Active/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
     await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(1));
-    expect((act.saveRequestType.mock.calls[0][1] as FormData).get("active")).toBe("on");
-    // The form remounts (key = nonce) once the save resolves; its success status is rendered inside the new form, so
-    // wait for it before touching the box, or the click can land on the old, unmounting checkbox.
-    expect(await screen.findByRole("status")).toHaveProperty("textContent", "ok");
-    await waitFor(() => expect(screen.getByRole("button", { name: /add request type/i }).getAttribute("aria-busy")).not.toBe("true"));
-    fireEvent.click(screen.getByRole("checkbox", { name: /^Active/ }));
-    expect(screen.getByRole("checkbox", { name: /^Active/ }).getAttribute("aria-checked")).toBe("false");
-    fireEvent.click(screen.getByRole("button", { name: /add request type/i }));
-    await waitFor(() => expect(act.saveRequestType).toHaveBeenCalledTimes(2));
-    expect((act.saveRequestType.mock.calls[1][1] as FormData).get("active")).toBeNull();
+    const posted = act.saveRequestType.mock.calls[0][1] as FormData;
+    expect(posted.get("active")).toBeNull();
+    expect(posted.get("fieldSchema")).toBe("[]");
   });
 });
 

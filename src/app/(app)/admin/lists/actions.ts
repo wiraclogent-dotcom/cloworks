@@ -66,14 +66,19 @@ export async function saveRequestType(_prev: AdminFormState, fd: FormData): Prom
     const db = dbFor(actor);
     return done(
       await adminResult(fd, async () => {
+        // Never default to an empty list: a missing or half-edited field list would wipe the type's fields.
+        if (fd.get("fieldSchemaInvalid") !== null) throw new AdminError("VALIDATION", "Fix the fields marked below first.");
+        const raw = s(fd, "fieldSchema").trim();
+        if (!raw) throw new AdminError("VALIDATION", "The field list is missing. Reload the page and try again.");
         let schema: unknown;
         try {
-          schema = JSON.parse(s(fd, "fieldSchema").trim() || "[]");
+          schema = JSON.parse(raw);
         } catch (e) {
           throw new AdminError("VALIDATION", `Field schema is not valid JSON: ${e instanceof Error ? e.message : "parse error"}`);
         }
         const id = s(fd, "id");
-        await upsertRequestType(db, actor, { id: id || undefined, name: s(fd, "name"), fieldSchema: schema, active: fd.get("active") !== null });
+        // No `active`: Archive and Restore manage it, so saving keeps the type's state.
+        await upsertRequestType(db, actor, { id: id || undefined, name: s(fd, "name"), fieldSchema: schema });
         return id ? "Request type saved." : "Request type added.";
       }),
     );

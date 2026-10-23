@@ -114,11 +114,12 @@ describe("Lists page", () => {
     const toggle = screen.getByText("Video").closest("button")!;
     fireEvent.click(toggle);
     const panel = toggle.parentElement!;
-    fireEvent.change(within(panel).getByLabelText("Field schema (JSON array)"), { target: { value: '[{"key":"x"}]' } });
+    fireEvent.click(within(panel).getByRole("button", { name: "Add field" }));
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Label of field 1" }), { target: { value: "Size" } });
     fireEvent.click(toggle);
     expect(within(panel).queryByRole("button", { name: "Save type Video" })).toBeNull();
     fireEvent.click(toggle);
-    expect((within(panel).getByLabelText("Field schema (JSON array)") as HTMLTextAreaElement).value).toBe('[{"key":"x"}]');
+    expect((within(panel).getByRole("textbox", { name: "Label of field 1" }) as HTMLInputElement).value).toBe("Size");
   });
   it("PageHeader + switcher, three cards, unique rename buttons, type status chip", async () => {
     render(await ListsContent());
