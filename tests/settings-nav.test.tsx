@@ -48,15 +48,20 @@ describe("sidebar Work group", () => {
   });
 });
 
-describe("profile menu placement", () => {
-  it("the app frame pins the profile menu at the top right of the content", () => {
-    render(<AppFrame nav={null} profile={<button type="button">WI</button>}><p>page</p></AppFrame>);
-    const slot = document.querySelector("main [data-profile-slot]")!;
-    expect(slot.textContent).toBe("WI");
+describe("top-right slot and profile card placement", () => {
+  it("the app frame pins the top-right slot (the bell) at the top right of the content", () => {
+    render(<AppFrame nav={null} topRight={<button type="button">Bell</button>}><p>page</p></AppFrame>);
+    const slot = document.querySelector("main [data-top-right-slot]")!;
+    expect(slot.textContent).toBe("Bell");
     expect(slot.className).toContain("right-0");
   });
-  it("every page top bar leaves room for the bell and the profile menu (36 + 8 + 36px)", () => {
+  it("the profile card sits at the bottom of the sidebar", () => {
+    render(<AppFrame nav={null} footer={<button type="button">WI Wira</button>}><p>page</p></AppFrame>);
+    const sidebar = document.getElementById("app-sidebar")!;
+    expect(sidebar.lastElementChild!.textContent).toBe("WI Wira");
+  });
+  it("every page top bar leaves room for the bell (36px)", () => {
     render(<PageHeader title="Team KPI" breadcrumb={[{ label: "Insights" }, { label: "Team KPI" }]} />);
-    expect(document.querySelector("[data-top-bar]")!.className).toContain("pr-24");
+    expect(document.querySelector("[data-top-bar]")!.className).toContain("pr-12");
   });
 });

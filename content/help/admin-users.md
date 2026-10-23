@@ -7,7 +7,7 @@ requiresPermission: admin.manage
 
 The **People and access** page lists everyone who uses Clowork. Admins use it to invite people, approve join requests, change roles, and remove access.
 
-To open it, select your profile picture at the top right, choose **Settings**, then the **Members** tab. The page has three tabs:
+To open it, select your profile card at the bottom left of the sidebar, choose **Settings**, then the **Members** tab. The page has three tabs:
 
 - **Members**: everyone in the workspace, with their roles, login email and password status.
 - **Invited**: open email invites, and the **Invite someone** form.

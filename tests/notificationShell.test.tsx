@@ -24,15 +24,16 @@ function walk(node: ReactNode, out: { type: unknown; props: Record<string, unkno
 }
 
 describe("notification bell in the shell", () => {
-  const frame = AppShell({ children: null }) as { props: { nav: ReactNode; profile: ReactNode } };
+  const frame = AppShell({ children: null }) as { props: { nav: ReactNode; topRight: ReactNode; footer: ReactNode } };
 
   it("the sidebar has no Notifications item any more", () => {
     expect(walk(frame.props.nav).map((e) => e.props.label)).not.toContain("Notifications");
   });
 
-  it("the top-right slot shows the bell before the profile menu", () => {
-    const types = walk(frame.props.profile).map((e) => e.type).filter((t) => t === NotificationBell || t === ProfileMenu);
-    expect(types).toEqual([NotificationBell, ProfileMenu]);
+  it("the top-right slot shows only the bell; the profile card is the sidebar footer", () => {
+    const types = (slot: ReactNode) => walk(slot).map((e) => e.type).filter((t) => t === NotificationBell || t === ProfileMenu);
+    expect(types(frame.props.topRight)).toEqual([NotificationBell]);
+    expect(types(frame.props.footer)).toEqual([ProfileMenu]);
   });
 });
 

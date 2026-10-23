@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { CircleHelp, LoaderCircle, LogOut, Moon, Settings } from "lucide-react";
+import { ChevronsUpDown, CircleHelp, LoaderCircle, LogOut, Moon, Settings } from "lucide-react";
 import { Avatar } from "../ui/Avatar";
 import { useDarkMode } from "../ui/darkMode";
 import { cn, focusRing } from "../ui/cn";
@@ -11,28 +11,29 @@ import {
 } from "@/components/shadcn/dropdown-menu";
 
 /**
- * Top-right profile menu on every page: who is signed in, Settings (account and, for admins, the admin tabs), Help center, Dark mode and Sign out (these
- * used to sit at the bottom of the sidebar). Radix gives keyboard support, focus return and Esc for free. `signOut` is
- * a server action from the server wrapper (`ProfileMenu`).
+ * Profile card at the bottom of the sidebar: photo, name and "title · department" (the app role when both are empty);
+ * in the rail only the photo. It opens upwards: Settings (account and, for admins, the admin tabs), Help center, Dark
+ * mode and Sign out. Radix gives keyboard support, focus return and Esc for free. `signOut` is a server action from
+ * the server wrapper (`ProfileMenu`).
  */
-export function ProfileMenuView({ name, roleLabel, signOut }: { name: string; roleLabel: string; signOut: () => Promise<void> }) {
+export function ProfileMenuView({ name, title, department, roleLabel, signOut }: {
+  name: string; title: string | null; department: string | null; roleLabel: string; signOut: () => Promise<void>;
+}) {
   const { dark, flip } = useDarkMode();
   const [signingOut, startSignOut] = useTransition();
+  const detail = [title, department].filter((s) => s?.trim()).join(" · ") || roleLabel;
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger aria-label={`Account menu for ${name}`} title={name}
-        className={cn("inline-flex size-9 items-center justify-center rounded-full transition-opacity hover:opacity-85", focusRing)}>
+        className={cn("sb-item sb-frame flex w-full items-center gap-2.5 rounded-xl border border-sidebar-border p-2 text-left transition-colors hover:bg-sidebar-hover data-[state=open]:bg-sidebar-hover", focusRing)}>
         <Avatar name={name} size="lg" decorative />
+        <span className="sb-label min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-sm font-semibold text-sidebar-foreground">{name}</span>
+          <span className="block truncate text-xs text-sidebar-foreground-secondary">{detail}</span>
+        </span>
+        <ChevronsUpDown aria-hidden="true" strokeWidth={1.75} className="sb-label size-4 shrink-0 text-sidebar-foreground-secondary" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={6} className="w-60">
-        <div className="flex items-center gap-2.5 px-2.5 py-2">
-          <Avatar name={name} size="md" decorative />
-          <div className="min-w-0">
-            <p className="truncate text-sm font-medium">{name}</p>
-            <p className="truncate text-xs text-muted-foreground">{roleLabel}</p>
-          </div>
-        </div>
-        <DropdownMenuSeparator />
+      <DropdownMenuContent side="top" align="start" sideOffset={6} className="w-(--radix-dropdown-menu-trigger-width) min-w-56">
         <DropdownMenuItem asChild>
           <Link href="/settings"><Settings aria-hidden="true" />Settings</Link>
         </DropdownMenuItem>

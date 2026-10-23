@@ -37,6 +37,13 @@ describe("AppFrame / sidebar shell", () => {
     expect(screen.getByRole("navigation", { name: "Main" })).toBeTruthy();
   });
 
+  it("the logo links home (Requests) in the sidebar and the mobile top bar", () => {
+    shell();
+    const home = screen.getAllByRole("link", { name: "Clowork home" });
+    expect(home.map((a) => a.getAttribute("href"))).toEqual(["/requests", "/requests"]);
+    expect(document.getElementById("app-sidebar")!.contains(home[1])).toBe(true);
+  });
+
   it("marks only the current route with aria-current=page (longest match)", () => {
     shell();
     expect(screen.getByRole("link", { name: "Requests" }).getAttribute("aria-current")).toBe("page");
@@ -81,15 +88,18 @@ describe("AppFrame / sidebar shell", () => {
     expect(document.getElementById(burger.getAttribute("aria-controls")!)).toBe(drawer);
     // The sidebar's parts live in the drawer while it is open (not twice on the page).
     expect(within(drawer).getByRole("navigation", { name: "Main" })).toBeTruthy();
+    expect(within(drawer).getByRole("link", { name: "Clowork home" }).getAttribute("href")).toBe("/requests");
     expect(within(drawer).getByRole("button", { name: "Sign out" })).toBeTruthy();
     expect(document.querySelectorAll("nav[aria-label='Main']")).toHaveLength(1);
     const close = within(drawer).getByRole("button", { name: "Close navigation" });
     expect(document.activeElement).toBe(close);
     expect(document.getElementById("main")!.hasAttribute("inert")).toBe(true);
-    // Focus is trapped: Shift+Tab from the first control wraps to the last one inside the drawer.
-    await act(async () => { fireEvent.keyDown(close, { key: "Tab", shiftKey: true }); });
+    // Focus is trapped: Shift+Tab from the first control (the home link) wraps to the last one inside the drawer.
+    const home = within(drawer).getByRole("link", { name: "Clowork home" });
+    act(() => home.focus());
+    await act(async () => { fireEvent.keyDown(home, { key: "Tab", shiftKey: true }); });
     expect(drawer.contains(document.activeElement)).toBe(true);
-    expect(document.activeElement).not.toBe(close);
+    expect(document.activeElement).not.toBe(home);
     await act(async () => { fireEvent.keyDown(document.activeElement!, { key: "Escape" }); });
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(burger.getAttribute("aria-expanded")).toBe("false");
