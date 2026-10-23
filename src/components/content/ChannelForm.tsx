@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type FormEvent, type ReactNode } from "react";
+import { visibleOptions } from "@/lib/lists";
 import { useRouter } from "next/navigation";
 import { createChannel, updateChannel } from "@/app/(app)/content/actions";
 import { planHref } from "@/lib/content/params";
@@ -17,13 +18,14 @@ import { FieldDescription, FieldError } from "@/components/shadcn/field";
 import { LibraryDialog } from "@/components/library/LibraryDialog";
 import { MediaUpload } from "@/components/media/MediaUpload";
 
-export type BrandOption = { id: string; name: string };
+export type BrandOption = { id: string; name: string; archived?: boolean };
 
 /**
  * Instagram channel form: brand, handle, display name, bio and an avatar picker. Adds a channel, or edits `channel`
  * (pre-filled; saving keeps its current avatar unless the picker changed it).
  */
-export function ChannelForm({ brands, channel, onClose }: { brands: BrandOption[]; channel?: ChannelSummary; onClose: () => void }) {
+export function ChannelForm({ brands: all, channel, onClose }: { brands: BrandOption[]; channel?: ChannelSummary; onClose: () => void }) {
+  const brands = visibleOptions(all, channel?.brandId);
   const router = useRouter();
   const uid = useId();
   const [brandId, setBrandId] = useState(channel?.brandId ?? brands[0]?.id ?? "");

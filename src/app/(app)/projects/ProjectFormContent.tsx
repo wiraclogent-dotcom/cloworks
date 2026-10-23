@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { brandOptions } from "@/lib/lists";
 import { requireScope } from "@/lib/session";
 import { can } from "@/lib/permissions";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
@@ -10,7 +11,7 @@ export async function NewProjectContent() {
   const { user, db } = await requireScope();
   if (!can(user.appRole, "project.manage")) return <Alert variant="destructive"><AlertDescription>You are not allowed to create projects.</AlertDescription></Alert>;
   const [brands, owners] = await Promise.all([
-    db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    brandOptions(db),
     db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
   return <ProjectForm brands={brands} owners={owners} initial={{ title: "", subTitle: "", brandId: "", ownerId: user.id, status: "NOT_STARTED", startDate: "", dueDate: "", fileUrl: "" }} />;
@@ -23,7 +24,7 @@ export async function EditProjectContent({ params }: { params: Promise<{ id: str
   const project = await db.project.findUnique({ where: { id } });
   if (!project) notFound();
   const [brands, owners] = await Promise.all([
-    db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    brandOptions(db, [project.brandId]),
     // Keep the current owner selectable even if they have since been deactivated, so saving other fields works.
     db.user.findMany({ where: { OR: [{ active: true }, { id: project.ownerId }] }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);

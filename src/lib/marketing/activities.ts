@@ -14,7 +14,7 @@ export async function loadLeadDivisionIds(db: ScopedDb, userId: string): Promise
 }
 
 async function calendarDivisionIds(db: ScopedDb): Promise<string[]> {
-  return (await db.division.findMany({ where: { onMarketingCalendar: true }, select: { id: true } })).map((d) => d.id);
+  return (await db.division.findMany({ where: { onMarketingCalendar: true, archivedAt: null }, select: { id: true } })).map((d) => d.id);
 }
 
 /** Creates (`id` null) or updates an activity: validate → find → permission → write (spec 2026-10-19). */

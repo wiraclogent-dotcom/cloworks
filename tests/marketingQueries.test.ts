@@ -81,4 +81,10 @@ describe("loadMarketingMonth", () => {
     expect(admin.canManageMonth).toBe(true);
     expect((await loadMarketingMonth(db.prisma, v.member, "2026-10", "2026-10-19")).editableDivisionIds).toEqual([]);
   });
+
+  it("an archived division leaves the calendar lanes", async () => {
+    await db.prisma.division.create({ data: { name: "Archived Lane", sortOrder: 1, onMarketingCalendar: true, color: "div-5", archivedAt: new Date() } });
+    const m = await loadMarketingMonth(db.prisma, v.member, "2026-10", "2026-10-19");
+    expect(m.divisions.map((d) => d.name)).not.toContain("Archived Lane");
+  });
 });

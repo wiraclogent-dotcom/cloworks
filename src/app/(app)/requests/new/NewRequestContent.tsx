@@ -4,6 +4,7 @@ import { Card } from "@/components/shadcn/card";
 import { Alert, AlertDescription } from "@/components/shadcn/alert";
 import { Skeleton } from "@/components/shadcn/skeleton";
 import { listCreativeTeam } from "@/lib/team";
+import { brandOptions, divisionOptions } from "@/lib/lists";
 import { NewRequestForm } from "./NewRequestForm";
 
 export function FormSkeleton() {
@@ -26,8 +27,8 @@ export async function NewRequestContent() {
     return <Alert variant="destructive"><AlertDescription>You are not allowed to create requests.</AlertDescription></Alert>;
   }
   const [brands, divisions, team] = await Promise.all([
-    db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    brandOptions(db),
+    divisionOptions(db),
     listCreativeTeam(db),
   ]);
   return <NewRequestForm brands={brands} divisions={divisions} assignees={team} />;

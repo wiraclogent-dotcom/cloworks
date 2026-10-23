@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandOptions } from "@/lib/lists";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { requireScope } from "@/lib/session";
@@ -36,7 +37,7 @@ async function ProjectDetailContent({ params }: { params: Params }) {
   // Only managers edit, so only managers need the pick lists.
   const [brands, owners, taskOwners] = canManage
     ? await Promise.all([
-        db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+        brandOptions(db, [project.brandId]),
         // Keep the current owner selectable even if they have since been deactivated, so saving other fields works.
         db.user.findMany({ where: { OR: [{ active: true }, { id: project.ownerId }] }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
         // Item owners are designers only.

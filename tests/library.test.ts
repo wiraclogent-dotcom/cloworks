@@ -299,6 +299,15 @@ describe("loadLibrary", () => {
     const brands = data.brands.filter((b) => b.name.startsWith("LL "));
     expect(brands.map((b) => b.name)).toEqual(["LL Alpha", "LL Zed"]);
     expect(data.brandOptions.filter((b) => b.name.startsWith("LL ")).map((b) => b.name)).toEqual(["LL Alpha", "LL Unused", "LL Zed"]);
+    // Archived: hidden when unused, kept and labelled when an item uses it.
+    await db.prisma.brand.update({ where: { id: bZ.id }, data: { archivedAt: new Date() } });
+    await db.prisma.brand.create({ data: { name: "LL Gone", archivedAt: new Date() } });
+    const after = (await loadLibrary(db.prisma)).brandOptions.filter((b) => b.name.startsWith("LL "));
+    expect(after).toEqual([
+      { id: bA.id, name: "LL Alpha", archived: false },
+      expect.objectContaining({ name: "LL Unused", archived: false }),
+      { id: bZ.id, name: "LL Zed (archived)", archived: true },
+    ]);
   });
 
 });

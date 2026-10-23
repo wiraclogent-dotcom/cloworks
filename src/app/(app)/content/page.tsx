@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { brandOptions } from "@/lib/lists";
 import { Suspense } from "react";
 import { requireScope } from "@/lib/session";
 import { loadContentPlan } from "@/lib/content/view";
@@ -22,7 +23,8 @@ async function ContentPlanContent({ searchParams }: { searchParams: PageProps<"/
     channelId: one(sp.channel), tab: one(sp.tab) ? parseTab(sp.tab) : undefined, postId: one(sp.post),
   });
   const [brands, panel] = await Promise.all([
-    view.can.manageChannels ? db.brand.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }) : [],
+    // Archived brands only for the channels that still use them (their edit form keeps the brand).
+    view.can.manageChannels ? brandOptions(db, view.channels.map((c) => c.brandId)) : [],
     view.postId ? loadPostPanel(db, user, view.postId) : null,
   ]);
   return (

@@ -1,4 +1,5 @@
 import { Prisma } from "@prisma/client";
+import { divisionOptions } from "../lists";
 import type { ContentFormat, ContentSurface } from "@prisma/client";
 import type { ScopedDb } from "../db";
 import {
@@ -85,7 +86,7 @@ export async function loadApproveForm(db: ScopedDb, user: ContentActor, postId: 
     new Date(),
   );
   const [divisions, types, team, latest] = await Promise.all([
-    db.division.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
+    divisionOptions(db),
     db.requestType.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, fieldSchema: true } }),
     db.user.findMany({ where: CREATIVE_TEAM, orderBy: { name: "asc" }, select: { id: true, name: true } }),
     db.request.findFirst({ where: { requesterId: post.authorId }, orderBy: { requestedAt: "desc" }, select: { divisionId: true } }),

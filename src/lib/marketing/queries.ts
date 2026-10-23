@@ -12,7 +12,7 @@ export async function loadMarketingMonth(db: ScopedDb, viewer: MarketingViewer, 
   const grid = buildMonthGrid(month, today);
 
   const divisions = await db.division.findMany({
-    where: { onMarketingCalendar: true }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, color: true },
+    where: { onMarketingCalendar: true, archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, color: true },
   });
   const divisionIds = divisions.map((d) => d.id);
   const [activities, announcements, focus, leads] = await Promise.all([
