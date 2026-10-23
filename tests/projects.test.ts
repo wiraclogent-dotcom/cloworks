@@ -156,4 +156,22 @@ describe("projects cores", () => {
       expect(g[1].projects.map((p) => p.id)).toEqual(["e", "c", "b"]);
     });
   });
+
+  describe("archived brands", () => {
+    it("a new project can't pick one", async () => {
+      const archived = (await db.prisma.brand.create({ data: { name: "Old Brand", archivedAt: new Date() } })).id;
+      const err = await createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), brandId: archived }).catch((e) => e);
+      expect(err.fieldErrors).toMatchObject({ brandId: "That brand is archived" });
+    });
+    it("a project keeps its brand after it is archived, but can't switch to another archived one", async () => {
+      const mine = (await db.prisma.brand.create({ data: { name: "Mine Brand" } })).id;
+      const other = (await db.prisma.brand.create({ data: { name: "Other Old", archivedAt: new Date() } })).id;
+      const { id } = await createProjectWith(db.prisma, actor("CREATIVE"), { ...base(), brandId: mine });
+      await db.prisma.brand.update({ where: { id: mine }, data: { archivedAt: new Date() } });
+      await updateProjectWith(db.prisma, actor("CREATIVE"), id, { title: "Renamed", brandId: mine });
+      expect((await get(id)).title).toBe("Renamed");
+      const err = await updateProjectWith(db.prisma, actor("CREATIVE"), id, { brandId: other }).catch((e) => e);
+      expect(err.fieldErrors).toMatchObject({ brandId: "That brand is archived" });
+    });
+  });
 });

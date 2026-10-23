@@ -98,10 +98,15 @@ function assertManager(user: Actor) {
   if (!can(user.appRole, "project.manage")) throw new ProjectError("FORBIDDEN", "You are not allowed to manage projects.");
 }
 
-/** Owner must exist; must also be active unless `keepOwnerId` is the (unchanged) current owner. Adds to `errors`. */
-async function checkRefs(db: PrismaClient, c: Cleaned, errors: Record<string, string>, keepOwnerId?: string) {
+/**
+ * Owner must exist; must also be active unless `keepOwnerId` is the (unchanged) current owner. The brand must exist and
+ * be active unless it is `keepBrandId`, the project's current brand. Adds to `errors`.
+ */
+async function checkRefs(db: PrismaClient, c: Cleaned, errors: Record<string, string>, keepOwnerId?: string, keepBrandId?: string | null) {
   if (c.brandId && !errors.brandId) {
-    if (!(await db.brand.findUnique({ where: { id: c.brandId }, select: { id: true } }))) errors.brandId = "That brand does not exist";
+    const b = await db.brand.findUnique({ where: { id: c.brandId }, select: { archivedAt: true } });
+    if (!b) errors.brandId = "That brand does not exist";
+    else if (b.archivedAt && c.brandId !== keepBrandId) errors.brandId = "That brand is archived";
   }
   if (c.ownerId && !errors.ownerId) {
     const o = await db.user.findUnique({ where: { id: c.ownerId }, select: { active: true } });
@@ -142,7 +147,7 @@ export async function updateProjectWith(db: PrismaClient, user: Actor, id: strin
   const existing = await db.project.findUnique({ where: { id } });
   if (!existing) throw new ProjectError("NOT_FOUND", "Project not found.");
   const { out: c, errors } = parse(patch, true);
-  await checkRefs(db, c, errors, existing.ownerId);
+  await checkRefs(db, c, errors, existing.ownerId, existing.brandId);
   const start = c.startDate !== undefined ? c.startDate : existing.startDate ? jakartaDate(existing.startDate) : null;
   const due = c.dueDate !== undefined ? c.dueDate : existing.dueDate ? jakartaDate(existing.dueDate) : null;
   checkOrder(start, due, errors);

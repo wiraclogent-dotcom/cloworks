@@ -9,6 +9,7 @@ import { AppFrame } from "./shell/AppFrame";
 import { NavItem } from "./shell/NavItem";
 import { ProfileMenu } from "./shell/ProfileMenu";
 import { PhotoDirectory } from "./shell/PhotoDirectory";
+import { BrandDirectory } from "./shell/BrandDirectory";
 import { NotificationBell } from "./shell/NotificationBell";
 import { ChatDock } from "./chat/ChatDock";
 import { Skeleton } from "@/components/shadcn/skeleton";
@@ -61,6 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-2">
           <Suspense fallback={<Skeleton className="size-9 rounded-full" />}><NotificationBell /></Suspense>
           <Suspense fallback={null}><PhotoDirectory /></Suspense>
+          <Suspense fallback={null}><BrandDirectory /></Suspense>
         </div>
       }
       footer={<Suspense fallback={<Skeleton className="h-[54px] rounded-xl" />}><ProfileMenu /></Suspense>}

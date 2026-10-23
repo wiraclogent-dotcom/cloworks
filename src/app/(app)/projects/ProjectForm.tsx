@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { visibleOptions } from "@/lib/lists";
 import { submitProject, submitProjectInPlace } from "./actions";
 import { errorSummary } from "@/lib/formErrors";
 import { PROJECT_STATUSES, PROJECT_STATUS_LABEL, type ProjectFormState, type ProjectFormValues } from "@/lib/projects";
@@ -91,7 +92,7 @@ export function ProjectForm({ brands, owners, initial, projectId, stay, onSaved,
       <Field id="brandId" label="Brand" error={errs.brandId}>
         <NativeSelect {...props("brandId")} defaultValue={v?.brandId ?? ""}>
           <option value="">No brand</option>
-          {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          {visibleOptions(brands, initial?.brandId).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
         </NativeSelect>
       </Field>
       <Field id="ownerId" label="Owner" required error={errs.ownerId}>

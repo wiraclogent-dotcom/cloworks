@@ -259,6 +259,17 @@ describe("library cores", () => {
     await deleteItemWith(db.prisma, lead(), id);
     expect(await db.prisma.libraryItem.findUnique({ where: { id } })).toBeNull();
   });
+  it("archived brands: a new item can't pick one; an item keeps its own; moving to another archived one is refused", async () => {
+    const mine = (await db.prisma.brand.create({ data: { name: "Lib Mine" } })).id;
+    const old = (await db.prisma.brand.create({ data: { name: "Lib Old", archivedAt: new Date() } })).id;
+    const refused = await createItemWith(db.prisma, lead(), { ...base(), brandId: old }).catch((e) => e);
+    expect(refused.fieldErrors).toMatchObject({ brandId: "That brand is archived" });
+    const { id } = await createItemWith(db.prisma, lead(), { ...base(), brandId: mine });
+    await db.prisma.brand.update({ where: { id: mine }, data: { archivedAt: new Date() } });
+    expect(await code(updateItemWith(db.prisma, lead(), id, { ...base(), title: "Kept", brandId: mine }))).toBe("ok");
+    const moved = await updateItemWith(db.prisma, lead(), id, { ...base(), brandId: old }).catch((e) => e);
+    expect(moved.fieldErrors).toMatchObject({ brandId: "That brand is archived" });
+  });
 });
 
 describe("loadLibrary", () => {
@@ -288,5 +299,15 @@ describe("loadLibrary", () => {
     const brands = data.brands.filter((b) => b.name.startsWith("LL "));
     expect(brands.map((b) => b.name)).toEqual(["LL Alpha", "LL Zed"]);
     expect(data.brandOptions.filter((b) => b.name.startsWith("LL ")).map((b) => b.name)).toEqual(["LL Alpha", "LL Unused", "LL Zed"]);
+    // Archived: hidden when unused, kept and labelled when an item uses it.
+    await db.prisma.brand.update({ where: { id: bZ.id }, data: { archivedAt: new Date() } });
+    await db.prisma.brand.create({ data: { name: "LL Gone", archivedAt: new Date() } });
+    const after = (await loadLibrary(db.prisma)).brandOptions.filter((b) => b.name.startsWith("LL "));
+    expect(after).toEqual([
+      { id: bA.id, name: "LL Alpha", archived: false },
+      expect.objectContaining({ name: "LL Unused", archived: false }),
+      { id: bZ.id, name: "LL Zed (archived)", archived: true },
+    ]);
   });
+
 });

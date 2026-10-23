@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
-import { render, screen, cleanup, within } from "@testing-library/react";
+import { render, screen, cleanup, within, act } from "@testing-library/react";
+import { setBrandDirectory } from "@/components/ui/brandDirectory";
 import { RequestTimeline } from "@/components/RequestTimeline";
 import { TimelineSkeleton } from "@/components/RequestSkeletons";
 import type { TimelineRow } from "@/lib/requests";
@@ -94,6 +95,13 @@ describe("RequestTimeline", () => {
     expect(bar("1").getAttribute("href")).toBe("/requests/1");
     expect(bar("1").parentElement!.style.gridColumn).toBe("4 / 8");
     expect(bar("1").textContent).toContain("Banner, On progress, requested 1 Oct, due 14 Oct");
+  });
+
+  it("bars use the brand's chosen colour from Settings › Lists", () => {
+    act(() => setBrandDirectory([{ name: "Clogent", color: "div-5" }]));
+    view([row("1", "Banner")]);
+    expect(bar("1").getAttribute("data-tone")).toBe("div-5");
+    act(() => setBrandDirectory([]));
   });
 
   it("draws an overdue tail from the deadline to today", () => {

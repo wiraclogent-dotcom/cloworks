@@ -4,7 +4,7 @@ import { useDraggable } from "@dnd-kit/core";
 import Link from "next/link";
 import { GripVertical } from "lucide-react";
 import type { CalendarRow } from "@/lib/requests";
-import { brandTone } from "@/lib/palette";
+import { useBrandTone } from "./ui/brandDirectory";
 import { STATUS_LABEL, StatusIcon } from "./status";
 import { Avatar, AvatarStack, UnassignedAvatar } from "./ui/Avatar";
 import { cn, focusRing } from "./ui/cn";
@@ -16,8 +16,9 @@ export const CALENDAR_CARD_OVERLAY = `${CARD_SHAPE} border-ring shadow-raised`;
 const isOverdue = (card: CalendarRow, today: string) => card.deadlineDay !== null && card.deadlineDay < today;
 
 /** Overdue cards take the overdue tone; the rest show their brand on the left edge. */
-export function cardTone(card: CalendarRow, today: string) {
-  return isOverdue(card, today) ? "overdue" : brandTone(card.brandName);
+/** `brand`: the card's brand tone (`useBrandTone`), shown unless the card is overdue. */
+export function cardTone(card: CalendarRow, today: string, brand: string) {
+  return isOverdue(card, today) ? "overdue" : brand;
 }
 
 /** The compact card content: status icon, title (2 lines), Overdue / No deadline label, assignee avatar. */
@@ -67,8 +68,9 @@ function cardClass(card: CalendarRow) {
 
 /** A card without dragging: read-only users, the "+N more" dialog and the narrow agenda. */
 export function StaticCalendarCard({ card, today }: { card: CalendarRow; today: string }) {
+  const brand = useBrandTone(card.brandName);
   return (
-    <li data-card={card.id} data-tone={cardTone(card, today)} data-shared={card.assignees.length >= 2 ? "" : undefined} className={cardClass(card)}>
+    <li data-card={card.id} data-tone={cardTone(card, today, brand)} data-shared={card.assignees.length >= 2 ? "" : undefined} className={cardClass(card)}>
       <CalendarCardFace card={card} today={today} />
     </li>
   );
@@ -80,8 +82,9 @@ export function StaticCalendarCard({ card, today }: { card: CalendarRow; today: 
  */
 export function DraggableCalendarCard({ card, today, busy, locked, dragging }: { card: CalendarRow; today: string; busy: boolean; locked: boolean; dragging: boolean }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef } = useDraggable({ id: card.id, disabled: busy || locked });
+  const brand = useBrandTone(card.brandName);
   return (
-    <li ref={setNodeRef} data-card={card.id} data-tone={cardTone(card, today)} data-shared={card.assignees.length >= 2 ? "" : undefined} data-draggable="true" {...listeners}
+    <li ref={setNodeRef} data-card={card.id} data-tone={cardTone(card, today, brand)} data-shared={card.assignees.length >= 2 ? "" : undefined} data-draggable="true" {...listeners}
       className={cn(
         "group/card", cardClass(card), "cursor-grab touch-manipulation transition-[border-color,opacity] duration-150 hover:border-border-strong active:cursor-grabbing",
         dragging ? "opacity-40" : busy ? "opacity-60" : "",

@@ -203,3 +203,12 @@ describe("validateRequestInput + insertRequestTx", () => {
     expect(err.code).toBe("VALIDATION");
   });
 });
+
+describe("archived brands and divisions", () => {
+  it("can't be used for a new request", async () => {
+    const brand = await db.prisma.brand.create({ data: { name: "Archived Brand", archivedAt: new Date() } });
+    const division = await db.prisma.division.create({ data: { name: "Archived Division", archivedAt: new Date() } });
+    const err = await rejects({ ...base, brandId: brand.id, divisionId: division.id });
+    expect(err.fieldErrors).toMatchObject({ brandId: "That brand is archived", divisionId: "That division is archived" });
+  });
+});

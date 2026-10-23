@@ -1,8 +1,10 @@
+"use client";
+
 import { useId } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
 import type { TimelineRow } from "@/lib/requests";
-import { brandTone } from "@/lib/palette";
+import { useBrandTone } from "../ui/brandDirectory";
 import type { TimelineBar, TimelineDay, TimelinePerson } from "@/lib/workload";
 import { StatusIcon } from "../status";
 import { cn, focusRing } from "../ui/cn";
@@ -31,11 +33,12 @@ function DayUnderlay({ days }: { days: TimelineDay[] }) {
 
 function Bar({ bar, row, lane, ownerId }: { bar: TimelineBar; row: TimelineRow; lane: number; ownerId: string | null }) {
   const text = barText(row, bar, ownerId);
+  const brand = useBrandTone(row.brandName ?? "");
   const span = bar.endCol - bar.startCol + 1;
   const tailPct = bar.overdue ? (bar.planEndCol === null ? 100 : ((bar.endCol - bar.planEndCol) / span) * 100) : 0;
   return (
     <li className="min-w-0" style={{ gridColumn: `${bar.startCol + 1} / ${bar.endCol + 2}`, gridRow: lane + 1 }}>
-      <Link href={`/requests/${row.id}`} title={text} data-bar={row.id} data-lane={lane} data-tone={brandTone(row.brandName)}
+      <Link href={`/requests/${row.id}`} title={text} data-bar={row.id} data-lane={lane} data-tone={brand}
         data-no-deadline={bar.noDeadline ? "" : undefined} data-shared={bar.shared ? "" : undefined}
         className={cn(
           "relative mx-0.5 flex h-7 items-center gap-1 overflow-hidden rounded-md border border-l-4 border-border border-l-tone-accent bg-card px-1.5 text-xs text-card-foreground shadow-card",

@@ -72,6 +72,11 @@ describe("loadArticles", () => {
     expect(notes.body).not.toContain("**Aa**");
   });
 
+  it("the Lists guide tells admins to add a removed question back before saving", () => {
+    const lists = loadArticles(`${process.cwd()}/content/help`).find((a) => a.slug === "admin-lists")!;
+    expect(lists.body).toContain("add it back with the same label before you select **Save type**");
+  });
+
   it("every real guide has a body", () => {
     for (const a of loadArticles(`${process.cwd()}/content/help`)) {
       expect(a.body.length).toBeGreaterThan(0);

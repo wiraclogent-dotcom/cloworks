@@ -25,7 +25,7 @@ export type LibraryViewProps = {
   /** Brands in use (for the filter). */
   brands: { id: string; name: string }[];
   /** All workspace brands, for the item dialog. */
-  brandOptions?: { id: string; name: string }[];
+  brandOptions?: { id: string; name: string; archived?: boolean }[];
   canManage: boolean;
   now: Date;
 };

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AppRole } from "@prisma/client";
+import { brandOptions, type ListOption } from "./lists";
 import type { ScopedDb } from "./db";
 import { can } from "./permissions";
 import { isHttpUrl } from "./fieldSchema";
@@ -75,7 +76,8 @@ function cleanFiles(raw: unknown): LibraryFile[] | string {
   return files;
 }
 
-async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
+/** `keepBrandId`: the item's current brand, which it may keep after the brand is archived. */
+async function cleanItem(db: ScopedDb, input: LibraryItemInput, keepBrandId?: string | null) {
   const errors = collect(itemShape.safeParse(input));
   const files = input.files === undefined ? undefined : cleanFiles(input.files);
   if (typeof files === "string") errors.files = files;
@@ -85,8 +87,11 @@ async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
   const brandId = errors.brandId ? null : blankToNull(input.brandId);
   if (!errors.categoryId && !(await db.libraryCategory.findUnique({ where: { id: input.categoryId }, select: { id: true } })))
     errors.categoryId = "That category does not exist";
-  if (brandId && !(await db.brand.findUnique({ where: { id: brandId }, select: { id: true } })))
-    errors.brandId = "That brand does not exist";
+  if (brandId) {
+    const b = await db.brand.findUnique({ where: { id: brandId }, select: { archivedAt: true } });
+    if (!b) errors.brandId = "That brand does not exist";
+    else if (b.archivedAt && brandId !== keepBrandId) errors.brandId = "That brand is archived";
+  }
   if (Object.keys(errors).length) throwFields(errors);
   return {
     title, url, description: blankToNull(input.description), categoryId: input.categoryId, brandId,
@@ -128,7 +133,7 @@ export async function createItemWith(db: ScopedDb, user: Actor, input: LibraryIt
 export async function updateItemWith(db: ScopedDb, user: Actor, id: string, input: LibraryItemInput): Promise<{ contentChanged: boolean }> {
   assertEditor(user);
   const existing = await requireItem(db, id);
-  const c = await cleanItem(db, input);
+  const c = await cleanItem(db, input, existing.brandId);
   const data: Record<string, unknown> = { ...c, updatedById: user.id };
   const filesChanged = c.files !== undefined && JSON.stringify(c.files) !== JSON.stringify(filesOf(existing.files));
   const contentChanged = c.title !== existing.title || c.url !== existing.url || c.description !== existing.description || filesChanged;
@@ -244,12 +249,11 @@ export async function loadLibrary(db: ScopedDb): Promise<{
   rows: LibraryRow[];
   categories: { id: string; name: string; icon: string | null }[];
   brands: { id: string; name: string }[];
-  brandOptions: { id: string; name: string }[];
+  brandOptions: ListOption[];
 }> {
-  const [cats, items, allBrands] = await Promise.all([
+  const [cats, items] = await Promise.all([
     db.libraryCategory.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, icon: true, sortOrder: true } }),
     db.libraryItem.findMany({ include: { brand: { select: { id: true, name: true } } } }),
-    db.brand.findMany({ select: { id: true, name: true } }),
   ]);
   const catOrder = new Map(cats.map((c, i) => [c.id, i]));
   const sorted = [...items].sort(
@@ -267,6 +271,7 @@ export async function loadLibrary(db: ScopedDb): Promise<{
   const used = new Map<string, string>();
   for (const i of items) if (i.brand) used.set(i.brand.id, i.brand.name);
   const brands = [...used].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
-  const brandOptions = allBrands.map((b) => ({ id: b.id, name: b.name })).sort((a, b) => a.name.localeCompare(b.name));
-  return { rows, categories: cats.map((c) => ({ id: c.id, name: c.name, icon: c.icon })), brands, brandOptions };
+  // Active brands, plus archived ones an item still uses (labelled; only that item's form offers it).
+  const options = await brandOptions(db, items.map((i) => i.brandId));
+  return { rows, categories: cats.map((c) => ({ id: c.id, name: c.name, icon: c.icon })), brands, brandOptions: options };
 }

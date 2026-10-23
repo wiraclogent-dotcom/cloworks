@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useRef, useState, type FormEvent } from "react";
+import { visibleOptions } from "@/lib/lists";
 import { Plus, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { createItem, updateItem } from "@/app/(app)/library/actions";
@@ -27,7 +28,7 @@ const MAX_FILES = 6;
 export function ItemDialog({ item, categories, brandOptions, onClose }: {
   item: ItemDraft;
   categories: { id: string; name: string }[];
-  brandOptions: { id: string; name: string }[];
+  brandOptions: { id: string; name: string; archived?: boolean }[];
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -110,7 +111,7 @@ export function ItemDialog({ item, categories, brandOptions, onClose }: {
             <Label htmlFor={`${uid}-brandId`}>Brand</Label>
             <NativeSelect {...f("brandId")} value={brandId} onChange={(e) => setBrandId(e.target.value)}>
               <option value="">No brand</option>
-              {brandOptions.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+              {visibleOptions(brandOptions, item.brandId).map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </NativeSelect>
             {err("brandId")}
           </div>

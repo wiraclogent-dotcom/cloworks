@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useBrandTone } from "./ui/brandDirectory";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
@@ -47,6 +48,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
   const grid = useMemo(() => buildMonthGrid(month, today), [month, today]);
   const byDay = useMemo(() => bucketByDay(cards, today), [cards, today]);
   const activeCard = activeId ? cards.find((c) => c.id === activeId) ?? null : null;
+  const activeBrand = useBrandTone(activeCard?.brandName ?? "");
   const dayOf = (c: CalendarRow) => c.deadlineDay ?? today;
 
   // Keyboard drag state shared by the coordinate getter and collision detection (day-by-day, skipping disabled days).
@@ -164,7 +166,7 @@ export function RequestCalendar({ rows, month, today, canMove, prevHref, nextHre
             </div>
             <DragOverlay>
               {activeCard ? (
-                <div aria-hidden="true" data-drag-overlay="" data-tone={cardTone(activeCard, today)}
+                <div aria-hidden="true" data-drag-overlay="" data-tone={cardTone(activeCard, today, activeBrand)}
                   className={cn(CALENDAR_CARD_OVERLAY, "cursor-grabbing rotate-2 motion-reduce:rotate-0")}>
                   <CalendarCardFace card={activeCard} today={today} interactive={false} />
                 </div>

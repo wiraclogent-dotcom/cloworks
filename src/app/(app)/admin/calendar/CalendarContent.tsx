@@ -20,7 +20,7 @@ export async function CalendarContent() {
   if (!can(viewer.appRole, "admin.manage")) return <AdminDenied />;
 
   const [divisions, members] = await Promise.all([
-    db.division.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], include: { leads: { select: { userId: true } } } }),
+    db.division.findMany({ where: { archivedAt: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], include: { leads: { select: { userId: true } } } }),
     db.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 

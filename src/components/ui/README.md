@@ -82,7 +82,7 @@ The old aliases `bg-surface`, `bg-surface-muted` and `text-foreground-secondary`
 Tones (`src/lib/palette.ts`): `requested`, `in-progress`, `first-look`, `done`, `cancelled`, `needs-motion`, `due-soon`,
 `overdue`, `tag-clogent`, `tag-bubble-wash`, `tag-neutral`. Example (board column top bar):
 `<section data-tone="in-progress" className="border-t-4 border-tone-accent">`. Statuses map with
-`REQUEST_STATUS_TONE` / `PROJECT_STATUS_TONE`; brands with `brandTone(name)`.
+`REQUEST_STATUS_TONE` / `PROJECT_STATUS_TONE`; brands with `useBrandTone(name)` (`brandDirectory.ts`: the colour chosen in Settings › Lists, `brandTone(name)` outside the app).
 
 Shape: pill buttons (`rounded-full`, the `Button` default), 8px fields and other controls (`rounded-lg`), 12px cards and dialogs (`rounded-xl`), 6px badges (`rounded-md`), pills/avatars
 `rounded-full`. Plain `rounded` (4px) only for tiny handles inside media tiles.
@@ -147,7 +147,7 @@ shadcn part inside.
 |---|---|---|---|
 | `PageHeader` | PageHeader.tsx | `title`, `count`, `description`, `switcher`, `actions` | Top of every page (renders the `<h1>`). |
 | `StatusChip` | StatusChip.tsx | `status: RequestStatus \| ProjectStatus`, `kind?: "request" \| "project"` (pass `project` for project statuses: Canceled vs Cancelled) | Status anywhere (icon + label + tint). Old name `StatusBadge` still exported by `components/status`. |
-| `BrandTag` | BrandTag.tsx | `name`, `className` | Brand name as a badge (Clogent and Bubble Wash have their own tones, others neutral). |
+| `BrandTag` | BrandTag.tsx | `name`, `className` | Brand name as a badge in the brand's colour from Settings › Lists (`useBrandTone`). |
 | `StatusIcon` | StatusIcon.tsx | `status` | Bare shape icon (column headers). |
 | `DeadlineChip` | DeadlineChip.tsx | `daysLeft: number \| null` | Open requests only: overdue / due soon (≤ 2 days) / on track / no deadline. |
 | `NeedsMotionChip` | NeedsMotionChip.tsx | – | Needs-motion flag (old name `NeedsMotionBadge`). |

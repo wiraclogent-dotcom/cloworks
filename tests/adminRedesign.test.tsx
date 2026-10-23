@@ -41,9 +41,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   requireUser.mockResolvedValue({ id: "a", appRole: "ADMIN", jobRole: "OTHER" });
   prismaMock.user.findMany.mockResolvedValue(users);
-  prismaMock.brand.findMany.mockResolvedValue([{ id: "b1", name: "Clogent" }, { id: "b2", name: "Zed" }]);
-  prismaMock.division.findMany.mockResolvedValue([{ id: "d1", name: "Marketing", color: "div-1", onMarketingCalendar: false, sortOrder: 0, leads: [] }]);
-  prismaMock.requestType.findMany.mockResolvedValue([{ id: "t1", name: "Video", active: false, fieldSchema: [] }]);
+  const brandCount = { requests: 0, projects: 0, libraryItems: 0, socialChannels: 0 };
+  prismaMock.brand.findMany.mockResolvedValue([
+    { id: "b1", name: "Clogent", color: "tag-clogent", archivedAt: null, _count: brandCount },
+    { id: "b2", name: "Zed", color: "tag-neutral", archivedAt: null, _count: brandCount },
+  ]);
+  prismaMock.division.findMany.mockResolvedValue([{ id: "d1", name: "Marketing", color: "div-1", onMarketingCalendar: false, sortOrder: 0, leads: [], archivedAt: null, _count: { requests: 0, marketingActivities: 0 } }]);
+  prismaMock.requestType.findMany.mockResolvedValue([{ id: "t1", name: "Video", active: true, fieldSchema: [], _count: { requests: 0, contentPosts: 0 } }]);
 });
 afterEach(cleanup);
 
@@ -113,14 +117,15 @@ describe("Lists page", () => {
     render(await ListsContent());
     const toggle = screen.getByText("Video").closest("button")!;
     fireEvent.click(toggle);
-    const panel = toggle.parentElement!;
-    fireEvent.change(within(panel).getByLabelText("Field schema (JSON array)"), { target: { value: '[{"key":"x"}]' } });
+    const panel = toggle.closest("li")!;
+    fireEvent.click(within(panel).getByRole("button", { name: "Add field" }));
+    fireEvent.change(within(panel).getByRole("textbox", { name: "Label of field 1" }), { target: { value: "Size" } });
     fireEvent.click(toggle);
     expect(within(panel).queryByRole("button", { name: "Save type Video" })).toBeNull();
     fireEvent.click(toggle);
-    expect((within(panel).getByLabelText("Field schema (JSON array)") as HTMLTextAreaElement).value).toBe('[{"key":"x"}]');
+    expect((within(panel).getByRole("textbox", { name: "Label of field 1" }) as HTMLInputElement).value).toBe("Size");
   });
-  it("PageHeader + switcher, three cards, unique rename buttons, type status chip", async () => {
+  it("PageHeader + switcher, three cards, unique rename buttons, no Archived group when nothing is archived", async () => {
     render(await ListsContent());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual(["Brands, divisions and request types"]);
     expect(within(screen.getByRole("navigation", { name: "Settings sections" })).getByRole("link", { name: "Lists" }).getAttribute("aria-current")).toBe("page");
@@ -131,7 +136,8 @@ describe("Lists page", () => {
     expect(screen.getByLabelText("Name of Clogent")).toBeTruthy();
     const toggle = screen.getByText("Video").closest("button")!;
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(within(toggle).getByText("Inactive").getAttribute("data-tone")).toBe("tag-neutral");
+    expect(within(toggle).queryByText("Archived")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Archived \(/ })).toBeNull();
     fireEvent.click(toggle);
     expect(screen.getByRole("button", { name: "Save type Video" })).toBeTruthy();
     expect(screen.getByRole("heading", { level: 3, name: "Add request type" })).toBeTruthy();
@@ -144,7 +150,7 @@ describe("Lists page without calendar settings", () => {
     expect(screen.queryByText(/Marketing calendar settings/)).toBeNull();
     expect(screen.queryByRole("switch")).toBeNull();
     const divisions = screen.getByRole("region", { name: "Divisions" });
-    expect(within(divisions).getByRole("link", { name: "Marketing calendar" }).getAttribute("href")).toBe("/admin/calendar");
+    expect(within(divisions).getByRole("link", { name: "Settings › Marketing calendar" }).getAttribute("href")).toBe("/admin/calendar");
   });
 });
 

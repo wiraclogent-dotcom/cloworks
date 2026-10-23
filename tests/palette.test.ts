@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import { contrastRatio } from "@/lib/contrast";
 import path from "node:path";
-import { AVATAR_PAIRS, DIVISION_PALETTE, DIVISION_TONES, PALETTE, divisionTone, PROJECT_STATUS_TONE, REQUEST_STATUS_TONE, TONES, avatarColor, avatarIndex, brandTone, initials } from "@/lib/palette";
+import { AVATAR_PAIRS, BRAND_TONES, BRAND_TONE_LABEL, DIVISION_PALETTE, DIVISION_TONES, PALETTE, brandColorTone, divisionTone, PROJECT_STATUS_TONE, REQUEST_STATUS_TONE, TONES, avatarColor, avatarIndex, brandTone, initials } from "@/lib/palette";
 
 const css = fs.readFileSync(path.resolve(__dirname, "../src/app/globals.css"), "utf8");
 function vars(selector: string): Record<string, string> {
@@ -41,6 +41,12 @@ describe("status tones", () => {
     expect(REQUEST_STATUS_TONE).toEqual({ REQUESTED: "requested", ON_PROGRESS: "in-progress", FIRST_LOOK: "first-look", DONE: "done", CANCELLED: "cancelled" });
     expect(Object.keys(PROJECT_STATUS_TONE).sort()).toEqual(["CANCELLED", "DONE", "IN_PROGRESS", "IN_REVIEW", "NOT_STARTED", "ON_HOLD"]);
     expect(PROJECT_STATUS_TONE.CANCELLED).toBe("cancelled");
+  });
+  it("brand colours: 11 choices, today's two first and grey last, each labelled", () => {
+    expect(BRAND_TONES).toEqual(["tag-clogent", "tag-bubble-wash", ...DIVISION_TONES, "tag-neutral"]);
+    expect(BRAND_TONES.map((t) => BRAND_TONE_LABEL[t])).toEqual(["Brand blue", "Aqua", "Blue", "Coral", "Green", "Amber", "Pink", "Violet", "Teal", "Slate", "Grey"]);
+    expect(brandColorTone("div-3")).toBe("div-3");
+    expect(brandColorTone("nope")).toBe("tag-neutral");
   });
   it("brand tags: Clogent and Bubble Wash get their colours, others neutral", () => {
     expect(brandTone("Clogent")).toBe("tag-clogent");

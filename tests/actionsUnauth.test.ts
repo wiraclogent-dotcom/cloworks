@@ -9,7 +9,7 @@ vi.mock("next/cache", () => ({ revalidatePath: () => {} }));
 import { submitRequest } from "@/app/(app)/requests/actions";
 import { setTarget } from "@/app/(app)/dashboard/targets/actions";
 import { saveUser } from "@/app/(app)/admin/users/actions";
-import { saveBrand, saveDivisionCalendar } from "@/app/(app)/admin/lists/actions";
+import { archiveListItem, deleteListItem, saveBrand, saveBrandColor, saveDivisionCalendar } from "@/app/(app)/admin/lists/actions";
 import { submitProject, createProject } from "@/app/(app)/projects/actions";
 import {
   createItem, updateItem, deleteItem, setPinned, moveItem, createCategory, updateCategory, moveCategory, deleteCategory,
@@ -56,6 +56,10 @@ describe("server actions return a result object when the session ended", () => {
   });
   it("notification actions", async () => {
     for (const r of [await listNotifications(), await markNotificationRead("n"), await markAllNotificationsRead()])
+      expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
+  });
+  it("list row actions", async () => {
+    for (const r of [await archiveListItem("brand", "b", true), await deleteListItem("division", "d"), await saveBrandColor("b", "div-1")])
       expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
   it("notes actions", async () => {

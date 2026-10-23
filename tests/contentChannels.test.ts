@@ -124,4 +124,14 @@ describe("content channels", () => {
     const updated = await code(updateChannelWith(blind, lead, other.id, input("race.handle")));
     expect(updated).toMatchObject({ code: "INVALID", fieldErrors: { handle: "That handle is already used" } });
   });
+
+  it("archived brands: a new channel can't use one; a channel keeps its own when edited", async () => {
+    const old = (await db.prisma.brand.create({ data: { name: "Chan Old", archivedAt: new Date() } })).id;
+    const e = await code(createChannelWith(db.prisma, lead, { ...input("oldbrand"), brandId: old }));
+    expect([e?.code, e?.message]).toEqual(["INVALID", "That brand is archived."]);
+    const mine = (await db.prisma.brand.create({ data: { name: "Chan Mine" } })).id;
+    const { id } = await createChannelWith(db.prisma, lead, { ...input("minebrand"), brandId: mine });
+    await db.prisma.brand.update({ where: { id: mine }, data: { archivedAt: new Date() } });
+    expect(await code(updateChannelWith(db.prisma, lead, id, { ...input("minebrand"), brandId: mine, displayName: "Renamed" }))).toBeNull();
+  });
 });
