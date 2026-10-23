@@ -249,10 +249,12 @@ describe("Members page", () => {
     const pick = within(details).getByLabelText("Merge into…") as HTMLSelectElement;
     fireEvent.change(pick, { target: { value: "u3" } });
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
-    await within(details).findByRole("button", { name: "Merge Yosi into Rina" });
+    // The review runs as a React action on the whole Members page; under the full suite's load (embedded Postgres test
+    // files starting in parallel) it has taken over the default 1 s to render: allow 5 s for both action waits.
+    await within(details).findByRole("button", { name: "Merge Yosi into Rina" }, { timeout: 5000 });
     expect(pick.value).toBe("u3");
     fireEvent.click(within(details).getByRole("button", { name: "Review merge for Yosi" }));
-    await waitFor(() => expect(act.previewMerge).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(act.previewMerge).toHaveBeenCalledTimes(2), { timeout: 5000 });
     expect((act.previewMerge.mock.calls[1][1] as FormData).get("intoId")).toBe("u3");
   });
 

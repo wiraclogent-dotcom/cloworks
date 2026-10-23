@@ -91,7 +91,9 @@ describe("ProjectDetailsCard edit view", () => {
     render(<ProjectDetailsCard project={project} brands={brands} owners={owners} canManage />);
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy());
+    // The save runs as a React action (transition → form remount → effect → read view). Under the full suite's load
+    // (embedded Postgres test files starting in parallel) that chain has taken over the default 1 s: allow 5 s.
+    await waitFor(() => expect(screen.getByRole("button", { name: "Edit" })).toBeTruthy(), { timeout: 5000 });
     expect(h.inPlace).toHaveBeenCalledWith("p1", null, expect.any(FormData));
     expect(h.submit).not.toHaveBeenCalled();
     expect(h.refresh).toHaveBeenCalled();
