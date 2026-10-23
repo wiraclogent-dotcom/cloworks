@@ -3,8 +3,8 @@ import { createTestDb, type TestDb } from "./helpers/testDb";
 import { NoteError } from "@/lib/notes/errors";
 import { EMPTY_NOTE_DOC } from "@/lib/notes/doc";
 import {
-  createNoteWith, deleteNoteNowWith, deleteNoteWith, emptyDeletedWith, getNote, listNotes, moveNoteWith,
-  purgeExpiredNotes, restoreNoteWith, saveNoteWith, setPinnedWith,
+  createFolderWith, createNoteWith, deleteFolderWith, deleteNoteNowWith, deleteNoteWith, emptyDeletedWith, getNote,
+  listFolders, listNotes, moveNoteWith, purgeExpiredNotes, renameFolderWith, restoreNoteWith, saveNoteWith, setPinnedWith,
 } from "@/lib/notes/notes";
 
 const body = (...lines: string[]) => ({
@@ -173,5 +173,55 @@ describe("note cores", () => {
     expect(await purgeExpiredNotes(db.prisma, me, now)).toBe(1);
     expect(await ids(me, "deleted")).toEqual([recent]);
     expect(await ids(other, "deleted")).toEqual([theirs]);
+  });
+
+  describe("folders", () => {
+    it("counts live notes per folder and in All Notes / Recently Deleted, folders A–Z", async () => {
+      const me = await freshUser();
+      const { id: meeting } = await createFolderWith(db.prisma, me, "meeting");
+      const { id: draft } = await createFolderWith(db.prisma, me, "Draft");
+      await note(me, ["a"], meeting);
+      await note(me, ["b"], meeting);
+      await note(me, ["loose"]);
+      await deleteNoteWith(db.prisma, me, await note(me, ["gone"], meeting));
+      expect(await listFolders(db.prisma, me)).toEqual({
+        folders: [{ id: draft, name: "Draft", count: 0 }, { id: meeting, name: "meeting", count: 2 }],
+        allCount: 3,
+        deletedCount: 1,
+      });
+    });
+
+    it("names: trimmed, required, at most 60, unique per person ignoring case", async () => {
+      const me = await freshUser(), other = await freshUser();
+      expect(await code(createFolderWith(db.prisma, me, "  "))).toBe("VALIDATION");
+      expect(await code(createFolderWith(db.prisma, me, "x".repeat(61)))).toBe("VALIDATION");
+      const { id } = await createFolderWith(db.prisma, me, " Ide konten ");
+      expect((await listFolders(db.prisma, me)).folders.map((f) => f.name)).toEqual(["Ide konten"]);
+      expect(await code(createFolderWith(db.prisma, me, "IDE KONTEN"))).toBe("VALIDATION");
+      expect(await code(createFolderWith(db.prisma, other, "Ide konten"))).toBe("ok");
+      const { id: second } = await createFolderWith(db.prisma, me, "Pribadi");
+      expect(await code(renameFolderWith(db.prisma, me, second, "ide Konten"))).toBe("VALIDATION");
+      expect(await code(renameFolderWith(db.prisma, me, id, "Ide Konten"))).toBe("ok");
+      expect((await listFolders(db.prisma, me)).folders.map((f) => f.name)).toEqual(["Ide Konten", "Pribadi"]);
+    });
+
+    it("deleting a folder sends its live notes to Recently Deleted; restore brings them to All Notes", async () => {
+      const me = await freshUser();
+      const { id: f } = await createFolderWith(db.prisma, me, "Meeting");
+      const a = await note(me, ["a"], f), b = await note(me, ["b"], f);
+      expect(await deleteFolderWith(db.prisma, me, f)).toEqual({ deletedNotes: 2 });
+      expect((await listFolders(db.prisma, me)).folders).toEqual([]);
+      expect((await ids(me, "deleted")).sort()).toEqual([a, b].sort());
+      expect(await restoreNoteWith(db.prisma, me, a)).toEqual({ folderId: null });
+      expect(await ids(me, "all")).toEqual([a]);
+    });
+
+    it("another person's folder is not found", async () => {
+      const me = await freshUser(), other = await freshUser();
+      const { id: theirs } = await createFolderWith(db.prisma, other, "Theirs");
+      expect(await code(renameFolderWith(db.prisma, me, theirs, "Mine"))).toBe("NOT_FOUND");
+      expect(await code(deleteFolderWith(db.prisma, me, theirs))).toBe("NOT_FOUND");
+      expect((await listFolders(db.prisma, other)).folders.map((f) => f.name)).toEqual(["Theirs"]);
+    });
   });
 });

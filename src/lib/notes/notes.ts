@@ -134,3 +134,61 @@ export async function deleteNoteNowWith(db: ScopedDb, userId: string, id: string
 export async function emptyDeletedWith(db: ScopedDb, userId: string): Promise<number> {
   return (await db.note.deleteMany({ where: { userId, deletedAt: { not: null } } })).count;
 }
+
+export type FolderRow = { id: string; name: string; count: number };
+export type NotesSidebar = { folders: FolderRow[]; allCount: number; deletedCount: number };
+
+const FOLDER_NAME_MAX = 60;
+
+/** The owner's folders A–Z (ignoring case) with their live note counts, plus the All Notes and Recently Deleted counts. */
+export async function listFolders(db: ScopedDb, userId: string): Promise<NotesSidebar> {
+  const [folders, counts, allCount, deletedCount] = await Promise.all([
+    db.noteFolder.findMany({ where: { userId }, select: { id: true, name: true } }),
+    db.note.groupBy({ by: ["folderId"], where: { userId, deletedAt: null, folderId: { not: null } }, _count: { _all: true } }),
+    db.note.count({ where: { userId, deletedAt: null } }),
+    db.note.count({ where: { userId, deletedAt: { not: null } } }),
+  ]);
+  const byFolder = new Map(counts.map((c) => [c.folderId, c._count._all]));
+  return {
+    folders: folders
+      .map((f) => ({ id: f.id, name: f.name, count: byFolder.get(f.id) ?? 0 }))
+      .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base" })),
+    allCount,
+    deletedCount,
+  };
+}
+
+/** Trimmed, 1–60 chars, not the name of another of the owner's folders (ignoring case). */
+async function folderName(db: ScopedDb, userId: string, raw: string, exceptId?: string): Promise<string> {
+  const name = raw.trim();
+  if (!name) throw new NoteError("VALIDATION", "Folder name is required");
+  if (name.length > FOLDER_NAME_MAX) throw new NoteError("VALIDATION", `Folder name must be at most ${FOLDER_NAME_MAX} characters`);
+  const clash = await db.noteFolder.findFirst({
+    where: { userId, name: { equals: name, mode: "insensitive" }, ...(exceptId ? { id: { not: exceptId } } : {}) },
+    select: { id: true },
+  });
+  if (clash) throw new NoteError("VALIDATION", "You already have a folder with that name");
+  return name;
+}
+
+export async function createFolderWith(db: ScopedDb, userId: string, name: string): Promise<{ id: string }> {
+  return db.noteFolder.create({ data: { userId, name: await folderName(db, userId, name) }, select: { id: true } });
+}
+
+export async function renameFolderWith(db: ScopedDb, userId: string, id: string, name: string): Promise<void> {
+  await assertOwnFolder(db, userId, id);
+  await db.noteFolder.update({ where: { id }, data: { name: await folderName(db, userId, name, id) } });
+}
+
+/** Deletes the folder; its live notes go to Recently Deleted (remembering the folder, which no longer exists). */
+export async function deleteFolderWith(db: ScopedDb, userId: string, id: string): Promise<{ deletedNotes: number }> {
+  await assertOwnFolder(db, userId, id);
+  const [moved] = await db.$transaction([
+    db.note.updateMany({
+      where: { userId, folderId: id, deletedAt: null },
+      data: { deletedAt: new Date(), deletedFromFolderId: id, folderId: null, pinned: false },
+    }),
+    db.noteFolder.delete({ where: { id } }),
+  ]);
+  return { deletedNotes: moved.count };
+}
