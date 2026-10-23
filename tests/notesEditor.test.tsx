@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, renderHook, screen, cleanup, act, waitFor, fireEvent } from "@testing-library/react";
 import type { Editor } from "@tiptap/core";
+import { UnrecognizedActionError } from "next/dist/client/components/unrecognized-action-error";
 
 vi.mock("@/app/(app)/notes/actions", () => ({
   saveNote: vi.fn(), setNotePinned: vi.fn(), moveNote: vi.fn(), deleteNote: vi.fn(), restoreNote: vi.fn(), deleteNoteNow: vi.fn(),
@@ -98,6 +99,18 @@ describe("useNoteAutosave", () => {
     act(() => result.current.change(b("1")));
     await advance(1000);
     expect(result.current.status).toEqual({ kind: "failed", message });
+    await advance(60_000);
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  // An expired session makes the proxy redirect the action POST to /signin, which Next reports as an unrecognized
+  // action (the same as a new deploy): retrying can never succeed.
+  it("stops on an unrecognized action and says to reload or sign in", async () => {
+    const save = vi.fn().mockRejectedValue(new UnrecognizedActionError("not found"));
+    const { result } = renderHook(() => useNoteAutosave("A", save, vi.fn(), new Date(0)));
+    act(() => result.current.change(b("1")));
+    await advance(1000);
+    expect(result.current.status).toEqual({ kind: "failed", message: "Your session ended or Clowork was updated. Reload the page or sign in again." });
     await advance(60_000);
     expect(save).toHaveBeenCalledTimes(1);
   });
@@ -221,6 +234,23 @@ describe("NoteEditor", () => {
     fireEvent.change(again, { target: { value: "clowork.my.id" } });
     await act(async () => { fireEvent.submit(again.closest("form")!); });
     expect(editor.getJSON().content?.[0].content?.[0]).toMatchObject({ text: "halo", marks: [{ type: "link", attrs: { href: "https://clowork.my.id" } }] });
+  });
+
+  // Browser Back/Forward restores the page from Next's client cache: the note prop is the body from the first visit.
+  it("reopening a note with older page data starts from its last saved text", async () => {
+    const LATER = new Date("2026-10-23T03:00:00Z");
+    vi.mocked(saveNote).mockImplementation(async () => ({ ok: true, title: "alpha", preview: "", updatedAt: LATER }));
+    const stale = note("back-1", b("alpha"));
+    const first = render(<NoteEditor {...props} note={stale} />);
+    const editor = await editorOf();
+    act(() => { editor.commands.setContent(b("alpha more"), { emitUpdate: true }); });
+    first.unmount();
+    await waitFor(() => expect(saveNote).toHaveBeenCalledWith("back-1", b("alpha more")));
+    await act(async () => {});
+    render(<NoteEditor {...props} note={stale} />);
+    const reopened = await editorOf();
+    expect(reopened.getText()).toBe("alpha more");
+    expect(screen.getByText(/Edited 23 Oct 2026, 10:00 · Saved/)).toBeTruthy();
   });
 
   it("a Recently Deleted note is read-only with Restore and Delete now", async () => {

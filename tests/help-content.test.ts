@@ -66,6 +66,12 @@ describe("loadArticles", () => {
     ]);
   });
 
+  it("the Notes guide names the toolbar's Text style button (there is no Aa button)", () => {
+    const notes = loadArticles(`${process.cwd()}/content/help`).find((a) => a.slug === "notes")!;
+    expect(notes.body).toContain("**Text style**");
+    expect(notes.body).not.toContain("**Aa**");
+  });
+
   it("every real guide has a body", () => {
     for (const a of loadArticles(`${process.cwd()}/content/help`)) {
       expect(a.body.length).toBeGreaterThan(0);

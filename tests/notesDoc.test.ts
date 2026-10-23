@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { NoteError } from "@/lib/notes/errors";
-import { EMPTY_NOTE_DOC, isSafeHref, noteSummary, notePreview, parseNoteDoc } from "@/lib/notes/doc";
+import { EMPTY_NOTE_DOC, NOTE_EXTENSIONS, isSafeHref, noteSummary, notePreview, parseNoteDoc } from "@/lib/notes/doc";
 
 const doc = (...content: unknown[]) => ({ type: "doc", content });
 const p = (t?: string) => ({ type: "paragraph", ...(t ? { content: [{ type: "text", text: t }] } : {}) });
@@ -34,6 +34,12 @@ describe("note documents", () => {
     expect(code(() => parseNoteDoc(doc(p("x".repeat(500_001)))))).toBe("TOO_LARGE");
     expect(code(() => parseNoteDoc("nope"))).toBe("INVALID");
     expect(code(() => parseNoteDoc(null))).toBe("INVALID");
+  });
+
+  it("links open when clicked, in a new tab", () => {
+    const link = NOTE_EXTENSIONS.flatMap((e) => (e.name === "starterKit" ? [(e.options as { link: { openOnClick: unknown; HTMLAttributes: { target: string } } }).link] : []))[0];
+    expect(link.openOnClick).toBe(true);
+    expect(link.HTMLAttributes.target).toBe("_blank");
   });
 
   it("allows only http, https and mailto links", () => {

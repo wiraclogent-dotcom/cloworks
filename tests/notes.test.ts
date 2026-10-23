@@ -175,15 +175,19 @@ describe("note cores", () => {
     expect(await ids(other, "deleted")).toEqual([theirs]);
   });
 
-  it("purge also removes the owner's empty notes, except the one being opened", async () => {
+  // A new note is empty in the database until its first save lands (1 s after typing); purging it on the next page
+  // load lost what was typed when the person left it quickly. Only empty notes left for over a day are cleaned up.
+  it("purge removes empty notes left for over a day, never a fresh one", async () => {
     const me = await freshUser(), other = await freshUser();
-    const { id: leftEmpty } = await createNoteWith(db.prisma, me, null);
-    const { id: opening } = await createNoteWith(db.prisma, me, null);
+    const now = new Date();
+    const { id: fresh } = await createNoteWith(db.prisma, me, null);
+    const { id: stale } = await createNoteWith(db.prisma, me, null);
     const { id: theirs } = await createNoteWith(db.prisma, other, null);
     const kept = await note(me, ["isi"]);
-    await purgeExpiredNotes(db.prisma, me, new Date(), opening);
-    expect(await getNote(db.prisma, me, leftEmpty)).toBeNull();
-    expect((await ids(me, "all")).sort()).toEqual([opening, kept].sort());
+    for (const id of [stale, theirs, kept]) await db.prisma.note.update({ where: { id }, data: { createdAt: new Date(now.getTime() - 25 * 60 * 60 * 1000) } });
+    await purgeExpiredNotes(db.prisma, me, now);
+    expect(await getNote(db.prisma, me, stale)).toBeNull();
+    expect((await ids(me, "all")).sort()).toEqual([fresh, kept].sort());
     expect(await getNote(db.prisma, other, theirs)).not.toBeNull();
   });
 

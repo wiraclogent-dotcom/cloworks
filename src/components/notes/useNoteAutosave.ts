@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { unstable_isUnrecognizedActionError } from "next/navigation";
 import type { JSONContent } from "@tiptap/core";
 import type { NotesActionResult } from "@/app/(app)/notes/actions";
 
@@ -10,6 +11,17 @@ type Save = (id: string, body: JSONContent) => Promise<NotesActionResult<Saved>>
 
 const DEBOUNCE_MS = 1000;
 const RETRY_MS = [2000, 5000, 10_000, 30_000];
+const STALE_PAGE = "Your session ended or Clowork was updated. Reload the page or sign in again.";
+
+/**
+ * The last body each note saved in this tab. Browser Back/Forward restores the Notes page from Next's client cache,
+ * whose note body predates later saves (saves don't revalidate): the editor starts from whichever is newer.
+ */
+const lastSaved = new Map<string, { body: JSONContent; at: Date }>();
+export function latestSaved(note: { id: string; body: JSONContent; updatedAt: Date }): { body: JSONContent; at: Date } {
+  const saved = lastSaved.get(note.id);
+  return saved && saved.at > note.updatedAt ? saved : { body: note.body, at: note.updatedAt };
+}
 
 /**
  * Autosave for one note (spec 2026-10-23): saves 1 s after the last change, one save at a time (a newer body waits
@@ -41,14 +53,17 @@ export function useNoteAutosave(noteId: string, save: Save, onSaved: (id: string
         const r = await live.current.save(noteId, body);
         attempt.current = 0;
         if (r.ok) {
+          lastSaved.set(noteId, { body, at: r.updatedAt });
           setStatus({ kind: "saved", at: r.updatedAt });
           live.current.onSaved(noteId, { title: r.title, preview: r.preview, updatedAt: r.updatedAt });
         } else {
           pending.current ??= body; // still unsaved: the next edit tries again, and leaving the page warns
           setStatus({ kind: "failed", message: r.message });
         }
-      } catch {
+      } catch (e) {
         pending.current ??= body;
+        // An expired session (the proxy redirects the action to /signin) or a new deploy: retrying can't succeed.
+        if (unstable_isUnrecognizedActionError(e)) return setStatus({ kind: "failed", message: STALE_PAGE });
         setStatus({ kind: "retrying" });
         timer.current = setTimeout(() => void flush(), RETRY_MS[Math.min(attempt.current++, RETRY_MS.length - 1)]);
       }

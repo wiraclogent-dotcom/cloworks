@@ -28,7 +28,7 @@ export const NOTE_EXTENSIONS: Extensions = [
     blockquote: false,
     horizontalRule: false,
     link: {
-      openOnClick: false,
+      openOnClick: true,
       autolink: true,
       defaultProtocol: "https",
       isAllowedUri: (url) => isSafeHref(url),

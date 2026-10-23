@@ -15,7 +15,7 @@ import { NOTE_EXTENSIONS } from "@/lib/notes/doc";
 import { formatEdited } from "@/lib/notes/format";
 import type { FolderRow, NoteDetail } from "@/lib/notes/notes";
 import { NoteToolbar } from "./NoteToolbar";
-import { useNoteAutosave, type SaveStatus } from "./useNoteAutosave";
+import { latestSaved, useNoteAutosave, type SaveStatus } from "./useNoteAutosave";
 
 type Saved = { title: string; preview: string; updatedAt: Date };
 
@@ -43,12 +43,13 @@ export function NoteEditor({ note, folders, readOnly, onSaved, onLeaveEmpty, onC
   const [linkOpen, setLinkOpen] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [busy, startBusy] = useTransition();
-  const { status, change, flush } = useNoteAutosave(note.id, saveNote, onSaved, note.updatedAt);
+  const [start] = useState(() => latestSaved(note));
+  const { status, change, flush } = useNoteAutosave(note.id, saveNote, onSaved, start.at);
   const empty = useRef(false);
 
   const editor = useEditor({
     extensions: [...NOTE_EXTENSIONS, Placeholder.configure({ placeholder: "Start writing…" })],
-    content: note.body,
+    content: start.body,
     editable: !readOnly,
     // A brand-new note is ready to type into, as in Apple Notes; opening an existing note leaves focus alone.
     autofocus: !readOnly && note.title === "" ? "end" : false,

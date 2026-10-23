@@ -15,7 +15,7 @@ async function NotesContent({ searchParams }: { searchParams: PageProps<"/notes"
   const { user, db } = await requireScope();
   const now = new Date();
   const sp = await searchParams;
-  await purgeExpiredNotes(db, user.id, now, typeof sp.note === "string" ? sp.note : null);
+  await purgeExpiredNotes(db, user.id, now);
   const sidebar = await listFolders(db, user.id);
   const params = parseNotesParams(sp, sidebar.folders.map((f) => f.id));
   const [notes, note] = await Promise.all([

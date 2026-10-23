@@ -20,10 +20,10 @@ A new note you leave empty is removed automatically.
 
 Use the toolbar above the note, or these shortcuts:
 
-- **Title, Heading, Subheading, Body**: the **Aa** button, or type `# `, `## ` or `### ` at the start of a line.
+- **Title, Heading, Subheading, Body**: the **Text style** button (T) at the left of the toolbar, or type `# `, `## ` or `### ` at the start of a line.
 - **Bold**: ⌘B (Ctrl+B on Windows). **Italic**: ⌘I. **Underline**: ⌘U. **Strikethrough**: ⌘⇧S.
 - **Bulleted list**: type `- ` at the start of a line. **Numbered list**: type `1. `. **Checklist**: type `[ ] `.
-- **Link**: select the text, then the link button or ⌘K, and paste the address. Web addresses and email links (`mailto:`) work.
+- **Link**: select the text, then the link button or ⌘K, and paste the address. Web addresses and email links (`mailto:`) work. Select a link in a note to open it in a new tab.
 
 In a list, **Tab** indents an item and **Shift+Tab** moves it back. Tick a checklist item to mark it done.
 
