@@ -3,6 +3,8 @@ import type { AppRole } from "@prisma/client";
 import {
   AdminError, updateUser, createUser, setUserLoginEmail, setUserPassword, assertMayAddLogin,
   createBrand, renameBrand, createDivision, renameDivision, upsertRequestType, updateDivisionCalendar,
+  setBrandArchived, setDivisionArchived, setRequestTypeArchived, deleteBrand, deleteDivision, deleteRequestType,
+  setBrandColor, listsUsage, usageText,
 } from "@/lib/admin";
 import { loadActiveUser, requireUserWith } from "@/lib/session-core";
 import { createTestDb, type TestDb } from "./helpers/testDb";
@@ -49,6 +51,13 @@ describe("FORBIDDEN for non-admins on every core", () => {
         createDivision(p, a, uniq("D")),
         renameDivision(p, a, "x", "y"),
         upsertRequestType(p, a, { name: uniq("T"), fieldSchema: [], active: true }),
+        setBrandArchived(p, a, "x", true),
+        setDivisionArchived(p, a, "x", true),
+        setRequestTypeArchived(p, a, "x", true),
+        deleteBrand(p, a, "x"),
+        deleteDivision(p, a, "x"),
+        deleteRequestType(p, a, "x"),
+        setBrandColor(p, a, "x", "div-1"),
       ];
       for (const c of calls) expect(await code(c)).toBe("FORBIDDEN");
       expect((await p.user.findUnique({ where: { id: u.id } }))?.active).toBe(true);
@@ -304,6 +313,94 @@ describe("brands and divisions", () => {
     expect(await code(createDivision(db.prisma, admin, name.toLowerCase()))).toBe("CONFLICT");
     expect((await renameDivision(db.prisma, admin, d.id, `${name} 2`)).name).toBe(`${name} 2`);
     expect(await code(renameDivision(db.prisma, admin, "nope", "x"))).toBe("NOT_FOUND");
+  });
+});
+
+describe("lists archive, delete and colour", () => {
+  const msg = async (p: Promise<unknown>) => p.then(() => "OK", (e) => (e instanceof AdminError ? `${e.code}: ${e.message}` : `other:${e}`));
+  const requester = () => mk();
+  const request = async (over: { brandId?: string; divisionId?: string; typeId?: string }) => {
+    const brandId = over.brandId ?? (await createBrand(db.prisma, admin, uniq("B"))).id;
+    const divisionId = over.divisionId ?? (await createDivision(db.prisma, admin, uniq("D"))).id;
+    const typeId = over.typeId ?? (await upsertRequestType(db.prisma, admin, { name: uniq("T"), fieldSchema: [], active: true })).id;
+    return db.prisma.request.create({ data: { title: "x", brandId, divisionId, typeId, requesterId: (await requester()).id } });
+  };
+
+  it("archives and restores brands, divisions and request types", async () => {
+    const b = await createBrand(db.prisma, admin, uniq("B"));
+    await setBrandArchived(db.prisma, admin, b.id, true);
+    expect((await db.prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).archivedAt).toBeInstanceOf(Date);
+    await setBrandArchived(db.prisma, admin, b.id, false);
+    expect((await db.prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).archivedAt).toBeNull();
+    const d = await createDivision(db.prisma, admin, uniq("D"));
+    await setDivisionArchived(db.prisma, admin, d.id, true);
+    expect((await db.prisma.division.findUniqueOrThrow({ where: { id: d.id } })).archivedAt).toBeInstanceOf(Date);
+    const t = await upsertRequestType(db.prisma, admin, { name: uniq("T"), fieldSchema: [], active: true });
+    await setRequestTypeArchived(db.prisma, admin, t.id, true);
+    expect((await db.prisma.requestType.findUniqueOrThrow({ where: { id: t.id } })).active).toBe(false);
+    await setRequestTypeArchived(db.prisma, admin, t.id, false);
+    expect((await db.prisma.requestType.findUniqueOrThrow({ where: { id: t.id } })).active).toBe(true);
+    expect(await code(setBrandArchived(db.prisma, admin, "nope", true))).toBe("NOT_FOUND");
+  });
+
+  it("deletes a brand only when nothing uses it", async () => {
+    const name = uniq("Clenvo");
+    const used = await createBrand(db.prisma, admin, name);
+    await db.prisma.project.create({ data: { title: "P", ownerId: admin.id, brandId: used.id } });
+    expect(await msg(deleteBrand(db.prisma, admin, used.id))).toBe(`CONFLICT: ${name} is used by 1 project. Archive it instead.`);
+    const unused = await createBrand(db.prisma, admin, uniq("Typo"));
+    expect(await code(deleteBrand(db.prisma, admin, unused.id))).toBe("OK");
+    expect(await db.prisma.brand.findUnique({ where: { id: unused.id } })).toBeNull();
+  });
+
+  it("a division with requests or calendar activities is used; one with only leads can be deleted (leads go too)", async () => {
+    const withRequest = await createDivision(db.prisma, admin, uniq("D"));
+    await request({ divisionId: withRequest.id });
+    expect(await msg(deleteDivision(db.prisma, admin, withRequest.id))).toMatch(/is used by 1 request\. Archive it instead\.$/);
+    const withActivity = await createDivision(db.prisma, admin, uniq("D"));
+    await db.prisma.marketingActivity.create({ data: { divisionId: withActivity.id, title: "A", startDay: new Date("2026-10-01"), endDay: new Date("2026-10-02"), createdById: admin.id, updatedById: admin.id } });
+    expect(await msg(deleteDivision(db.prisma, admin, withActivity.id))).toMatch(/is used by 1 calendar activity\. Archive it instead\.$/);
+    const withLead = await createDivision(db.prisma, admin, uniq("D"));
+    await db.prisma.divisionLead.create({ data: { divisionId: withLead.id, userId: admin.id } });
+    expect(await code(deleteDivision(db.prisma, admin, withLead.id))).toBe("OK");
+    expect(await db.prisma.divisionLead.count({ where: { divisionId: withLead.id } })).toBe(0);
+  });
+
+  it("a request type with requests can't be deleted; an unused one can", async () => {
+    const used = await upsertRequestType(db.prisma, admin, { name: uniq("T"), fieldSchema: [], active: true });
+    await request({ typeId: used.id });
+    expect(await msg(deleteRequestType(db.prisma, admin, used.id))).toMatch(/is used by 1 request\. Archive it instead\.$/);
+    const unused = await upsertRequestType(db.prisma, admin, { name: uniq("T"), fieldSchema: [], active: true });
+    expect(await code(deleteRequestType(db.prisma, admin, unused.id))).toBe("OK");
+  });
+
+  it("brand colour must be one of the brand tones", async () => {
+    const b = await createBrand(db.prisma, admin, uniq("B"));
+    expect(await msg(setBrandColor(db.prisma, admin, b.id, "red"))).toBe("VALIDATION: Pick a colour.");
+    await setBrandColor(db.prisma, admin, b.id, "div-5");
+    expect((await db.prisma.brand.findUniqueOrThrow({ where: { id: b.id } })).color).toBe("div-5");
+  });
+
+  it("saving a request type without `active` keeps its state; a new one starts active", async () => {
+    const t = await upsertRequestType(db.prisma, admin, { name: uniq("T"), fieldSchema: [] });
+    expect(t.active).toBe(true);
+    await setRequestTypeArchived(db.prisma, admin, t.id, true);
+    const saved = await upsertRequestType(db.prisma, admin, { id: t.id, name: t.name, fieldSchema: [] });
+    expect(saved.active).toBe(false);
+  });
+
+  it("counts usage per brand, division and type", async () => {
+    const r = await request({});
+    const usage = await listsUsage(db.prisma);
+    expect(usage.brands[r.brandId]).toEqual({ requests: 1, projects: 0, libraryItems: 0, channels: 0 });
+    expect(usage.divisions[r.divisionId]).toEqual({ requests: 1, activities: 0, leads: 0 });
+    expect(usage.types[r.typeId]).toEqual({ requests: 1, posts: 0 });
+  });
+
+  it("usage text lists the non-zero counts", () => {
+    expect(usageText([[508, "request", "requests"], [7, "project", "projects"], [0, "library item", "library items"], [1, "Instagram channel", "Instagram channels"]]))
+      .toBe("508 requests · 7 projects · 1 Instagram channel");
+    expect(usageText([[0, "request", "requests"]])).toBe("");
   });
 });
 

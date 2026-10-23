@@ -4,7 +4,7 @@ import { fieldSchemaSchema } from "./fieldSchema";
 import { normalizeName } from "./import/aliases";
 import { checkNewPassword, hashPassword, verifyPassword } from "./password";
 import { isPlatformAdmin } from "./platformAdmin";
-import { DIVISION_TONES } from "./palette";
+import { BRAND_TONES, DIVISION_TONES } from "./palette";
 
 export type AdminErrorCode = "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "CONFLICT" | "LAST_ADMIN";
 
@@ -351,6 +351,93 @@ export async function renameDivision(db: Db, actor: Actor, id: string, name: str
   return renameNamed(db, "division", "Division", id, name);
 }
 
+/** "508 requests · 7 projects · 1 Instagram channel"; "" when every count is 0. Parts: [count, singular, plural]. */
+export function usageText(parts: readonly (readonly [number, string, string])[]): string {
+  return parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`).join(" · ");
+}
+
+const brandUsage = (c: { requests: number; projects: number; libraryItems: number; socialChannels: number }) =>
+  usageText([[c.requests, "request", "requests"], [c.projects, "project", "projects"], [c.libraryItems, "library item", "library items"], [c.socialChannels, "Instagram channel", "Instagram channels"]]);
+const divisionUsage = (c: { requests: number; marketingActivities: number }) =>
+  usageText([[c.requests, "request", "requests"], [c.marketingActivities, "calendar activity", "calendar activities"]]);
+const typeUsage = (c: { requests: number; contentPosts: number }) =>
+  usageText([[c.requests, "request", "requests"], [c.contentPosts, "Content Plan post", "Content Plan posts"]]);
+
+export type ListsUsage = {
+  brands: Record<string, { requests: number; projects: number; libraryItems: number; channels: number }>;
+  divisions: Record<string, { requests: number; activities: number; leads: number }>;
+  types: Record<string, { requests: number; posts: number }>;
+};
+
+/** What uses each brand, division and request type (Settings › Lists usage lines and delete rules). */
+export async function listsUsage(db: Db): Promise<ListsUsage> {
+  const [brands, divisions, types] = await Promise.all([
+    db.brand.findMany({ select: { id: true, _count: { select: { requests: true, projects: true, libraryItems: true, socialChannels: true } } } }),
+    db.division.findMany({ select: { id: true, _count: { select: { requests: true, marketingActivities: true, leads: true } } } }),
+    db.requestType.findMany({ select: { id: true, _count: { select: { requests: true, contentPosts: true } } } }),
+  ]);
+  return {
+    brands: Object.fromEntries(brands.map((b) => [b.id, { requests: b._count.requests, projects: b._count.projects, libraryItems: b._count.libraryItems, channels: b._count.socialChannels }])),
+    divisions: Object.fromEntries(divisions.map((d) => [d.id, { requests: d._count.requests, activities: d._count.marketingActivities, leads: d._count.leads }])),
+    types: Object.fromEntries(types.map((t) => [t.id, { requests: t._count.requests, posts: t._count.contentPosts }])),
+  };
+}
+
+const inUse = (name: string, usage: string) => new AdminError("CONFLICT", `${name} is used by ${usage}. Archive it instead.`);
+const archivedAt = (archived: boolean) => (archived ? new Date() : null);
+
+/** Archived brands and divisions leave the pickers for new work; existing records keep them (spec 2026-10-23). */
+export async function setBrandArchived(db: Db, actor: Actor, id: string, archived: boolean): Promise<void> {
+  assertAdmin(actor);
+  if (!(await db.brand.findUnique({ where: { id }, select: { id: true } }))) throw new AdminError("NOT_FOUND", "Brand not found");
+  await db.brand.update({ where: { id }, data: { archivedAt: archivedAt(archived) } });
+}
+export async function setDivisionArchived(db: Db, actor: Actor, id: string, archived: boolean): Promise<void> {
+  assertAdmin(actor);
+  if (!(await db.division.findUnique({ where: { id }, select: { id: true } }))) throw new AdminError("NOT_FOUND", "Division not found");
+  await db.division.update({ where: { id }, data: { archivedAt: archivedAt(archived) } });
+}
+/** A request type's "archived" is its existing `active = false`. */
+export async function setRequestTypeArchived(db: Db, actor: Actor, id: string, archived: boolean): Promise<void> {
+  assertAdmin(actor);
+  if (!(await db.requestType.findUnique({ where: { id }, select: { id: true } }))) throw new AdminError("NOT_FOUND", "Request type not found");
+  await db.requestType.update({ where: { id }, data: { active: !archived } });
+}
+
+/** Delete only what nothing uses (a typo); anything in use must be archived instead. */
+export async function deleteBrand(db: Db, actor: Actor, id: string): Promise<void> {
+  assertAdmin(actor);
+  const b = await db.brand.findUnique({ where: { id }, select: { name: true, _count: { select: { requests: true, projects: true, libraryItems: true, socialChannels: true } } } });
+  if (!b) throw new AdminError("NOT_FOUND", "Brand not found");
+  const used = brandUsage(b._count);
+  if (used) throw inUse(b.name, used);
+  await db.brand.delete({ where: { id } });
+}
+/** Requests and Marketing Calendar activities count as use; the division's leads are removed with it. */
+export async function deleteDivision(db: Db, actor: Actor, id: string): Promise<void> {
+  assertAdmin(actor);
+  const d = await db.division.findUnique({ where: { id }, select: { name: true, _count: { select: { requests: true, marketingActivities: true } } } });
+  if (!d) throw new AdminError("NOT_FOUND", "Division not found");
+  const used = divisionUsage(d._count);
+  if (used) throw inUse(d.name, used);
+  await db.division.delete({ where: { id } });
+}
+export async function deleteRequestType(db: Db, actor: Actor, id: string): Promise<void> {
+  assertAdmin(actor);
+  const t = await db.requestType.findUnique({ where: { id }, select: { name: true, _count: { select: { requests: true, contentPosts: true } } } });
+  if (!t) throw new AdminError("NOT_FOUND", "Request type not found");
+  const used = typeUsage(t._count);
+  if (used) throw inUse(t.name, used);
+  await db.requestType.delete({ where: { id } });
+}
+
+export async function setBrandColor(db: Db, actor: Actor, id: string, color: string): Promise<void> {
+  assertAdmin(actor);
+  if (!(BRAND_TONES as readonly string[]).includes(color)) throw new AdminError("VALIDATION", "Pick a colour.");
+  if (!(await db.brand.findUnique({ where: { id }, select: { id: true } }))) throw new AdminError("NOT_FOUND", "Brand not found");
+  await db.brand.update({ where: { id }, data: { color } });
+}
+
 /** Validates a field schema; returns friendly messages (empty when valid). */
 export function fieldSchemaProblems(raw: unknown): string[] {
   const r = fieldSchemaSchema.safeParse(raw);
@@ -369,7 +456,8 @@ export function fieldSchemaProblems(raw: unknown): string[] {
   return problems;
 }
 
-export async function upsertRequestType(db: Db, actor: Actor, input: { id?: string; name: string; fieldSchema: unknown; active: boolean }) {
+/** `active` omitted keeps the current value (or true for a new type): the type form has no Active checkbox any more. */
+export async function upsertRequestType(db: Db, actor: Actor, input: { id?: string; name: string; fieldSchema: unknown; active?: boolean }) {
   assertAdmin(actor);
   const name = cleanName(input.name, "Name", MAX_LIST_NAME);
   const problems = fieldSchemaProblems(input.fieldSchema);
@@ -386,8 +474,8 @@ export async function upsertRequestType(db: Db, actor: Actor, input: { id?: stri
       });
       if (dup) throw new AdminError("CONFLICT", `Request type "${dup.name}" already exists`);
       return input.id
-        ? tx.requestType.update({ where: { id: input.id }, data: { name, fieldSchema, active: input.active } })
-        : tx.requestType.create({ data: { name, fieldSchema, active: input.active } });
+        ? tx.requestType.update({ where: { id: input.id }, data: { name, fieldSchema, ...(input.active === undefined ? {} : { active: input.active }) } })
+        : tx.requestType.create({ data: { name, fieldSchema, active: input.active ?? true } });
     });
   } catch (e) {
     return mapUnique(e, `Request type "${name}" already exists`);
