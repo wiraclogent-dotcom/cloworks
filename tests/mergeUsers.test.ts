@@ -58,13 +58,15 @@ async function seedEverything(userId: string) {
   const post = await p.contentPost.create({ data: { channelId: channel.id, surface: "FEED", position: 0, authorId: userId, approvedById: userId } });
   await p.contentComment.create({ data: { postId: post.id, authorId: userId, body: "c" } });
   await p.media.create({ data: { publicId: uniq("clowork/m/"), type: "IMAGE", width: 1, height: 1, bytes: 1, uploadedById: userId } });
+  const folder = await p.noteFolder.create({ data: { userId, name: uniq("Folder") } });
+  await p.note.create({ data: { userId, folderId: folder.id, body: {} } });
   return req;
 }
 
 const SEEDED: MergeCounts = {
   requested: 1, assigned: 1, statusEvents: 1, deadlineEvents: 1, comments: 1, attachments: 1, kpiTargets: 1,
   notifications: 1, chatReads: 1, ownedProjects: 1, projectTasks: 1, libraryItems: 1, invites: 2,
-  contentPosts: 1, contentComments: 1, media: 1,
+  contentPosts: 1, contentComments: 1, media: 1, notes: 1,
 };
 const ZERO = Object.fromEntries(Object.keys(SEEDED).map((k) => [k, 0])) as MergeCounts;
 
@@ -88,6 +90,7 @@ async function countsFor(id: string): Promise<MergeCounts> {
     contentPosts: await p.contentPost.count({ where: { OR: [{ authorId: id }, { approvedById: id }] } }),
     contentComments: await p.contentComment.count({ where: { authorId: id } }),
     media: await p.media.count({ where: { uploadedById: id } }),
+    notes: await p.note.count({ where: { userId: id } }),
   };
 }
 
@@ -222,6 +225,27 @@ describe("mergeUsers", () => {
       expect(rows.find((r) => r.requestId === req.id)!.lastReadAt).toEqual(want);
       expect(rows.find((r) => r.requestId === only.id)!.lastReadAt).toEqual(T1);
     }
+  });
+
+  it("moves notes and folders, combining folders with the same name", async () => {
+    const from = await person(), into = await person();
+    const p = db.prisma;
+    const dupMeeting = await p.noteFolder.create({ data: { userId: from.id, name: "Meeting" } });
+    const draft = await p.noteFolder.create({ data: { userId: from.id, name: "Draft" } });
+    const keep = await p.noteFolder.create({ data: { userId: into.id, name: " meeting" } });
+    const live = await p.note.create({ data: { userId: from.id, folderId: dupMeeting.id, body: {} } });
+    const gone = await p.note.create({ data: { userId: from.id, body: {}, deletedAt: new Date(), deletedFromFolderId: dupMeeting.id } });
+    const inDraft = await p.note.create({ data: { userId: from.id, folderId: draft.id, body: {} } });
+    await mergeUsers(db.raw, admin, from.id, into.id);
+    const folders = await p.noteFolder.findMany({ where: { userId: into.id }, orderBy: { name: "asc" } });
+    expect(folders.map((f) => f.id)).toEqual([keep.id, draft.id]);
+    const notes = await p.note.findMany({ where: { id: { in: [live.id, gone.id, inDraft.id] } } });
+    expect(notes.every((x) => x.userId === into.id)).toBe(true);
+    const byId = new Map(notes.map((x) => [x.id, x]));
+    expect(byId.get(live.id)!.folderId).toBe(keep.id);
+    expect(byId.get(gone.id)!.deletedFromFolderId).toBe(keep.id);
+    expect(byId.get(inDraft.id)!.folderId).toBe(draft.id);
+    expect(await p.noteFolder.findUnique({ where: { id: dupMeeting.id } })).toBeNull();
   });
 
   it("moves the login when the survivor has none", async () => {

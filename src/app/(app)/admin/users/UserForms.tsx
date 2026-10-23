@@ -162,6 +162,7 @@ function countList(c: MergeCounts): string[] {
     [c.contentPosts, "content post", "content posts"],
     [c.contentComments, "content comment", "content comments"],
     [c.media, "uploaded file", "uploaded files"],
+    [c.notes, "note", "notes"],
   ];
   return rows.filter(([n]) => n > 0).map(([n, one, many]) => plural(n, one, many));
 }
