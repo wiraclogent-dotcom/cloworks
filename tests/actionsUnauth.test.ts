@@ -17,6 +17,10 @@ import {
 import { addComment, setAssignees, setIncludeKpi } from "@/app/(app)/requests/[id]/actions";
 import { listNotifications, markAllNotificationsRead, markNotificationRead } from "@/app/(app)/notifications/actions";
 import { chatUnreadCount, listChats, listMessages, markChatRead, sendChatMessage } from "@/app/(app)/chat/actions";
+import {
+  createFolder, createNote, deleteFolder, deleteNote, deleteNoteNow, emptyDeleted, moveNote, renameFolder, restoreNote, saveNote,
+  setNotePinned,
+} from "@/app/(app)/notes/actions";
 
 const MSG = "Your session ended. Sign in again.";
 const fd = (o: Record<string, string>) => { const f = new FormData(); for (const [k, v] of Object.entries(o)) f.set(k, v); return f; };
@@ -53,6 +57,13 @@ describe("server actions return a result object when the session ended", () => {
   it("notification actions", async () => {
     for (const r of [await listNotifications(), await markNotificationRead("n"), await markAllNotificationsRead()])
       expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
+  });
+  it("notes actions", async () => {
+    for (const r of [
+      await createNote(null), await saveNote("n", { type: "doc", content: [] }), await setNotePinned("n", true), await moveNote("n", null),
+      await deleteNote("n"), await restoreNote("n"), await deleteNoteNow("n"), await emptyDeleted(), await createFolder("f"),
+      await renameFolder("f", "g"), await deleteFolder("f"),
+    ]) expect(r).toEqual({ ok: false, code: "UNAUTHENTICATED", message: MSG });
   });
   it("chat actions", async () => {
     for (const r of [await chatUnreadCount(), await listChats(), await listMessages("r"), await markChatRead("r"), await sendChatMessage("r", "hi")])

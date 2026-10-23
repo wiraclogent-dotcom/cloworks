@@ -7,7 +7,7 @@ type Tx = Prisma.TransactionClient;
 export type MergeCounts = Record<
   | "requested" | "assigned" | "statusEvents" | "deadlineEvents" | "comments" | "attachments" | "kpiTargets"
   | "notifications" | "chatReads" | "ownedProjects" | "projectTasks" | "libraryItems" | "invites"
-  | "contentPosts" | "contentComments" | "media",
+  | "contentPosts" | "contentComments" | "media" | "notes",
   number
 >;
 
@@ -53,6 +53,8 @@ const REPOINT: Record<string, (tx: Tx, from: string, into: string) => Promise<un
   "MarketingActivity.updatedById": (tx, from, into) => tx.marketingActivity.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
   "MarketingAnnouncement.createdById": (tx, from, into) => tx.marketingAnnouncement.updateMany({ where: { createdById: from }, data: { createdById: into } }),
   "MarketingMonth.updatedById": (tx, from, into) => tx.marketingMonth.updateMany({ where: { updatedById: from }, data: { updatedById: into } }),
+  "Note.userId": (tx, from, into) => tx.note.updateMany({ where: { userId: from }, data: { userId: into } }),
+  "NoteFolder.userId": (tx, from, into) => tx.noteFolder.updateMany({ where: { userId: from }, data: { userId: into } }),
 };
 
 /** "Model.field" for every foreign key to User that mergeUsers re-points. */
@@ -96,6 +98,7 @@ async function countsFor(tx: Tx, id: string): Promise<MergeCounts> {
     contentPosts: await tx.contentPost.count({ where: { OR: [{ authorId: id }, { approvedById: id }] } }),
     contentComments: await tx.contentComment.count({ where: { authorId: id } }),
     media: await tx.media.count({ where: { uploadedById: id } }),
+    notes: await tx.note.count({ where: { userId: id } }),
   };
 }
 
@@ -175,6 +178,19 @@ export async function mergeUsers(db: PrismaClient, actor: Actor, fromId: string,
     // Division lead clash: where the survivor already leads the division, the duplicate's row is dropped.
     const intoDivisions = await tx.divisionLead.findMany({ where: { userId: into.id }, select: { divisionId: true } });
     if (intoDivisions.length > 0) await tx.divisionLead.deleteMany({ where: { userId: from.id, divisionId: { in: intoDivisions.map((l) => l.divisionId) } } });
+
+    // Notes folder clash: a duplicate's folder named like one of the survivor's (ignoring case) is folded into it, so
+    // the survivor never ends up with two "Meeting" folders.
+    const keepByName = new Map(
+      (await tx.noteFolder.findMany({ where: { userId: into.id }, select: { id: true, name: true } })).map((f) => [normalizeName(f.name), f.id]),
+    );
+    for (const dup of await tx.noteFolder.findMany({ where: { userId: from.id }, select: { id: true, name: true } })) {
+      const keep = keepByName.get(normalizeName(dup.name));
+      if (!keep) continue;
+      await tx.note.updateMany({ where: { folderId: dup.id }, data: { folderId: keep } });
+      await tx.note.updateMany({ where: { deletedFromFolderId: dup.id }, data: { deletedFromFolderId: keep } });
+      await tx.noteFolder.delete({ where: { id: dup.id } });
+    }
 
     for (const repoint of Object.values(REPOINT)) await repoint(tx, from.id, into.id);
 

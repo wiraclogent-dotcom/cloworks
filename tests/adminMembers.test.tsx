@@ -181,7 +181,7 @@ describe("Members page", () => {
   });
 
   it("Merge: review shows the summary and Merge confirms with both ids; a failed review shows the error", async () => {
-    const counts = { requested: 2, assigned: 1, statusEvents: 0, deadlineEvents: 0, comments: 1, attachments: 0, kpiTargets: 0, notifications: 5, chatReads: 3, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
+    const counts = { requested: 2, assigned: 1, statusEvents: 0, deadlineEvents: 0, comments: 1, attachments: 0, kpiTargets: 0, notifications: 5, chatReads: 3, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0, notes: 0 };
     act.previewMerge.mockResolvedValueOnce({ ok: false, error: "Both people have a login. Clear one login email first." });
     act.previewMerge.mockResolvedValueOnce({
       ok: true,
@@ -206,7 +206,7 @@ describe("Members page", () => {
   });
 
   it("Merge: changing the target after a review removes the stale confirmation; single items read 'moves'", async () => {
-    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0, notes: 0 };
     act.previewMerge.mockResolvedValue({
       ok: true,
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
@@ -239,7 +239,7 @@ describe("Members page", () => {
   });
 
   it("Merge: the select keeps the chosen person after a review, and a second review still submits", async () => {
-    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0, notes: 0 };
     act.previewMerge.mockResolvedValue({
       ok: true,
       preview: { from: { id: "u1", name: "Yosi", email: null, appRole: "LEAD", jobRole: "DESIGNER" }, into: { id: "u3", name: "Rina", email: "rina@clogent.co.id", active: true, appRole: "LEAD", jobRole: "DESIGNER" }, counts: zero, movesLogin: true },
@@ -257,7 +257,7 @@ describe("Members page", () => {
   });
 
   it("Merge summary discloses a role change only when the login moves and roles differ", async () => {
-    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0 };
+    const zero = { requested: 0, assigned: 0, statusEvents: 0, deadlineEvents: 0, comments: 0, attachments: 0, kpiTargets: 0, notifications: 0, chatReads: 0, ownedProjects: 0, projectTasks: 0, libraryItems: 0, invites: 0, contentPosts: 0, contentComments: 0, media: 0, notes: 0 };
     const preview = (movesLogin: boolean, fromRoles: [AppRole, JobRole]) => ({
       ok: true as const,
       preview: { from: { id: "u1", name: "Yosiananda", email: null, appRole: fromRoles[0], jobRole: fromRoles[1] }, into: { id: "u3", name: "Yosi", email: "y@clogent.co.id", active: true, appRole: "CREATIVE" as const, jobRole: "DESIGNER" as const }, counts: zero, movesLogin },

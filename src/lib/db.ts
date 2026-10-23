@@ -20,6 +20,7 @@ const SCOPED_MODELS = new Set([
   "LibraryCategory", "LibraryItem", "Invite",
   "Media", "SocialChannel", "ContentPost", "ContentPostMedia", "ContentComment",
   "DivisionLead", "MarketingActivity", "MarketingMonth", "MarketingAnnouncement",
+  "NoteFolder", "Note",
 ]);
 
 const WHERE_OPS = new Set([
