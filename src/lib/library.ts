@@ -75,7 +75,8 @@ function cleanFiles(raw: unknown): LibraryFile[] | string {
   return files;
 }
 
-async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
+/** `keepBrandId`: the item's current brand, which it may keep after the brand is archived. */
+async function cleanItem(db: ScopedDb, input: LibraryItemInput, keepBrandId?: string | null) {
   const errors = collect(itemShape.safeParse(input));
   const files = input.files === undefined ? undefined : cleanFiles(input.files);
   if (typeof files === "string") errors.files = files;
@@ -85,8 +86,11 @@ async function cleanItem(db: ScopedDb, input: LibraryItemInput) {
   const brandId = errors.brandId ? null : blankToNull(input.brandId);
   if (!errors.categoryId && !(await db.libraryCategory.findUnique({ where: { id: input.categoryId }, select: { id: true } })))
     errors.categoryId = "That category does not exist";
-  if (brandId && !(await db.brand.findUnique({ where: { id: brandId }, select: { id: true } })))
-    errors.brandId = "That brand does not exist";
+  if (brandId) {
+    const b = await db.brand.findUnique({ where: { id: brandId }, select: { archivedAt: true } });
+    if (!b) errors.brandId = "That brand does not exist";
+    else if (b.archivedAt && brandId !== keepBrandId) errors.brandId = "That brand is archived";
+  }
   if (Object.keys(errors).length) throwFields(errors);
   return {
     title, url, description: blankToNull(input.description), categoryId: input.categoryId, brandId,
@@ -128,7 +132,7 @@ export async function createItemWith(db: ScopedDb, user: Actor, input: LibraryIt
 export async function updateItemWith(db: ScopedDb, user: Actor, id: string, input: LibraryItemInput): Promise<{ contentChanged: boolean }> {
   assertEditor(user);
   const existing = await requireItem(db, id);
-  const c = await cleanItem(db, input);
+  const c = await cleanItem(db, input, existing.brandId);
   const data: Record<string, unknown> = { ...c, updatedById: user.id };
   const filesChanged = c.files !== undefined && JSON.stringify(c.files) !== JSON.stringify(filesOf(existing.files));
   const contentChanged = c.title !== existing.title || c.url !== existing.url || c.description !== existing.description || filesChanged;

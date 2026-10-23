@@ -112,14 +112,16 @@ export async function validateRequestInput(db: DbOrTx, input: CreateRequestInput
   const useDefault = input.typeId === undefined;
   const assigneeIds = [...new Set((Array.isArray(input.assigneeIds) ? input.assigneeIds : []).filter((x): x is string => typeof x === "string" && x !== ""))];
   const [brand, division, type, team] = await Promise.all([
-    brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true } }) : null,
-    divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true } }) : null,
+    brandId ? db.brand.findUnique({ where: { id: brandId }, select: { id: true, archivedAt: true } }) : null,
+    divisionId ? db.division.findUnique({ where: { id: divisionId }, select: { id: true, archivedAt: true } }) : null,
     useDefault ? db.requestType.findFirst({ where: { name: DEFAULT_TYPE_NAME } }) : typeId ? db.requestType.findUnique({ where: { id: typeId } }) : null,
     assigneeIds.length ? db.user.findMany({ where: { id: { in: assigneeIds }, ...CREATIVE_TEAM }, select: { id: true } }) : null,
   ]);
   if (assigneeIds.length && team?.length !== assigneeIds.length) errs.assigneeIds ??= "Pick someone from the creative team";
   if (brandId && !brand) errs.brandId ??= "Unknown brand";
+  else if (brand?.archivedAt) errs.brandId ??= "That brand is archived";
   if (divisionId && !division) errs.divisionId ??= "Unknown division";
+  else if (division?.archivedAt) errs.divisionId ??= "That division is archived";
   if (useDefault && (!type || !type.active)) errs.form ??= `The default request type '${DEFAULT_TYPE_NAME}' is missing`;
   else if (!useDefault && typeId && (!type || !type.active)) errs.typeId ??= "Unknown or inactive request type";
 

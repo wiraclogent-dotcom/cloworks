@@ -29,8 +29,11 @@ async function guardHandle<T>(write: Promise<T>): Promise<T> {
   }
 }
 
-/** Validates the input and checks that the brand and avatar belong to this workspace (the scoped db confines the lookups). */
-async function resolve(db: ScopedDb, input: ChannelInput, selfId?: string) {
+/**
+ * Validates the input and checks that the brand and avatar belong to this workspace (the scoped db confines the lookups).
+ * An archived brand is refused unless it is `keepBrandId`, the channel's current brand.
+ */
+async function resolve(db: ScopedDb, input: ChannelInput, selfId?: string, keepBrandId?: string) {
   const fieldErrors: Record<string, string> = {};
   const handle = normalizeHandle(input.handle);
   if (!HANDLE_RE.test(handle)) fieldErrors.handle = "Use 1 to 30 letters, numbers, dots or underscores";
@@ -41,7 +44,9 @@ async function resolve(db: ScopedDb, input: ChannelInput, selfId?: string) {
   if (bio && bio.length > 150) fieldErrors.bio = "Bio must be at most 150 characters";
   if (Object.keys(fieldErrors).length) throw new ContentError("INVALID", Object.values(fieldErrors)[0], fieldErrors);
 
-  if (!(await db.brand.findFirst({ where: { id: input.brandId }, select: { id: true } }))) throw new ContentError("NOT_FOUND", "Brand not found.");
+  const brand = await db.brand.findFirst({ where: { id: input.brandId }, select: { archivedAt: true } });
+  if (!brand) throw new ContentError("NOT_FOUND", "Brand not found.");
+  if (brand.archivedAt && input.brandId !== keepBrandId) throw new ContentError("INVALID", "That brand is archived.", { brandId: "That brand is archived" });
   if (input.avatarMediaId && !(await db.media.findFirst({ where: { id: input.avatarMediaId }, select: { id: true } }))) {
     throw new ContentError("NOT_FOUND", "Avatar image not found.");
   }
@@ -64,8 +69,9 @@ export async function createChannelWith(db: ScopedDb, user: ContentActor, input:
 
 export async function updateChannelWith(db: ScopedDb, user: ContentActor, id: string, input: ChannelInput): Promise<void> {
   assertManager(user);
-  if (!(await db.socialChannel.findFirst({ where: { id }, select: { id: true } }))) throw new ContentError("NOT_FOUND", "Channel not found.");
-  const data = await resolve(db, input, id);
+  const existing = await db.socialChannel.findFirst({ where: { id }, select: { brandId: true } });
+  if (!existing) throw new ContentError("NOT_FOUND", "Channel not found.");
+  const data = await resolve(db, input, id, existing.brandId);
   await guardHandle(db.socialChannel.update({ where: { id }, data }));
 }
 
