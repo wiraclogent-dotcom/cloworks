@@ -18,6 +18,8 @@ describe("activeNavHref", () => {
     ["/marketing?month=2026-10", "/marketing"],
     ["/content?channel=x", "/content"],
     ["/content?channel=x&tab=reels#top", "/content"],
+    ["/notes", "/notes"],
+    ["/notes?view=deleted&note=x", "/notes"],
   ])("%s → %s", (path, want) => {
     expect(activeNavHref(path)).toBe(want);
   });
