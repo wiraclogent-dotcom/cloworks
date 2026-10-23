@@ -50,6 +50,8 @@ export function NoteEditor({ note, folders, readOnly, onSaved, onLeaveEmpty, onC
     extensions: [...NOTE_EXTENSIONS, Placeholder.configure({ placeholder: "Start writing…" })],
     content: note.body,
     editable: !readOnly,
+    // A brand-new note is ready to type into, as in Apple Notes; opening an existing note leaves focus alone.
+    autofocus: !readOnly && note.title === "" ? "end" : false,
     immediatelyRender: false,
     editorProps: {
       attributes: { class: "note-editor", role: "textbox", "aria-multiline": "true", "aria-label": "Note" },

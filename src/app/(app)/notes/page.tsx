@@ -10,13 +10,14 @@ import { PageHeader } from "@/components/ui/PageHeader";
 /** Tab title: "Notes · Clowork" (root layout template). Static: no per-user data in metadata. */
 export const metadata: Metadata = { title: "Notes" };
 
-/** The signed-in person's own notes (spec 2026-10-23). Recently Deleted is cleaned up here, on each visit. */
+/** The signed-in person's own notes (spec 2026-10-23). Expired and left-behind empty notes are cleaned up on each visit. */
 async function NotesContent({ searchParams }: { searchParams: PageProps<"/notes">["searchParams"] }) {
   const { user, db } = await requireScope();
   const now = new Date();
-  await purgeExpiredNotes(db, user.id, now);
+  const sp = await searchParams;
+  await purgeExpiredNotes(db, user.id, now, typeof sp.note === "string" ? sp.note : null);
   const sidebar = await listFolders(db, user.id);
-  const params = parseNotesParams(await searchParams, sidebar.folders.map((f) => f.id));
+  const params = parseNotesParams(sp, sidebar.folders.map((f) => f.id));
   const [notes, note] = await Promise.all([
     listNotes(db, user.id, { view: params.view, q: params.q }),
     params.noteId ? getNote(db, user.id, params.noteId) : null,

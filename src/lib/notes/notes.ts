@@ -69,10 +69,14 @@ export async function getNote(db: ScopedDb, userId: string, id: string): Promise
   return { id: n.id, body: n.body as JSONContent, title: n.title, pinned: n.pinned, folderId: n.folderId, deletedAt: n.deletedAt, updatedAt: n.updatedAt };
 }
 
-/** Deletes the owner's notes that have been in Recently Deleted for more than 30 days. */
-export async function purgeExpiredNotes(db: ScopedDb, userId: string, now: Date): Promise<number> {
+/**
+ * Runs when the owner opens Notes: deletes notes that have been in Recently Deleted for more than 30 days, and empty
+ * notes left behind (a new note whose tab was closed before anything was typed), except `keepId`, the one being opened.
+ */
+export async function purgeExpiredNotes(db: ScopedDb, userId: string, now: Date, keepId: string | null = null): Promise<number> {
   const cutoff = new Date(now.getTime() - NOTE_PURGE_DAYS * DAY_MS);
-  return (await db.note.deleteMany({ where: { userId, deletedAt: { lt: cutoff } } })).count;
+  const empty: Prisma.NoteWhereInput = { title: "", text: "", ...(keepId ? { id: { not: keepId } } : {}) };
+  return (await db.note.deleteMany({ where: { userId, OR: [{ deletedAt: { lt: cutoff } }, empty] } })).count;
 }
 
 export async function createNoteWith(db: ScopedDb, userId: string, folderId: string | null): Promise<{ id: string }> {

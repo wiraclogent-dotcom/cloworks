@@ -181,6 +181,17 @@ describe("NoteEditor", () => {
     expect(editor.getText()).toContain("d");
   });
 
+  it("a new empty note opens with the cursor in it; an existing note does not grab focus", async () => {
+    render(<NoteEditor {...props} note={note("A", { type: "doc", content: [{ type: "paragraph" }] }, { title: "" })} />);
+    const editor = await editorOf();
+    await waitFor(() => expect(editor.isFocused).toBe(true));
+    cleanup();
+    render(<NoteEditor {...props} note={note("B", b("ada isi"))} />);
+    const other = await editorOf();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(other.isFocused).toBe(false);
+  });
+
   it("a Recently Deleted note is read-only with Restore and Delete now", async () => {
     render(<NoteEditor {...props} readOnly note={note("A", b("old"), { deletedAt: AT })} />);
     await editorOf();
