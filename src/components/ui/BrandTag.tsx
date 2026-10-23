@@ -1,7 +1,9 @@
-import { Badge } from "@/components/shadcn/badge";
-import { brandTone } from "@/lib/palette";
+"use client";
 
-/** Brand tag: Clogent and Bubble Wash have their own colours, every other brand is neutral. */
+import { Badge } from "@/components/shadcn/badge";
+import { useBrandTone } from "./brandDirectory";
+
+/** Brand tag in the brand's chosen colour (Settings › Lists); outside the app, Clogent and Bubble Wash keep theirs, others grey. */
 export function BrandTag({ name, className }: { name: string; className?: string }) {
-  return <Badge tone={brandTone(name)} className={className}>{name}</Badge>;
+  return <Badge tone={useBrandTone(name)} className={className}>{name}</Badge>;
 }
