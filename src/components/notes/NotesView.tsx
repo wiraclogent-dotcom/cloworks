@@ -43,7 +43,7 @@ export function NotesView({ sidebar, notes, note, params, now }: {
   const pane = note ? "editor" : params.pane === "folders" ? "folders" : "list";
 
   return (
-    <div className="grid gap-4 md:h-[calc(100dvh-12rem)] md:min-h-[32rem] md:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[13rem_19rem_minmax(0,1fr)]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 md:h-[calc(100dvh-12rem)] md:min-h-[32rem] md:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[13rem_19rem_minmax(0,1fr)]">
       <Card asChild className={cn("min-h-0 overflow-y-auto p-2", pane === "folders" ? "block md:hidden" : "hidden", "xl:block")}>
         <aside aria-label="Notes folders">
           <FolderList sidebar={sidebar} view={params.view} onNavigate={navigate} />

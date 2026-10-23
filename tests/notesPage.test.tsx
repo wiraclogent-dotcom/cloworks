@@ -88,6 +88,13 @@ describe("NotesView", () => {
     expect(push).toHaveBeenCalledWith("/notes");
   });
 
+  // An auto grid column grows to its content's min width (the search row, long previews): on a 375px phone the page
+  // scrolled sideways. The single phone column must be allowed to shrink.
+  it("on phones the layout is one column that can shrink to the screen", () => {
+    const { container } = view();
+    expect((container.firstElementChild as HTMLElement).className.split(/\s+/)).toContain("grid-cols-[minmax(0,1fr)]");
+  });
+
   it("with no note open, the editor area says so", () => {
     view();
     expect(screen.getByText("No note selected")).toBeTruthy();
